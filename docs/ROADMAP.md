@@ -54,3 +54,7 @@
 ## 6. 남은 13차 범위
 
 개인정보 처리와 학교 간 공유(#privacy), 가격·손익(#pricing, #profit), 개선 요청 판(#support), Google Sheets 내용 읽기(시트 권한 연결 필요), 스캔 PDF 글자 인식(OCR).
+
+## 7. 드리미포털 설계 반영 (2026-11-22 요청)
+
+학교 홈페이지 · 학생 포털 · 학생부의 설계·제약·로직을 참고해 정규화된 설계로 새로 만든다. 분석: [portal-analysis.md](research/portal-analysis.md) · 설계 제안: [ADR 0004](decisions/0004-domain-model-normalization.md) (Codex 안 B → 사용자 결정 → 구현).

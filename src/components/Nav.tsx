@@ -1,6 +1,13 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Building2, ClipboardCheck, FileText, FlaskConical, Link2, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
+
+// 메뉴 아이콘 (lucide, ISC 라이선스). 장식용이라 화면낭독기에는 숨긴다.
+const ICONS: Record<string, LucideIcon> = {
+  '/intake': Upload, '/review': ClipboardCheck, '/documents': FileText, '/settings': Settings,
+  '/admin': Building2, '/admin/integrations': Link2, '/admin/lab': FlaskConical, '/admin/design': Palette,
+};
 
 export type NavItem = { href: string; label: string; count?: number };
 export type NavGroup = { label: string; items: NavItem[] };
@@ -17,7 +24,7 @@ export function Nav({ groups }: { groups: NavGroup[] }) {
           <div className="menu-label">{g.label}</div>
           {g.items.map((i) => (
             <Link key={i.href} href={i.href} className="nav-item" aria-current={current?.href === i.href ? 'page' : undefined}>
-              <span>{i.label}</span>
+              <span className="nav-label">{(() => { const I = ICONS[i.href]; return I ? <I size={16} aria-hidden="true" /> : null; })()}{i.label}</span>
               {!!i.count && <span className="count-badge" aria-label={`${i.count}건 대기`}>{i.count}</span>}
             </Link>
           ))}
