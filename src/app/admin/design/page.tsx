@@ -1,42 +1,81 @@
+import Link from 'next/link';
 import { loadForPlatform } from '@/lib/page';
-import { PageHeader } from '@/components/ui';
-import { DashboardSample } from './DashboardSample';
+import { Banner, PageHeader } from '@/components/ui';
+import { ARCHETYPES } from '@/components/archetypes/meta';
+import { ArchetypeThumb } from './ArchetypeThumb';
 import { ChooseDirection } from './ChooseDirection';
 
 /**
- * 디자인 방향 비교. 각 방향은 유명 제품의 '설계 철학'에서 영감을 받은 토큰 묶음이며 로고·에셋·고유 화면을 복제하지 않는다.
- * 고른 방향은 의미 토큰만 바꿔 전 화면에 적용한다(docs/design/DESIGN-SYSTEM.md).
+ * 24차 디자인 원형 비교. 색 조합이 아니라 탐색 구조·그리드·서체·밀도·상호작용이 다른 여덟 가지 화면 구조를
+ * 같은 합성 자료로 그려 비교한다. 참고 제품은 구조 원리만 가져오고 고유 디자인을 복제하지 않는다.
+ * 근거: docs/research/dashboard-rea-2026-11.md
  */
-const DIRECTIONS = [
-  { key: 'base', name: '0. 현재 기준 (18차)', inspired: 'IBM Carbon · GOV.UK · KRDS 원칙', traits: ['흰 탐색', '연한 파랑 선택', '중립 회색', '4px 반경'], fit: '공공·학교 문서 중심. 무난하지만 개성이 약함' },
-  { key: 'mono', name: '1. 모노 정밀', inspired: 'Vercel Geist · Linear(라이트)의 흑백 정밀함', traits: ['흑백 대비', '검정 주 버튼', '얇은 1px 선', '숫자 고정폭', '촘촘한 자간'], fit: '개발·운영 도구 느낌. 데이터가 또렷하고 세련됨' },
-  { key: 'dark', name: '2. 다크 프로', inspired: 'Linear · Raycast 다크의 집중형 화면', traits: ['어두운 바탕', '보라 강조', '은은한 테두리 빛', '고대비 숫자'], fit: '오래 보는 관리자 화면. 학교 사용자에게는 낯설 수 있음' },
-  { key: 'soft', name: '3. 소프트 프리미엄', inspired: 'Stripe 대시보드의 부드러운 깊이', traits: ['큰 반경', '부드러운 그림자', '인디고 강조', '헤더 그라데이션'], fit: '결제·라이선스·지표 화면에 신뢰감. 가장 "제품" 같은 인상' },
-  { key: 'enterprise', name: '4. 엔터프라이즈 고밀도', inspired: 'IBM Carbon · Atlassian의 업무 밀도', traits: ['각진 모서리', '32px 행', '진한 상단 막대', '강한 파랑'], fit: '많은 학생·성적 표를 다룰 때. 차갑고 딱딱함' },
-  { key: 'warm', name: '5. 따뜻한 에디토리얼', inspired: 'Notion · Apple의 여백과 글자 중심', traits: ['따뜻한 미색 바탕', '명조 제목', '초록 강조', '넉넉한 여백'], fit: '학교·교육 정체성. 문서·학생부와 잘 어울림, 데이터 밀도는 낮음' },
+const AXES = [
+  { key: 'nav', label: '탐색 구조' },
+  { key: 'grid', label: '레이아웃' },
+  { key: 'type', label: '서체·크기' },
+  { key: 'density', label: '정보 밀도' },
+  { key: 'signature', label: '핵심 상호작용' },
+  { key: 'fit', label: '잘 맞는 곳' },
+  { key: 'risk', label: '위험' },
 ] as const;
 
-export default async function DesignDirectionsPage() {
+export default async function DesignArchetypesPage() {
   await loadForPlatform(async () => ({}));
   return (
     <>
-      <PageHeader title="디자인 방향" crumbs={[{ label: '전체 관리' }, { label: '디자인 방향' }]}
-        description="같은 관리 대시보드(합성 자료)를 여섯 가지 방향으로 그렸습니다. 각 방향은 해당 제품들의 설계 철학을 참고한 토큰 묶음이며 고유 디자인을 복제하지 않습니다. 고른 방향은 의미 토큰을 바꿔 모든 화면에 적용합니다." />
-      <div className="dv-grid">
-        {DIRECTIONS.map((d) => (
-          <section key={d.key} className="card dv-option" data-testid={`direction-${d.key}`}>
-            <div className="card-header">
-              <div><h2>{d.name}</h2><p>참고: {d.inspired}</p></div>
-              <ChooseDirection name={d.name} />
+      <PageHeader title="디자인 원형 비교" crumbs={[{ label: '전체 관리' }, { label: '디자인 원형' }]}
+        description="같은 학교 운영 장면(합성 자료)을 여덟 가지 화면 구조로 그렸습니다. 색만 바꾼 것이 아니라 탐색 방식, 레이아웃 격자, 서체와 글자 크기, 정보 밀도, 핵심 상호작용이 모두 다릅니다. 썸네일을 누르면 전체 화면으로 열리고, 아래 막대로 앞뒤 원형을 넘겨 볼 수 있습니다." />
+
+      <Banner tone="info">
+        실제 서비스는 보통 하나만 고르지 않고 섞습니다. <b>기본 틀(셸)</b> 하나와 <b>업무별 화면 유형</b> 몇 가지를 고르면 됩니다.
+        예: 틀은 1번 학사 업무형, 질문 확인은 8번 작업함형, 수업·명단 표는 7번 그리드형, 전체 관리자 현황은 4번 분석형.
+        마음에 드는 원형마다 ‘이 방향 선택’을 누르면 개발·연구소 보드에 기록됩니다.
+      </Banner>
+
+      <section className="ar-cards" aria-label="원형 목록">
+        {ARCHETYPES.map((a) => (
+          <article key={a.slug} className="card ar-card" data-testid={`archetype-${a.slug}`} style={{ padding: 0 }}>
+            <ArchetypeThumb slug={a.slug} label={`${a.no}. ${a.name}`} />
+            <div className="ar-body">
+              <span className="fine">{a.category}</span>
+              <h2>{a.no}. {a.name}</h2>
+              <p className="fine">참고 구조: {a.inspired}</p>
+              <dl>
+                <dt>탐색</dt><dd>{a.nav}</dd>
+                <dt>서체</dt><dd>{a.type}</dd>
+                <dt>밀도</dt><dd>{a.density}</dd>
+              </dl>
             </div>
-            <div className={`dv dv-${d.key}`}><DashboardSample /></div>
-            <div className="dv-meta">
-              <div className="tags">{d.traits.map((t) => <span key={t} className="badge">{t}</span>)}</div>
-              <p className="fine">{d.fit}</p>
+            <div className="ar-foot">
+              <Link href={`/preview/${a.slug}`} className="btn btn-secondary btn-sm">전체 화면</Link>
+              <ChooseDirection name={`${a.no}. ${a.name}`} />
             </div>
-          </section>
+          </article>
         ))}
-      </div>
+      </section>
+
+      <section className="card" aria-labelledby="axes-title">
+        <div className="card-header">
+          <div><h2 id="axes-title">비교 축</h2><p>원형마다 일곱 가지 축을 나란히 놓았습니다. 표가 넓으면 옆으로 밀어 보세요.</p></div>
+        </div>
+        <div className="table-wrap ar-table-wrap">
+          <table className="grid-table ar-axes">
+            <thead>
+              <tr><th scope="col">원형</th>{AXES.map((x) => <th key={x.key} scope="col">{x.label}</th>)}</tr>
+            </thead>
+            <tbody>
+              {ARCHETYPES.map((a) => (
+                <tr key={a.slug}>
+                  <th scope="row"><Link href={`/preview/${a.slug}`}>{a.no}. {a.name}</Link><small>{a.category}</small></th>
+                  {AXES.map((x) => <td key={x.key}>{a[x.key]}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="fine">참고 제품의 로고·에셋·고유 화면은 쓰지 않고 구조 원리만 가져왔습니다. 조사 근거와 출처는 저장소의 docs/research/dashboard-rea-2026-11.md에 있습니다.</p>
+      </section>
     </>
   );
 }

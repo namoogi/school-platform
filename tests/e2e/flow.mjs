@@ -362,6 +362,50 @@ try {
     await shot(p, '11-platform-integrations.png');
     await ctxI.close();
   });
+
+  await step('24차: 디자인 원형 8종 — 비교표, 전체 화면 시안, 상호작용, 학교 사용자는 접근 불가', async () => {
+    const ctxD = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxD.newPage();
+    const errors = [];
+    p.on('pageerror', (e) => errors.push(String(e)));
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside >> text=디자인 원형');
+    await p.waitForURL(/\/admin\/design/);
+    assert.equal(await p.locator('[data-testid^=archetype-]').count(), 8);
+    assert.equal(await p.locator('table.ar-axes tbody tr').count(), 8);
+    for (const slug of ['campus', 'command', 'launchpad', 'analytics', 'workspace', 'public', 'grid', 'triage']) {
+      const res = await p.goto(`${BASE}/preview/${slug}`);
+      assert.equal(res.status(), 200, slug);
+      await p.waitForSelector(`[data-archetype=${slug}]`);
+      await p.waitForSelector('nav.pv-bar');
+      await shot(p, `24-${slug}.png`);
+    }
+    // 명령 팔레트: Ctrl+K로 열고 Esc로 닫는다
+    await p.goto(`${BASE}/preview/command`);
+    await p.keyboard.press('Control+k');
+    await p.waitForSelector('[role=dialog]');
+    await p.keyboard.press('Escape');
+    await p.waitForSelector('[role=dialog]', { state: 'detached' });
+    // 작업함: J로 다음 질문
+    await p.goto(`${BASE}/preview/triage`);
+    const first = await p.textContent('section[aria-label="질문 상세"] h2');
+    await p.keyboard.press('j');
+    await p.waitForFunction((t) => document.querySelector('section[aria-label="질문 상세"] h2')?.textContent !== t, first);
+    assert.deepEqual(errors, []);
+    await ctxD.close();
+
+    // 학교 사용자(전체 관리자 아님)는 시안 경로가 없다
+    const ctxS = await browser.newContext();
+    const s = await ctxS.newPage();
+    await login(s, 'admin-a@school-a.test', 'demo-pass-a');
+    const denied = await s.goto(`${BASE}/preview/campus`);
+    assert.equal(denied.status(), 404);
+    await ctxS.close();
+  });
 } catch (e) {
   exitCode = 1;
   console.error('\n서버 로그(마지막 2000자):\n' + serverLog.slice(-2000));
