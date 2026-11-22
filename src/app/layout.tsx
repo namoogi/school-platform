@@ -13,6 +13,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* 13차 서체 자산(Noto 계열 부분 집합, OFL). public/type-assets 참고 */}
         {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/type-fonts.css" />
+        {/* Pretendard (OFL) 동적 부분 집합: 페이지에 쓰인 글자 묶음만 받는다 */}
+        {/* eslint-disable-next-line @next/next/no-css-tags */}
+        <link rel="stylesheet" href="/fonts/pretendard/pretendardvariable-dynamic-subset.css" />
       </head>
       <body>{children}</body>
     </html>

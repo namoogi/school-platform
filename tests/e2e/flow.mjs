@@ -277,6 +277,91 @@ try {
     assert.match(text, /b-calendar-2027\.pdf.*내용을 읽음.*정확도 확인 필요.*표 1개, 3행/s);
     await shot(b, '07-b-intake-pdf.png');
   });
+
+  await step('16차: 학교 관리자 설정 — 좌석·기능·예상 금액, 초대, 좌석 초과 안내', async () => {
+    await a.goto(`${BASE}/settings`);
+    assert.match(await a.textContent('[data-testid=seat-usage]'), /좌석 1 \/ 5/);
+    await a.fill('[data-testid=license] input[type=number]', '2');
+    await a.click('text=라이선스 저장');
+    await a.waitForSelector('[data-testid=license] .tag:has-text("2판")');
+    await a.fill('input[aria-label="초대할 이메일"]', 'teacher1@school-a.test');
+    await a.click('[data-testid=members] button:text-is("초대")');
+    await a.waitForSelector('text=초대 대기');
+    assert.match(await a.textContent('[data-testid=seat-usage]'), /좌석 2 \/ 2/);
+    await a.fill('input[aria-label="초대할 이메일"]', 'teacher2@school-a.test');
+    await a.click('[data-testid=members] button:text-is("초대")');
+    await a.waitForSelector('[role=status]:has-text("좌석이 모두 찼습니다")');
+    await shot(a, '08-a-settings.png');
+  });
+
+  await step('16차: 전체 관리자 — 학교 현황, 학교 입장 기록, 학교 관리자에게 보임', async () => {
+    const ctxP = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxP.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    const table = await p.textContent('[data-testid=school-table]');
+    assert.match(table, /드리미 예시학교.*2 \/ 2.*Rungarun Example School/s);
+    await shot(p, '09-platform-admin.png');
+    await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('button:text-is("들어가기")').click();
+    await p.waitForURL(/\/intake$/);
+    assert.match(await p.textContent('header.top'), /전체 관리자로 보는 중/);
+    assert.equal(await p.textContent('[data-testid=school-name]'), '드리미 예시학교');
+    await a.goto(`${BASE}/settings`);
+    assert.match(await a.textContent('[data-testid=access-log]'), /예시 전체 관리자 \(전체 관리자\) · 전체 관리자 입장/);
+    // 학교 관리자는 전체 관리 화면을 열 수 없다
+    assert.equal((await a.goto(`${BASE}/admin`)).status(), 404);
+    await ctxP.close();
+  });
+
+  await step('17차: 개발·연구소 — 할 일 추가·완료, 종류별 탭', async () => {
+    const ctxL = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxL.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside >> text=개발·연구소');
+    await p.waitForURL(/\/admin\/lab$/);
+    assert.match(await p.textContent('[data-testid=lab-items]'), /AI 분석 프롬프트 설계/);
+    await p.fill('[data-testid=quick-add] input[aria-label="새 항목 제목"]', 'E2E 할 일 확인');
+    await p.click('[data-testid=quick-add] button[type=submit]');
+    const row = p.locator('[data-testid=lab-items] li', { hasText: 'E2E 할 일 확인' });
+    await row.waitFor();
+    await row.locator('input[aria-label="끝남 표시"]').check();
+    await row.waitFor({ state: 'detached' });
+    await p.click('[role=tab]:has-text("방법론")');
+    assert.match(await p.textContent('[data-testid=lab-items]'), /RLS 우선 설계/);
+    await p.click('[role=tab]:has-text("할 일")');
+    await shot(p, '10-platform-lab.png');
+    await ctxL.close();
+  });
+
+  await step('22차: 학교별 개발 연동 — GitHub 저장소 연결과 세션 요청 문구', async () => {
+    const ctxI = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxI.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside >> text=학교별 개발 연동');
+    await p.waitForURL(/\/admin\/integrations/);
+    await p.fill('[data-testid=add-link] input >> nth=0', 'E2E 전용 저장소');
+    await p.fill('[data-testid=add-link] input[aria-label="연동 주소"]', 'https://github.com/example-org/e2e-school');
+    await p.click('[data-testid=add-link] button:text-is("연동 추가")');
+    await p.waitForSelector('[data-testid=dev-links] >> text=E2E 전용 저장소');
+    assert.match(await p.textContent('pre.copy-box >> nth=0'), /school_id: [0-9a-f-]{36}[\s\S]*github\.com\/example-org\/e2e-school/);
+    await p.fill('[data-testid=add-link] input[aria-label="연동 주소"]', 'https://gitlab.com/x/y');
+    await p.fill('[data-testid=add-link] input >> nth=0', '잘못된 주소');
+    await p.click('[data-testid=add-link] button:text-is("연동 추가")');
+    await p.waitForSelector('[role=status]:has-text("GitHub 저장소 주소 형식")');
+    await shot(p, '11-platform-integrations.png');
+    await ctxI.close();
+  });
 } catch (e) {
   exitCode = 1;
   console.error('\n서버 로그(마지막 2000자):\n' + serverLog.slice(-2000));

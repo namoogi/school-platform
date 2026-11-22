@@ -13,7 +13,17 @@ export const MAX_FILE_BYTES = 2 * 1024 * 1024;
 export const MAX_FILES_PER_UPLOAD = 20;
 
 // ── 조회 타입 ─────────────────────────────────────────────
-export type School = { id: string; slug: string; name: string; locale: string };
+export type School = {
+  id: string; slug: string; name: string; locale: string; status: 'trial' | 'active' | 'suspended';
+  /** 이 학교에서의 역할. 전체 관리자가 소속 없이 들어온 경우 null */
+  role: 'admin' | 'teacher' | null;
+  isPlatformAdmin: boolean;
+  /** 학교 관리자 권한(확정·발행·설정). 전체 관리자 포함 */
+  isAdmin: boolean;
+  modules: string[];
+  seats: number | null;
+};
+export type Me = { id: string; email: string; display_name: string; is_platform_admin: boolean };
 export type SourceFile = {
   id: string; kind: 'file' | 'sheet'; name: string; mime_type: string | null; size_bytes: number | null;
   sha256: string | null; sheet_url: string | null; status: 'parsed' | 'registered' | 'pending_reader';
@@ -47,13 +57,72 @@ export type PublishedDocument = {
 };
 
 // ── 학교 ─────────────────────────────────────────────────
-/** 로그인한 사용자의 소속 학교. RLS 때문에 자기 소속만 보인다. */
-export async function currentSchool(db: Db): Promise<School> {
-  const { rows } = await db.query<School>(
-    `select s.id, s.slug, s.name, s.locale from public.memberships m
-     join public.schools s on s.id = m.school_id where m.user_id = app.uid() order by s.slug limit 1`);
-  if (!rows[0]) throw new NotFoundError('소속 학교가 없습니다.');
+export class NoSchoolError extends Error {}
+
+export async function me(db: Db): Promise<Me> {
+  const { rows } = await db.query<Me>('select * from app.me()');
+  if (!rows[0]) throw new NotFoundError('계정을 찾을 수 없습니다.');
   return rows[0];
+}
+
+/**
+ * 지금 작업 중인 학교. preferredId(전환한 학교)가 있으면 그 학교를, 없으면 첫 소속 학교를 쓴다.
+ * RLS 때문에 소속 학교(전체 관리자는 모든 학교)만 보인다.
+ */
+export async function currentSchool(db: Db, preferredId?: string | null): Promise<School> {
+  const account = await me(db);
+  const cols = `s.id, s.slug, s.name, s.locale, s.status,
+    (select m.role from public.memberships m where m.user_id = app.uid() and m.school_id = s.id) as role,
+    l.modules, l.seats`;
+  const join = `left join lateral (select x.modules, x.seats from public.school_licenses x
+    where x.school_id = s.id order by x.version desc limit 1) l on true`;
+  let row: Record<string, unknown> | undefined;
+  if (preferredId && isUuid(preferredId)) {
+    row = (await db.query(`select ${cols} from public.schools s ${join} where s.id = $1`, [preferredId])).rows[0];
+  }
+  if (!row) {
+    row = (await db.query(
+      `select ${cols} from public.memberships m join public.schools s on s.id = m.school_id ${join}
+       where m.user_id = app.uid() order by s.slug limit 1`)).rows[0];
+  }
+  if (!row) {
+    if (account.is_platform_admin) throw new NoSchoolError('작업할 학교를 고르세요.');
+    throw new NotFoundError('소속 학교가 없습니다.');
+  }
+  if (row.status === 'suspended' && !account.is_platform_admin) {
+    throw new ValidationError('이용이 중지된 학교입니다. 전체 관리자에게 문의하세요.');
+  }
+  const role = (row.role as School['role']) ?? null;
+  return {
+    id: row.id as string, slug: row.slug as string, name: row.name as string, locale: row.locale as string,
+    status: row.status as School['status'], role, isPlatformAdmin: account.is_platform_admin,
+    isAdmin: account.is_platform_admin || role === 'admin',
+    modules: (row.modules as string[] | null) ?? [], seats: (row.seats as number | null) ?? null,
+  };
+}
+
+/** 학사 흐름 단계 표시용: 자료가 있는지, 확정 규칙이 있는지, 발행본이 있는지 */
+export async function flowProgress(db: Db, schoolId: string) {
+  const { rows: [r] } = await db.query(
+    `select exists(select 1 from public.source_files where school_id = $1 and archived_at is null and status = 'parsed') as sources,
+            exists(select 1 from public.school_rules where school_id = $1) as rule,
+            exists(select 1 from public.published_documents where school_id = $1) as docs`, [schoolId]);
+  const done: string[] = [];
+  if (r.sources) done.push('intake');
+  if (r.rule) done.push('review');
+  if (r.docs) done.push('documents');
+  return done;
+}
+
+/** 학교 전환기용: 볼 수 있는 학교(소속 학교, 전체 관리자는 모든 학교) */
+export async function accessibleSchools(db: Db) {
+  const { rows } = await db.query<{ id: string; name: string; status: string }>(
+    'select id, name, status from public.schools order by name');
+  return rows;
+}
+
+export function hasModule(school: School, key: 'intake' | 'records') {
+  return school.modules.includes(key);
 }
 
 // ── 자료 ─────────────────────────────────────────────────
