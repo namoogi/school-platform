@@ -33,7 +33,7 @@
 .sources li { display: flex; gap: 8px; align-items: center; padding: 6px 10px; color: var(--t-ink-2); font-size: 13px; }
 .sources li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hint { margin-top: auto; padding: 8px 10px; font-size: 12px; color: var(--t-ink-3); }
-kbd { font-family: var(--t-mono); font-size: 11px; border: 1px solid var(--t-line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; margin-right: 3px; background: var(--t-bg); color: var(--t-ink-2); }
+.root kbd { font-family: var(--t-mono); font-size: 11px; border: 1px solid var(--t-line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; margin-right: 3px; background: var(--t-bg); color: var(--t-ink-2); }
 
 /* 2단: 목록 */
 .list { border-right: 1px solid var(--t-line); overflow: auto; background: var(--t-bg); }
@@ -62,15 +62,15 @@ kbd { font-family: var(--t-mono); font-size: 11px; border: 1px solid var(--t-lin
 /* 3단: 상세 */
 .detail { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; background: var(--t-bg-sub); }
 .detailHead { padding: 20px 32px 16px; background: var(--t-bg); border-bottom: 1px solid var(--t-line); }
-.crumb { font-family: var(--t-mono); font-size: 12px; color: var(--t-ink-3); }
+.crumb { font-size: 12px; color: var(--t-ink-3); }
 .detailHead h2 { font-size: 22px; line-height: 1.35; font-weight: 700; margin: 6px 0 10px; max-width: 46ch; }
 .tags { display: flex; gap: 6px; }
 .detailBody { overflow: auto; padding: 24px 32px; max-width: 880px; }
 .detailBody h3 { font-size: 13px; font-weight: 600; color: var(--t-ink-2); margin: 0 0 8px; }
 .evidence { margin: 0 0 24px; border: 1px solid var(--t-line); border-radius: 8px; background: var(--t-bg); overflow: hidden; }
 .evidence figcaption { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--t-line); font-size: 12px; color: var(--t-ink-2); background: var(--t-bg-sub); }
-.evidence figcaption span { margin-left: auto; font-family: var(--t-mono); color: var(--t-ink-3); }
-.evidence blockquote { margin: 0; padding: 14px 16px; font-family: var(--t-mono); font-size: 13px; line-height: 1.7; border-left: 3px solid var(--t-warning); }
+.evidence figcaption span { margin-left: auto; color: var(--t-ink-3); }
+.evidence blockquote { margin: 0; padding: 14px 16px; font-size: 14px; line-height: 1.7; border-left: 3px solid var(--t-warning); }
 .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
 .compare > div { padding: 14px 16px; border: 1px solid var(--t-line); border-radius: 8px; background: var(--t-bg); }
 .compare p { margin: 0; }

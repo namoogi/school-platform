@@ -29,7 +29,7 @@
   font-family: var(--w-sans); font-size: 16px; line-height: 1.7; color: var(--w-ink);
   background: var(--w-bg);
 }
-.root a { color: inherit; }
+:where(.root) a { color: inherit; }
 .root :focus-visible { outline: 2px solid var(--w-focus); outline-offset: 2px; border-radius: 4px; }
 
 /* 페이지 트리 사이드바 */

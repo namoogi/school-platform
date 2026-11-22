@@ -62,7 +62,7 @@
 .segment button { height: 28px; min-width: 52px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-weight: 600; color: var(--a-ink-2); cursor: pointer; }
 .segment button:hover { color: var(--a-ink); background: var(--a-panel-raised); }
 .segment button[aria-pressed='true'] { background: var(--a-accent); color: var(--a-on-accent); }
-.select { display: inline-flex; align-items: center; gap: 8px; color: var(--a-ink-3); font-weight: 600; }
+.select { display: inline-flex; align-items: center; gap: 8px; color: var(--a-ink-3); font-weight: 600; white-space: nowrap; }
 .select select { height: 32px; padding: 0 28px 0 10px; border: 1px solid var(--a-line-strong); border-radius: 8px; background: var(--a-panel); font: inherit; font-weight: 500; color: var(--a-ink); cursor: pointer; }
 .refresh { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--a-line-strong); border-radius: 8px; background: var(--a-panel); font: inherit; font-weight: 600; color: var(--a-ink); cursor: pointer; }
 .refresh:hover { background: var(--a-panel-raised); }
