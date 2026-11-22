@@ -4,7 +4,7 @@
 
 | 상태 | 작업 | 범위·완료 기준 |
 | --- | --- | --- |
-| 자동 허용 | 세션·에이전트 연결 방법론·도구 조사 (REA) | Claude 세션 간 메시지·예약 작업·Remote Control, GitHub(이슈·PR·@codex)를 허브로 쓰는 방식, MCP, 에이전트 간 프로토콜 등 비교. 출처 URL 필수. 결과는 `docs/research/session-connect-*.md` + 결정 기록 초안 `docs/decisions/0004-…`(상태: 제안). 코드 변경 없음 |
+| 자동 허용 | 세션·에이전트 연결 방법론·도구 조사 (REA) | Claude 세션 간 메시지·예약 작업·Remote Control, GitHub(이슈·PR·@codex)를 허브로 쓰는 방식, MCP, 에이전트 간 프로토콜 등 비교. 요즘IT 4043 글(관제·개발 세션 분리, 이슈 생성 규칙, 세션 시작·종료 스킬, 도구 이중화)의 적용 결과도 평가. 결정할 것: ① 작업 단위를 이 대기열에서 GitHub 이슈(라벨 `auto-ok`)로 옮길지 ② 저위험 PR(문서·테스트만, CI 통과 + Codex 승인)의 자동 병합 허용 여부(사용자 결정 필요). 출처 URL 필수. 결과는 `docs/research/session-connect-*.md` + 결정 기록 초안 `docs/decisions/0004-…`(상태: 제안). 코드 변경 없음 |
 | 자동 허용 | 접근성 자동 검사(axe)를 E2E에 추가 | 개발 의존성 추가, 심각도 serious 이상 0건을 E2E 단계로. 위반이 있으면 고치거나 목록으로 보고 |
 | 자동 허용 | DataTable 컴포넌트 (정렬·빈 상태·밀도) | `src/components/`에 추가하고 전체 관리 학교 표와 설정 표에 적용. DB 변경 없음 |
 | 자동 허용 | 다크 테마 토큰 | 보고서 §5.1 다크 초안으로 의미 토큰만 재정의(`prefers-color-scheme`), 대비 계산 기록 |
