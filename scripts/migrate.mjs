@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { pgOptions } from './pg-options.mjs';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -18,7 +19,7 @@ if (reset && !['localhost', '127.0.0.1', '::1'].includes(host)) {
   process.exit(1);
 }
 
-const client = new pg.Client({ connectionString: url });
+const client = new pg.Client(pgOptions(url));
 await client.connect();
 try {
   if (reset) {
@@ -33,26 +34,30 @@ try {
     `);
     console.log('로컬 DB 초기화');
   }
-  await client.query(`create schema if not exists _migrations;
-    create table if not exists _migrations.applied (name text primary key, applied_at timestamptz not null default now());`);
   const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations');
   const files = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
-  const { rows } = await client.query('select name from _migrations.applied');
-  const done = new Set(rows.map((r) => r.name));
+  // Preview·Production 빌드가 동시에 돌 수 있으므로 파일마다 트랜잭션 잠금 안에서 적용 여부를 확인한다.
+  // (Supabase transaction pooler에서는 세션 잠금이 안전하지 않아 xact 잠금을 쓴다)
+  let applied = 0;
   for (const f of files) {
-    if (done.has(f)) continue;
-    const sql = fs.readFileSync(path.join(dir, f), 'utf8');
     await client.query('begin');
     try {
-      await client.query(sql);
+      await client.query("select pg_advisory_xact_lock(hashtext('school-platform:migrate'))");
+      await client.query(`create schema if not exists _migrations;
+        create table if not exists _migrations.applied (name text primary key, applied_at timestamptz not null default now());`);
+      const { rowCount } = await client.query('select 1 from _migrations.applied where name = $1', [f]);
+      if (rowCount) { await client.query('commit'); continue; }
+      await client.query(fs.readFileSync(path.join(dir, f), 'utf8'));
       await client.query('insert into _migrations.applied(name) values ($1)', [f]);
       await client.query('commit');
+      applied++;
       console.log('적용:', f);
     } catch (e) {
       await client.query('rollback');
       throw new Error(`${f}: ${e.message}`);
     }
   }
+  if (!applied) console.log('새로 적용할 마이그레이션 없음');
   console.log('마이그레이션 완료');
 } finally {
   await client.end();

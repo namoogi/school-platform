@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { pgOptions } from '../../scripts/pg-options.mjs';
 
 // 앱 전체에서 하나의 커넥션 풀을 쓴다. (Next 개발 서버의 핫리로드에서도 재사용)
 const globalForPool = globalThis as unknown as { __schoolPlatformPool?: pg.Pool };
@@ -7,7 +8,7 @@ export function getPool(): pg.Pool {
   if (!globalForPool.__schoolPlatformPool) {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error('DATABASE_URL 이 설정되지 않았습니다.');
-    globalForPool.__schoolPlatformPool = new pg.Pool({ connectionString, max: 5 });
+    globalForPool.__schoolPlatformPool = new pg.Pool({ ...pgOptions(connectionString), max: 5 });
   }
   return globalForPool.__schoolPlatformPool;
 }

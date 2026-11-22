@@ -2,6 +2,7 @@
 // 실제 학생·교직원 정보는 넣지 않는다.
 import crypto from 'node:crypto';
 import pg from 'pg';
+import { pgOptions } from './pg-options.mjs';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -30,10 +31,12 @@ const schools = [
   },
 ];
 
-const client = new pg.Client({ connectionString: url });
+const client = new pg.Client(pgOptions(url));
 await client.connect();
 try {
   await client.query('begin');
+  // 동시에 도는 빌드끼리 같은 시드를 겹쳐 넣지 않도록 잠근다.
+  await client.query("select pg_advisory_xact_lock(hashtext('school-platform:seed'))");
   for (const s of schools) {
     const { rows: [school] } = await client.query(
       `insert into public.schools(slug, name, locale) values ($1,$2,$3)
