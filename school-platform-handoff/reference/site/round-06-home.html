@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>룽아룬숙사 · 학교 홈페이지 시안</title>
+<link rel="stylesheet" href="homepage-r03.css">
+<script src="homepage-r03.js" defer></script>
+</head>
+<body>
+<div id="admin-bar" class="admin-bar" hidden>
+  <div class="container utilities">
+    <span class="role">관리자 미리보기</span>
+    <div class="utilities-actions">
+      <button type="button" id="edit-mode" aria-pressed="false">페이지 편집</button>
+      <a href="round-06-admin.html#requests" target="_blank" rel="noopener" title="새 탭에서 열기">개선 요청 판</a>
+      <a href="round-06-admin.html#academics" target="_blank" rel="noopener" title="새 탭에서 열기">관리자 모드</a><a href="round-06.html" target="_blank" rel="noopener" title="새 탭에서 열기">학교 제도 분석</a>
+      <button id="logout" type="button">관리자 보기 종료</button>
+    </div>
+  </div>
+</div>
+<header class="site-head">
+  <div class="container site-nav">
+    <a class="brand" href="#top"><span class="mark" aria-hidden="true">RA</span><span><strong>룽아룬숙사</strong><small>Rung Arun Suksa School</small></span></a>
+    <nav aria-label="홈페이지 메뉴"><a href="#school">학교 소개</a><a href="#news">학교 소식</a></nav>
+  </div>
+</header>
+<main id="top">
+  <section class="hero editable" aria-labelledby="hero-title">
+    <div class="container hero-inner">
+      <div><p class="thai" lang="th">โรงเรียนรุ้งอรุณศึกษา</p><h1 id="hero-title" data-content="heroTitle"></h1><p class="lead" data-content="heroText"></p><a class="cta" href="#school">학교 소개</a></div>
+      <div class="hero-art" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+    <button class="edit-button" type="button" data-edit="hero" hidden>첫 화면 수정</button>
+  </section>
+  <div class="container content">
+    <section id="school" class="intro editable">
+      <h2 data-content="introTitle"></h2><p data-content="introText"></p>
+      <button class="edit-button" type="button" data-edit="intro" hidden>소개 수정</button>
+    </section>
+    <section id="news" aria-labelledby="news-heading" class="news">
+      <h2 id="news-heading">학교 소식</h2>
+      <article class="news-item editable">
+        <p class="kind">행사 안내</p><h3 data-content="newsTitle"></h3><p data-content="newsText"></p>
+        <button class="edit-button" type="button" data-edit="news" hidden>소식 수정</button>
+      </article>
+    </section>
+  </div>
+</main>
+<footer><div class="container footer-row">
+  <div><strong>룽아룬숙사</strong><span>학교 플랫폼 6차 시안</span></div>
+  <nav aria-label="시안 탐색"><a href="round-01.html" target="_blank" rel="noopener" title="새 탭에서 열기">1차</a><a href="round-02.html" target="_blank" rel="noopener" title="새 탭에서 열기">2차</a><button type="button" id="login">관리자 로그인 시연</button></nav>
+</div></footer>
+<dialog id="edit-dialog" aria-labelledby="edit-title">
+  <form id="edit-form">
+    <div class="dialog-head"><h2 id="edit-title">페이지 편집</h2><button type="button" id="cancel-edit" aria-label="닫기">×</button></div>
+    <label>제목<input name="title" required maxlength="100"></label>
+    <label>본문<textarea name="body" required maxlength="500" rows="4"></textarea></label>
+    <p id="edit-error" role="alert"></p>
+    <button type="submit" class="cta">시안에 저장</button>
+  </form>
+</dialog>
+<div id="status" role="status"></div>
+</body>
+</html>

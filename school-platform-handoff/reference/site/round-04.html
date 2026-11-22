@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>학사 설계 · 학교 운영 플랫폼</title>
+<link rel="stylesheet" href="academic-design-r04.css">
+<script defer src="academic-design-r04.js"></script>
+</head>
+<body>
+<div class="layout">
+<aside>
+  <a class="brand" href="round-04.html"><span>學</span><div><strong>학교 운영 플랫폼</strong><small>학사 운영</small></div></a>
+  <nav aria-label="플랫폼"><a href="round-04.html" aria-current="page">학사 설계</a><a href="round-04-admin.html#academics" target="_blank" rel="noopener" title="새 탭에서 열기">학사 운영</a><a href="round-04-home.html" target="_blank" rel="noopener" title="새 탭에서 열기">학교 홈페이지</a><a href="round-04-admin.html#requests" target="_blank" rel="noopener" title="새 탭에서 열기">개선 요청 판</a></nav>
+  <div class="versions"><a href="round-01.html" target="_blank" rel="noopener" title="새 탭에서 열기">1차</a><a href="round-02.html" target="_blank" rel="noopener" title="새 탭에서 열기">2차</a><a href="round-03.html" target="_blank" rel="noopener" title="새 탭에서 열기">3차</a><span aria-current="page">4차</span></div>
+</aside>
+<div class="workspace">
+  <header class="top"><span>학사 운영 / 학사 설계</span><span class="tag">4차 · 가상 자료</span></header>
+  <main>
+    <div class="page-head"><div><h1>학사 설계</h1><p>학교 운영 규칙을 확인하고 기본 학사 엔진에 연결합니다.</p></div>
+      <label for="scenario">예시 학교 운영 방식<select id="scenario"><option value="class">학급·교과 중심</option><option value="project">선택수업·프로젝트 중심</option><option value="international">3텀·순환 시간표</option></select></label>
+    </div>
+    <div id="profile"></div>
+    <nav class="steps" aria-label="학사 설계 단계">
+      <button type="button" data-page="analysis">자료 분석</button><button type="button" data-page="mapping">엔진 연결</button><button type="button" data-page="simulation">표본 검증</button><button type="button" data-page="release">프로필 적용</button>
+    </nav>
+    <div id="panel"></div>
+  </main>
+</div>
+</div>
+<div id="notice" role="status"></div>
+</body>
+</html>
