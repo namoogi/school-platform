@@ -19,10 +19,28 @@ export function parseDbUrl(connectionString) {
   if (!['postgres:', 'postgresql:'].includes(url.protocol)) {
     throw new Error('DATABASE_URL 은 postgresql:// 로 시작해야 합니다. (보안을 위해 값은 출력하지 않음)');
   }
-  if (/YOUR-PASSWORD/i.test(decodeURIComponent(url.password))) {
-    throw new Error('DATABASE_URL 의 [YOUR-PASSWORD] 부분을 실제 DB 비밀번호로 바꿔야 합니다.');
+  // DATABASE_PASSWORD 가 있으면 주소의 비밀번호 자리를 그 값으로 바꾼다.
+  // (Supabase에서 복사한 주소를 [YOUR-PASSWORD] 그대로 두고, 비밀번호는 특수문자 변환 없이 따로 넣을 수 있다)
+  const separate = process.env.DATABASE_PASSWORD;
+  if (separate) {
+    url.password = encodeURIComponent(separate);
+    return url;
+  }
+  const pw = safeDecode(url.password);
+  if (/YOUR-PASSWORD/i.test(pw)) {
+    throw new Error('DATABASE_URL 에 [YOUR-PASSWORD] 가 그대로 있습니다. DATABASE_PASSWORD 변수에 DB 비밀번호를 넣으세요.');
+  }
+  if (/^\[.*\]$/.test(pw)) {
+    throw new Error('DATABASE_URL 의 비밀번호가 대괄호 [ ] 로 감싸져 있습니다. 대괄호를 지우거나 DATABASE_PASSWORD 변수를 쓰세요.');
+  }
+  if (/^\s|\s$/.test(pw)) {
+    throw new Error('DATABASE_URL 의 비밀번호 앞뒤에 공백이 있습니다.');
   }
   return url;
+}
+
+function safeDecode(v) {
+  try { return decodeURIComponent(v); } catch { return v; }
 }
 
 export function pgOptions(connectionString) {

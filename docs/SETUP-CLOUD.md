@@ -13,11 +13,11 @@ GitHub 저장소, Vercel 프로젝트, Supabase 프로젝트는 드리미포털�
 
 ## 1. Supabase에서 연결 문자열 복사
 
-1. 새 프로젝트 대시보드 위쪽의 **Connect** 버튼을 누릅니다.
-2. **Transaction pooler** 연결 문자열(포트 `6543`)을 복사합니다. 형태: `postgresql://postgres.<프로젝트ref>:[YOUR-PASSWORD]@aws-0-<리전>.pooler.supabase.com:6543/postgres`
-3. `[YOUR-PASSWORD]`를 프로젝트를 만들 때 정한 DB 비밀번호로 바꿉니다. 비밀번호를 잊었으면 Project Settings → Database에서 재설정합니다.
+1. 새 프로젝트 대시보드 위쪽의 **Connect** 버튼 → **Direct (Connection string)** → **Transaction pooler**(포트 `6543`)를 고릅니다.
+2. 나온 주소를 **그대로** 복사합니다. `[YOUR-PASSWORD]`는 고치지 않습니다. 형태: `postgresql://postgres.<프로젝트ref>:[YOUR-PASSWORD]@aws-1-<리전>.pooler.supabase.com:6543/postgres`
+3. DB 비밀번호는 아래 `DATABASE_PASSWORD` 변수에 따로 넣습니다. 특수문자 변환이 필요 없습니다. 비밀번호를 잊었으면 Project Settings → Database → Reset database password에서 새로 정합니다.
 
-대시보드 메뉴 이름은 바뀔 수 있습니다. 찾기 어려우면 Project Settings → Database에서 Connection string을 찾습니다.
+(주소 안에 비밀번호를 직접 넣는 방식도 동작합니다. 이때는 대괄호를 지우고 `@`·`#`·`/`·`%` 같은 특수문자를 `%40` 등으로 바꿔야 합니다.)
 
 ## 2. Vercel 환경 변수 (Project Settings → Environment Variables)
 
@@ -25,7 +25,8 @@ Production과 Preview 둘 다에 체크합니다.
 
 | 이름 | 값 |
 | --- | --- |
-| `DATABASE_URL` | 1번에서 만든 Transaction pooler 연결 문자열 |
+| `DATABASE_URL` | 1번에서 복사한 Transaction pooler 주소 그대로 (`[YOUR-PASSWORD]` 포함) |
+| `DATABASE_PASSWORD` | Supabase DB 비밀번호 (원문 그대로) |
 | `SEED_PASSWORD_A` | 예시 관리자 A의 새 비밀번호 (10자 이상, `demo-pass`로 시작하지 않음) |
 | `SEED_PASSWORD_B` | 예시 관리자 B의 새 비밀번호 (같은 조건) |
 
