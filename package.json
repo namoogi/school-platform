@@ -1,0 +1,31 @@
+{
+  "name": "school-platform",
+  "version": "0.14.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:seed": "node scripts/seed.mjs",
+    "db:reset": "node scripts/migrate.mjs --reset && node scripts/seed.mjs",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e/flow.mjs"
+  },
+  "dependencies": {
+    "next": "^16.4.6",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.1"
+  }
+}
