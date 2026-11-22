@@ -1,28 +1,30 @@
 import { loadForPage } from '@/lib/page';
-import { listRules, openQuestion } from '@/lib/services';
+import { flowProgress, listRules, openQuestion } from '@/lib/services';
+import { EmptyState, LEARNING_STEPS, PageHeader, Steps, StatusBadge } from '@/components/ui';
 import { ReviewClient } from './ReviewClient';
 import { PeriodTable } from '@/components/PeriodTable';
 
 export default async function ReviewPage() {
-  const { question, rules, school } = await loadForPage(async ({ db, school }) => ({
+  const { question, rules, school, done } = await loadForPage(async ({ db, school }) => ({
     question: await openQuestion(db, school.id),
     rules: await listRules(db, school.id),
+    done: await flowProgress(db, school.id),
   }), { module: 'intake' });
   const current = rules[0];
   return (
     <>
-      <div className="page-head">
-        <div><h1>관리자 확인</h1><p>자료에서 추정한 내용과 근거 행을 보고 확인하거나 고칩니다. 확정한 값은 새 버전으로 저장됩니다.</p></div>
-      </div>
+      <PageHeader title="관리자 확인" crumbs={[{ label: '학사 운영' }, { label: '관리자 확인' }]}
+        description="자료에서 추정한 내용과 근거 행을 보고 확인하거나 고칩니다. 확정한 값은 새 판으로 저장되고 이전 판은 남습니다."
+        status={question ? <StatusBadge tone="warning" dot>확인 대기</StatusBadge> : current ? <StatusBadge tone="success" dot>확정됨 · {current.version}판</StatusBadge> : <StatusBadge>확정 전</StatusBadge>}>
+        <Steps current="review" done={done} items={LEARNING_STEPS} />
+      </PageHeader>
       <div className="review-grid">
         <section className="card" data-testid="question">
           {question
             ? <ReviewClient question={JSON.parse(JSON.stringify(question))} currentVersion={current?.version ?? null} canConfirm={school.isAdmin} />
-            : <>
-                <h2>확인할 질문이 없습니다</h2>
-                <p className="muted">{current ? '확정한 규칙이 현재 자료와 일치합니다. 자료를 더 올리면 다시 분석합니다.' : '학사력이나 평가 자료를 먼저 첨부해 주세요.'}</p>
-                <a className="button secondary" href="/intake">자료 첨부로</a>
-              </>}
+            : <EmptyState title="확인할 질문이 없습니다" action={<a className="btn btn-secondary" href="/intake">자료 첨부로</a>}>
+                {current ? '확정한 규칙이 현재 자료와 일치합니다. 자료를 더 올리면 다시 분석합니다.' : '학사력이나 평가 자료를 먼저 첨부해 주세요.'}
+              </EmptyState>}
         </section>
         <section className="card">
           <div className="between"><h2>확정한 학기 규칙</h2>{current && <span className="tag green">{current.version}판 사용 중</span>}</div>

@@ -1,6 +1,7 @@
 import { loadForPlatform } from '@/lib/page';
 import { accessLog, catalog, overview, statements } from '@/lib/admin';
-import { EnterSchoolButton } from '@/components/SchoolSwitch';
+import { EnterSchoolButton } from '@/components/SchoolSwitcher';
+import { Kpi, PageHeader, StatusBadge } from '@/components/ui';
 import { CreateSchoolForm, PriceForm, SchoolActions } from './AdminClient';
 
 const won = (n: number | null) => (n == null ? '—' : `${n.toLocaleString('ko-KR')}원`);
@@ -8,7 +9,7 @@ const STATUS: Record<string, string> = { trial: '시범', active: '운영', susp
 const ACTION: Record<string, string> = {
   'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
   'member.remove': '구성원 제외', 'member.invite_revoke': '초대 취소', 'school.create': '학교 생성', 'school.status': '학교 상태 변경',
-  'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경',
+  'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경', 'devlink.add': '개발 연동 추가', 'devlink.update': '개발 연동 변경',
 };
 
 export default async function AdminPage() {
@@ -23,36 +24,36 @@ export default async function AdminPage() {
   const fmt = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
   return (
     <>
-      <div className="page-head"><div><h1>전체 관리</h1><p>학교를 만들고 라이선스·상태·가격·청구를 관리합니다. 학교에 들어가면 그 학교 화면을 그대로 볼 수 있고, 입장은 학교 기록에 남습니다.</p></div></div>
-      <div className="summary" data-testid="platform-summary">
-        <strong>현황</strong>
-        <span className="tag">학교 {schools.length}곳</span>
-        <span className="tag">좌석 {totalSeats}석</span>
-        <span className="tag green">월 청구 예정 {won(monthly)}</span>
-        <span className="tag amber">확인 대기 질문 {schools.reduce((n, s) => n + s.open_questions, 0)}건</span>
+      <PageHeader title="학교·라이선스" crumbs={[{ label: '전체 관리' }, { label: '학교·라이선스' }]}
+        description="학교를 만들고 라이선스·상태·가격·청구를 관리합니다. 학교에 들어가면 그 학교 화면을 그대로 볼 수 있고, 입장은 학교 기록에 남습니다." />
+      <div className="kpis" data-testid="platform-summary">
+        <Kpi label="학교" value={`${schools.length}곳`} hint={`시범 ${schools.filter((s) => s.status === 'trial').length} · 이용 중지 ${schools.filter((s) => s.status === 'suspended').length}`} />
+        <Kpi label="좌석" value={`${totalSeats}석`} hint={`사용 ${schools.reduce((n, s) => n + s.seats_used, 0)}석`} />
+        <Kpi label="월 청구 예정" value={won(monthly)} hint="이용 중지 학교 제외" />
+        <Kpi label="확인 대기 질문" value={`${schools.reduce((n, s) => n + s.open_questions, 0)}건`} tone={schools.some((s) => s.open_questions) ? 'warning' : undefined} />
       </div>
       <section className="card">
-        <h2>학교</h2>
-        <div className="table-scroll">
+        <div className="card-header"><h2>학교</h2><span className="fine">{schools.length}곳</span></div>
+        <div className="table-wrap">
           <table className="grid-table" data-testid="school-table">
-            <thead><tr><th>학교</th><th>상태</th><th>좌석</th><th>기능</th><th>월 예정액</th><th>자료·문서·질문</th><th></th></tr></thead>
+            <thead><tr><th scope="col">학교</th><th scope="col">상태</th><th scope="col" className="num">좌석</th><th scope="col">기능</th><th scope="col" className="num">월 예정액</th><th scope="col" className="num">자료·문서·질문</th><th scope="col"><span className="sr-only">동작</span></th></tr></thead>
             <tbody>
               {schools.map((s) => (
                 <tr key={s.id}>
                   <td><strong>{s.name}</strong><br /><small className="muted">{s.slug} · {s.locale}</small></td>
-                  <td>{STATUS[s.status]}</td>
-                  <td>{s.seats_used} / {s.seats ?? '—'}</td>
+                  <td><StatusBadge tone={s.status === 'active' ? 'success' : s.status === 'trial' ? 'info' : 'danger'}>{STATUS[s.status]}</StatusBadge></td>
+                  <td className="num">{s.seats_used} / {s.seats ?? '—'}</td>
                   <td>{(s.modules ?? []).map((k) => moduleName[k] ?? k).join(', ')}</td>
-                  <td>{won(s.monthly_estimate_krw)}</td>
-                  <td>{s.sources} · {s.documents} · {s.open_questions}</td>
-                  <td className="actions"><EnterSchoolButton schoolId={s.id} /><SchoolActions schoolId={s.id} status={s.status} period={period} /></td>
+                  <td className="num">{won(s.monthly_estimate_krw)}</td>
+                  <td className="num">{s.sources} · {s.documents} · {s.open_questions ? <StatusBadge tone="warning">{s.open_questions}</StatusBadge> : 0}</td>
+                  <td><div className="actions"><EnterSchoolButton schoolId={s.id} /><SchoolActions schoolId={s.id} status={s.status} period={period} /></div></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
-      <div className="settings-grid">
+      <div className="grid-2">
         <section className="card"><CreateSchoolForm modules={JSON.parse(JSON.stringify(modules))} /></section>
         <section className="card"><PriceForm modules={JSON.parse(JSON.stringify(modules))} /></section>
         <section className="card">

@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Invitation, License, Member, Module } from '@/lib/admin';
+import { Meter } from '@/components/ui';
 
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
@@ -73,6 +74,7 @@ export function MembersPanel({ members, invitations, seats, used }: { members: M
   return (
     <>
       <div className="between"><h2>구성원</h2><span className={`tag ${used >= seats ? 'amber' : ''}`} data-testid="seat-usage">좌석 {used} / {seats}</span></div>
+      <Meter value={used} max={seats} label="좌석 사용 (구성원 + 대기 중 초대)" />
       <ul className="sources">
         {members.map((m) => (
           <li key={m.user_id}><div><strong>{m.display_name}</strong><small className="muted">{m.email} · {ROLE[m.role]}</small></div>

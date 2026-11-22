@@ -1,21 +1,25 @@
 import Link from 'next/link';
 import { loadForPage } from '@/lib/page';
-import { buildSnapshot, latestRule, latestTemplate, listDocuments } from '@/lib/services';
+import { buildSnapshot, flowProgress, latestRule, latestTemplate, listDocuments } from '@/lib/services';
+import { LEARNING_STEPS, PageHeader, Steps, StatusBadge } from '@/components/ui';
 import { DocumentPaper } from '@/components/DocumentPaper';
 import { PublishButton, TemplateForm } from './DocumentsClient';
 
 export default async function DocumentsPage() {
-  const { rule, template, docs, preview, school } = await loadForPage(async ({ db, school }) => {
+  const { rule, template, docs, preview, school, done } = await loadForPage(async ({ db, school }) => {
     const rule = await latestRule(db, school.id);
     const template = await latestTemplate(db, school.id);
     const preview = rule && template ? await buildSnapshot(db, school, rule, template, { number: 1, of: null }) : null;
-    return { rule, template, docs: await listDocuments(db, school.id), preview };
+    return { rule, template, docs: await listDocuments(db, school.id), preview, done: await flowProgress(db, school.id) };
   }, { module: 'records' });
   return (
     <>
-      <div className="page-head">
-        <div><h1>학사 문서실</h1><p>확정한 학기 규칙과 현재 양식으로 문서를 발행합니다. 발행본은 당시 값을 그대로 보관합니다.</p></div>
-      </div>
+      <PageHeader title="학사 문서실" crumbs={[{ label: '학사 운영' }, { label: '학사 문서실' }]}
+        description="확정한 학기 규칙과 현재 양식으로 문서를 발행합니다. 발행본은 당시 값을 그대로 보관합니다."
+        meta={<><span>발행 {docs.length}건</span>{rule && <span>규칙 {rule.version}판</span>}{template && <span>양식 {template.version}판</span>}</>}
+        status={rule ? undefined : <StatusBadge tone="warning">규칙 확정 전</StatusBadge>}>
+        <Steps current="documents" done={done} items={LEARNING_STEPS} />
+      </PageHeader>
       <div className="docs-grid">
         <div className="stack">
           <section className="card">

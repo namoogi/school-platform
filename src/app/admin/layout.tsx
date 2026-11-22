@@ -1,13 +1,14 @@
 import { loadForPlatform } from '@/lib/page';
-import { Shell } from '@/components/Shell';
+import { accessibleSchools } from '@/lib/services';
+import { platformGroup, Shell } from '@/components/Shell';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { account } = await loadForPlatform(async () => ({}));
+  const { account, schools } = await loadForPlatform(async ({ db }) => ({ schools: await accessibleSchools(db) }));
   return (
-    <Shell title="전체 관리" subtitle={account.display_name} tag="전체 관리자" platform
-      items={[{ href: '/admin', label: '학교·라이선스' }]}>
+    <Shell account={{ name: account.display_name, isPlatformAdmin: true }} current={null} schools={schools}
+      groups={[platformGroup]} roleLabel="전체 관리자">
       {children}
     </Shell>
   );
