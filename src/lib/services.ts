@@ -101,6 +101,26 @@ export async function currentSchool(db: Db, preferredId?: string | null): Promis
   };
 }
 
+/** 학사 흐름 단계 표시용: 자료가 있는지, 확정 규칙이 있는지, 발행본이 있는지 */
+export async function flowProgress(db: Db, schoolId: string) {
+  const { rows: [r] } = await db.query(
+    `select exists(select 1 from public.source_files where school_id = $1 and archived_at is null and status = 'parsed') as sources,
+            exists(select 1 from public.school_rules where school_id = $1) as rule,
+            exists(select 1 from public.published_documents where school_id = $1) as docs`, [schoolId]);
+  const done: string[] = [];
+  if (r.sources) done.push('intake');
+  if (r.rule) done.push('review');
+  if (r.docs) done.push('documents');
+  return done;
+}
+
+/** 학교 전환기용: 볼 수 있는 학교(소속 학교, 전체 관리자는 모든 학교) */
+export async function accessibleSchools(db: Db) {
+  const { rows } = await db.query<{ id: string; name: string; status: string }>(
+    'select id, name, status from public.schools order by name');
+  return rows;
+}
+
 export function hasModule(school: School, key: 'intake' | 'records') {
   return school.modules.includes(key);
 }

@@ -305,7 +305,7 @@ try {
     const table = await p.textContent('[data-testid=school-table]');
     assert.match(table, /드리미 예시학교.*2 \/ 2.*Rungarun Example School/s);
     await shot(p, '09-platform-admin.png');
-    await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('text=이 학교로 들어가기').click();
+    await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('button:text-is("들어가기")').click();
     await p.waitForURL(/\/intake$/);
     assert.match(await p.textContent('header.top'), /전체 관리자로 보는 중/);
     assert.equal(await p.textContent('[data-testid=school-name]'), '드리미 예시학교');
@@ -338,6 +338,29 @@ try {
     await p.click('[role=tab]:has-text("할 일")');
     await shot(p, '10-platform-lab.png');
     await ctxL.close();
+  });
+
+  await step('22차: 학교별 개발 연동 — GitHub 저장소 연결과 세션 요청 문구', async () => {
+    const ctxI = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxI.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside >> text=학교별 개발 연동');
+    await p.waitForURL(/\/admin\/integrations/);
+    await p.fill('[data-testid=add-link] input >> nth=0', 'E2E 전용 저장소');
+    await p.fill('[data-testid=add-link] input[aria-label="연동 주소"]', 'https://github.com/example-org/e2e-school');
+    await p.click('[data-testid=add-link] button:text-is("연동 추가")');
+    await p.waitForSelector('[data-testid=dev-links] >> text=E2E 전용 저장소');
+    assert.match(await p.textContent('pre.copy-box >> nth=0'), /school_id: [0-9a-f-]{36}[\s\S]*github\.com\/example-org\/e2e-school/);
+    await p.fill('[data-testid=add-link] input[aria-label="연동 주소"]', 'https://gitlab.com/x/y');
+    await p.fill('[data-testid=add-link] input >> nth=0', '잘못된 주소');
+    await p.click('[data-testid=add-link] button:text-is("연동 추가")');
+    await p.waitForSelector('[role=status]:has-text("GitHub 저장소 주소 형식")');
+    await shot(p, '11-platform-integrations.png');
+    await ctxI.close();
   });
 } catch (e) {
   exitCode = 1;
