@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { pgOptions } from './pg-options.mjs';
+import { parseDbUrl, pgOptions } from './pg-options.mjs';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -13,7 +13,8 @@ if (!url) {
   process.exit(1);
 }
 const reset = process.argv.includes('--reset');
-const host = new URL(url).hostname;
+let host;
+try { host = parseDbUrl(url).hostname; } catch (e) { console.error(e.message); process.exit(1); }
 if (reset && !['localhost', '127.0.0.1', '::1'].includes(host)) {
   console.error(`--reset 은 로컬 DB에서만 실행합니다. (대상: ${host})`);
   process.exit(1);
