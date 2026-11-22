@@ -159,3 +159,32 @@ input:not([type=radio]):not([type=checkbox]), select, textarea { border: 1px sol
 
 .price-row input[type=number] { width: 140px; flex: none; }
 .actions select { width: auto; min-height: 32px; padding: 2px 8px; font-size: .85rem; }
+
+/* 17차: 개발·연구소 */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; flex-wrap: wrap; }
+.tabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: 10px 12px; font-weight: 650; color: var(--mute); display: inline-flex; gap: 6px; align-items: center; }
+.tabs button.active { color: var(--blue); border-color: var(--blue); }
+.tabs .count { background: #edf1f6; border-radius: 999px; font-size: .75rem; padding: 1px 7px; color: #475b71; }
+.quick-add { display: flex; gap: 8px; flex-wrap: wrap; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.quick-add input:first-child { flex: 1 1 260px; }
+.quick-add select, .quick-add input[type=date] { width: auto; }
+.toolbar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.toolbar input[type=search] { max-width: 320px; }
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.item.closed .item-title { color: var(--mute); }
+.item.closed input[type=checkbox]:checked + .item-text .item-title { text-decoration: line-through; }
+.item.archived { opacity: .6; }
+.item-main { display: flex; gap: 10px; align-items: flex-start; }
+.item-main > input[type=checkbox] { margin-top: 5px; width: 18px; height: 18px; flex: none; }
+.item-text { display: grid; gap: 6px; min-width: 0; flex: 1; }
+.item-title { background: none; border: 0; padding: 0; text-align: left; font-weight: 700; font-size: 1rem; color: var(--ink); }
+.item-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.item-meta select { width: auto; min-height: 28px; padding: 2px 6px; font-size: .8rem; }
+.item-body { color: var(--mute); font-size: .9rem; white-space: pre-wrap; }
+.edit-form { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.edit-form .row label { flex: 1 1 160px; }
+.prio-high { background: #fdecec; color: var(--danger); }
+.prio-low { background: #f2f4f7; color: #6b7a8c; }
+.blue-soft { background: var(--blue-soft); color: var(--blue); }
+.small-text { font-size: .78rem; }

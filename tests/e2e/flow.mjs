@@ -315,6 +315,30 @@ try {
     assert.equal((await a.goto(`${BASE}/admin`)).status(), 404);
     await ctxP.close();
   });
+
+  await step('17차: 개발·연구소 — 할 일 추가·완료, 종류별 탭', async () => {
+    const ctxL = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxL.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside >> text=개발·연구소');
+    await p.waitForURL(/\/admin\/lab$/);
+    assert.match(await p.textContent('[data-testid=lab-items]'), /AI 분석 프롬프트 설계/);
+    await p.fill('[data-testid=quick-add] input[aria-label="새 항목 제목"]', 'E2E 할 일 확인');
+    await p.click('[data-testid=quick-add] button[type=submit]');
+    const row = p.locator('[data-testid=lab-items] li', { hasText: 'E2E 할 일 확인' });
+    await row.waitFor();
+    await row.locator('input[aria-label="끝남 표시"]').check();
+    await row.waitFor({ state: 'detached' });
+    await p.click('[role=tab]:has-text("방법론")');
+    assert.match(await p.textContent('[data-testid=lab-items]'), /RLS 우선 설계/);
+    await p.click('[role=tab]:has-text("할 일")');
+    await shot(p, '10-platform-lab.png');
+    await ctxL.close();
+  });
 } catch (e) {
   exitCode = 1;
   console.error('\n서버 로그(마지막 2000자):\n' + serverLog.slice(-2000));

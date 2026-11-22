@@ -7,7 +7,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { account } = await loadForPlatform(async () => ({}));
   return (
     <Shell title="전체 관리" subtitle={account.display_name} tag="전체 관리자" platform
-      items={[{ href: '/admin', label: '학교·라이선스' }]}>
+      items={[{ href: '/admin', label: '학교·라이선스' }, { href: '/admin/lab', label: '개발·연구소' }]}>
       {children}
     </Shell>
   );

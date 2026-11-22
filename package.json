@@ -12,7 +12,8 @@
     "db:seed": "node scripts/seed.mjs",
     "db:reset": "node scripts/migrate.mjs --reset && node scripts/seed.mjs",
     "test": "vitest run",
-    "test:e2e": "node tests/e2e/flow.mjs"
+    "test:e2e": "node tests/e2e/flow.mjs",
+    "test:unit": "vitest run tests/csv.test.ts tests/readers.test.ts"
   },
   "dependencies": {
     "exceljs": "^4.4.0",

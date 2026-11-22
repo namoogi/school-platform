@@ -29,7 +29,7 @@
 - 새 규칙은 PR로 추가하고, 겹치는 기존 조항은 고치거나 지운다. 같은 주제의 규칙을 두 곳에 두지 않는다.
 - 개발을 막을 수 있는 조항(고정 숫자, 특정 도구 강제)은 이유와 다시 검토할 조건을 함께 적는다.
 - 새 도구·방법론은 `docs/decisions/`에 비교 기록을 남기고 시범 적용 결과를 본 뒤 이 파일에 반영한다.
-- Claude와 Codex는 이 파일을 공통 지침으로 쓴다. 한 PR에는 한 차시(또는 한 기능)만 담는다.
+- Claude와 Codex는 이 파일을 공통 지침으로 쓴다. 한 PR에는 한 차시(또는 한 기능)만 담는다. 브랜치·검토·마이그레이션 규칙은 `docs/COLLABORATION.md`.
 
 로드맵과 결정 대기 항목: `docs/ROADMAP.md`
 
@@ -38,6 +38,7 @@
 ```bash
 npm run db:reset     # 로컬 DB 초기화 + 시드 (localhost에서만 동작)
 npm run dev
+npm run test:unit    # DB 없이 도는 판독기·파서 테스트
 npm test             # DB·RLS·발행본 보존 통합 테스트 (로컬 Postgres 필요)
 npm run build && npm run test:e2e   # 브라우저 전체 흐름
 ```
