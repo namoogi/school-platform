@@ -31,7 +31,10 @@
 ## 4. PR (완료 처리)
 - 끝나면 제목을 `[자동] <종류> · <주제>`로 바꾸고 초안을 해제한다. 기준 브랜치는 0-3에서 정한 브랜치, PR 양식(.github/pull_request_template.md)을 채운다.
 - `docs/automation/runs/<YYYY-MM-DD>.md` 실행 기록을 같은 PR에 넣는다.
-- PR 댓글로 `@codex review` 를 요청한다.
+- PR 댓글로 `(Claude 자동 실행 작성)\n@codex review` 를 요청한다.
+- 0단계에서 열린 PR 중 **Codex 리뷰 댓글**이 달렸는데 반영 안 된 것이 있으면, 새 작업보다 먼저 반영(작은 지적은 고치고, 큰 제안은 답글로 정리해 사용자 판단 요청)한다.
+- `codex/` 브랜치 PR이 있으면 AGENTS.md Review guidelines로 검토 댓글을 남긴다(병합하지 않는다).
+- 설계 작업(B 종류)에서 안 B가 필요하면 이슈를 열어 `@codex` 작업 요청을 남긴다(COLLABORATION.md 8절).
 - QUEUE.md의 해당 항목 상태를 "진행 중 (PR #n)"으로 바꾼다.
 
 ## 5. 보고

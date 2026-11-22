@@ -5,7 +5,7 @@ description: 학교 플랫폼 저장소에서 작업을 마칠 때(기능 완료
 
 # 세션 종료 점검 (모든 세션 공통)
 
-1. **검사**: `npm run typecheck`, `npm run test:unit`, `npm test`, 화면을 바꿨으면 `npm run build && npm run test:e2e`. 결과를 그대로 적는다(실행 못 한 것은 이유와 함께).
+1. **검사**: `npm run check:repo`(마이그레이션·결정 기록 번호 겹침, 비밀 값), `npm run typecheck`, `npm run test:unit`, `npm test`, 화면을 바꿨으면 `npm run build && npm run test:e2e`. 결과를 그대로 적는다(실행 못 한 것은 이유와 함께).
 2. **커밋·push**: 남은 변경이 없게 한다. 비밀 값·실제 학생 정보가 없는지 `git diff --cached`로 확인.
 3. **PR 상태**:
    - 끝난 기능: 제목 `[자동] …`(사람 세션은 차시 제목), 초안 해제, PR 양식 채우기, `@codex review` 요청
