@@ -99,11 +99,11 @@ export default function PublicService() {
         <p className={s.phase}><strong className={s.phaseTag}>시안</strong> 새 화면입니다. <a href="#">의견 보내기</a></p>
 
         <main id="public-main" className={s.main} tabIndex={-1}>
-          <section className={s.banner} role="region" aria-labelledby="public-banner-title">
+          <section className={s.banner} aria-labelledby="public-banner-title">
             <h2 id="public-banner-title" className={s.bannerTitle}>중요</h2>
             <div className={s.bannerBody}>
               <p className={s.bannerHeading}>확인을 기다리는 질문이 {waiting.length}건 있습니다.</p>
-              <p>가장 오래된 질문은 {waiting[waiting.length - 1].opened}에 열렸습니다. 답하기 전까지 관련 발행본을 새로 만들 수 없습니다.</p>
+              <p>가장 오래된 질문은 {waiting[waiting.length - 1].opened}에 열렸습니다. 답하기 전에는 새 자료의 값이 확정 규칙에 반영되지 않습니다.</p>
               <a href="#" className={s.bannerLink}>질문 {waiting.length}건 확인하기</a>
             </div>
           </section>
@@ -139,7 +139,7 @@ export default function PublicService() {
                 ))}
               </ol>
 
-              <a href="#" className={s.button} role="button" draggable={false}>
+              <a href="#" className={s.button}>
                 질문 확인 시작하기 <ArrowRight size={22} aria-hidden="true" />
               </a>
 

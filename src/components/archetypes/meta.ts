@@ -79,7 +79,7 @@ export const ARCHETYPES: ArchetypeMeta[] = [
     inspired: 'GOV.UK Design System · 범정부 UI/UX 디자인 시스템(KRDS)',
     nav: '사이드바 없음 · 머리말 + 한 줄 탐색, 한 화면 한 가지 일',
     grid: '단일 열 최대 960px (본문 2/3 + 관련 링크 1/3)',
-    type: 'SUIT · 본문 18px · 제목 40/27/21 · 굵은 위계',
+    type: 'SUIT · 본문 18px (KRDS 17 · GOV.UK 19 사이) · 제목 40/27/21',
     density: '가장 넉넉함 · 터치 목표 48px',
     signature: '할 일 목록(완료·진행 중·시작 전), 단계별 안내, 큰 단추',
     fit: '컴퓨터에 익숙지 않은 교직원·보호자, 접근성 최우선 화면',
