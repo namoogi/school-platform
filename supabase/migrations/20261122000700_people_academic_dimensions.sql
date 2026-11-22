@@ -32,7 +32,8 @@ begin
 end $$;
 
 grant usage on schema public, app to app_writer;
-grant execute on function app.uid(), app.is_member(uuid), app.is_school_admin(uuid), app.is_platform_admin() to app_writer;
+grant execute on function app.uid(), app.is_member(uuid), app.is_school_admin(uuid), app.is_platform_admin(),
+  app.log_access(uuid, text, jsonb) to app_writer;
 
 -- ── 학사 차원 ────────────────────────────────────────────
 create table public.school_levels (
