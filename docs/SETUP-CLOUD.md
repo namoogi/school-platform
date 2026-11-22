@@ -26,9 +26,10 @@ Production과 Preview 둘 다에 체크합니다.
 | 이름 | 값 |
 | --- | --- |
 | `DATABASE_URL` | 1번에서 만든 Transaction pooler 연결 문자열 |
-| `SESSION_SECRET` | 32자 이상 임의 문자열. 비밀번호 생성기로 만든 긴 문자열이면 됩니다 |
 | `SEED_PASSWORD_A` | 예시 관리자 A의 새 비밀번호 (10자 이상, `demo-pass`로 시작하지 않음) |
 | `SEED_PASSWORD_B` | 예시 관리자 B의 새 비밀번호 (같은 조건) |
+
+로그인 쿠키 서명 키는 첫 배포 때 DB가 직접 만들어 `private.app_secrets`에 보관합니다(마이그레이션 `20261122000200`). 외부에서 관리하고 싶을 때만 `SESSION_SECRET`(32자 이상)을 추가합니다.
 
 변수가 비어 있거나 조건에 맞지 않으면 빌드가 실패하고, 빌드 로그에 `[predeploy]`로 시작하는 이유가 나옵니다.
 

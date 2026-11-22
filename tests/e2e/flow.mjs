@@ -39,7 +39,9 @@ const admin = new pg.Client({ connectionString: ADMIN_URL });
 await admin.connect();
 if (!(await admin.query('select 1 from pg_database where datname = $1', [DB])).rowCount) await admin.query(`create database ${DB}`);
 await admin.end();
-const env = { ...process.env, DATABASE_URL: DB_URL, SESSION_SECRET: 'e2e-only-session-secret-0123456789abcdef', NEXT_TELEMETRY_DISABLED: '1' };
+// SESSION_SECRET 없이 실행해 DB가 만든 서명 키 경로를 검증한다.
+const env = { ...process.env, DATABASE_URL: DB_URL, NEXT_TELEMETRY_DISABLED: '1' };
+delete env.SESSION_SECRET;
 execFileSync('node', ['scripts/migrate.mjs', '--reset'], { cwd: ROOT, env, stdio: 'pipe' });
 execFileSync('node', ['scripts/seed.mjs'], { cwd: ROOT, env, stdio: 'pipe' });
 

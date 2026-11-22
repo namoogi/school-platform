@@ -246,6 +246,7 @@ describe('학교 간 접근 분리 (양방향)', () => {
         expect(Object.values(counts).every((n) => n === 0), JSON.stringify(counts)).toBe(true);
         // 로그인 정보 표는 아예 접근 불가
         await expect(as(me(), (db) => db.query('select * from private.app_users'))).rejects.toMatchObject({ code: '42501' });
+        await expect(as(me(), (db) => db.query('select * from private.app_secrets'))).rejects.toMatchObject({ code: '42501' });
       });
 
       it('상대 학교 ID를 알아도 서비스 경로로 열거나 바꿀 수 없다', async () => {

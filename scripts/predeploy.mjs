@@ -5,13 +5,14 @@ import { execFileSync } from 'node:child_process';
 
 if (process.env.VERCEL !== '1') process.exit(0);
 
-const missing = ['DATABASE_URL', 'SESSION_SECRET', 'SEED_PASSWORD_A', 'SEED_PASSWORD_B'].filter((k) => !process.env[k]);
+const missing = ['DATABASE_URL', 'SEED_PASSWORD_A', 'SEED_PASSWORD_B'].filter((k) => !process.env[k]);
 if (missing.length) {
   console.error(`[predeploy] Vercel 환경 변수가 비어 있습니다: ${missing.join(', ')}`);
   console.error('[predeploy] Project Settings → Environment Variables 에 추가한 뒤 다시 배포하세요. (docs/SETUP-CLOUD.md)');
   process.exit(1);
 }
-if (process.env.SESSION_SECRET.length < 32) {
+// SESSION_SECRET 은 선택. 없으면 DB가 만든 키를 쓴다. 넣었다면 32자 이상이어야 한다.
+if (process.env.SESSION_SECRET && process.env.SESSION_SECRET.length < 32) {
   console.error('[predeploy] SESSION_SECRET 은 32자 이상이어야 합니다.');
   process.exit(1);
 }

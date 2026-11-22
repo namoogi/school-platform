@@ -10,23 +10,36 @@ import { asSystem } from './db';
 export const SESSION_COOKIE = 'sp_session';
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 
-function secret() {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 32) throw new Error('SESSION_SECRET 은 32자 이상이어야 합니다.');
-  return s;
+// 서명 키: SESSION_SECRET 환경 변수가 있으면 그 값을, 없으면 DB(private.app_secrets)가 만든 키를 쓴다.
+let cachedSecret: string | null = null;
+async function secret(): Promise<string> {
+  const env = process.env.SESSION_SECRET;
+  if (env) {
+    if (env.length < 32) throw new Error('SESSION_SECRET 은 32자 이상이어야 합니다.');
+    return env;
+  }
+  if (!cachedSecret) {
+    const value = await asSystem(async (db) => {
+      const { rows } = await db.query("select value from private.app_secrets where name = 'session_secret'");
+      return rows[0]?.value as string | undefined;
+    });
+    if (!value || value.length < 32) throw new Error('세션 서명 키가 없습니다. 마이그레이션을 적용하세요.');
+    cachedSecret = value;
+  }
+  return cachedSecret;
 }
 
-export function signSession(userId: string, now = Date.now()) {
+export async function signSession(userId: string, now = Date.now()) {
   const payload = Buffer.from(JSON.stringify({ sub: userId, exp: Math.floor(now / 1000) + SESSION_TTL_SECONDS })).toString('base64url');
-  const sig = crypto.createHmac('sha256', secret()).update(payload).digest('base64url');
+  const sig = crypto.createHmac('sha256', await secret()).update(payload).digest('base64url');
   return `${payload}.${sig}`;
 }
 
-export function verifySession(token: string | undefined, now = Date.now()): string | null {
+export async function verifySession(token: string | undefined, now = Date.now()): Promise<string | null> {
   if (!token) return null;
   const [payload, sig] = token.split('.');
   if (!payload || !sig) return null;
-  const expected = crypto.createHmac('sha256', secret()).update(payload).digest();
+  const expected = crypto.createHmac('sha256', await secret()).update(payload).digest();
   const given = Buffer.from(sig, 'base64url');
   if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) return null;
   try {
