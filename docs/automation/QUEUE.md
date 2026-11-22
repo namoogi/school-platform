@@ -4,7 +4,7 @@
 
 | 상태 | 작업 | 범위·완료 기준 |
 | --- | --- | --- |
-| 자동 허용 | ADR 0004 단계 1: 사람·계정 연결·학사 차원 | 착수 전 개발 DB에서 명령 함수 제한 소유 역할 가능 여부 시험(결과를 PR에 기록). `people·person_names·person_accounts·school_levels·academic_years·terms(확정 규칙 FK)·cohorts·homerooms·enrollments_school` 새 마이그레이션, 복합 FK·RLS. 통과 조건: 두 학교 양방향 거부, 학교 간 FK 거부, 동명이인·개명·다중 계정 시험 |
+| 진행 중 (PR #13) | ADR 0004 단계 1: 사람·계정 연결·학사 차원 | 착수 전 개발 DB에서 명령 함수 제한 소유 역할 가능 여부 시험(결과를 PR에 기록). `people·person_names·person_accounts·school_levels·academic_years·terms(확정 규칙 FK)·cohorts·homerooms·enrollments_school` 새 마이그레이션, 복합 FK·RLS. 통과 조건: 두 학교 양방향 거부, 학교 간 FK 거부, 동명이인·개명·다중 계정 시험 |
 | 자동 허용 | ADR 0004 단계 2: 수업·수강·갈래 규칙 판·명령 경계 | 단계 1이 병합된 뒤 시작. 통과 조건: 필수과목 포함 모든 갈래의 생성 계기, 담당자 권한·동시 편집 충돌 시험 |
 | 자동 허용 | ADR 0004 단계 3: 평가 초안·마감 판·정정 사슬 | 단계 2 병합 뒤. 통과 조건: 모집단·통계 동시 확정, 중복 요청·부분 실패·정정 보존 시험 |
 | 자동 허용 | ADR 0004 단계 4: 새 학생부 발행·내보내기 스냅샷 | 단계 3 병합 뒤. 통과 조건: 14차 발행본 불변, 표기 변경 후 통계 불변, 가리기 누출 시험 |
