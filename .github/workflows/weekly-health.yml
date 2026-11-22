@@ -1,0 +1,50 @@
+name: Weekly health
+
+on:
+  schedule:
+    - cron: '17 21 * * 0'   # 매주 월요일 06:17 KST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Collect report
+        run: |
+          {
+            echo "## 주간 점검 $(date -u +%Y-%m-%d)"
+            echo
+            echo "### 타입 검사·단위 테스트"
+            if npm run -s typecheck >/tmp/tc.log 2>&1; then echo "- 타입 검사: 통과"; else echo "- 타입 검사: **실패**"; tail -20 /tmp/tc.log | sed 's/^/    /'; fi
+            if npm run -s test:unit >/tmp/ut.log 2>&1; then echo "- 단위 테스트: 통과"; else echo "- 단위 테스트: **실패**"; tail -20 /tmp/ut.log | sed 's/^/    /'; fi
+            echo
+            echo "### 보안 취약점 (운영 의존성)"
+            npm audit --omit=dev --audit-level=low >/tmp/audit.log 2>&1 && echo "- 없음" || { echo '```'; tail -30 /tmp/audit.log; echo '```'; }
+            echo
+            echo "### 업데이트가 있는 의존성"
+            echo "새 버전은 공개 후 2주가 지난 것만 올린다(AGENTS.md·의존성 규칙)."
+            echo '```'
+            npm outdated || true
+            echo '```'
+          } > report.md
+      - name: Update issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          num=$(gh issue list --state open --search "주간 점검 in:title" --json number --jq '.[0].number')
+          if [ -z "$num" ]; then
+            gh issue create --title "주간 점검 (자동)" --body-file report.md
+          else
+            gh issue comment "$num" --body-file report.md
+          fi

@@ -29,6 +29,10 @@
 CSS 클래스: `.btn .btn-primary|secondary|ghost|danger .btn-sm`, `.badge[data-tone]`, `.count-badge`, `.grid-table`(+`.table-wrap`, `th scope`, `.num`), `.summary-list`, `.timeline`, `.tabs`, `.toolbar`, `.kpis`.
 이전 클래스(`.primary`, `.tag.green` 등)는 같은 토큰으로 이어 두었다. 새 화면은 새 클래스를 쓴다.
 
+## 도구 (ADR 0005)
+
+아이콘 lucide-react, 메뉴·대화상자 Radix UI, 서체 Pretendard(동적 부분 집합). 방향 후보는 전체 관리 → 디자인 방향에서 비교한다.
+
 ## 다음 단계 (아직 하지 않음)
 
 - 다크·고대비 테마(토큰 값은 보고서 §5.1에 초안 있음)

@@ -31,13 +31,18 @@ export function SchoolActions({ schoolId, status, period }: { schoolId: string; 
 
 export function CreateSchoolForm({ modules }: { modules: Module[] }) {
   const router = useRouter();
-  const [f, setF] = useState({ name: '', slug: '', locale: 'ko', adminEmail: '', seats: 5, modules: ['records'] as string[] });
+  const [f, setF] = useState({ name: '', slug: '', locale: 'ko', adminEmail: '', seats: 5, modules: ['records'] as string[], githubUrl: '' });
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   async function create() {
     try {
-      await post('/api/admin/schools', f);
-      setMsg({ text: `${f.name}을 만들고 ${f.adminEmail}을 학교 관리자로 초대했습니다.` });
-      setF({ ...f, name: '', slug: '', adminEmail: '' }); router.refresh();
+      const { id } = await post('/api/admin/schools', f);
+      let extra = '';
+      if (f.githubUrl.trim()) {
+        try { await post(`/api/admin/schools/${id}/links`, { kind: 'github_repo', label: `${f.name} 전용 저장소`, url: f.githubUrl.trim() }); extra = ' GitHub 저장소도 연결했습니다.'; }
+        catch (e) { extra = ` GitHub 저장소는 연결하지 못했습니다: ${(e as Error).message}`; }
+      }
+      setMsg({ text: `${f.name}을 만들고 ${f.adminEmail}을 학교 관리자로 초대했습니다.${extra}` });
+      setF({ ...f, name: '', slug: '', adminEmail: '', githubUrl: '' }); router.refresh();
     } catch (e) { setMsg({ text: (e as Error).message, error: true }); }
   }
   return (
@@ -48,6 +53,7 @@ export function CreateSchoolForm({ modules }: { modules: Module[] }) {
       <label>문서 언어<select value={f.locale} onChange={(e) => setF({ ...f, locale: e.target.value })}><option value="ko">한국어</option><option value="en">영어</option><option value="th">태국어</option></select></label>
       <label>첫 학교 관리자 이메일 (Google 계정)<input type="email" value={f.adminEmail} onChange={(e) => setF({ ...f, adminEmail: e.target.value })} /></label>
       <label>시작 좌석 수<input type="number" min={1} value={f.seats} onChange={(e) => setF({ ...f, seats: Number(e.target.value) })} /></label>
+      <label>학교 전용 GitHub 저장소 (선택)<input value={f.githubUrl} onChange={(e) => setF({ ...f, githubUrl: e.target.value })} placeholder="https://github.com/<owner>/<repo>" /></label>
       <fieldset className="choices"><legend>시작 기능</legend>
         {modules.filter((m) => m.available).map((m) => (
           <label key={m.key} className="radio"><input type="checkbox" disabled={m.required} checked={m.required || f.modules.includes(m.key)}

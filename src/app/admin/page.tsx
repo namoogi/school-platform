@@ -9,7 +9,7 @@ const STATUS: Record<string, string> = { trial: '시범', active: '운영', susp
 const ACTION: Record<string, string> = {
   'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
   'member.remove': '구성원 제외', 'member.invite_revoke': '초대 취소', 'school.create': '학교 생성', 'school.status': '학교 상태 변경',
-  'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경',
+  'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경', 'devlink.add': '개발 연동 추가', 'devlink.update': '개발 연동 변경',
 };
 
 export default async function AdminPage() {

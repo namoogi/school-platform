@@ -85,3 +85,32 @@ npm run typecheck 와 npm run test:unit 을 통과시키고, Postgres가 없으�
 ```
 @codex review AGENTS.md의 'Review guidelines'와 docs/design/DESIGN-SYSTEM.md 기준으로 검토해 줘.
 ```
+
+## 7. 세션 운영 (관제 세션 · 개발 세션)
+
+참고: [요즘IT 「AI 코딩 세션 10개를 동시에 관리하는 개발 워크플로우」](https://yozm.wishket.com/magazine/detail/4043) — 세션 규칙·CI·머지·문서화 표준화, 관제 세션과 개발 세션 분리, 세션 시작·종료 패턴 스킬화, Claude 장애 대비 Codex 이중화. (본문 전체는 이 개발 환경에서 열지 못해 검색 요약 기준)
+
+| 세션 | 누가 | 하는 일 | 하지 않는 일 |
+| --- | --- | --- | --- |
+| 관제 세션 | 사용자와 대화 중인 Claude 세션 | 요청 정리, 대기열·결정 기록·브리프 작성, PR 검토, 진행 보고, 병합 요청 | 여러 기능을 한 번에 직접 구현 |
+| 개발 세션 | 매시간 자동 개선 실행, Codex 작업, 필요할 때 띄우는 Claude 세션 | 대기열의 기능 하나를 끝까지 구현·검사·PR | 대기열에 없는 큰 방향 변경 |
+
+- 모든 세션은 저장소 스킬 `session-start`로 시작하고 `session-end`로 끝낸다(`.claude/skills/`). Codex는 같은 내용을 AGENTS.md와 이 문서로 따른다.
+- **이중화**: Claude 장애·한도 때는 사용자가 6절 '요청 문구 C'로 Codex에 대기열 맨 위 항목을 맡긴다. Codex 장애 때는 Claude가 검토까지 맡는다.
+- 세션 간 정보 전달은 GitHub(PR 본문 '남은 일', 이슈, 결정 기록)를 기준으로 한다. 세션끼리 직접 보내는 메시지는 보조이고, 결정과 인계 내용은 반드시 저장소에 남긴다.
+
+## 8. Claude ↔ Codex 자동 상호통신 (사람이 중계하지 않음)
+
+Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라가므로 Codex가 사용자 요청으로 받는다. 모든 교신은 GitHub에 남는다.
+
+| 통로 | 방법 | 결과가 돌아오는 곳 |
+| --- | --- | --- |
+| 검토 요청 | Claude가 자기 PR에 `@codex review` 댓글 | Codex 리뷰 → PR 알림 → 다음 Claude 세션이 반영하고 답글 |
+| 작업 요청(대안 설계·구현) | Claude가 **이슈**를 열고 본문 끝에 `@codex <요청>` (PR 댓글의 비검토 멘션은 검토로만 처리된다는 사용자 보고가 있어 이슈를 쓴다 — 확인 필요) | Codex 초안 PR → Claude가 검토 댓글 |
+| Codex PR 검토 | 매시간 실행이 `codex/` 브랜치 PR을 찾아 Review guidelines로 검토 댓글 | Codex가 고치거나 사용자 판단 |
+
+- Claude가 올리는 요청 첫 줄에 `(Claude 관제 세션 작성)` 또는 `(Claude 자동 실행 작성)`을 적어, 사용자 계정 이름이지만 누가 썼는지 구분한다.
+- 한 주제에 Codex 요청은 하나만 열어 둔다(중복 실행 방지). 24시간 응답이 없으면 사용자에게 보고한다.
+- 사용자 1회 설정: Codex Code review를 이 저장소에 켜기, Codex 환경(Environment) 하나 만들기. 그 뒤로는 사람이 중계하지 않는다.
+- 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
+
