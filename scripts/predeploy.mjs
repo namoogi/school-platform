@@ -33,9 +33,18 @@ try {
   process.exit(1);
 }
 console.log(`[predeploy] ${process.env.VERCEL_ENV ?? 'unknown'} 빌드 · DB 호스트 ${host}`);
+// Production과 Preview가 같은 DB를 쓴다(2026-11-22 확인). 미리보기 빌드가 병합 전 브랜치의 마이그레이션·시드를
+// 운영 DB에 적용하지 않도록, DB를 바꾸는 일은 Production 빌드(main 병합)에서만 한다. (사용자 결정 2026-11-22)
+// 미리보기 전용 DB로 분리하면 PREVIEW_APPLY_MIGRATIONS=1 로 다시 켤 수 있다.
+const applyHere = process.env.VERCEL_ENV === 'production' || process.env.PREVIEW_APPLY_MIGRATIONS === '1';
 try {
-  execFileSync('node', ['scripts/migrate.mjs'], { stdio: 'inherit' });
-  execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
+  if (applyHere) {
+    execFileSync('node', ['scripts/migrate.mjs'], { stdio: 'inherit' });
+    execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
+  } else {
+    console.log('[predeploy] 미리보기 빌드: 마이그레이션·시드를 적용하지 않습니다(운영 DB 공용). 대기 목록만 확인합니다.');
+    execFileSync('node', ['scripts/migrate.mjs', '--check'], { stdio: 'inherit' });
+  }
 } catch {
   // 원인은 위 [db] 또는 마이그레이션 출력에 있다. 여기서는 중복 스택을 남기지 않는다.
   console.error('[predeploy] DB 준비에 실패해 빌드를 중단합니다.');
