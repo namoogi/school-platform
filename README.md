@@ -2,7 +2,9 @@
 
 학교 자료를 읽어 학사 규칙을 추정하고, 관리자 확인을 거친 규칙으로 학사 문서를 발행하는 플랫폼입니다. 드리미포털과 저장소·배포·DB가 별도입니다.
 
-현재 차시: **14차** · [14차 결과](docs/rounds/round-14.md) · [13차까지의 인계 자료](school-platform-handoff/START-HERE.md)
+대표 주소: https://onschools.vercel.app (검토 중)
+
+현재 차시: **16차** · [14차](docs/rounds/round-14.md) · [16차](docs/rounds/round-16.md) · [로드맵](docs/ROADMAP.md) · [13차까지의 인계 자료](school-platform-handoff/START-HERE.md)
 
 ## 구성
 
