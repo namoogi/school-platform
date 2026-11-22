@@ -20,10 +20,16 @@ begin
   if not exists (select 1 from pg_roles where rolname = 'app_writer') then
     create role app_writer nologin nosuperuser nobypassrls nocreaterole nocreatedb noinherit noreplication;
   end if;
-  -- 함수 소유자를 바꾸려면 실행 사용자가 이 역할의 구성원이어야 한다. (Supabase postgres는 슈퍼유저가 아님)
-  if not (select rolsuper from pg_roles where rolname = current_user)
-     and not pg_has_role(current_user, 'app_writer', 'MEMBER') then
-    execute format('grant app_writer to %I', current_user);
+  -- 함수 소유자를 바꾸려면 실행 사용자가 이 역할로 SET ROLE 할 수 있어야 한다. (Supabase postgres는 슈퍼유저가 아님)
+  -- PG16+: CREATEROLE로 만든 사람은 ADMIN 구성원이 되지만 SET 권한은 없다 → SET만 켜고 INHERIT는 끈 채로 부여한다.
+  if not (select rolsuper from pg_roles where rolname = current_user) then
+    if current_setting('server_version_num')::int >= 160000 then
+      if not pg_has_role(current_user, 'app_writer', 'SET') then
+        execute format('grant app_writer to %I with inherit false, set true', current_user);
+      end if;
+    elsif not pg_has_role(current_user, 'app_writer', 'MEMBER') then
+      execute format('grant app_writer to %I', current_user);
+    end if;
   end if;
   -- 요청 역할이 명령 역할을 얻을 수 있으면 쓰기 경계가 무너진다.
   if pg_has_role('authenticated', 'app_writer', 'MEMBER') or pg_has_role('anon', 'app_writer', 'MEMBER') then
@@ -610,6 +616,8 @@ begin
 end $$;
 
 -- 소유자를 제한 역할로 바꾸고, 실행은 로그인 사용자(authenticated)에게만 연다.
+-- 비슈퍼유저가 소유자를 바꾸려면 새 소유자에게 스키마 CREATE 권한이 있어야 한다. 바꾸는 동안만 주고 곧바로 회수한다.
+grant create on schema app to app_writer;
 do $$
 declare f text;
 begin
@@ -629,8 +637,10 @@ begin
     'app.assign_homeroom(uuid, uuid, uuid, date)',
     'app.end_homeroom_assignment(uuid, uuid, date)'
   ] loop
-    execute format('alter function %s owner to app_writer', f);
+    -- 권한 정리는 소유자를 바꾸기 전에 한다. 비슈퍼유저는 바뀐 소유자(app_writer)가 준 권한을 회수할 수 없다.
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
+    execute format('alter function %s owner to app_writer', f);
   end loop;
 end $$;
+revoke create on schema app from app_writer;
