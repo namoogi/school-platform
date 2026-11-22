@@ -4,10 +4,10 @@ import { ReviewClient } from './ReviewClient';
 import { PeriodTable } from '@/components/PeriodTable';
 
 export default async function ReviewPage() {
-  const { question, rules } = await loadForPage(async ({ db, school }) => ({
+  const { question, rules, school } = await loadForPage(async ({ db, school }) => ({
     question: await openQuestion(db, school.id),
     rules: await listRules(db, school.id),
-  }));
+  }), { module: 'intake' });
   const current = rules[0];
   return (
     <>
@@ -17,7 +17,7 @@ export default async function ReviewPage() {
       <div className="review-grid">
         <section className="card" data-testid="question">
           {question
-            ? <ReviewClient question={JSON.parse(JSON.stringify(question))} currentVersion={current?.version ?? null} />
+            ? <ReviewClient question={JSON.parse(JSON.stringify(question))} currentVersion={current?.version ?? null} canConfirm={school.isAdmin} />
             : <>
                 <h2>확인할 질문이 없습니다</h2>
                 <p className="muted">{current ? '확정한 규칙이 현재 자료와 일치합니다. 자료를 더 올리면 다시 분석합니다.' : '학사력이나 평가 자료를 먼저 첨부해 주세요.'}</p>
@@ -38,7 +38,7 @@ export default async function ReviewPage() {
               <p className="fine">근거 행 {r.evidence.length}개 · 이후 자료 추가로 바뀌지 않습니다.</p>
             </details>
           ))}
-          {current && <a className="button primary" href="/documents">이 규칙으로 문서 발행</a>}
+          {current && school.isAdmin && school.modules.includes('records') && <a className="button primary" href="/documents">이 규칙으로 문서 발행</a>}
         </section>
       </div>
     </>

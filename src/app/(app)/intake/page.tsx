@@ -6,7 +6,7 @@ export default async function IntakePage() {
   const { sources, question } = await loadForPage(async ({ db, school }) => ({
     sources: await listSources(db, school.id),
     question: await openQuestion(db, school.id),
-  }));
+  }), { module: 'intake' });
   return (
     <>
       <div className="page-head">

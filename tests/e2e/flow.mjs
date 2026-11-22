@@ -277,6 +277,44 @@ try {
     assert.match(text, /b-calendar-2027\.pdf.*내용을 읽음.*정확도 확인 필요.*표 1개, 3행/s);
     await shot(b, '07-b-intake-pdf.png');
   });
+
+  await step('16차: 학교 관리자 설정 — 좌석·기능·예상 금액, 초대, 좌석 초과 안내', async () => {
+    await a.goto(`${BASE}/settings`);
+    assert.match(await a.textContent('[data-testid=seat-usage]'), /좌석 1 \/ 5/);
+    await a.fill('[data-testid=license] input[type=number]', '2');
+    await a.click('text=라이선스 저장');
+    await a.waitForSelector('[data-testid=license] .tag:has-text("2판")');
+    await a.fill('input[aria-label="초대할 이메일"]', 'teacher1@school-a.test');
+    await a.click('[data-testid=members] button:text-is("초대")');
+    await a.waitForSelector('text=초대 대기');
+    assert.match(await a.textContent('[data-testid=seat-usage]'), /좌석 2 \/ 2/);
+    await a.fill('input[aria-label="초대할 이메일"]', 'teacher2@school-a.test');
+    await a.click('[data-testid=members] button:text-is("초대")');
+    await a.waitForSelector('[role=status]:has-text("좌석이 모두 찼습니다")');
+    await shot(a, '08-a-settings.png');
+  });
+
+  await step('16차: 전체 관리자 — 학교 현황, 학교 입장 기록, 학교 관리자에게 보임', async () => {
+    const ctxP = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxP.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    const table = await p.textContent('[data-testid=school-table]');
+    assert.match(table, /드리미 예시학교.*2 \/ 2.*Rungarun Example School/s);
+    await shot(p, '09-platform-admin.png');
+    await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('text=이 학교로 들어가기').click();
+    await p.waitForURL(/\/intake$/);
+    assert.match(await p.textContent('header.top'), /전체 관리자로 보는 중/);
+    assert.equal(await p.textContent('[data-testid=school-name]'), '드리미 예시학교');
+    await a.goto(`${BASE}/settings`);
+    assert.match(await a.textContent('[data-testid=access-log]'), /예시 전체 관리자 \(전체 관리자\) · 전체 관리자 입장/);
+    // 학교 관리자는 전체 관리 화면을 열 수 없다
+    assert.equal((await a.goto(`${BASE}/admin`)).status(), 404);
+    await ctxP.close();
+  });
 } catch (e) {
   exitCode = 1;
   console.error('\n서버 로그(마지막 2000자):\n' + serverLog.slice(-2000));

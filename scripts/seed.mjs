@@ -58,8 +58,36 @@ try {
          values ($1, 1, $2, $3, $4, $5, $6)`,
         [school.id, t.title, t.period_heading, t.assessment_heading, t.footer_note, user.id]);
     }
+    const { rowCount: hasLicense } = await client.query('select 1 from public.school_licenses where school_id = $1', [school.id]);
+    if (!hasLicense) {
+      await client.query(
+        `insert into public.school_licenses(school_id, version, seats, modules, monthly_estimate_krw, price_snapshot, note, created_by)
+         values ($1, 1, 5, array['intake','records'], 0, '{"intake":0,"records":0}', '예시 학교 기본 라이선스', $2)`,
+        [school.id, user.id]);
+    }
     console.log(`${s.name}: ${s.email}`);
   }
+  // 전체 관리자: PLATFORM_ADMIN_EMAILS(쉼표 구분)에 있는 이메일만. 목록에서 빠진 계정은 권한을 내린다.
+  // 이메일은 저장소에 두지 않고 환경 변수로만 넣는다. 계정은 Google 로그인으로 들어온다(비밀번호 없음).
+  const admins = String(process.env.PLATFORM_ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  // 로컬·테스트용 예시 전체 관리자 (Vercel에서는 SEED_PASSWORD_PLATFORM 을 넣었을 때만)
+  const demoPw = process.env.SEED_PASSWORD_PLATFORM || (process.env.VERCEL === '1' ? '' : 'demo-pass-p');
+  if (demoPw) {
+    await client.query(
+      `insert into private.app_users(email, password_hash, display_name, is_platform_admin) values ($1,$2,'예시 전체 관리자',true)
+       on conflict (email) do update set password_hash = excluded.password_hash, is_platform_admin = true`,
+      ['platform@example.test', hashPassword(demoPw)]);
+    admins.push('platform@example.test');
+  }
+  for (const e of admins) {
+    await client.query(
+      `insert into private.app_users(email, display_name, is_platform_admin) values ($1,$2,true)
+       on conflict (email) do update set is_platform_admin = true`, [e, '전체 관리자']);
+  }
+  const { rowCount: demoted } = await client.query(
+    `update private.app_users set is_platform_admin = false where is_platform_admin and not (lower(email) = any($1::text[]))`, [admins]);
+  console.log(`전체 관리자 ${admins.length}명` + (demoted ? `, 권한 해제 ${demoted}명` : ''));
+
   await client.query('commit');
   console.log('예시 데이터 준비 완료');
 } catch (e) {

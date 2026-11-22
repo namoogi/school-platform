@@ -67,3 +67,22 @@ Supabase 주소에는 암호화 연결을 씁니다. 기본값은 서버 인증�
 
 - Supabase에서 마이그레이션이 오류 없이 적용되는지 (`authenticated`·`anon` 역할은 이미 있어 건너뜀)
 - Transaction pooler를 거쳐도 `set local role authenticated`가 트랜잭션 안에서 유지되는지. 이 부분이 실패하면 로그인 후 화면에서 권한 오류가 납니다.
+
+## Google 로그인 (16차)
+
+1. Supabase → Authentication → Sign In / Providers → **Google**: 화면의 Callback URL(`https://<ref>.supabase.co/auth/v1/callback`)을 복사한다.
+2. Google Cloud Console → Google Auth Platform: 동의 화면(External)을 만들고 **Clients → Web application** 을 만든다. **승인된 리디렉션 URI에는 1의 Callback URL 하나만** 넣는다(와일드카드 불가).
+3. Supabase Google 공급자에 Client ID·Client secret을 넣고 켠다.
+4. Supabase → Authentication → **URL Configuration** → Redirect URLs (와일드카드 가능):
+   - `https://*-namoogi99-2639s-projects.vercel.app/**` (Preview)
+   - Production 주소 `/**`
+   - `http://localhost:3000/**` (로컬 개발)
+5. Vercel 환경 변수 (Production·Preview):
+
+| 이름 | 값 |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` (공개용 키. secret·service_role 키는 쓰지 않음) |
+| `PLATFORM_ADMIN_EMAILS` | 전체 관리자 Google 이메일(쉼표 구분). 배포 때 동기화되며 목록에서 빠진 계정은 권한이 내려감 |
+
+로그인은 **초대된 이메일**과 전체 관리자만 가능하다. 두 공개 값이 없으면 로그인 화면에 Google 버튼이 나오지 않는다.

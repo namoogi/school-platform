@@ -2,7 +2,7 @@ import { handle } from '@/lib/api';
 import { addFiles, listSources, ValidationError } from '@/lib/services';
 
 export async function GET(req: Request) {
-  return handle(req, ({ db, school }) => listSources(db, school.id));
+  return handle(req, ({ db, school }) => listSources(db, school.id), { module: 'intake' });
 }
 
 /** 여러 파일을 multipart로 받는다. (필드 이름: files) */
@@ -12,5 +12,5 @@ export async function POST(req: Request) {
     const files = form.getAll('files').filter((f): f is File => typeof f === 'object' && 'arrayBuffer' in f);
     const incoming = await Promise.all(files.map(async (f) => ({ name: f.name, type: f.type, bytes: Buffer.from(await f.arrayBuffer()) })));
     return addFiles(db, school.id, incoming);
-  });
+  }, { module: 'intake' });
 }

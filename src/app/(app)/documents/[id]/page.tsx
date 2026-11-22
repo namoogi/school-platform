@@ -9,12 +9,12 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   let data;
   try {
-    data = await loadForPage(async ({ db, school }) => ({ doc: await getDocument(db, school.id, id) }));
+    data = await loadForPage(async ({ db, school }) => ({ doc: await getDocument(db, school.id, id) }), { module: 'records' });
   } catch (e) {
     if (e instanceof NotFoundError) notFound();
     throw e;
   }
-  const { doc } = data;
+  const { doc, school } = data;
   const s = doc.snapshot;
   const intact = verifySnapshot(doc);
   return (
@@ -44,7 +44,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
               {doc.revision_of && <li>앞선 발행본: <Link href={`/documents/${doc.revision_of}`} data-testid="prev-link">{doc.revision_number === 2 ? '첫 발행' : `수정 ${doc.revision_number - 2}`}</Link></li>}
               {doc.superseded_by
                 ? <li>다음 수정본: <Link href={`/documents/${doc.superseded_by}`} data-testid="next-link">열기</Link></li>
-                : <li><p className="muted">현재 확정 규칙·양식으로 이 문서의 수정본을 발행합니다. 이 발행본은 그대로 남습니다.</p><PublishButton revisionOf={doc.id} label="수정본 발행" /></li>}
+                : school.isAdmin && <li><p className="muted">현재 확정 규칙·양식으로 이 문서의 수정본을 발행합니다. 이 발행본은 그대로 남습니다.</p><PublishButton revisionOf={doc.id} label="수정본 발행" /></li>}
             </ul>
           </section>
         </div>

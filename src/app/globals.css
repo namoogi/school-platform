@@ -132,3 +132,30 @@ input:not([type=radio]):not([type=checkbox]), select, textarea { border: 1px sol
   .paper-wrap { background: none; padding: 0; }
   .paper { box-shadow: none; }
 }
+
+/* 16차: 설정·전체 관리 */
+.aside-foot { margin-top: auto; display: grid; gap: 6px; }
+.aside-link { color: #e7eff9; font-weight: 700; text-decoration: none; padding: 6px 11px; border: 1px solid #29476d; border-radius: 7px; }
+.top-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: end; }
+.small { min-height: 32px; padding: 0 10px; font-size: .85rem; }
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; align-items: start; }
+.narrow { max-width: 620px; }
+.module { align-items: flex-start; }
+.module .tag { margin-left: 6px; }
+.estimate { background: var(--blue-soft); border-radius: 8px; padding: 10px 12px; }
+.log { list-style: none; margin: 0; padding: 0; font-size: .86rem; display: grid; gap: 6px; }
+.log time { color: var(--mute); font-size: .8rem; }
+.table-scroll { overflow-x: auto; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.price-row { align-items: center; margin-top: 0; }
+.price-row input { width: 140px; }
+.price-name { flex: 1; min-width: 140px; font-weight: 650; }
+.row input[type=email] { flex: 1; min-width: 200px; }
+.row select { width: auto; }
+.google { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; border: 1px solid #b4c4d6; border-radius: 7px; background: #fff; font-weight: 700; width: 100%; }
+.divider { display: flex; align-items: center; gap: 10px; color: var(--mute); font-size: .8rem; }
+.divider::before, .divider::after { content: ''; flex: 1; border-top: 1px solid var(--line); }
+@media (max-width: 900px) { .settings-grid { grid-template-columns: 1fr; } }
+
+.price-row input[type=number] { width: 140px; flex: none; }
+.actions select { width: auto; min-height: 32px; padding: 2px 8px; font-size: .85rem; }

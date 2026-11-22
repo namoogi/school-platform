@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { Question } from '@/lib/services';
 import type { PeriodValue } from '@/lib/analyze';
 
-export function ReviewClient({ question, currentVersion }: { question: Question; currentVersion: number | null }) {
+export function ReviewClient({ question, currentVersion, canConfirm = true }: { question: Question; currentVersion: number | null; canConfirm?: boolean }) {
   const router = useRouter();
   const [decision, setDecision] = useState<'accepted' | 'edited'>('accepted');
   const [draft, setDraft] = useState<PeriodValue>(() => structuredClone(question.proposal));
@@ -79,6 +79,8 @@ export function ReviewClient({ question, currentVersion }: { question: Question;
         </div>
       )}
 
+      {!canConfirm && <p className="notice">규칙 확정은 학교 관리자가 합니다. 근거를 확인하고 의견은 관리자에게 전해 주세요.</p>}
+      {canConfirm && <>
       <fieldset className="choices">
         <legend>처리</legend>
         <label className="radio"><input type="radio" name="decision" checked={decision === 'accepted'} onChange={() => setDecision('accepted')} /> 추정 결과가 맞습니다</label>
@@ -113,6 +115,7 @@ export function ReviewClient({ question, currentVersion }: { question: Question;
       <button type="button" className="primary" onClick={submit} disabled={busy}>
         {currentVersion ? `${currentVersion + 1}판으로 확정` : '이 기준 확정'}
       </button>
+      </>}
     </>
   );
 }
