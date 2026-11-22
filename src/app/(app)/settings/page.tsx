@@ -1,21 +1,23 @@
 import { loadForPage } from '@/lib/page';
 import { accessLog, licenseInfo, members, statements } from '@/lib/admin';
+import { LINK_KINDS, listLinks } from '@/lib/devlinks';
 import { LicenseForm, MembersPanel } from './SettingsClient';
 import { PageHeader, StatusBadge } from '@/components/ui';
 
 const ACTION: Record<string, string> = {
   'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
   'member.remove': '구성원 제외', 'member.invite_revoke': '초대 취소', 'school.create': '학교 생성', 'school.status': '학교 상태 변경',
-  'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경',
+  'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경', 'devlink.add': '개발 연동 추가', 'devlink.update': '개발 연동 변경',
 };
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
 export default async function SettingsPage() {
-  const { school, license, team, log, bills } = await loadForPage(async ({ db, school }) => ({
+  const { school, license, team, log, bills, links } = await loadForPage(async ({ db, school }) => ({
     license: await licenseInfo(db, school.id),
     team: await members(db, school.id),
     log: await accessLog(db, school.id, 30),
     bills: await statements(db, school.id),
+    links: await listLinks(db, school.id),
   }), { admin: true });
   const fmt = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
   return (
@@ -31,6 +33,14 @@ export default async function SettingsPage() {
         <section className="card" data-testid="members">
           <MembersPanel members={JSON.parse(JSON.stringify(team.members))} invitations={JSON.parse(JSON.stringify(team.invitations))}
             seats={license.current?.seats ?? 0} used={license.seatsUsed} />
+        </section>
+        <section className="card" data-testid="school-dev-links">
+          <h2>개발 연동</h2>
+          <p className="fine">이 학교 전용 개발 자원입니다. 연결·변경은 전체 관리자가 합니다.</p>
+          {links.length === 0 ? <p className="muted">연결된 자원이 없습니다.</p> : (
+            <ul className="sources">{links.map((l) => (
+              <li key={l.id}><div><strong>{l.label}</strong><small>{LINK_KINDS[l.kind].label} · <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a></small></div></li>
+            ))}</ul>)}
         </section>
         <section className="card">
           <h2>청구 기록</h2>
