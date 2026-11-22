@@ -53,7 +53,7 @@ export function schoolNav(school: { modules: string[]; isAdmin: boolean; isPlatf
 }
 
 export const platformGroup: NavGroup = {
-  label: '전체 관리', items: [{ href: '/admin', label: '학교·라이선스' }, { href: '/admin/lab', label: '개발·연구소' }],
+  label: '전체 관리', items: [{ href: '/admin', label: '학교·라이선스' }, { href: '/admin/integrations', label: '학교별 개발 연동' }, { href: '/admin/lab', label: '개발·연구소' }, { href: '/admin/design', label: '디자인 방향' }],
 };
 
 export function roleTag(school: { role: string | null; isPlatformAdmin: boolean }) {
