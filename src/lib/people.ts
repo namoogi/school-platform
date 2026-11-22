@@ -33,6 +33,11 @@ function date(value: unknown, what: string): string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new ValidationError(`${what}를 YYYY-MM-DD 형식으로 넣어 주세요.`);
   return value;
 }
+function grade(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 1 || n > 12) throw new ValidationError('학년은 1~12 사이입니다.');
+  return n;
+}
 async function call<T = unknown>(db: Db, sql: string, params: unknown[]): Promise<T> {
   const { rows: [r] } = await db.query(sql, params);
   return r?.v as T;
@@ -67,7 +72,7 @@ export function addCohort(db: Db, schoolId: string, input: { levelId?: unknown; 
 
 export function addHomeroom(db: Db, schoolId: string, input: { yearId?: unknown; levelId?: unknown; grade?: unknown; name?: unknown }) {
   return call<string>(db, 'select app.add_homeroom($1, $2, $3, $4, $5) as v',
-    [schoolId, id(input.yearId, '학년도'), id(input.levelId, '학교급'), Number(input.grade), text(input.name)]);
+    [schoolId, id(input.yearId, '학년도'), id(input.levelId, '학교급'), grade(input.grade), text(input.name)]);
 }
 
 export async function listSchoolLevels(db: Db, schoolId: string): Promise<SchoolLevel[]> {
