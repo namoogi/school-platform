@@ -3,6 +3,7 @@
 import crypto from 'node:crypto';
 import pg from 'pg';
 import { pgOptions } from './pg-options.mjs';
+import { connectOrExplain } from './db-errors.mjs';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -32,7 +33,7 @@ const schools = [
 ];
 
 const client = new pg.Client(pgOptions(url));
-await client.connect();
+await connectOrExplain(client);
 try {
   await client.query('begin');
   // 동시에 도는 빌드끼리 같은 시드를 겹쳐 넣지 않도록 잠근다.

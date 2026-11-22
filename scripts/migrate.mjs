@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { parseDbUrl, pgOptions } from './pg-options.mjs';
+import { connectOrExplain } from './db-errors.mjs';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -21,7 +22,7 @@ if (reset && !['localhost', '127.0.0.1', '::1'].includes(host)) {
 }
 
 const client = new pg.Client(pgOptions(url));
-await client.connect();
+await connectOrExplain(client);
 try {
   if (reset) {
     // 로컬 개발 DB의 스키마만 비운다. (파일 삭제 없음)

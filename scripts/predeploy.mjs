@@ -33,5 +33,11 @@ try {
   process.exit(1);
 }
 console.log(`[predeploy] ${process.env.VERCEL_ENV ?? 'unknown'} 빌드 · DB 호스트 ${host}`);
-execFileSync('node', ['scripts/migrate.mjs'], { stdio: 'inherit' });
-execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
+try {
+  execFileSync('node', ['scripts/migrate.mjs'], { stdio: 'inherit' });
+  execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
+} catch {
+  // 원인은 위 [db] 또는 마이그레이션 출력에 있다. 여기서는 중복 스택을 남기지 않는다.
+  console.error('[predeploy] DB 준비에 실패해 빌드를 중단합니다.');
+  process.exit(1);
+}
