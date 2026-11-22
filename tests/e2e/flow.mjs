@@ -262,6 +262,21 @@ try {
     await a.click('[data-testid=next-link]');
     await a.waitForURL(new RegExp(aDoc2 + '$'));
   });
+
+  await step('15차: B가 PDF 학사력을 올리면 쪽·줄 위치와 정확도 확인 표시', async () => {
+    const { schoolBCalendarPdf } = await import('../fixture-files.ts');
+    const tmp = path.join(ROOT, 'test-results');
+    fs.mkdirSync(tmp, { recursive: true });
+    const file = path.join(tmp, 'b-calendar-2027.pdf');
+    fs.writeFileSync(file, await schoolBCalendarPdf());
+    await b.goto(`${BASE}/intake`);
+    const before = await sourceItems(b).count();
+    await b.setInputFiles('[data-testid=file-input]', file);
+    await b.waitForFunction((n) => document.querySelectorAll('[data-testid=source-list] li').length === n + 1, before);
+    const text = await b.textContent('[data-testid=source-list]');
+    assert.match(text, /b-calendar-2027\.pdf.*내용을 읽음.*정확도 확인 필요.*표 1개, 3행/s);
+    await shot(b, '07-b-intake-pdf.png');
+  });
 } catch (e) {
   exitCode = 1;
   console.error('\n서버 로그(마지막 2000자):\n' + serverLog.slice(-2000));

@@ -15,17 +15,26 @@
     "test:e2e": "node tests/e2e/flow.mjs"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
+    "mammoth": "^1.13.0",
     "next": "^16.4.6",
+    "node-html-parser": "^9.0.7",
     "pg": "^8.23.1",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "unpdf": "^2.1.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "docx": "^9.15.3",
+    "pdf-lib": "^1.17.1",
     "typescript": "^5.9.3",
     "vitest": "^5.1.1"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

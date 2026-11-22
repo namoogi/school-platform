@@ -71,6 +71,8 @@ input:not([type=radio]):not([type=checkbox]), select, textarea { border: 1px sol
 .sources li { display: flex; justify-content: space-between; align-items: start; gap: 10px; padding: 11px 0; border-top: 1px solid var(--line); }
 .sources li div { display: grid; gap: 3px; justify-items: start; min-width: 0; }
 .sources small { font-size: .8rem; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.sources .link-button { white-space: nowrap; flex: none; }
 
 .question-text { font-weight: 700; font-size: 1.04rem; }
 .grid-table { width: 100%; border-collapse: collapse; font-size: .9rem; }

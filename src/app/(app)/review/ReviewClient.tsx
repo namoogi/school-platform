@@ -66,7 +66,7 @@ export function ReviewClient({ question, currentVersion }: { question: Question;
         <summary>추정 근거 · {question.evidence.length}행</summary>
         <ul>
           {question.evidence.map((e, i) => (
-            <li key={i}><span className="file">{e.file_name}</span> <span className="tag">{e.row_number}행</span> {e.claim}</li>
+            <li key={i}><span className="file">{e.file_name}</span> <span className="tag">{e.location ?? `${e.row_number}행`}</span> {e.claim}</li>
           ))}
         </ul>
       </details>
@@ -74,7 +74,7 @@ export function ReviewClient({ question, currentVersion }: { question: Question;
         <div className="issues" data-testid="issues">
           <strong>확인이 필요한 점</strong>
           <ul>{question.issues.map((x, i) => (
-            <li key={i}>{x.message}{x.evidence && <> <span className="muted">({x.evidence.file_name} {x.evidence.row_number}행)</span></>}</li>
+            <li key={i}>{x.message}{x.evidence && <> <span className="muted">({x.evidence.file_name} {x.evidence.location ?? `${x.evidence.row_number}행`})</span></>}</li>
           ))}</ul>
         </div>
       )}

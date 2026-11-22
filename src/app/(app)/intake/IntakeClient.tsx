@@ -6,7 +6,7 @@ import type { SourceFile } from '@/lib/services';
 const STATUS: Record<SourceFile['status'], { label: string; tone: string }> = {
   parsed: { label: '내용을 읽음', tone: 'green' },
   registered: { label: '주소만 등록 · 내용 미열람', tone: 'amber' },
-  pending_reader: { label: '파일 보관 · 판독기 미연결', tone: 'amber' },
+  pending_reader: { label: '보관 · 읽기 대기', tone: 'amber' },
 };
 
 export function IntakeClient({ sources }: { sources: SourceFile[] }) {
@@ -78,7 +78,7 @@ export function IntakeClient({ sources }: { sources: SourceFile[] }) {
           <input ref={input} type="file" multiple hidden data-testid="file-input"
             accept=".csv,.tsv,.txt,.pdf,.xlsx,.docx" onChange={(e) => e.target.files && upload(e.target.files)} />
         </div>
-        <p className="fine">파일별 최대 2MB. CSV·TSV·TXT는 바로 읽고, PDF·XLSX·DOCX는 파일 정보만 보관한 뒤 읽기 대기로 표시합니다.</p>
+        <p className="fine">파일별 최대 2MB. CSV·TSV·TXT·XLSX(시트별)·DOCX(문서 속 표)를 읽습니다. PDF는 글자 위치로 표를 추정하므로 근거를 원본과 대조해 주세요. 스캔 이미지 PDF와 그 밖의 형식은 보관만 하고 읽기 대기로 둡니다.</p>
 
         <h3 className="section-title">시트 주소</h3>
         {urls.map((u, i) => (
@@ -91,7 +91,7 @@ export function IntakeClient({ sources }: { sources: SourceFile[] }) {
           <button type="button" className="secondary" onClick={() => setUrls([...urls, ''])} disabled={urls.length >= 10}>+ 주소 추가</button>
           <button type="button" className="primary" onClick={registerSheets} disabled={busy || !urls.some((u) => u.trim())}>시트 주소 등록</button>
         </div>
-        <p className="fine">이 환경에는 시트 읽기 권한이 연결되지 않았습니다. 주소는 ‘주소만 등록’ 상태로 남고, 분석에는 첨부한 CSV를 씁니다.</p>
+        <p className="fine">이 환경에는 시트 읽기 권한이 연결되지 않았습니다. 주소는 ‘주소만 등록’ 상태로 남고, 분석에는 첨부한 파일을 씁니다. 같은 시트를 XLSX나 CSV로 내려받아 첨부해 주세요.</p>
         {message && <p className={message.error ? 'alert' : 'notice'} role="status">{message.text}</p>}
       </section>
 
@@ -103,9 +103,12 @@ export function IntakeClient({ sources }: { sources: SourceFile[] }) {
             <li key={s.id}>
               <div>
                 <strong>{s.name}</strong>
-                <span className={`tag ${STATUS[s.status].tone}`}>{STATUS[s.status].label}</span>
+                <span className="tags">
+                  <span className={`tag ${STATUS[s.status].tone}`}>{STATUS[s.status].label}</span>
+                  {s.needs_review && <span className="tag amber" title="글자 위치로 표를 추정했습니다. 근거 행을 원본과 대조해 주세요.">정확도 확인 필요</span>}
+                </span>
                 <small className="muted">
-                  {s.status === 'parsed' ? `${s.row_count}행` : s.status_note}
+                  {s.status_note ?? (s.status === 'parsed' ? `${s.row_count}행` : '')}
                   {s.sha256 && <> · <code title={s.sha256}>{s.sha256.slice(0, 8)}</code></>}
                 </small>
               </div>

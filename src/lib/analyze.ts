@@ -11,7 +11,7 @@ export type SourceForAnalysis = {
   id: string;
   name: string;
   sha256: string;
-  rows: { row_number: number; data: Record<string, string> }[];
+  rows: { row_number: number; location?: string | null; data: Record<string, string> }[];
 };
 
 export type PeriodValue = {
@@ -22,6 +22,8 @@ export type Evidence = {
   file_id: string;
   file_name: string;
   row_number: number;
+  /** 사람이 읽는 위치 (예: 시트 ‘학사력’ 3행, 표 2 · 3행, 2쪽 · 5줄). 없으면 row_number 행 */
+  location?: string;
   claim: string;
   cells: Record<string, string>;
 };
@@ -84,7 +86,7 @@ export function analyzePeriods(sources: SourceForAnalysis[]): Analysis | null {
         const label = r.data[role.labelCol]?.trim();
         if (!id || !label) continue;
         const ev: Evidence = {
-          file_id: src.id, file_name: src.name, row_number: r.row_number,
+          file_id: src.id, file_name: src.name, row_number: r.row_number, location: r.location ?? undefined,
           claim: `기간 ${id} = ‘${label}’`, cells: { [role.idCol]: id, [role.labelCol]: label },
         };
         const existing = periods.get(id);
@@ -104,7 +106,7 @@ export function analyzePeriods(sources: SourceForAnalysis[]): Analysis | null {
         pendingAssessments.push({
           label, parent,
           ev: {
-            file_id: src.id, file_name: src.name, row_number: r.row_number,
+            file_id: src.id, file_name: src.name, row_number: r.row_number, location: r.location ?? undefined,
             claim: `‘${label}’ → ${parent}`, cells: { [role.labelCol]: label, [role.parentCol]: parent },
           },
         });
@@ -142,7 +144,7 @@ export function analyzePeriods(sources: SourceForAnalysis[]): Analysis | null {
       : `자료에서 기간 ${periods.size}개(${labels})를 찾았습니다. 이 기간 이름을 문서에 그대로 쓸까요? 평가 기간 자료는 아직 없습니다.`
     : '평가 기간 자료는 있지만 학사 기간 자료가 없습니다. 학사력 자료를 추가해 주세요.';
 
-  const usedFiles = sources.filter((s) => used.has(s.id));
+  const usedFiles = [...new Map(sources.filter((s) => used.has(s.id)).map((s) => [s.id, s])).values()];
   const fingerprint = crypto
     .createHash('sha256')
     .update(ANALYZER + '|' + usedFiles.map((s) => s.sha256).sort().join('|'))

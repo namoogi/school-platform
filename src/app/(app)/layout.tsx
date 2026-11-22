@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <form method="post" action="/api/logout" className="logout"><button type="submit" className="link-button">로그아웃</button></form>
       </aside>
       <div className="workspace">
-        <header className="top"><span data-testid="school-name">{school.name}</span><span className="tag">14차 · 합성 자료</span></header>
+        <header className="top"><span data-testid="school-name">{school.name}</span><span className="tag">개발판 · 합성 자료</span></header>
         <main>{children}</main>
       </div>
     </div>
