@@ -1,6 +1,7 @@
 import { loadForPage } from '@/lib/page';
 import { accessLog, licenseInfo, members, statements } from '@/lib/admin';
 import { LicenseForm, MembersPanel } from './SettingsClient';
+import { PageHeader, StatusBadge } from '@/components/ui';
 
 const ACTION: Record<string, string> = {
   'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
@@ -19,9 +20,10 @@ export default async function SettingsPage() {
   const fmt = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
   return (
     <>
-      <div className="page-head">
-        <div><h1>학교 설정</h1><p>좌석 수와 사용할 기능을 정하고 구성원을 초대합니다. 변경은 버전으로 쌓이고 청구 예정액에 반영됩니다.</p></div>
-      </div>
+      <PageHeader title="학교 설정" crumbs={[{ label: '학교 관리' }, { label: '학교 설정' }]}
+        description="좌석 수와 사용할 기능을 정하고 구성원을 초대합니다. 변경은 판으로 쌓이고 청구 예정액에 반영됩니다."
+        status={<StatusBadge tone={school.status === 'active' ? 'success' : school.status === 'trial' ? 'info' : 'danger'}>{school.status === 'trial' ? '시범' : school.status === 'active' ? '운영' : '이용 중지'}</StatusBadge>}
+        meta={<><span>{school.name}</span>{license.current && <span>라이선스 {license.current.version}판</span>}</>} />
       <div className="settings-grid">
         <section className="card" data-testid="license">
           <LicenseForm info={JSON.parse(JSON.stringify(license))} />
@@ -51,7 +53,6 @@ export default async function SettingsPage() {
           </ul>
         </section>
       </div>
-      <p className="fine">학교: {school.name} · 상태 {school.status === 'trial' ? '시범' : school.status === 'active' ? '운영' : '이용 중지'}</p>
     </>
   );
 }

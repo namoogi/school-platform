@@ -305,7 +305,7 @@ try {
     const table = await p.textContent('[data-testid=school-table]');
     assert.match(table, /드리미 예시학교.*2 \/ 2.*Rungarun Example School/s);
     await shot(p, '09-platform-admin.png');
-    await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('text=이 학교로 들어가기').click();
+    await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('button:text-is("들어가기")').click();
     await p.waitForURL(/\/intake$/);
     assert.match(await p.textContent('header.top'), /전체 관리자로 보는 중/);
     assert.equal(await p.textContent('[data-testid=school-name]'), '드리미 예시학교');

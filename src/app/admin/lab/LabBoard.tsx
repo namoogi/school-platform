@@ -78,9 +78,9 @@ export function LabBoard({ items, kinds, priorities }: { items: Item[]; kinds: K
                   <select aria-label="상태" value={i.status} onChange={(e) => run(() => call(`/api/admin/items/${i.id}`, 'PATCH', { status: e.target.value }))}>
                     {Object.entries(kinds[i.kind].statuses).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                   </select>
-                  <span className={`tag prio-${i.priority}`}>{priorities[i.priority]}</span>
+                  <span className={`badge prio-${i.priority}`}>{priorities[i.priority]}</span>
                   {i.due_date && <span className="tag">기한 {i.due_date}</span>}
-                  {i.parent_id && byId[i.parent_id] && <span className="tag blue-soft">↳ {byId[i.parent_id].title.slice(0, 24)}</span>}
+                  {i.parent_id && byId[i.parent_id] && <span className="badge" data-tone="info">↳ {byId[i.parent_id].title.slice(0, 24)}</span>}
                   {i.tags.map((t) => <span key={t} className="tag">#{t}</span>)}
                   {i.history_count > 0 && <span className="muted small-text">변경 {i.history_count}회</span>}
                 </div>
@@ -122,7 +122,7 @@ function QuickAdd({ kind, kinds, parents, onAdd }: { kind: Kind; kinds: Kinds; p
           {parents.map((p) => <option key={p.id} value={p.id}>[{kinds[p.kind].label}] {p.title.slice(0, 30)}</option>)}
         </select>
       )}
-      <button type="submit" className="primary" disabled={!title.trim()}>추가</button>
+      <button type="submit" className="btn btn-primary" disabled={!title.trim()}>추가</button>
     </form>
   );
 }
