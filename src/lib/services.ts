@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import type { Db } from './db';
-import { parseDelimited } from './csv';
+import { readFile } from './readers';
 import {
   ANALYZER, analyzePeriods, canonical, validatePeriodValue, ValidationError,
   type Evidence, type Issue, type PeriodValue,
@@ -13,11 +13,21 @@ export const MAX_FILE_BYTES = 2 * 1024 * 1024;
 export const MAX_FILES_PER_UPLOAD = 20;
 
 // ── 조회 타입 ─────────────────────────────────────────────
-export type School = { id: string; slug: string; name: string; locale: string };
+export type School = {
+  id: string; slug: string; name: string; locale: string; status: 'trial' | 'active' | 'suspended';
+  /** 이 학교에서의 역할. 전체 관리자가 소속 없이 들어온 경우 null */
+  role: 'admin' | 'teacher' | null;
+  isPlatformAdmin: boolean;
+  /** 학교 관리자 권한(확정·발행·설정). 전체 관리자 포함 */
+  isAdmin: boolean;
+  modules: string[];
+  seats: number | null;
+};
+export type Me = { id: string; email: string; display_name: string; is_platform_admin: boolean };
 export type SourceFile = {
   id: string; kind: 'file' | 'sheet'; name: string; mime_type: string | null; size_bytes: number | null;
   sha256: string | null; sheet_url: string | null; status: 'parsed' | 'registered' | 'pending_reader';
-  status_note: string | null; created_at: string; row_count: number;
+  status_note: string | null; reader: string | null; needs_review: boolean; created_at: string; row_count: number;
 };
 export type Question = {
   id: string; status: string; prompt: string; proposal: PeriodValue; evidence: Evidence[]; issues: Issue[];
@@ -47,20 +57,80 @@ export type PublishedDocument = {
 };
 
 // ── 학교 ─────────────────────────────────────────────────
-/** 로그인한 사용자의 소속 학교. RLS 때문에 자기 소속만 보인다. */
-export async function currentSchool(db: Db): Promise<School> {
-  const { rows } = await db.query<School>(
-    `select s.id, s.slug, s.name, s.locale from public.memberships m
-     join public.schools s on s.id = m.school_id where m.user_id = app.uid() order by s.slug limit 1`);
-  if (!rows[0]) throw new NotFoundError('소속 학교가 없습니다.');
+export class NoSchoolError extends Error {}
+
+export async function me(db: Db): Promise<Me> {
+  const { rows } = await db.query<Me>('select * from app.me()');
+  if (!rows[0]) throw new NotFoundError('계정을 찾을 수 없습니다.');
   return rows[0];
+}
+
+/**
+ * 지금 작업 중인 학교. preferredId(전환한 학교)가 있으면 그 학교를, 없으면 첫 소속 학교를 쓴다.
+ * RLS 때문에 소속 학교(전체 관리자는 모든 학교)만 보인다.
+ */
+export async function currentSchool(db: Db, preferredId?: string | null): Promise<School> {
+  const account = await me(db);
+  const cols = `s.id, s.slug, s.name, s.locale, s.status,
+    (select m.role from public.memberships m where m.user_id = app.uid() and m.school_id = s.id) as role,
+    l.modules, l.seats`;
+  const join = `left join lateral (select x.modules, x.seats from public.school_licenses x
+    where x.school_id = s.id order by x.version desc limit 1) l on true`;
+  let row: Record<string, unknown> | undefined;
+  if (preferredId && isUuid(preferredId)) {
+    row = (await db.query(`select ${cols} from public.schools s ${join} where s.id = $1`, [preferredId])).rows[0];
+  }
+  if (!row) {
+    row = (await db.query(
+      `select ${cols} from public.memberships m join public.schools s on s.id = m.school_id ${join}
+       where m.user_id = app.uid() order by s.slug limit 1`)).rows[0];
+  }
+  if (!row) {
+    if (account.is_platform_admin) throw new NoSchoolError('작업할 학교를 고르세요.');
+    throw new NotFoundError('소속 학교가 없습니다.');
+  }
+  if (row.status === 'suspended' && !account.is_platform_admin) {
+    throw new ValidationError('이용이 중지된 학교입니다. 전체 관리자에게 문의하세요.');
+  }
+  const role = (row.role as School['role']) ?? null;
+  return {
+    id: row.id as string, slug: row.slug as string, name: row.name as string, locale: row.locale as string,
+    status: row.status as School['status'], role, isPlatformAdmin: account.is_platform_admin,
+    isAdmin: account.is_platform_admin || role === 'admin',
+    modules: (row.modules as string[] | null) ?? [], seats: (row.seats as number | null) ?? null,
+  };
+}
+
+/** 학사 흐름 단계 표시용: 자료가 있는지, 확정 규칙이 있는지, 발행본이 있는지 */
+export async function flowProgress(db: Db, schoolId: string) {
+  const { rows: [r] } = await db.query(
+    `select exists(select 1 from public.source_files where school_id = $1 and archived_at is null and status = 'parsed') as sources,
+            exists(select 1 from public.school_rules where school_id = $1) as rule,
+            exists(select 1 from public.published_documents where school_id = $1) as docs`, [schoolId]);
+  const done: string[] = [];
+  if (r.sources) done.push('intake');
+  if (r.rule) done.push('review');
+  if (r.docs) done.push('documents');
+  return done;
+}
+
+/** 학교 전환기용: 볼 수 있는 학교(소속 학교, 전체 관리자는 모든 학교) */
+export async function accessibleSchools(db: Db) {
+  const { rows } = await db.query<{ id: string; name: string; status: string }>(
+    'select id, name, status from public.schools order by name');
+  return rows;
+}
+
+export function hasModule(school: School, key: 'intake' | 'records') {
+  return school.modules.includes(key);
 }
 
 // ── 자료 ─────────────────────────────────────────────────
 export async function listSources(db: Db, schoolId: string): Promise<SourceFile[]> {
   const { rows } = await db.query<SourceFile>(
     `select f.id, f.kind, f.name, f.mime_type, f.size_bytes, f.sha256, f.sheet_url, f.status, f.status_note,
-            f.created_at, (select count(*)::int from public.source_rows r where r.file_id = f.id) as row_count
+            f.reader, f.needs_review, f.created_at,
+            (select count(*)::int from public.source_rows r where r.file_id = f.id) as row_count
      from public.source_files f where f.school_id = $1 and f.archived_at is null order by f.created_at, f.id`,
     [schoolId]);
   return rows;
@@ -73,7 +143,7 @@ export async function getSource(db: Db, schoolId: string, id: string) {
      from public.source_files where id = $1 and school_id = $2`, [id, schoolId]);
   if (!rows[0]) throw new NotFoundError('자료를 찾을 수 없습니다.');
   const { rows: srcRows } = await db.query(
-    'select row_number, data from public.source_rows where file_id = $1 order by row_number', [id]);
+    'select table_key, row_number, location, data from public.source_rows where file_id = $1 order by table_key, row_number', [id]);
   return { ...rows[0], rows: srcRows };
 }
 
@@ -88,29 +158,29 @@ export async function addFiles(db: Db, schoolId: string, files: IncomingFile[]) 
     const name = sanitizeName(f.name);
     if (f.bytes.length > MAX_FILE_BYTES) throw new ValidationError(`${name}: 파일별 최대 2MB입니다.`);
     const sha256 = crypto.createHash('sha256').update(f.bytes).digest('hex');
-    const lower = name.toLowerCase();
-    const isText = /\.(csv|tsv|txt)$/.test(lower);
-    if (!isText) {
+    const result = await readFile(name, f.bytes);
+    const isText = result?.ok && result.reader === 'text@1';
+    if (!result || !result.ok) {
+      // 판독기가 없거나 읽지 못한 파일: 원본만 보관하고 읽기 대기로 표시
+      const note = result ? result.note : '이 형식은 아직 읽을 수 없습니다. 파일만 보관했습니다. (CSV·TSV·TXT·XLSX·DOCX·PDF 지원)';
       const { rows: [row] } = await db.query(
-        `insert into public.source_files(school_id, kind, name, mime_type, size_bytes, sha256, status, status_note)
-         values ($1,'file',$2,$3,$4,$5,'pending_reader',$6) returning id`,
-        [schoolId, name, f.type || null, f.bytes.length, sha256,
-          'PDF·XLSX·DOCX 판독기가 아직 연결되지 않았습니다. 파일 정보만 등록했습니다.']);
+        `insert into public.source_files(school_id, kind, name, mime_type, size_bytes, sha256, original, reader, status, status_note)
+         values ($1,'file',$2,$3,$4,$5,$6,$7,'pending_reader',$8) returning id`,
+        [schoolId, name, f.type || null, f.bytes.length, sha256, f.bytes, result?.reader ?? null, note]);
       added.push({ id: row.id, name, status: 'pending_reader' });
       continue;
     }
-    const text = f.bytes.toString('utf8');
-    const firstLine = text.split(/\r?\n/, 1)[0] ?? '';
-    const delimiter = lower.endsWith('.csv') ? ',' : lower.endsWith('.tsv') ? '\t' : firstLine.includes('\t') ? '\t' : ',';
-    const table = parseDelimited(text, delimiter);
     const { rows: [row] } = await db.query(
-      `insert into public.source_files(school_id, kind, name, mime_type, size_bytes, sha256, content, status, status_note)
-       values ($1,'file',$2,$3,$4,$5,$6,'parsed',$7) returning id`,
-      [schoolId, name, f.type || 'text/csv', f.bytes.length, sha256, text, `${table.rows.length}행을 읽었습니다.`]);
-    for (const r of table.rows) {
-      await db.query(
-        'insert into public.source_rows(school_id, file_id, row_number, data) values ($1,$2,$3,$4)',
-        [schoolId, row.id, r.rowNumber, JSON.stringify(r.data)]);
+      `insert into public.source_files(school_id, kind, name, mime_type, size_bytes, sha256, content, original, reader, needs_review, status, status_note)
+       values ($1,'file',$2,$3,$4,$5,$6,$7,$8,$9,'parsed',$10) returning id`,
+      [schoolId, name, f.type || null, f.bytes.length, sha256, isText ? result.text : null, isText ? null : f.bytes,
+        result.reader, result.needsReview, result.note]);
+    for (const t of result.tables) {
+      for (const r of t.rows) {
+        await db.query(
+          'insert into public.source_rows(school_id, file_id, table_key, row_number, location, data) values ($1,$2,$3,$4,$5,$6)',
+          [schoolId, row.id, t.key, r.rowNumber, r.location, JSON.stringify(r.data)]);
+      }
     }
     added.push({ id: row.id, name, status: 'parsed' });
   }
@@ -161,10 +231,14 @@ export async function reanalyze(db: Db, schoolId: string) {
   const { rows: files } = await db.query(
     `select id, name, sha256 from public.source_files
      where school_id = $1 and status = 'parsed' and archived_at is null order by created_at, id`, [schoolId]);
+  // 파일 안의 표(시트·문서 표·PDF 표)마다 따로 분석한다.
   const sources = [];
   for (const f of files) {
-    const { rows } = await db.query('select row_number, data from public.source_rows where file_id = $1 order by row_number', [f.id]);
-    sources.push({ ...f, rows });
+    const { rows } = await db.query(
+      'select table_key, row_number, location, data from public.source_rows where file_id = $1 order by table_key, row_number', [f.id]);
+    const byTable = new Map<string, typeof rows>();
+    for (const r of rows) byTable.set(r.table_key, [...(byTable.get(r.table_key) ?? []), r]);
+    for (const tableRows of byTable.values()) sources.push({ ...f, rows: tableRows });
   }
   const analysis = analyzePeriods(sources);
   const open = await openQuestion(db, schoolId);

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { Question } from '@/lib/services';
 import type { PeriodValue } from '@/lib/analyze';
 
-export function ReviewClient({ question, currentVersion }: { question: Question; currentVersion: number | null }) {
+export function ReviewClient({ question, currentVersion, canConfirm = true }: { question: Question; currentVersion: number | null; canConfirm?: boolean }) {
   const router = useRouter();
   const [decision, setDecision] = useState<'accepted' | 'edited'>('accepted');
   const [draft, setDraft] = useState<PeriodValue>(() => structuredClone(question.proposal));
@@ -66,7 +66,7 @@ export function ReviewClient({ question, currentVersion }: { question: Question;
         <summary>추정 근거 · {question.evidence.length}행</summary>
         <ul>
           {question.evidence.map((e, i) => (
-            <li key={i}><span className="file">{e.file_name}</span> <span className="tag">{e.row_number}행</span> {e.claim}</li>
+            <li key={i}><span className="file">{e.file_name}</span> <span className="tag">{e.location ?? `${e.row_number}행`}</span> {e.claim}</li>
           ))}
         </ul>
       </details>
@@ -74,11 +74,13 @@ export function ReviewClient({ question, currentVersion }: { question: Question;
         <div className="issues" data-testid="issues">
           <strong>확인이 필요한 점</strong>
           <ul>{question.issues.map((x, i) => (
-            <li key={i}>{x.message}{x.evidence && <> <span className="muted">({x.evidence.file_name} {x.evidence.row_number}행)</span></>}</li>
+            <li key={i}>{x.message}{x.evidence && <> <span className="muted">({x.evidence.file_name} {x.evidence.location ?? `${x.evidence.row_number}행`})</span></>}</li>
           ))}</ul>
         </div>
       )}
 
+      {!canConfirm && <p className="notice">규칙 확정은 학교 관리자가 합니다. 근거를 확인하고 의견은 관리자에게 전해 주세요.</p>}
+      {canConfirm && <>
       <fieldset className="choices">
         <legend>처리</legend>
         <label className="radio"><input type="radio" name="decision" checked={decision === 'accepted'} onChange={() => setDecision('accepted')} /> 추정 결과가 맞습니다</label>
@@ -113,6 +115,7 @@ export function ReviewClient({ question, currentVersion }: { question: Question;
       <button type="button" className="primary" onClick={submit} disabled={busy}>
         {currentVersion ? `${currentVersion + 1}판으로 확정` : '이 기준 확정'}
       </button>
+      </>}
     </>
   );
 }
