@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { SourceFile } from '@/lib/services';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import { uploadWithProgress } from '@/lib/file-check';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const STATUS: Record<SourceFile['status'], { label: string; tone: string }> = {
   parsed: { label: '내용을 읽음', tone: 'green' },
@@ -13,6 +14,7 @@ const STATUS: Record<SourceFile['status'], { label: string; tone: string }> = {
 
 export function IntakeClient({ sources }: { sources: SourceFile[] }) {
   const router = useRouter();
+  const [ask, confirmDialog] = useConfirm();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [urls, setUrls] = useState<string[]>(['']);
@@ -47,7 +49,7 @@ export function IntakeClient({ sources }: { sources: SourceFile[] }) {
   }
 
   async function archive(id: string, name: string) {
-    if (!confirm(`‘${name}’을 목록에서 뺄까요? 원문은 발행본 근거로 보관됩니다.`)) return;
+    if (!(await ask({ title: '자료를 목록에서 뺄까요?', description: <>‘{name}’을 자료 목록과 다음 분석에서 뺍니다. 원문은 지우지 않고, 이미 발행한 문서의 근거로 그대로 보관합니다.</>, confirmLabel: '목록에서 빼기' }))) return;
     const res = await fetch(`/api/sources/${id}/archive`, { method: 'POST' });
     const body = await res.json();
     if (!res.ok) return setMessage({ text: body.error, error: true });
@@ -57,6 +59,7 @@ export function IntakeClient({ sources }: { sources: SourceFile[] }) {
 
   return (
     <div className="intake-grid">
+      {confirmDialog}
       <section className="card">
         <h2>학교 자료 추가</h2>
         <p className="muted">학사력, 평가 일정, 성적표·학생부 빈 서식 등. 합성 또는 비식별 자료를 사용해 주세요.</p>

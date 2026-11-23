@@ -1059,6 +1059,50 @@ try {
     assert.equal((await call('/api/agent/me')).status, 401);
     await ctxV.close();
     await ctxH.close();
+  await step('확인 대화상자: 처음 포커스는 취소, Esc로 닫으면 그대로, 확인하면 실행(자료 빼기·청구 확정)', async () => {
+    await b.goto(`${BASE}/intake`);
+    const before = await sourceItems(b).count();
+    const item = sourceItems(b).filter({ hasText: 'b-calendar-2027.pdf' });
+    await item.locator('button:text-is("목록에서 빼기")').click();
+    const dlg = b.locator('[role=alertdialog][data-testid=confirm-dialog]');
+    await dlg.waitFor();
+    assert.match(await dlg.textContent(), /자료를 목록에서 뺄까요\?.*b-calendar-2027\.pdf.*발행한 문서의 근거로 그대로 보관/s);
+    assert.equal(await b.evaluate(() => document.activeElement?.textContent), '취소');
+    await shot(b, '31-confirm-dialog.png');
+    // Tab은 대화상자 안에서만 돈다(포커스 가둠)
+    await b.keyboard.press('Tab');
+    await b.keyboard.press('Tab');
+    assert.ok(await b.evaluate(() => !!document.activeElement?.closest('[role=alertdialog]')));
+    await b.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+    assert.equal(await sourceItems(b).count(), before);
+    assert.equal(await b.evaluate(() => document.activeElement?.textContent), '목록에서 빼기');
+    await item.locator('button:text-is("목록에서 빼기")').click();
+    await dlg.locator('button:text-is("목록에서 빼기")').click();
+    await b.waitForFunction((n) => document.querySelectorAll('[data-testid=source-list] li').length === n - 1, before);
+
+    // 전체 관리자: 청구 확정은 확인 뒤에만 기록이 생긴다
+    const ctxC = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctxC.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    const row = p.locator('[data-testid=school-table] tr', { hasText: 'Rungarun Example School' });
+    const billsBefore = await p.locator('[data-testid=bill-table] tbody tr').count();
+    await row.locator('button:has-text("청구 확정")').click();
+    const pd = p.locator('[role=alertdialog]');
+    await pd.waitFor();
+    assert.match(await pd.textContent(), /고치거나 지울 수 없습니다/);
+    await pd.locator('button:text-is("취소")').click();
+    await pd.waitFor({ state: 'detached' });
+    assert.equal(await p.locator('[data-testid=bill-table] tbody tr').count(), billsBefore);
+    await row.locator('button:has-text("청구 확정")').click();
+    await pd.locator('button:text-is("청구 확정")').click();
+    await p.waitForFunction((n) => document.querySelectorAll('[data-testid=bill-table] tbody tr').length === n + 1, billsBefore);
+    assert.match(await p.textContent('[data-testid=bill-table]'), /Rungarun Example School/);
+    await ctxC.close();
   });
 
   await step('38차: 토큰 권한 확장 — 무기한·만들기·보관 발급 → 에이전트가 새 동화 만들고 구조 바꿈 → 관리자 공개 → 내림 → 에이전트 보관 → 관리자 되살리기', async () => {
