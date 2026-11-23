@@ -796,6 +796,72 @@ try {
     await ctxH.close();
   });
 
+  await step('34차: 외부 작업 토큰 — 관리자 발급 → 스크립트가 토큰으로 캐릭터 PNG·PDF 올리고 시안 → 범위 밖 거부 → 관리자 공개 → 방문자 PDF 내려받기 → 폐기', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.selectOption('[data-testid=agent-token-story]', 'after-rain');
+    await h.click('[data-testid=agent-token-issue]');
+    const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
+    assert.match(token, /^agt_[0-9a-f]{64}$/);
+    await h.waitForSelector('[data-testid=agent-token-list] td:text-is("/after-rain")');
+    await shot(h, '34-agent-token.png');
+    // 합성 작업 폴더 (실제 동화 아님): 캐릭터 PNG 1장 + PDF 1개 + manifest
+    const work = fs.mkdtempSync(path.join(ROOT, '.e2e-agent-'));
+    try {
+      const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082', 'hex');
+      const PDF = Buffer.from('%PDF-1.7\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n', 'latin1');
+      fs.mkdirSync(path.join(work, 'characters'));
+      fs.writeFileSync(path.join(work, 'characters', 'rabbit.png'), PNG);
+      fs.writeFileSync(path.join(work, 'after-rain.pdf'), PDF);
+      fs.writeFileSync(path.join(work, 'manifest.json'), JSON.stringify({
+        story_key: 'after-rain', note: 'E2E 합성 캐릭터·PDF',
+        characters: { title: { ko: '등장인물', en: 'Characters' }, items: [{ file: 'characters/rabbit.png', name: { ko: '토끼 단비', en: 'Danbi the rabbit' }, body: { ko: '약속을 지키는 친구' } }] },
+        pdfs: [{ file: 'after-rain.pdf', label: { ko: '동화 PDF 내려받기', en: 'Download the storybook' }, note: { ko: '인쇄용 아님(웹용)' } }],
+      }));
+      const out = execFileSync('node', ['scripts/agent-story-upload.mjs', work], { cwd: ROOT, env: { ...process.env, SCHOOL_AGENT_TOKEN: token, ONSCHOOLS_URL: BASE }, encoding: 'utf8' });
+      assert.match(out, /새 판 저장: \d+판 \(시안, 공개 안 됨\)/);
+      assert.doesNotMatch(out, /agt_/); // 토큰 원문을 출력하지 않는다
+    } finally { fs.rmSync(work, { recursive: true, force: true }); }
+    // 범위 밖·사람 전용 경로는 거부
+    const call = (p, init = {}) => fetch(`${BASE}${p}`, { ...init, headers: { 'x-agent-token': token, 'content-type': 'application/json', ...(init.headers ?? {}) } });
+    assert.equal((await call('/api/agent/stories/dawn-story/versions', { method: 'POST', body: JSON.stringify({ content: { title: { ko: 'x' }, blocks: [] } }) })).status, 403);
+    assert.equal((await call('/api/agent/stories/dawn-story')).status, 404);
+    const entries = await (await fetch(`${BASE}/api/site/assets`, { headers: { 'x-agent-token': token } })).status;
+    assert.equal(entries, 401); // 사람 경로는 토큰을 받지 않는다
+    assert.equal((await call('/api/agent/me', { headers: { cookie: 'sp_session=x' } })).status, 400);
+    // 방문자에게는 아직 PDF가 없다 → 관리자가 시안 확인 후 공개
+    const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
+    const v = await ctxV.newPage();
+    await v.goto(`${BASE}/s/dreamy-a/stories/after-rain`);
+    assert.equal(await v.locator('[data-testid=download-block]').count(), 0);
+    await h.goto(`${BASE}/site?box=story`);
+    await h.click('.triage-item:has-text("비 온 뒤의 약속")');
+    await h.waitForSelector('[data-testid=entry-editor]');
+    assert.match(await h.textContent('[data-testid=entry-editor]'), /작업 토큰/);
+    await h.click('text=최신 판 공개');
+    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    await v.goto(`${BASE}/s/dreamy-a/stories/after-rain?lang=ko`);
+    await v.waitForSelector('[data-testid=download-block]');
+    assert.match(await v.textContent('.site-main'), /토끼 단비/);
+    assert.match(await v.textContent('[data-testid=download-block]'), /동화 PDF 내려받기.*PDF/s);
+    const [dl] = await Promise.all([v.waitForEvent('download'), v.click('[data-testid=download-block] a')]);
+    assert.equal(dl.suggestedFilename(), 'after-rain.pdf');
+    const href = await v.getAttribute('[data-testid=download-block] a', 'href');
+    const res = await fetch(`${BASE}${href}`);
+    assert.equal(res.headers.get('content-disposition'), 'attachment');
+    assert.equal(res.headers.get('content-type'), 'application/pdf');
+    await shot(v, '34-story-download.png');
+    // 폐기하면 바로 막힌다
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.click('[data-testid=agent-token-list] button:text-is("폐기")');
+    await h.waitForSelector('[data-testid=agent-token-list] .badge:has-text("폐기")');
+    assert.equal((await call('/api/agent/me')).status, 401);
+    await ctxV.close();
+    await ctxH.close();
+  });
+
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

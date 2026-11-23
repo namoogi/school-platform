@@ -6,6 +6,8 @@ import { EmptyState, StatusBadge } from '@/components/ui';
 import { TriageKeys } from '../review/TriageKeys';
 import { EntryEditor, NewEntryForm, SiteSettingsForm } from './SiteClient';
 import { ImportPanel } from './ImportClient';
+import { AgentTokenPanel } from './AgentTokenClient';
+import { listAgentTokens } from '@/lib/agent';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +24,7 @@ const ICON: Record<Box, LucideIcon> = { settings: Settings2, page: FileText, new
  */
 export default async function SiteAdminPage({ searchParams }: { searchParams: Promise<{ box?: string; id?: string }> }) {
   const sp = await searchParams;
-  const { school, settings, entries, assets, detail } = await loadForPage(async ({ db, school }) => {
+  const { school, settings, entries, assets, detail, tokens } = await loadForPage(async ({ db, school }) => {
     const entries = await listEntries(db, school.id);
     const pickId = sp.id && entries.some((e) => e.id === sp.id) ? sp.id : undefined;
     return {
@@ -30,6 +32,8 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
       entries,
       assets: await listAssets(db, school.id),
       detail: pickId ? await getEntry(db, school.id, pickId) : null,
+      // 34차: 외부 작업 토큰은 성품 동화 기능이 켜진 학교의 관리자만 본다(RLS도 관리자만)
+      tokens: school.isAdmin && school.modules.includes('stories') && sp.box === 'settings' ? await listAgentTokens(db, school.id) : null,
     };
   }, { module: 'homepage' });
 
@@ -93,6 +97,8 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                     {/* 가져오기 등으로 설정이 바뀌면 양식을 새 값으로 다시 연다(예전 값으로 덮어쓰지 않게) */}
                     <SiteSettingsForm key={settings?.updated_at ?? 'new'} initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
                     {settings && <ImportPanel settings={JSON.parse(JSON.stringify(settings))} existing={entries.map((e) => ({ id: e.id, kind: e.kind, key: e.key }))} />}
+                    {tokens && <AgentTokenPanel tokens={JSON.parse(JSON.stringify(tokens))}
+                      stories={entries.filter((e) => e.kind === 'story').map((e) => ({ key: e.key, title: pick(e.latest_title, lang, lang) || e.key }))} />}
                   </>
                 : <EmptyState title="설정은 학교 관리자가 합니다">시안 만들기와 고치기는 교사도 할 수 있습니다.</EmptyState>)
             : selected

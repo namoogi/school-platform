@@ -65,6 +65,28 @@ export async function asPublic<T>(fn: (db: Db) => Promise<T>): Promise<T> {
   }
 }
 
+/**
+ * 34차: 외부 작업 토큰 요청 (ADR 0012). 표 권한이 없는 agent_request 역할로 바꾸고 사용자 클레임은 비운다.
+ * 이 역할은 agent 스키마의 명령 함수만 부를 수 있고, 함수가 토큰(해시)을 확인해 학교·동화 범위를 정한다.
+ * 로그인 쿠키·asSystem 은 쓰지 않는다.
+ */
+export async function asAgent<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query('begin');
+    await client.query('set local role agent_request');
+    await client.query("select set_config('request.jwt.claims', '{}', true)");
+    const result = await fn(client);
+    await client.query('commit');
+    return result;
+  } catch (e) {
+    await client.query('rollback').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 /** 로그인 확인처럼 사용자 맥락이 생기기 전 단계에서만 쓴다. */
 export async function asSystem<T>(fn: (db: Db) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
