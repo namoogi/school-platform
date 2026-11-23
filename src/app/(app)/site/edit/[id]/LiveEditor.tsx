@@ -32,7 +32,7 @@ type Msg = { tone: 'success' | 'danger' | 'info'; text: string; undo?: boolean }
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error ?? '저장하지 못했습니다.');
+  if (!res.ok) throw Object.assign(new Error(data.error ?? '저장하지 못했습니다.'), { status: res.status });
   return data;
 }
 const norm = (c: Content) => JSON.stringify(clean(c));
@@ -72,13 +72,21 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
   const [focusGrip, setFocusGrip] = useState<number | null>(null);
   const armed = useRef(false);
 
-  // 저장·공개 뒤 새 판이 오면: 방금 보낸 내용이면 입력을 그대로 두고, 다른 사람이 만든 판이면 그 판으로 맞춘다
-  const [shownId, setShownId] = useState(latest.id);
+  // 새 판이 오면(저장·공개 뒤 새로 고침, 또는 다른 사람·외부 작업 토큰이 만든 판):
+  // - 방금 내가 보낸 내용이면 입력을 그대로 둔다.
+  // - 내가 저장하지 않은 고침이 있으면 지우지 않고 '다른 판이 생김'을 알린다(ADR 0013 병행 규칙: 덮어쓰지도, 버리지도 않는다).
+  // - 고친 것이 없으면 새 판으로 맞춘다.
+  const [shown, setShown] = useState({ id: latest.id, content: latest.content });
   const [sent, setSent] = useState<string | null>(null);
-  if (shownId !== latest.id) {
-    setShownId(latest.id);
-    if (sent === null || sent !== norm(latest.content)) { const c = structuredClone(latest.content); setContent(c); cref.current = c; setPast([]); }
-    setSent(null); setNote('');
+  const [conflict, setConflict] = useState<number | null>(null); // 내 고침과 따로 생긴 최신 판 번호
+  if (shown.id !== latest.id) {
+    const mine = sent !== null && sent === norm(latest.content);
+    const unsaved = !sameContent(cref.current, shown.content);
+    setShown({ id: latest.id, content: latest.content });
+    if (mine) setConflict(null);
+    else if (unsaved) setConflict(latest.version);
+    else { const c = structuredClone(latest.content); setContent(c); cref.current = c; setPast([]); setConflict(null); }
+    setSent(null); if (mine) setNote('');
   }
   const dirty = !sameContent(content, latest.content);
   const isHome = entry.kind === 'page' && entry.key === 'home';
@@ -118,7 +126,14 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
   async function run(fn: () => Promise<unknown>, ok: string) {
     setBusy(true); setMsg(null);
     try { await fn(); setMsg({ tone: 'success', text: ok }); router.refresh(); }
-    catch (e) { setMsg({ tone: 'danger', text: (e as Error).message }); }
+    catch (e) {
+      const err = e as Error & { status?: number };
+      if (err.status === 409) {
+        // 그 사이 새 판이 생김: 내 고침은 화면에 둔 채 최신 판을 다시 읽는다(위의 새 판 처리에서 '다른 판이 생김'으로 바뀜)
+        setSent(null); setConflict((c) => c ?? -1); router.refresh();
+        setMsg({ tone: 'danger', text: '그 사이 다른 사람이 새 판을 저장했습니다. 내 고침은 화면에 그대로 있습니다.' });
+      } else setMsg({ tone: 'danger', text: err.message });
+    }
     finally { setBusy(false); }
   }
   const saveDraft = () => run(saveVersion, '시안(새 판)으로 저장했습니다. 방문자 화면은 공개할 때 바뀝니다.');
@@ -269,9 +284,9 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
           <label className="le-note"><span className="sr-only">이번 판 메모 (선택)</span>
             <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="판 메모 (선택)" maxLength={300} />
           </label>
-          <button type="button" className={canPublish ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={saveDraft} disabled={busy || !dirty} data-testid="le-save">시안 저장</button>
+          <button type="button" className={canPublish ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={saveDraft} disabled={busy || !dirty || conflict !== null} data-testid="le-save">시안 저장</button>
           {canPublish
-            ? <button type="button" className="btn btn-primary btn-sm" onClick={publish} disabled={busy || (!dirty && live?.id === latest.id)} data-testid="le-publish">{dirty ? '저장하고 공개' : '최신 판 공개'}</button>
+            ? <button type="button" className="btn btn-primary btn-sm" onClick={publish} disabled={busy || conflict !== null || (!dirty && live?.id === latest.id)} data-testid="le-publish">{dirty ? '저장하고 공개' : '최신 판 공개'}</button>
             : <span className="fine">공개는 학교 관리자가 합니다.</span>}
         </div>
         {msg && (
@@ -280,6 +295,17 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
           </p>
         )}
       </div>
+      {conflict !== null && (
+        <div className="banner le-msg" data-tone="warning" role="alert" data-testid="le-conflict">
+          <p>{conflict > 0 ? `이 화면을 연 뒤 ${conflict}판이 새로 저장되었습니다.` : '그 사이 새 판이 저장되었습니다.'} 내 고침은 아직 저장되지 않았습니다.
+            두 판은 모두 판 기록에 남으므로 어느 쪽을 골라도 다른 쪽을 다시 불러올 수 있습니다.</p>
+          <div className="form-actions">
+            <button type="button" className="btn btn-secondary btn-sm" disabled={busy || conflict < 0} onClick={() => run(async () => { await saveVersion(); setConflict(null); }, '내 고침을 최신 판 위에 새 판으로 저장했습니다.')}>내 고침을 최신 판 위에 저장</button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || conflict < 0} onClick={() => { change(() => structuredClone(latest.content)); setConflict(null); setMsg({ tone: 'info', text: `최신 ${latest.version}판을 불러왔습니다. 되돌리기로 내 고침을 다시 볼 수 있습니다.`, undo: true }); }}>최신 판 불러오기</button>
+            {conflict > 0 && <Link className="btn btn-ghost btn-sm" href={`/site/preview/${entry.id}?v=${latest.version}`} target="_blank">최신 판 미리보기</Link>}
+          </div>
+        </div>
+      )}
       <p id="le-note-missing" hidden>이 언어 글이 비어 있어 기본 언어 글을 흐리게 보여 줍니다.</p>
       <p id="le-note-stale" hidden>기본 언어 글이 공개본과 달라졌는데 이 언어 글은 그대로입니다. 번역을 확인해 주세요.</p>
 

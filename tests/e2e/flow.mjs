@@ -947,6 +947,26 @@ try {
     await v.goto(`${BASE}/s/dreamy-a/p/about?lang=en`);
     assert.match(await v.textContent('.site-main'), /Synthetic notice added on the page/);
     await ctxV.close();
+    // 병행 규칙(ADR 0013): 화면을 연 뒤 다른 곳에서 새 판이 저장되면, 내 저장은 막히고 내 고침은 화면에 남는다 → 최신 판 위에 저장
+    await h.reload();
+    await h.waitForSelector('[data-testid=live-editor] .site h1 .le-text');
+    const entryId = editUrl.split('/').pop();
+    const opened = Number((await h.textContent('[data-testid=le-toolbar] p.fine')).match(/최신 (\d+)판/)[1]);
+    const other = await h.evaluate(async ([id, base]) => {
+      const d = await (await fetch(`/api/site/entries/${id}/versions`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ base_version: base, note: '다른 곳에서 저장', content: { title: { ko: '다른 곳 제목' }, blocks: [] } }) })).json();
+      return d.version;
+    }, [entryId, opened]);
+    assert.equal(other, opened + 1);
+    await h.locator('.site-head h1 .le-text').fill('내 화면 편집 제목');
+    await h.click('[data-testid=le-save]');
+    await h.waitForSelector('[data-testid=le-conflict]');
+    await h.waitForSelector(`[data-testid=le-conflict]:has-text("${opened + 1}판")`);
+    assert.equal(await h.textContent('.site-head h1 .le-text'), '내 화면 편집 제목');
+    await h.click('[data-testid=le-conflict] button:has-text("내 고침을 최신 판 위에 저장")');
+    await h.waitForSelector('[data-testid=le-conflict]', { state: 'detached' });
+    await h.waitForSelector(`[data-testid=le-toolbar] p.fine:has-text("최신 ${opened + 2}판")`);
+    assert.equal(await h.textContent('.site-head h1 .le-text'), '내 화면 편집 제목');
     // 휴대폰 폭: 레이아웃 가이드가 아래쪽 시트로 열린다
     await h.setViewportSize({ width: 390, height: 844 });
     await h.reload();

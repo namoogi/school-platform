@@ -119,12 +119,12 @@ export function blockSnippet(b: Block, pickText: (t: LText | undefined) => strin
   return first.length > 40 ? `${first.slice(0, 40)}…` : first;
 }
 
-/** 비교용: 빈 글·빈 묶음·undefined 를 빼고 비교한다(서버 검사가 빈 칸을 정리하므로) */
+/** 비교용: 빈 글·빈 묶음·undefined 를 빼고, 열쇠를 정렬해 비교한다(서버 검사·DB가 빈 칸을 정리하고 순서를 바꾸므로) */
 export function clean(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(clean);
   if (v && typeof v === 'object') {
     const o: Record<string, unknown> = {};
-    for (const [k, x] of Object.entries(v)) {
+    for (const [k, x] of Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) { // 열쇠 순서(JSONB·서버 검사가 바꿈)와 무관하게
       const c = clean(x);
       if (c === undefined || c === '' || (c && typeof c === 'object' && !Array.isArray(c) && !Object.keys(c).length)) continue;
       o[k] = c;

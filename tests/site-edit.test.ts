@@ -54,6 +54,7 @@ describe('편집 함수', () => {
 
   it('빈 칸 차이는 변경으로 보지 않는다', () => {
     expect(sameContent(base(), { ...base(), summary: {} })).toBe(true);
+    expect(sameContent({ blocks: [{ text: { ko: '가' }, type: 'text' }], title: { ko: 'x' } } as Content, { title: { ko: 'x' }, blocks: [{ type: 'text', text: { ko: '가' } }] })).toBe(true); // 열쇠 순서 무관
     expect(sameContent(base(), setLangText(base(), ['title'], 'en', 'About us'))).toBe(false);
   });
 });
