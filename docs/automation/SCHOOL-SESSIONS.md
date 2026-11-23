@@ -21,6 +21,9 @@
 - 한 PR에 한 기능. 공용 파일(`src/lib/site*.ts`, `SiteRenderer.tsx` 등)은 작은 PR로 먼저 병합하고 알린다.
 - 선생님 Mac의 세션처럼 답장 도구가 없는 세션은 대화 기록에 조각 출력(`=== 조각 n/N ===` + sha256)을 부탁하고 `list_events`로 읽는다.
 
+## 관제 지시 받기 (당겨 오기)
+모든 서브 세션은 차례를 시작할 때·긴 작업 사이·끝내기 전에 `GET https://onschools.vercel.app/api/control/mine?session=<내 세션 id>`를 확인하고, 나온 일을 먼저 처리한다(`docs/automation/CONTROL-CENTER.md`). 관제의 `send_message`가 Claude 보안(신뢰 기기 확인)으로 막혀도 관제 통제가 끊기지 않게 하는 규칙이다.
+
 ## 승인·결정이 필요할 때 (멈추지 않기, 2026-11-23 사용자 결정)
 서브 세션은 사용자에게 직접 묻고 멈추지 않는다. 사용자는 관제 대화에서 한꺼번에 답한다.
 1. **결정 요청을 올린다.** 사용자에게 물을 일이 생긴 그 자리에서 관제 센터 API(`POST /api/control/requests`, `docs/automation/CONTROL-CENTER.md`)로 올린다. 세부 내용(배경·영향)·선택지·추천안·되돌릴 수 있는지를 채운다. API를 못 쓰는 세션은 `send_message`로 관제에 같은 내용을 보내고, 관제가 대신 올린다.
