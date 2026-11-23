@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { pick, type Lang } from '@/lib/site-shared';
 import { groupStories, type StoryIndexItem } from '@/lib/story-index';
+import { storyTerm } from '@/lib/story-language';
 
 const WORDS = {
-  ko: { intro: '캐릭터와 함께 성품을 만나고, 읽고 싶은 이야기를 골라 보세요.', together: '함께 읽는 이야기', unnamed: '이야기', empty: '아직 공개된 동화가 없습니다.' },
-  en: { intro: 'Meet the characters and choose a story to explore each virtue.', together: 'Stories to read together', unnamed: 'Stories', empty: 'No stories have been published yet.' },
-  th: { intro: 'รู้จักคุณธรรมผ่านตัวละคร แล้วเลือกนิทานที่อยากอ่าน', together: 'นิทานอ่านด้วยกัน', unnamed: 'นิทาน', empty: 'ยังไม่มีนิทานที่เผยแพร่' },
+  ko: { intro: '캐릭터와 함께 성품을 만나고, 읽고 싶은 이야기를 골라 보세요.', together: '함께 읽는 이야기', unnamed: '이야기', empty: '아직 한국어로 공개된 동화가 없습니다.' },
+  en: { intro: 'Meet the characters and choose a story to explore each virtue.', together: 'Stories to read together', unnamed: 'Stories', empty: 'No stories are available in English yet.' },
+  th: { intro: 'รู้จักคุณธรรมผ่านตัวละคร แล้วเลือกนิทานที่อยากอ่าน', together: 'นิทานอ่านด้วยกัน', unnamed: 'นิทาน', empty: 'ยังไม่มีนิทานที่เผยแพร่เป็นภาษาไทย' },
 };
 
 export function StoryIndex({ items, portraits, lang, fallback, link, asset }: {
@@ -25,7 +26,7 @@ export function StoryIndex({ items, portraits, lang, fallback, link, asset }: {
         return <section className="virtue-group" key={JSON.stringify([group.virtue, group.character])}>
           <header className="virtue-character">
             {portrait && /* eslint-disable-next-line @next/next/no-img-element */ <img src={asset(portrait)} alt="" loading="lazy" />}
-            <div><h2>{group.virtue}</h2><p>{group.character || words.unnamed}</p></div>
+            <div><h2>{storyTerm(group.virtue, lang)}</h2><p>{storyTerm(group.character, lang) || words.unnamed}</p></div>
           </header>
           {titles(group.stories)}
         </section>;

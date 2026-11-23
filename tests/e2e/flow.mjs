@@ -809,10 +809,16 @@ try {
     await v.goto(`${BASE}/s/dreamy-a/stories`);
     assert.match(await v.textContent('[data-testid=site-list]'), /비 온 뒤의 약속/);
     assert.match(await v.textContent('[data-testid=site-list]'), /우정/);
+    await v.goto(`${BASE}/s/dreamy-a/stories?lang=en`);
+    assert.doesNotMatch(await v.textContent('[data-testid=site-list]'), /비 온 뒤의 약속/);
+    assert.match(await v.textContent('[data-testid=site-list]'), /No stories are available in English yet/);
     await v.goto(`${BASE}/s/dreamy-a/stories/after-rain?lang=en`);
+    assert.match(await v.textContent('.site-main'), /not available in English yet/);
+    assert.equal(await v.locator('[data-testid=storybook]').count(), 0);
+    await v.goto(`${BASE}/s/dreamy-a/stories/after-rain?lang=ko`);
     await v.waitForSelector('[data-testid=storybook]');
     assert.equal(await v.textContent('[data-testid=storybook-count]'), '1 / 2');
-    await v.click('[data-testid=storybook] button[aria-label="Next"]');
+    await v.click('[data-testid=storybook] button[aria-label="다음 쪽"]');
     assert.equal(await v.textContent('[data-testid=storybook-count]'), '2 / 2');
     assert.match(await v.textContent('.storybook-text'), /약속은 남아요/);
     await shot(v, '27-site-story.png');
