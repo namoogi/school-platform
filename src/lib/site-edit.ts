@@ -3,7 +3,7 @@
  * 편집기는 Content 를 고친 사본만 만들고, 저장은 기존 판 저장 API(validateContent)로만 한다.
  * 2단계(대화형 편집)도 같은 함수로 "블록 변경 제안"을 Content 에 적용한 뒤 같은 검사·시안 저장을 거친다.
  */
-import { SECTION_LABEL, type Block, type Content, type EntryKind, type LText, type SectionTemplate } from './site-shared';
+import { BLOCK_LABEL, SECTION_LABEL, type Block, type Content, type EntryKind, type LText, type SectionTemplate } from './site-shared';
 
 export type EditPath = (string | number)[];
 
@@ -103,13 +103,13 @@ export function featurePalette(kind: EntryKind): PaletteItem[] {
   return common;
 }
 
-/** 블록 이름 (구조 목록·구역 막대): 잡지형 구역은 모양 이름까지 */
+/**
+ * 블록 이름 (구조 목록·구역 막대): 잡지형 구역은 모양 이름까지, 나머지는 공용 BLOCK_LABEL.
+ * 새 블록 종류(예: download)가 생기면 BLOCK_LABEL 로 이름이 바로 보이고, 렌더러가 그리면 편집 화면에서도 옮기기·숨기기·지우기가 된다.
+ * 팔레트로 새로 넣게 하려면 featurePalette 에 한 칸(기본값을 만드는 make)을 더한다.
+ */
 export function blockName(b: Block): string {
-  const base: Record<Block['type'], string> = {
-    heading: '제목', text: '글', notice: '알림', image: '그림', gallery: '사진 묶음', video: '영상', story_page: '동화 한 쪽',
-    section: '구역', news_list: '최근 소식',
-  };
-  return b.type === 'section' ? SECTION_LABEL[b.template] : base[b.type];
+  return b.type === 'section' ? SECTION_LABEL[b.template] : (BLOCK_LABEL[b.type] ?? b.type);
 }
 
 /** 구조 목록에 보일 짧은 미리 글 */
