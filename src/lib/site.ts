@@ -91,7 +91,10 @@ function galleryBlock(x: Record<string, unknown>, at: string): Block {
     if (!/^[a-z0-9-]{1,30}$/.test(key)) throw new ValidationError(`${at}: 묶음 이름이 올바르지 않습니다.`);
     return { key, label: text(y.label, `${at} 묶음`, 60) };
   });
-  return { type: 'gallery', assets, caption: text(x.caption, `${at} 설명`, 500), items, filters: filters.length ? filters : undefined };
+  if (x.download != null && x.download !== 'png') throw new ValidationError(`${at}: 캐릭터 내려받기는 PNG만 지원합니다.`);
+  const scene = x.scene == null ? undefined : x.scene;
+  if (scene !== undefined && (x.download !== 'png' || typeof scene !== 'number' || !Number.isInteger(scene) || scene < 1 || scene > 200)) throw new ValidationError(`${at}: 장면 번호는 1~200 사이 정수여야 합니다.`);
+  return { type: 'gallery', download: x.download === 'png' ? 'png' : undefined, scene: scene as number | undefined, assets, caption: text(x.caption, `${at} 설명`, 500), items, filters: filters.length ? filters : undefined };
 }
 
 function siteProfile(v: unknown): SiteProfile | undefined {
@@ -167,7 +170,7 @@ export function validateContent(raw: unknown): Content {
 }
 
 /**
- * 34차: 내려받기 블록의 파일 이름·크기를 그 학교 자산에서 채운다. PDF가 아니거나 다른 학교 파일이면 거부.
+ * 34차: 내려받기 블록의 파일 이름·크기를 그 학교 자산에서 채운다. PDF/캐릭터 PNG 형식이 아니거나 다른 학교 파일이면 거부.
  * assets 는 이 학교 자산 목록(사람 경로: RLS, 토큰 경로: agent.assets)
  */
 export function fillDownloads(content: Content, assets: { id: string; name: string; mime: string; size_bytes: number }[]): Content {
@@ -175,6 +178,14 @@ export function fillDownloads(content: Content, assets: { id: string; name: stri
   return {
     ...content,
     blocks: content.blocks.map((b, i) => {
+      if (b.type === 'gallery' && b.download === 'png') {
+        const items = (b.items ?? b.assets.map((id) => ({ asset: id }))).map((item) => {
+          const a = by.get(item.asset);
+          if (!a || a.mime !== 'image/png') throw new ValidationError(`${i + 1}번째 블록: 캐릭터 내려받기에는 이 학교에 올린 PNG를 골라 주세요.`);
+          return { ...item, file_name: a.name, size_bytes: a.size_bytes };
+        });
+        return { ...b, items, assets: items.map((item) => item.asset) };
+      }
       if (b.type !== 'download') return b;
       const a = by.get(b.asset);
       if (!a || a.mime !== 'application/pdf') throw new ValidationError(`${i + 1}번째 블록: 내려받기에는 이 학교에 올린 PDF를 골라 주세요.`);
@@ -183,7 +194,7 @@ export function fillDownloads(content: Content, assets: { id: string; name: stri
   };
 }
 async function withDownloads(db: Db, schoolId: string, content: Content) {
-  const ids = content.blocks.flatMap((b) => (b.type === 'download' ? [b.asset] : []));
+  const ids = content.blocks.flatMap((b) => (b.type === 'download' ? [b.asset] : b.type === 'gallery' && b.download === 'png' ? b.assets : []));
   if (!ids.length) return content;
   const { rows } = await db.query<{ id: string; name: string; mime: string; size_bytes: number }>(
     'select id, name, mime, size_bytes from public.site_assets where school_id = $1 and id = any($2::uuid[])', [schoolId, ids]);

@@ -15,6 +15,9 @@ const W = {
   photos: { ko: '장', en: ' photos', th: ' ภาพ' }, watch: { ko: '영상 보기', en: 'Watch the video', th: 'ดูวิดีโอ' },
   allNews: { ko: '소식 모두 보기', en: 'All news', th: 'ข่าวทั้งหมด' }, read: { ko: '읽기', en: 'Read', th: 'อ่าน' },
   more: { ko: '더 보기', en: 'Read more', th: 'อ่านเพิ่มเติม' },
+  characters: { ko: '장면별 캐릭터', en: 'Characters by scene', th: 'ตัวละครในแต่ละฉาก' },
+  scene: { ko: '장면', en: 'Scene', th: 'ฉาก' },
+  png: { ko: 'PNG 내려받기', en: 'Download PNG', th: 'ดาวน์โหลด PNG' },
   download: { ko: 'PDF 내려받기', en: 'Download PDF', th: 'ดาวน์โหลด PDF' },
 } as const;
 const w = (k: keyof typeof W, lang: Lang) => W[k][lang];
@@ -135,8 +138,9 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
       );
       case 'gallery': {
         const items: GalleryItem[] = b.items ?? b.assets.map((a) => ({ asset: a }));
-        const grid = <GalleryGrid caption={ed ? '' : t(b.caption)}
-          items={items.map((g) => ({ src: assetUrl(g.asset), alt: t(g.alt), category: g.category }))}
+        const caption = b.download === 'png' ? [b.scene ? `${w('scene', lang)} ${b.scene}` : '', t(b.caption) || w('characters', lang)].filter(Boolean).join(' · ') : t(b.caption);
+        const grid = <GalleryGrid caption={ed && !b.download ? '' : caption} downloadLabel={b.download === 'png' && !ed ? w('png', lang) : undefined}
+          items={items.map((g) => ({ src: assetUrl(g.asset), alt: t(g.alt), category: g.category, fileName: g.file_name, size: fileSize(g.size_bytes) }))}
           filters={(b.filters ?? []).map((f) => ({ key: f.key, label: t(f.label) }))}
           labels={{ all: w('all', lang), close: w('close', lang), prev: w('prevPhoto', lang), next: w('nextPhoto', lang), count: `{n}${w('photos', lang)}` }} />;
         return ed ? <div className="le-gallery">{grid}{show(b.caption) && <p className="le-caption">{T(at('caption'), b.caption, '사진 묶음 설명')}</p>}</div> : grid;
@@ -267,13 +271,15 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
     }
   }
 
+  const orderedBlocks = content.blocks.map((b, i) => ({ b, i }));
+  if (!ed && storyPages.length) orderedBlocks.sort((a, b) => Number(a.b.type === 'gallery' && a.b.download === 'png') - Number(b.b.type === 'gallery' && b.b.download === 'png'));
   return (
     <div className="site-blocks">
       {!ed && storyPages.length > 0 && (
         <StoryBook pages={storyPages.map((p) => ({ image: p.asset ? assetUrl(p.asset) : null, text: t(p.text) }))} textInImage={textInImage}
           labels={{ prev: w('prev', lang), next: w('next', lang), page: w('page', lang) }} />
       )}
-      {content.blocks.map((b, i) => {
+      {orderedBlocks.map(({ b, i }) => {
         if (ed) return <Fragment key={i}>{ed.wrap(i, b, renderBlock(b, i))}</Fragment>;
         return b.hidden ? null : <Fragment key={i}>{renderBlock(b, i)}</Fragment>;
       })}

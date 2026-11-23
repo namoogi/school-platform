@@ -88,6 +88,7 @@ export const LAYOUT_PALETTE: PaletteItem[] = (Object.keys(SECTION_LABEL) as Sect
 /** '기능': 구역이 아닌 블록 */
 export function featurePalette(kind: EntryKind): PaletteItem[] {
   const story: PaletteItem[] = [
+    { id: 'character_png', label: '장면 캐릭터 PNG', hint: '이 장면의 캐릭터를 크게 보고 PNG로 내려받기', needsPhoto: true, make: (a) => ({ type: 'gallery', download: 'png', scene: 1, caption: {}, assets: a ? [a] : [], items: a ? [{ asset: a }] : [] }) },
     { id: 'story_page', label: '동화 한 쪽', hint: '그림과 그 쪽 글', make: () => ({ type: 'story_page', text: {} }) },
   ];
   const common: PaletteItem[] = [
@@ -109,7 +110,7 @@ export function featurePalette(kind: EntryKind): PaletteItem[] {
  * 팔레트로 새로 넣게 하려면 featurePalette 에 한 칸(기본값을 만드는 make)을 더한다.
  */
 export function blockName(b: Block): string {
-  return b.type === 'section' ? SECTION_LABEL[b.template] : (BLOCK_LABEL[b.type] ?? b.type);
+  return b.type === 'gallery' && b.download === 'png' ? '장면 캐릭터 PNG' : b.type === 'section' ? SECTION_LABEL[b.template] : (BLOCK_LABEL[b.type] ?? b.type);
 }
 
 /** 구조 목록에 보일 짧은 미리 글 */

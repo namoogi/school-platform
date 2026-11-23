@@ -544,6 +544,16 @@ function BlockSettings({ i, b, langs, lang, onFocus, typed, change, assets, onAd
     </>;
   } else if (b.type === 'gallery') {
     body = <>
+      <label><input type="checkbox" checked={b.download === 'png'} onChange={(e) => setB({ ...b, download: e.target.checked ? 'png' : undefined, scene: e.target.checked ? b.scene ?? 1 : undefined })} />장면 캐릭터 PNG 내려받기</label>
+      {b.download === 'png' && <label>장면 번호<input type="number" min={1} max={200} value={b.scene ?? 1} onChange={(e) => setB({ ...b, scene: Number(e.target.value) })} /></label>}
+      {b.download === 'png' && (b.items ?? b.assets.map((asset) => ({ asset, alt: {} as LText }))).map((item, k) => <label key={k}>{k + 1}번 캐릭터 이름·대체 글 ({LANG_LABEL[lang]})
+        <input value={item.alt?.[lang] ?? ''} onFocus={onFocus} onChange={(e) => typed((c) => {
+          const cur = c.blocks[i] as Extract<Block, { type: 'gallery' }>;
+          const items = cur.items ?? cur.assets.map((asset) => ({ asset, alt: {} as LText }));
+          return setAt(c, at('items'), items.map((it, j) => j === k ? { ...it, alt: { ...it.alt, [lang]: e.target.value } } : it));
+        })} />
+      </label>)}
+
       <ul className="le-thumbs">
         {b.assets.map((a, k) => (
           <li key={a + k}>
