@@ -213,10 +213,13 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
   return (
     <div className="site-editor" data-testid="entry-editor">
       <div className="card">
-        <div className="between">
+        <div className="between site-editor-header">
           <div>
             <p className="fine">{KIND_LABEL[detail.entry.kind]} · /{detail.entry.key} · 최신 {latest.version}판{live ? ` · 공개 중 ${live.version}판` : ' · 공개 안 함'}</p>
-            <h2>{content.title[langs[0]] || content.title.ko || detail.entry.key}</h2>
+            <div className="site-editor-title">
+              <h2>{content.title[langs[0]] || content.title.ko || detail.entry.key}</h2>
+              {canPublish && <button type="button" className="btn btn-primary btn-sm" onClick={publishLatest} disabled={busy || (!dirty && live?.id === latest.id)}>{dirty ? '저장하고 공개' : '최신 판 공개'}</button>}
+            </div>
           </div>
           <div className="actions">
             <Link className="btn btn-secondary btn-sm" href={`/site/edit/${detail.entry.id}`} data-testid="live-edit-link"><PencilLine size={16} aria-hidden="true" />화면에서 편집</Link>
@@ -224,6 +227,7 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
             {publicHref && live && <Link className="btn btn-ghost btn-sm" href={publicHref} target="_blank">공개본 보기</Link>}
           </div>
         </div>
+        {msg && <p className="banner" data-tone={msg.tone} role="status">{msg.text}</p>}
         {isStory && (canPublish
           ? <StoryMeta id={detail.entry.id} virtue={detail.entry.meta.virtue ?? ''} character={detail.entry.meta.character ?? ''} />
           : detail.entry.meta.virtue && <p className="fine">성품: {detail.entry.meta.virtue}{detail.entry.meta.character ? ` · 주인공: ${detail.entry.meta.character}` : ''}</p>)}
@@ -288,10 +292,9 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
 
       <div className="card site-save">
         <label>이번 판 메모 (선택)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 태국어 글 다듬음" /></label>
-        {msg && <p className="banner" data-tone={msg.tone} role="status">{msg.text}</p>}
+        {msg && <p className="banner" data-tone={msg.tone}>{msg.text}</p>}
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={save} disabled={busy || !dirty}>새 판으로 저장</button>
-          {canPublish && <button type="button" className="btn btn-primary" onClick={publishLatest} disabled={busy || (!dirty && live?.id === latest.id)}>{dirty ? '저장하고 공개' : '최신 판 공개'}</button>}
           {canPublish && live && <button type="button" className="btn btn-ghost" onClick={() => run(() => send(`/api/site/entries/${detail.entry.id}/publish`, 'POST', { versionId: null }), '공개를 내렸습니다.')} disabled={busy}>공개 내리기</button>}
           {!canPublish && <span className="fine">공개는 학교 관리자가 합니다.</span>}
         </div>
