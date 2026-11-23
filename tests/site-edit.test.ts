@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   featurePalette, getAt, insertBlock, LAYOUT_PALETTE, moveBlock, removeBlock, sameContent, setAt, setLangText, toggleHidden, translationState,
 } from '@/lib/site-edit';
-import { validateContent, type Content } from '@/lib/site';
+import { fillDownloads, validateContent, type Content } from '@/lib/site';
 
 const base = (): Content => ({
   title: { ko: '학교 소개', en: 'About' },
@@ -77,5 +77,29 @@ describe('숨김 블록 · 팔레트가 만든 블록은 같은 내용 검사를
     const img = featurePalette('page').find((p) => p.id === 'image')!;
     expect(img.needsPhoto).toBe(true);
     expect(() => validateContent({ title: { ko: 'x' }, blocks: [img.make()] })).toThrow('그림');
+  });
+});
+
+
+describe('장면 캐릭터 PNG', () => {
+  const input = (extra = {}) => ({ title: { ko: '동화' }, blocks: [{ type: 'gallery', download: 'png', scene: 2, items: [{ asset: PHOTO, alt: { ko: '곰' }, file_name: 'forged.jpg' }], ...extra }] });
+  it('장면·이름을 보존하고 실제 학교 PNG의 파일 정보를 판에 채운다', () => {
+    const content = validateContent(input());
+    expect(content.blocks[0]).toMatchObject({ type: 'gallery', scene: 2, assets: [PHOTO] });
+    expect(content.blocks[0]).not.toHaveProperty('items.0.file_name');
+    const filled = fillDownloads(content, [{ id: PHOTO, name: 'bear.png', mime: 'image/png', size_bytes: 1024 }]);
+    expect(filled.blocks[0]).toMatchObject({ items: [{ asset: PHOTO, alt: { ko: '곰' }, file_name: 'bear.png', size_bytes: 1024 }] });
+    expect(content.blocks[0]).not.toHaveProperty('items.0.file_name');
+  });
+  it('다른 학교 자산·JPEG·PDF를 PNG로 내려받게 할 수 없다', () => {
+    const content = validateContent(input());
+    expect(() => fillDownloads(content, [])).toThrow('이 학교에 올린 PNG');
+    for (const mime of ['image/jpeg', 'application/pdf']) expect(() => fillDownloads(content, [{ id: PHOTO, name: 'fake.png', mime, size_bytes: 1024 }])).toThrow('PNG');
+  });
+  it('잘못된 장면 번호·내려받기 형식을 거부하고 일반 갤러리를 유지한다', () => {
+    for (const scene of [0, -1, 1.5, 201, '2']) expect(() => validateContent(input({ scene }))).toThrow('장면 번호');
+    expect(() => validateContent(input({ download: 'jpg' }))).toThrow('PNG');
+    const ordinary = validateContent(input({ download: undefined, scene: undefined }));
+    expect(fillDownloads(ordinary, []).blocks).toEqual(ordinary.blocks);
   });
 });

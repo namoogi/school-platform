@@ -1297,3 +1297,14 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
   .chatdock-body[data-view="thread"] .chatdock-list, .chatdock-body[data-view="list"] .chatdock-thread { display: none; }
   .chatdock-back { display: inline-flex; }
 }
+
+/* 장면별 캐릭터 PNG: 원본 비율을 유지하고 보기/내려받기를 각각 제공한다. */
+.site-gallery[data-download="png"] .character-gallery-title { margin: 0 0 var(--space-4); font-size: var(--fs-body-lg); font-weight: 700; color: inherit; }
+.character-card { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.character-card b { overflow-wrap: anywhere; }
+.site-gallery[data-download="png"] .gallery-tile { width: 100%; border: 1px solid var(--border-default); background: var(--surface-subtle); }
+.site-gallery[data-download="png"] .gallery-tile img { aspect-ratio: 1; object-fit: contain; padding: var(--space-3); }
+.character-file-size { color: var(--text-muted); font-size: var(--fs-body-sm); }
+.character-download { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 44px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: inherit; text-decoration: none; }
+.character-download:hover { text-decoration: underline; }
+.photo-dialog .character-download { color: var(--text-default); background: var(--surface-default); }
