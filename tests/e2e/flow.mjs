@@ -540,6 +540,45 @@ try {
     await ctxC.close();
   });
 
+  await step('40차: 대화창 — 학교 관리자가 어디서나 열어 홈페이지 대화 → 전체 관리에서 보이고, 학교 시스템 요청은 승인', async () => {
+    const ctxS = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const s = await ctxS.newPage();
+    await login(s, 'admin-a@school-a.test', 'demo-pass-a');
+    await s.click('[data-testid=chatdock-open]');
+    const dock = s.locator('[data-testid=chatdock]');
+    await dock.locator('button:text-is("새 대화")').click();
+    await dock.locator('label.control-option', { hasText: '홈페이지 인터페이스' }).click();
+    await dock.locator('textarea').fill('E2E 첫 화면 제목을 크게');
+    await dock.locator('textarea').press('Enter');
+    await dock.locator('.chatdock-msg', { hasText: 'E2E 첫 화면 제목을 크게' }).waitFor();
+    assert.match(await dock.locator('.chatdock-head').textContent(), /전달 대기/);
+    // 시스템 기능 요청 → 승인 대기
+    await dock.locator('button:text-is("새 대화")').click();
+    await dock.locator('label.control-option', { hasText: '시스템 기능' }).click();
+    await dock.locator('textarea').fill('E2E 성적표 내려받기');
+    await dock.locator('button:text-is("보내기")').click();
+    await dock.locator('.chatdock-gate', { hasText: '승인 대기' }).waitFor();
+    await shot(s, '40-chatdock-school.png');
+    await ctxS.close();
+
+    const ctxP = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxP.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('[data-testid=chatdock-open]');
+    const pd = p.locator('[data-testid=chatdock]');
+    await pd.locator('.chatdock-threads button', { hasText: 'E2E 성적표 내려받기' }).click();
+    await pd.locator('.chatdock-gate button:text-is("승인")').click();
+    await pd.locator('.chatdock-head', { hasText: '전달 대기' }).waitFor();
+    await pd.locator('[role=tab]:has-text("전체")').click();
+    assert.match(await pd.locator('.chatdock-threads').textContent(), /E2E 첫 화면 제목을 크게/);
+    await shot(p, '40-chatdock-platform.png');
+    await ctxP.close();
+  });
+
   await step('22차: 학교별 개발 연동 — GitHub 저장소 연결과 세션 요청 문구', async () => {
     const ctxI = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const p = await ctxI.newPage();
