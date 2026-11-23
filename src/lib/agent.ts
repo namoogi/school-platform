@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { objectKey, objectStore, putVerified } from './storage';
 import type { Db } from './db';
 import { checkUpload, fillDownloads, validateContent, type Content } from './site';
 import { insertBlock, moveBlock, removeBlock, setAt, toggleHidden, type EditPath } from './site-edit';
@@ -136,7 +138,13 @@ export const agentSaveStory = (db: Db, token: string, key: string, input: Record
 export async function agentUpload(db: Db, token: string, file: { name: string; type: string; bytes: Buffer }) {
   const mime = checkUpload(file, AGENT_MIMES);
   const name = file.name.replace(/[\\/\u0000-\u001f]/g, '').trim().slice(0, 200) || 'file';
-  return one<{ id: string; reused: boolean }>(db, 'select agent.upload_asset($1, $2, $3, $4) as r', [token, name, mime, file.bytes]);
+  // 43차(ADR 0018): R2가 있으면 토큰·권한을 먼저 확인하고(실패하면 아무것도 쓰지 않음) R2에 올린 뒤 등록만 한다
+  const store = objectStore();
+  if (!store) return one<{ id: string; reused: boolean }>(db, 'select agent.upload_asset($1, $2, $3, $4) as r', [token, name, mime, file.bytes]);
+  await one(db, 'select agent.can_upload($1) as r', [token]);
+  const sha = createHash('sha256').update(file.bytes).digest('hex');
+  await putVerified(store, objectKey(sha), file.bytes, mime);
+  return one<{ id: string; reused: boolean }>(db, 'select agent.register_asset($1, $2, $3, $4, $5) as r', [token, name, mime, file.bytes.length, sha]);
 }
 
 // ── 학교 관리자 ─────────────────────────────────────────

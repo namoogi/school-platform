@@ -579,6 +579,22 @@ try {
     await ctxP.close();
   });
 
+  await step('43차: 사용량·저장소 — 학교별 사용량·월 추정, R2 설정 전 안내', async () => {
+    const ctxU = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxU.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside a[href="/admin/usage"]');
+    await p.waitForURL(/\/admin\/usage$/);
+    assert.match(await p.textContent('[data-testid=usage-table]'), /드리미 예시학교/);
+    assert.match(await p.textContent('[data-testid=storage-card]'), /설정 전/);
+    await shot(p, '43-usage.png');
+    await ctxU.close();
+  });
+
   await step('22차: 학교별 개발 연동 — GitHub 저장소 연결과 세션 요청 문구', async () => {
     const ctxI = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const p = await ctxI.newPage();
