@@ -269,7 +269,7 @@ input::placeholder, textarea::placeholder { color: var(--gray-400); }
 input:hover:not(:disabled):not(.pv-root *), select:hover:not(:disabled):not(.pv-root *), textarea:hover:not(:disabled):not(.pv-root *) { border-color: var(--border-strong); }
 input:not([type=radio]):not([type=checkbox]):not(.pv-root *), select:not(.pv-root *), textarea:not(.pv-root *) { box-shadow: var(--shadow-input); transition: border-color .12s, box-shadow .12s; }
 input:not([type=radio]):not([type=checkbox]):not(.pv-root *):focus, select:not(.pv-root *):focus, textarea:not(.pv-root *):focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--surface-selected); outline: none; }
-/* 36차 '입력·파일 첨부' (DESIGN-SYSTEM.md): 브라우저 기본 모양을 의미 토큰으로 다시 그린다.
+/* 37차 '입력·파일 첨부' (DESIGN-SYSTEM.md): 브라우저 기본 모양을 의미 토큰으로 다시 그린다.
    select 화살표·체크·라디오·스위치·숫자·날짜·검색·파일 단추. 공개 홈페이지(.site)·시안(.pv-root)은 제외 */
 select:not(.pv-root *):not([multiple]) {
   appearance: none; -webkit-appearance: none; padding-right: calc(var(--space-3) + 20px);

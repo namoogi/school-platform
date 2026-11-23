@@ -200,7 +200,7 @@ try {
     assert.match(text, /school-a-assessments\.csv.*내용을 읽음.*4행/s);
   });
 
-  await step('36차: 파일 첨부(FileDrop) — 키보드로 고르기, 형식·크기 오류는 올리지 않고 글로 안내', async () => {
+  await step('37차: 파일 첨부(FileDrop) — 키보드로 고르기, 형식·크기 오류는 올리지 않고 글로 안내', async () => {
     const before = await sourceItems(a).count();
     // 키보드: Tab으로 단추에 가서 Enter → 파일 창
     await a.waitForSelector('[data-testid=dropzone][data-ready]');

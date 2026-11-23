@@ -32,7 +32,7 @@
 CSS 클래스: `.btn .btn-primary|secondary|ghost|danger .btn-sm`, `.badge[data-tone]`, `.count-badge`, `.grid-table`(+`.table-wrap`, `th scope`, `.num`), `.summary-list`, `.timeline`, `.tabs`, `.toolbar`, `.kpis`.
 이전 클래스(`.primary`, `.tag.green` 등)는 같은 토큰으로 이어 두었다. 새 화면은 새 클래스를 쓴다.
 
-## 입력·파일 첨부 (36차)
+## 입력·파일 첨부 (37차)
 
 사용자 요청(2026-11-23): 관리 화면의 파일 첨부는 끌어 놓기로, 입력 칸은 최신 모양으로. 공개 홈페이지(`/s/**`)·시안(`/preview/*`)은 대상이 아니다.
 

@@ -4,7 +4,7 @@ import { checkFiles, describeAccept, formatSize, matchesAccept } from '../src/li
 const f = (name: string, type = '', size = 100) => ({ name, type, size });
 const MB = 1024 * 1024;
 
-describe('36차 파일 첨부 검사 (FileDrop)', () => {
+describe('37차 파일 첨부 검사 (FileDrop)', () => {
   it('형식: 확장자·형식·와일드카드, 대소문자 무시', () => {
     expect(matchesAccept(f('A.ZIP'), ['.zip'])).toBe(true);
     expect(matchesAccept(f('a.png', 'image/png'), ['image/*'])).toBe(true);
