@@ -72,6 +72,10 @@ try {
   // 심각도 serious 이상 위반을 모아 마지막 단계에서 0건인지 확인한다.
   const axeFindings = [];
   async function axeCheck(page, label) {
+    // router.refresh() 직후에는 <head>의 <title>이 잠깐 빠졌다 다시 붙는다. 그 순간을 잡지 않도록
+    // 화면이 안정되길 기다린다(최대 5초). 끝내 제목이 없으면 axe가 그대로 위반으로 잡는다.
+    await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+    await page.waitForFunction(() => document.title !== '', null, { timeout: 5000 }).catch(() => {});
     await page.addScriptTag({ content: AXE_SOURCE });
     const found = await page.evaluate(async () => {
       const r = await window.axe.run(document, {
