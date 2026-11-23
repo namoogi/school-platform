@@ -4,7 +4,7 @@ import { SiteFrame, siteText } from '@/components/site/SiteFrame';
 import { loadSite } from '@/components/site/load';
 
 import { StoryIndex } from '@/components/site/StoryIndex';
-import { characterPortraits } from '@/lib/story-index';
+import { storyPortraitUrls } from '@/lib/story-index';
 import { storyLanguages } from '@/lib/story-language';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default async function List({ params, searchParams }: P) {
   return (
     <SiteFrame site={site} lang={lang} current="stories" path="/stories" profile={L.profile} assetUrl={asset}>
       <header className="site-head"><h1 className="site-h1">{siteText('stories', lang)}</h1></header>
-      <StoryIndex items={items.filter((s) => available.has(s.key))} portraits={characterPortraits(contents.map((s) => s.content))} lang={lang} fallback={site.default_lang} link={link} asset={asset} />
+      <StoryIndex items={items.filter((s) => available.has(s.key))} portraits={storyPortraitUrls(slug, contents.map((s) => s.content), asset)} lang={lang} fallback={site.default_lang} link={link} />
     </SiteFrame>
   );
 }
