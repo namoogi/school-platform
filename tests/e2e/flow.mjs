@@ -35,6 +35,15 @@ async function step(name, fn) {
   }
 }
 
+// 화면 선택(UiControls)은 누르는 즉시 .app 속성을 바꾸고 저장 요청은 뒤따른다(낙관적 갱신).
+// 속성만 보고 새로 고치면 느린 CI에서 저장 전에 새로 고쳐 옛 설정이 돌아온다. 저장 응답까지 기다린다.
+async function clickUiAndSave(page, selector) {
+  const saved = page.waitForResponse((r) => r.url().endsWith('/api/preferences/ui') && r.request().method() === 'POST');
+  await page.click(selector);
+  const res = await saved;
+  assert.ok(res.ok(), `화면 설정 저장 실패: ${res.status()}`);
+}
+
 // ── DB 준비 ──
 const admin = new pg.Client({ connectionString: ADMIN_URL });
 await admin.connect();
@@ -472,15 +481,14 @@ try {
     assert.match(await p.textContent('[data-testid=analytics-panels]'), /최근 7일/);
     await shot(p, '26-platform-dark.png');
     // 화이트 반전: 누르면 바로 바뀌고, 새로 고쳐도 유지(DB)
-    await p.click('[data-testid=ui-mode]');
+    await clickUiAndSave(p, '[data-testid=ui-mode]');
     await p.waitForSelector('.app[data-mode=light]');
-    await p.waitForTimeout(300);
     await p.reload();
     await p.waitForSelector('.app[data-ui=analytics][data-mode=light]');
     await shot(p, '26-platform-light.png');
     // 화면 형식 바꾸기 → 학사 업무형, 데이터(학교 표)는 그대로
     await p.click('[data-testid=ui-menu]');
-    await p.click('[data-ui-option=campus]');
+    await clickUiAndSave(p, '[data-ui-option=campus]');
     await p.waitForSelector('.app[data-ui=campus]');
     await p.reload();
     await p.waitForSelector('.app[data-ui=campus]');
@@ -492,8 +500,8 @@ try {
     // 원래대로 (다른 단계에 영향 없게)
     await p.goto(`${BASE}/admin`);
     await p.click('[data-testid=ui-menu]');
-    await p.click('[data-ui-option=analytics]');
-    await p.click('[data-testid=ui-mode]');
+    await clickUiAndSave(p, '[data-ui-option=analytics]');
+    await clickUiAndSave(p, '[data-testid=ui-mode]');
     await p.waitForSelector('.app[data-ui=analytics][data-mode=dark]');
     await ctxU.close();
 
@@ -505,7 +513,7 @@ try {
     await s.waitForSelector('.app[data-ui=campus][data-mode=light]');
     const before = await s.textContent('[data-testid=card-review]');
     await s.click('[data-testid=ui-menu]');
-    await s.click('[data-ui-option=analytics]');
+    await clickUiAndSave(s, '[data-ui-option=analytics]');
     await s.waitForSelector('.app[data-ui=analytics]');
     await s.reload();
     await s.waitForSelector('.app[data-ui=analytics][data-mode=light]');
