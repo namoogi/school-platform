@@ -28,6 +28,7 @@
 ## 컴포넌트 (`src/components/ui.tsx`)
 
 `PageHeader`, `Steps`, `StatusBadge`, `Banner`, `EmptyState`, `Card`, `Kpi`, `Meter` + 셸의 `SchoolSwitcher`, `Nav`.
+`DataTable`(`src/components/DataTable.tsx`, 29차 자동 실행): 서버 화면이 셀(`cells`)과 정렬 값(`sort`)을 넘긴다. 정렬 가능한 열은 머리 버튼으로 오름 ↔ 내림 정렬하고, 현재 열에만 `aria-sort`를 붙인다. 한국어 순서와 자연 정렬(9 < 10)을 쓰고, 빈 값은 맨 뒤에 두며, 같은 값은 원래 순서를 지킨다(`src/lib/table-sort.ts`). 행이 없으면 안내 문장을 보인다. `densityControl`이면 촘촘히·기본·넉넉히를 고를 수 있다. 화면 형식별 행 높이 토큰을 따른다.
 CSS 클래스: `.btn .btn-primary|secondary|ghost|danger .btn-sm`, `.badge[data-tone]`, `.count-badge`, `.grid-table`(+`.table-wrap`, `th scope`, `.num`), `.summary-list`, `.timeline`, `.tabs`, `.toolbar`, `.kpis`.
 이전 클래스(`.primary`, `.tag.green` 등)는 같은 토큰으로 이어 두었다. 새 화면은 새 클래스를 쓴다.
 
@@ -38,6 +39,6 @@ CSS 클래스: `.btn .btn-primary|secondary|ghost|danger .btn-sm`, `.badge[data-
 ## 다음 단계 (아직 하지 않음)
 
 - 다크·고대비 테마(토큰 값은 보고서 §5.1에 초안 있음)
-- DataTable 컴포넌트화(정렬·필터·저장된 보기·일괄 작업), 확인 대화상자, 보조 패널(근거·이력)
+- DataTable 확장(필터·저장된 보기·일괄 작업 — 정렬·빈 상태·밀도는 완료), 확인 대화상자, 보조 패널(근거·이력)
 - 자동 접근성 검사(axe)를 E2E에 추가, 교사·행정 직원 대상 사용성 시험(본문 16px·레일 짧은 이름의 이해도 확인)
 - 명령 팔레트(Ctrl+K)는 1차 근거를 찾지 못해 보류

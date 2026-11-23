@@ -3,6 +3,7 @@ import { accessLog, licenseInfo, members, statements } from '@/lib/admin';
 import { LINK_KINDS, listLinks } from '@/lib/devlinks';
 import { LicenseForm, MembersPanel } from './SettingsClient';
 import { PageHeader, StatusBadge } from '@/components/ui';
+import { DataTable } from '@/components/DataTable';
 
 const ACTION: Record<string, string> = {
   'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
@@ -45,11 +46,14 @@ export default async function SettingsPage() {
         <section className="card">
           <h2>청구 기록</h2>
           <p className="fine">실제 결제는 아직 연결되지 않았습니다. 전체 관리자가 월별 청구 예정액을 확정하면 여기에 남습니다.</p>
-          {bills.length === 0 ? <p className="muted empty">아직 청구 기록이 없습니다.</p> : (
-            <table className="grid-table">
-              <thead><tr><th>청구 월</th><th>좌석</th><th>기능</th><th>금액</th></tr></thead>
-              <tbody>{bills.map((b) => <tr key={b.id}><td>{b.period}</td><td>{b.seats}</td><td>{b.modules.map((k) => license.catalog.find((m) => m.key === k)?.name ?? k).join(', ')}</td><td>{won(b.amount_krw)}</td></tr>)}</tbody>
-            </table>)}
+          <DataTable caption="청구 기록" testId="bill-table" empty="아직 청구 기록이 없습니다." initialSort={{ key: 'period', dir: 'desc' }}
+            columns={[{ key: 'period', header: '청구 월', sortable: true }, { key: 'seats', header: '좌석', num: true, sortable: true },
+              { key: 'modules', header: '기능' }, { key: 'amount', header: '금액', num: true, sortable: true }]}
+            rows={bills.map((b) => ({
+              id: b.id,
+              sort: { period: b.period, seats: b.seats, amount: b.amount_krw },
+              cells: { period: b.period, seats: b.seats, modules: b.modules.map((k) => license.catalog.find((m) => m.key === k)?.name ?? k).join(', '), amount: won(b.amount_krw) },
+            }))} />
         </section>
         <section className="card">
           <h2>접근·변경 기록</h2>
