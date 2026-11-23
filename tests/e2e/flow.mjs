@@ -200,6 +200,29 @@ try {
     assert.match(text, /school-a-assessments\.csv.*내용을 읽음.*4행/s);
   });
 
+  await step('37차: 파일 첨부(FileDrop) — 키보드로 고르기, 형식·크기 오류는 올리지 않고 글로 안내', async () => {
+    const before = await sourceItems(a).count();
+    // 키보드: Tab으로 단추에 가서 Enter → 파일 창
+    await a.waitForSelector('[data-testid=dropzone][data-ready]');
+    await a.focus('[data-testid=dropzone] button');
+    const [chooser] = await Promise.all([a.waitForEvent('filechooser'), a.keyboard.press('Enter')]);
+    assert.ok(chooser.isMultiple(), '여러 파일 고르기');
+    await chooser.setFiles({ name: 'setup.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ') });
+    await a.waitForSelector('[data-testid=dropzone-errors]:has-text("올릴 수 없는 형식")');
+    assert.match(await a.textContent('[role=status][aria-live=polite]:has-text("올리지 않았습니다")'), /setup\.exe/);
+    // 끌어 놓기도 같은 검사: 2MB 넘는 CSV
+    await a.evaluate(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File([new Uint8Array(2 * 1024 * 1024 + 10)], 'big.csv', { type: 'text/csv' }));
+      const zone = document.querySelector('[data-testid=dropzone]');
+      zone.dispatchEvent(new DragEvent('dragenter', { dataTransfer: dt, bubbles: true, cancelable: true }));
+      zone.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+    });
+    await a.waitForSelector('[data-testid=dropzone-errors]:has-text("최대 2MB보다 큽니다")');
+    assert.equal(await sourceItems(a).count(), before, '오류 파일은 등록되지 않는다');
+    await shot(a, '36-filedrop-error.png');
+  });
+
   await step('시트 주소 여러 개는 ‘주소만 등록’ 상태로 따로 표시', async () => {
     await a.fill('input[type=url] >> nth=0', 'https://docs.google.com/spreadsheets/d/SYNTH-A-1/edit');
     await a.click('text=+ 주소 추가');

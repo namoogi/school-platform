@@ -13,7 +13,7 @@
     "db:reset": "node scripts/migrate.mjs --reset && node scripts/seed.mjs",
     "test": "vitest run",
     "test:e2e": "node tests/e2e/flow.mjs",
-    "test:unit": "vitest run tests/csv.test.ts tests/readers.test.ts tests/table-sort.test.ts tests/site-import.test.ts tests/pdf-check.test.ts tests/site-edit.test.ts",
+    "test:unit": "vitest run tests/csv.test.ts tests/readers.test.ts tests/table-sort.test.ts tests/site-import.test.ts tests/pdf-check.test.ts tests/site-edit.test.ts tests/file-check.test.ts",
     "check:repo": "node scripts/check-repo.mjs"
   },
   "dependencies": {

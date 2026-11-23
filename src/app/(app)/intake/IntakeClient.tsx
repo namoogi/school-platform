@@ -1,7 +1,9 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SourceFile } from '@/lib/services';
+import { FileDrop, type FileDropContext } from '@/components/FileDrop';
+import { uploadWithProgress } from '@/lib/file-check';
 
 const STATUS: Record<SourceFile['status'], { label: string; tone: string }> = {
   parsed: { label: '내용을 읽음', tone: 'green' },
@@ -11,30 +13,24 @@ const STATUS: Record<SourceFile['status'], { label: string; tone: string }> = {
 
 export function IntakeClient({ sources }: { sources: SourceFile[] }) {
   const router = useRouter();
-  const input = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [urls, setUrls] = useState<string[]>(['']);
 
-  async function upload(files: FileList | File[]) {
-    const list = Array.from(files);
-    if (!list.length) return;
+  async function upload(list: File[], { signal, progress }: FileDropContext) {
     const fd = new FormData();
     list.forEach((f) => fd.append('files', f));
-    setBusy(true);
-    const res = await fetch('/api/sources', { method: 'POST', body: fd });
-    const body = await res.json();
-    setBusy(false);
-    if (!res.ok) return setMessage({ text: body.error, error: true });
+    setMessage(null);
+    const res = await uploadWithProgress('/api/sources', fd, { signal, onProgress: progress });
+    const body = res.body as { error?: string; analysis?: { state?: string } };
+    if (!res.ok) throw new Error(body.error ?? '자료를 올리지 못했습니다.');
     const state = body.analysis?.state;
     const note =
       state === 'question_opened' ? ' 새 자료로 분석해 관리자 확인 질문을 만들었습니다.'
       : state === 'matches_confirmed_rule' ? ' 확정한 규칙과 같은 결과라 새 질문은 없습니다.'
       : '';
-    setMessage({ text: `${list.length}개 파일을 추가했습니다.${note}` });
-    if (input.current) input.current.value = '';
     router.refresh();
+    return `${list.length}개 파일을 추가했습니다.${note}`;
   }
 
   async function registerSheets() {
@@ -65,20 +61,13 @@ export function IntakeClient({ sources }: { sources: SourceFile[] }) {
         <h2>학교 자료 추가</h2>
         <p className="muted">학사력, 평가 일정, 성적표·학생부 빈 서식 등. 합성 또는 비식별 자료를 사용해 주세요.</p>
         <h3 className="section-title">파일 첨부</h3>
-        <div
-          className={`drop${dragging ? ' over' : ''}`}
-          data-testid="dropzone"
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => { e.preventDefault(); setDragging(false); upload(e.dataTransfer.files); }}
-        >
-          <strong>여기에 파일을 끌어 놓으세요</strong>
-          <span>여러 파일을 한꺼번에 또는 나눠 추가할 수 있습니다.</span>
-          <button type="button" className="secondary" disabled={busy} onClick={() => input.current?.click()}>파일 찾아보기</button>
-          <input ref={input} type="file" multiple hidden data-testid="file-input"
-            accept=".csv,.tsv,.txt,.pdf,.xlsx,.docx" onChange={(e) => e.target.files && upload(e.target.files)} />
-        </div>
-        <p className="fine">파일별 최대 2MB. CSV·TSV·TXT·XLSX(시트별)·DOCX(문서 속 표)를 읽습니다. PDF는 글자 위치로 표를 추정하므로 근거를 원본과 대조해 주세요. 스캔 이미지 PDF와 그 밖의 형식은 보관만 하고 읽기 대기로 둡니다.</p>
+        <FileDrop
+          label="학교 자료 파일" multiple maxFiles={20} maxSize={2 * 1024 * 1024}
+          accept={['.csv', '.tsv', '.txt', '.pdf', '.xlsx', '.docx']} typeLabel="CSV·TSV·TXT·XLSX·DOCX·PDF"
+          hint="여러 파일을 한꺼번에 또는 나눠 추가할 수 있습니다."
+          testId="dropzone" inputTestId="file-input" disabled={busy} onFiles={upload}
+        />
+        <p className="fine">CSV·TSV·TXT·XLSX(시트별)·DOCX(문서 속 표)를 읽습니다. PDF는 글자 위치로 표를 추정하므로 근거를 원본과 대조해 주세요. 스캔 이미지 PDF와 그 밖의 형식은 보관만 하고 읽기 대기로 둡니다.</p>
 
         <h3 className="section-title">시트 주소</h3>
         {urls.map((u, i) => (

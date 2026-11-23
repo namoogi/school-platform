@@ -61,6 +61,8 @@
   --action-primary-bg: var(--brand-600); --action-primary-hover: var(--brand-700);
   --action-danger-bg: var(--danger-fg);
   --rail-bg: var(--slate-900); --rail-hover: var(--slate-800); --rail-ink: var(--slate-300); --rail-current: var(--gray-0);
+  /* 체크 표시(주 색 위 흰 글자와 같은 색) */
+  --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.6 9.6 3.6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 [data-density="compact"] { --row-h: 36px; --control-h: 32px; }
 [data-density="comfortable"] { --row-h: 52px; --control-h: 44px; }
@@ -267,7 +269,102 @@ input::placeholder, textarea::placeholder { color: var(--gray-400); }
 input:hover:not(:disabled):not(.pv-root *), select:hover:not(:disabled):not(.pv-root *), textarea:hover:not(:disabled):not(.pv-root *) { border-color: var(--border-strong); }
 input:not([type=radio]):not([type=checkbox]):not(.pv-root *), select:not(.pv-root *), textarea:not(.pv-root *) { box-shadow: var(--shadow-input); transition: border-color .12s, box-shadow .12s; }
 input:not([type=radio]):not([type=checkbox]):not(.pv-root *):focus, select:not(.pv-root *):focus, textarea:not(.pv-root *):focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--surface-selected); outline: none; }
-input[type=checkbox]:not(.pv-root *), input[type=radio]:not(.pv-root *) { width: 16px; height: 16px; accent-color: var(--brand-600); margin: 0; }
+/* 37차 '입력·파일 첨부' (DESIGN-SYSTEM.md): 브라우저 기본 모양을 의미 토큰으로 다시 그린다.
+   select 화살표·체크·라디오·스위치·숫자·날짜·검색·파일 단추. 공개 홈페이지(.site)·시안(.pv-root)은 제외 */
+select:not(.pv-root *):not([multiple]) {
+  appearance: none; -webkit-appearance: none; padding-right: calc(var(--space-3) + 20px);
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%), linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+  text-overflow: ellipsis; cursor: pointer;
+}
+select:disabled, input:disabled, textarea:disabled { background-color: var(--surface-subtle); color: var(--text-muted); cursor: not-allowed; }
+input[readonly]:not([type=checkbox]):not([type=radio]) { background-color: var(--surface-subtle); }
+/* 숫자: 위아래 화살표 대신 키보드 ↑↓ (오른쪽 정렬·고정폭 숫자) */
+input[type=number]:not(.pv-root *) { font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* 날짜·시간: 달력 단추를 흐린 아이콘으로 (다크 화면은 .app의 color-scheme이 달력 창도 어둡게) */
+input[type=date]::-webkit-calendar-picker-indicator, input[type=time]::-webkit-calendar-picker-indicator, input[type=datetime-local]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; border-radius: var(--radius-sm); padding: 2px; }
+input[type=date]::-webkit-calendar-picker-indicator:hover, input[type=time]::-webkit-calendar-picker-indicator:hover { opacity: 1; background: var(--surface-subtle); }
+input[type=date]::-webkit-datetime-edit, input[type=time]::-webkit-datetime-edit { font-variant-numeric: tabular-nums; }
+/* 검색: 왼쪽 돋보기 + 지우기 단추 */
+input[type=search]:not(.pv-root *) {
+  -webkit-appearance: none; appearance: none; padding-left: calc(var(--space-3) + 22px);
+  background-image: radial-gradient(circle at 7px 7px, transparent 4.2px, var(--text-muted) 4.5px, var(--text-muted) 5.8px, transparent 6.1px),
+    linear-gradient(45deg, transparent 45%, var(--text-muted) 45%, var(--text-muted) 60%, transparent 60%);
+  background-size: 14px 14px, 6px 6px; background-position: var(--space-3) 50%, calc(var(--space-3) + 10px) calc(50% + 5px); background-repeat: no-repeat;
+}
+input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; width: 14px; height: 14px; cursor: pointer; opacity: .6;
+  background: linear-gradient(45deg, transparent 43%, var(--text-muted) 43%, var(--text-muted) 57%, transparent 57%), linear-gradient(-45deg, transparent 43%, var(--text-muted) 43%, var(--text-muted) 57%, transparent 57%); }
+input[type=search]::-webkit-search-cancel-button:hover { opacity: 1; }
+/* 체크박스·라디오: 18px 상자, 켜면 주 색 + 흰 표시(체크는 모양, 라디오는 가운데 점 — 색만으로 구분하지 않음) */
+input[type=checkbox]:not(.pv-root *):not(.switch), input[type=radio]:not(.pv-root *) {
+  appearance: none; -webkit-appearance: none; flex: none; width: 18px; height: 18px; margin: 0;
+  border: 1.5px solid var(--border-strong); background: var(--surface-default); cursor: pointer; display: inline-grid; place-content: center;
+  transition: background-color .12s, border-color .12s, box-shadow .12s;
+}
+input[type=checkbox]:not(.pv-root *):not(.switch) { border-radius: var(--radius-sm); }
+input[type=radio]:not(.pv-root *) { border-radius: var(--radius-full); }
+input[type=checkbox]:not(.pv-root *):not(.switch):checked, input[type=checkbox]:not(.pv-root *):not(.switch):indeterminate {
+  background-color: var(--action-primary-bg); border-color: var(--action-primary-bg);
+  background-image: var(--icon-check); background-size: 12px 12px; background-position: center; background-repeat: no-repeat;
+}
+input[type=checkbox]:not(.pv-root *):not(.switch):indeterminate { background-image: linear-gradient(var(--text-on-brand), var(--text-on-brand)); background-size: 10px 2px; }
+input[type=radio]:not(.pv-root *):checked { border-color: var(--action-primary-bg); background: var(--action-primary-bg); box-shadow: inset 0 0 0 3.5px var(--surface-default); }
+input[type=checkbox]:not(.pv-root *):hover:not(:disabled):not(:checked), input[type=radio]:not(.pv-root *):hover:not(:disabled):not(:checked) { border-color: var(--text-muted); }
+input[type=checkbox]:not(.pv-root *):focus-visible, input[type=radio]:not(.pv-root *):focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+input[type=checkbox]:not(.pv-root *):disabled, input[type=radio]:not(.pv-root *):disabled { opacity: .5; cursor: not-allowed; }
+/* 스위치: 켜짐은 손잡이 위치 + 주 색(색만으로 구분하지 않음) */
+input.switch {
+  appearance: none; -webkit-appearance: none; flex: none; width: 38px; height: 22px; margin: 0; border-radius: var(--radius-full); cursor: pointer;
+  border: 1.5px solid var(--border-strong); background: radial-gradient(circle at 9px 50%, var(--text-muted) 6px, transparent 6.5px), var(--surface-subtle);
+  transition: background .15s, border-color .15s;
+}
+input.switch:checked { border-color: var(--action-primary-bg); background: radial-gradient(circle at calc(100% - 9px) 50%, var(--text-on-brand) 6px, transparent 6.5px), var(--action-primary-bg); }
+input.switch:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+input.switch:disabled { opacity: .5; cursor: not-allowed; }
+/* 체크·라디오·스위치를 감싼 라벨은 한 줄(글자도 누를 수 있게), 터치 기기는 44px */
+label:has(> input[type=checkbox]):not(.pv-root *), label:has(> input[type=radio]):not(.pv-root *), label.switch-row {
+  display: flex; align-items: center; gap: var(--space-2); min-height: 28px; font-weight: 400; cursor: pointer;
+}
+label.switch-row { gap: var(--space-3); align-items: flex-start; }
+label.switch-row .switch-text { display: grid; gap: 2px; }
+label.switch-row input.switch { margin-top: 1px; }
+/* 파일 단추(FileDrop을 아직 쓰지 않은 곳의 대비책) */
+input[type=file]:not(.pv-root *) { padding: 3px; min-height: auto; cursor: pointer; }
+input[type=file]::file-selector-button {
+  margin-right: var(--space-3); min-height: calc(var(--control-h) - 10px); padding: 0 var(--space-3); border-radius: var(--radius-sm);
+  border: 1px solid var(--border-input); background: var(--surface-subtle); color: var(--text-default); font: inherit; font-weight: 600; cursor: pointer;
+}
+input[type=file]::file-selector-button:hover { border-color: var(--border-strong); }
+/* 오류 상태: 빨간 테두리 + 아이콘 문장(Field) */
+input[aria-invalid="true"]:not(.pv-root *), select[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger-fg); }
+input[aria-invalid="true"]:focus, select[aria-invalid="true"]:focus, textarea[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--danger-bg); }
+
+/* Field: 라벨 · 필수 · 도움말 · 오류 · 글자 수 (src/components/Field.tsx) */
+.field { display: grid; gap: 6px; min-width: 0; }
+.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+label.field-label { display: inline; font-weight: 600; font-size: var(--fs-body); }
+.field-req { color: var(--danger-fg); }
+.field-opt { color: var(--text-muted); font-weight: 400; font-size: var(--fs-body-sm); }
+.field-hint { margin: 0; color: var(--text-muted); font-size: var(--fs-body-sm); line-height: var(--lh-body-sm); font-weight: 400; }
+.field-error { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; color: var(--danger-fg); font-size: var(--fs-body-sm); line-height: var(--lh-body-sm); font-weight: 500; }
+p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-start; }
+.field-error svg { flex: none; margin-top: 3px; }
+.field-count { color: var(--text-muted); font-size: var(--fs-caption); }
+.field-count[data-over] { color: var(--danger-fg); font-weight: 650; }
+
+/* 진행 막대 (값을 모르면 오가는 막대) */
+.progress { position: relative; height: 6px; border-radius: var(--radius-full); background: var(--surface-subtle); overflow: hidden; flex: 1; min-width: 80px; }
+.progress-fill { height: 100%; width: 0; background: var(--action-primary-bg); transition: width .2s; }
+.progress[data-indeterminate] .progress-fill { width: 35%; animation: progress-slide 1.2s ease-in-out infinite; }
+@keyframes progress-slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .progress[data-indeterminate] .progress-fill { animation: none; width: 100%; opacity: .5; } }
+
+/* 터치 기기: 입력·버튼 44px (분석형의 34px 밀도도 손가락에는 44px) */
+@media (pointer: coarse) {
+  .app, :root { --control-h: 44px; }
+  label:has(> input[type=checkbox]):not(.pv-root *), label:has(> input[type=radio]):not(.pv-root *), label.switch-row { min-height: 44px; }
+}
 .choices { border: 0; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
 .choices legend { font-weight: 600; margin-bottom: var(--space-1); }
 .radio { display: flex; gap: var(--space-2); align-items: center; font-weight: 400; }
@@ -336,6 +433,37 @@ input[type=checkbox]:not(.pv-root *), input[type=radio]:not(.pv-root *) { width:
 .drop { border: 1.5px dashed var(--border-input); border-radius: var(--radius-md); background: var(--surface-subtle); padding: var(--space-6); display: grid; justify-items: center; gap: var(--space-2); text-align: center; }
 .drop span { color: var(--text-muted); font-size: var(--fs-body-sm); }
 .drop.over { background: var(--surface-selected); border-color: var(--brand-600); }
+/* FileDrop (src/components/FileDrop.tsx): 끌어 놓기 · 눌러 고르기 · 붙여넣기 */
+.file-drop { display: grid; gap: var(--space-2); min-width: 0; }
+.file-drop-label { font-weight: 600; font-size: var(--fs-body); }
+.file-drop-zone {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--space-3); text-align: center;
+  min-height: 120px; padding: var(--space-5); border: 1.5px dashed var(--border-input); border-radius: var(--radius-md);
+  background: var(--surface-subtle); cursor: pointer; transition: background-color .12s, border-color .12s;
+}
+.file-drop-zone:hover:not([data-disabled]) { border-color: var(--border-strong); }
+.file-drop-zone:focus-within { border-color: var(--border-focus); }
+.file-drop-zone[data-over] { background: var(--surface-selected); border-color: var(--border-focus); border-style: solid; }
+.file-drop-zone[data-disabled] { cursor: not-allowed; opacity: .65; }
+.file-drop-zone > * { pointer-events: none; }
+.file-drop-zone > button { pointer-events: auto; }
+.file-drop-icon { color: var(--text-muted); }
+.file-drop-zone[data-over] .file-drop-icon { color: var(--text-link); }
+.file-drop-text { display: grid; gap: 2px; }
+.file-drop-text strong { font-weight: 600; }
+.file-drop-text span { color: var(--text-muted); font-size: var(--fs-body-sm); }
+.file-drop:not(.file-drop-compact) .file-drop-zone { flex-direction: column; }
+.file-drop-compact .file-drop-zone { min-height: 0; padding: var(--space-2) var(--space-3); justify-content: flex-start; text-align: left; }
+.file-drop-hint { margin: 0; color: var(--text-muted); font-size: var(--fs-body-sm); line-height: var(--lh-body-sm); }
+.file-drop-progress { display: flex; align-items: center; gap: var(--space-3); }
+.file-drop-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.file-drop-list li { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--surface-default); font-size: var(--fs-body-sm); min-width: 0; }
+.file-drop-thumb { width: 32px; height: 32px; object-fit: cover; border-radius: var(--radius-sm); flex: none; background: var(--surface-subtle); }
+.file-drop-thumb-icon { flex: none; color: var(--text-muted); margin: 0 7px; }
+.file-drop-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.file-drop-state { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; color: var(--text-muted); }
+.file-drop-list li[data-state="done"] .file-drop-state { color: var(--success-fg); }
+.file-drop-list li[data-state="error"] .file-drop-state { color: var(--danger-fg); }
 .sources { list-style: none; margin: 0; padding: 0; }
 .sources li { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle); }
 .sources li:first-child { border-top: 0; }
