@@ -45,9 +45,14 @@ Production과 Preview 둘 다에 체크합니다.
 ## 4. 연결 후 확인할 항목
 
 빌드 로그에서:
-- [ ] `[predeploy] preview 빌드 · DB 호스트 …pooler.supabase.com`
+- [ ] `[predeploy] production 빌드 · DB 호스트 …pooler.supabase.com`
 - [ ] `적용: 20261122000100_round14_core.sql` (첫 배포) 또는 `새로 적용할 마이그레이션 없음`
 - [ ] `예시 데이터 준비 완료`
+
+미리보기(Preview) 빌드는 Production과 같은 DB를 쓰므로 **마이그레이션·시드를 적용하지 않고** 대기 목록만 출력합니다(2026-11-22 사용자 결정).
+- `[predeploy] 미리보기 빌드: 마이그레이션·시드를 적용하지 않습니다` 뒤에 `대기: <파일>` 또는 `적용 대기 중인 마이그레이션 없음`
+- 새 마이그레이션은 main에 병합된 뒤 Production 빌드에서 적용됩니다. 그 전의 미리보기 주소에서는 새 표를 쓰는 화면이 동작하지 않을 수 있습니다.
+- 미리보기 전용 DB로 분리하면 Preview 환경 변수에 `PREVIEW_APPLY_MIGRATIONS=1`을 두어 다시 켤 수 있습니다.
 
 배포 주소에서 (README의 E2E 흐름과 같은 순서):
 - [ ] 예시 A·B 관리자로 각각 로그인
