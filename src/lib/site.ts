@@ -1,3 +1,4 @@
+import { objectKey, objectStore, putVerified } from './storage';
 import { createHash } from 'node:crypto';
 import { asPublic, type Db } from './db';
 import { isUuid, NotFoundError, ValidationError } from './services';
@@ -386,10 +387,13 @@ export async function uploadAsset(db: Db, schoolId: string, file: { name: string
   const sha = createHash('sha256').update(file.bytes).digest('hex');
   const { rows: [same] } = await db.query<{ id: string }>('select id from public.site_assets where school_id = $1 and sha256 = $2 limit 1', [schoolId, sha]);
   if (same) return { id: same.id, reused: true };
+  // 43차(ADR 0018): R2가 설정돼 있으면 바이트는 R2에만, DB에는 메타데이터와 위치만
+  const store = objectStore();
+  if (store) await putVerified(store, objectKey(sha), file.bytes, mime);
   try {
     const { rows: [a] } = await db.query<{ id: string }>(
-      `insert into public.site_assets(school_id, name, mime, size_bytes, sha256, bytes) values ($1,$2,$3,$4,$5,$6) returning id`,
-      [schoolId, file.name.slice(0, 200) || 'image', mime, file.bytes.length, sha, file.bytes]);
+      `insert into public.site_assets(school_id, name, mime, size_bytes, sha256, bytes, object_key) values ($1,$2,$3,$4,$5,$6,$7) returning id`,
+      [schoolId, file.name.slice(0, 200) || 'image', mime, file.bytes.length, sha, store ? null : file.bytes, store ? objectKey(sha) : null]);
     return { id: a.id, reused: false };
   } catch (e) { dbError(e); }
 }
@@ -402,8 +406,8 @@ export async function listAssets(db: Db, schoolId: string) {
 
 export async function memberAsset(db: Db, schoolId: string, id: string) {
   if (!isUuid(id)) return null;
-  const { rows: [a] } = await db.query<{ mime: string; bytes: Buffer; sha256: string }>(
-    'select mime, bytes, sha256 from public.site_assets where id = $1 and school_id = $2', [id, schoolId]);
+  const { rows: [a] } = await db.query<{ mime: string; bytes: Buffer | null; sha256: string; object_key: string | null }>(
+    'select mime, bytes, sha256, object_key from public.site_assets where id = $1 and school_id = $2', [id, schoolId]);
   return a ?? null;
 }
 
@@ -430,7 +434,7 @@ export async function publicList(slug: string, kind: EntryKind): Promise<PublicL
 }
 export async function publicAsset(slug: string, id: string) {
   if (!SLUG.test(slug) || !isUuid(id)) return null;
-  return asPublic(async (db) => (await db.query<{ mime: string; bytes: Buffer; sha256: string }>('select * from app.public_asset($1,$2)', [slug, id])).rows[0] ?? null);
+  return asPublic(async (db) => (await db.query<{ mime: string; bytes: Buffer | null; sha256: string; object_key: string | null }>('select * from app.public_asset($1,$2)', [slug, id])).rows[0] ?? null);
 }
 
 
