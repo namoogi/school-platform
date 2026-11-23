@@ -876,6 +876,10 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .site-form fieldset { border: 0; padding: 0; margin: 0; }
 .row-wrap { display: flex; flex-wrap: wrap; gap: var(--space-4); }
 .site-editor { display: grid; gap: var(--space-4); }
+.site-editor-header { flex-wrap: wrap; }
+.site-editor-title { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.site-editor-title h2 { margin: 0; overflow-wrap: anywhere; }
+.site-editor-title .btn { flex-shrink: 0; }
 .lang-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); }
 .block-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .block-card { gap: var(--space-3); }
