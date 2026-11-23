@@ -505,6 +505,80 @@ try {
     await ctxL.close();
   });
 
+  await step('39차: 관제 센터 — 결정 요청에 답하고, 연구소 항목을 세션에 지시', async () => {
+    const ctxC = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxC.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside a[href="/admin/control"]');
+    await p.waitForURL(/\/admin\/control$/);
+    const card = p.locator('[data-testid=control-1]');
+    assert.match(await card.textContent(), /GitHub 이슈/);
+    await card.locator('label.control-option', { hasText: 'QUEUE.md 유지' }).click();
+    await card.locator('textarea').fill('E2E: 지금은 유지하고 다음 달에 다시 보자');
+    await card.locator('button:text-is("지시 보내기")').click();
+    await p.click('[role=tab]:has-text("전달·진행")');
+    const sent = p.locator('[data-testid=control-1]');
+    await sent.waitFor();
+    assert.match(await sent.textContent(), /전달 대기/);
+    assert.match(await sent.textContent(), /선택: QUEUE\.md 유지/);
+    await shot(p, '39-control-center.png');
+    // 개발·연구소 항목 → 세션에 지시 (세부 내용이 채워진 새 지시)
+    await p.click('aside a[href="/admin/lab"]');
+    await p.waitForURL(/\/admin\/lab$/);
+    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a:has-text("세션에 지시")').click();
+    await p.waitForURL(/\/admin\/control\?from=/);
+    const form = p.locator('[data-testid=control-compose]');
+    assert.equal(await form.locator('input').first().inputValue(), 'AI 분석 프롬프트 설계와 학교당 월 비용 추정');
+    await form.locator('textarea').nth(1).fill('E2E: 무료 범위에서 추정만');
+    await form.locator('select').selectOption('new');
+    await form.locator('button:text-is("지시 보내기")').click();
+    await p.locator('[data-testid=control-list] li', { hasText: 'AI 분석 프롬프트 설계' }).waitFor();
+    await ctxC.close();
+  });
+
+  await step('41차: 대화창 — 학교 관리자가 어디서나 열어 홈페이지 대화 → 전체 관리에서 보이고, 학교 시스템 요청은 승인', async () => {
+    const ctxS = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const s = await ctxS.newPage();
+    await login(s, 'admin-a@school-a.test', 'demo-pass-a');
+    await s.click('[data-testid=chatdock-open]');
+    const dock = s.locator('[data-testid=chatdock]');
+    await dock.locator('button:text-is("새 대화")').click();
+    await dock.locator('label.control-option', { hasText: '홈페이지 인터페이스' }).click();
+    await dock.locator('textarea').fill('E2E 첫 화면 제목을 크게');
+    await dock.locator('textarea').press('Enter');
+    await dock.locator('.chatdock-msg', { hasText: 'E2E 첫 화면 제목을 크게' }).waitFor();
+    assert.match(await dock.locator('.chatdock-head').textContent(), /전달 대기/);
+    // 시스템 기능 요청 → 승인 대기
+    await dock.locator('button:text-is("새 대화")').click();
+    await dock.locator('label.control-option', { hasText: '시스템 기능' }).click();
+    await dock.locator('textarea').fill('E2E 성적표 내려받기');
+    await dock.locator('button:text-is("보내기")').click();
+    await dock.locator('.chatdock-gate', { hasText: '승인 대기' }).waitFor();
+    await shot(s, '40-chatdock-school.png');
+    await ctxS.close();
+
+    const ctxP = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxP.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('[data-testid=chatdock-open]');
+    const pd = p.locator('[data-testid=chatdock]');
+    await pd.locator('.chatdock-threads button', { hasText: 'E2E 성적표 내려받기' }).click();
+    await pd.locator('.chatdock-gate button:text-is("승인")').click();
+    await pd.locator('.chatdock-head', { hasText: '전달 대기' }).waitFor();
+    await pd.locator('[role=tab]:has-text("전체")').click();
+    assert.match(await pd.locator('.chatdock-threads').textContent(), /E2E 첫 화면 제목을 크게/);
+    await shot(p, '40-chatdock-platform.png');
+    await ctxP.close();
+  });
+
   await step('22차: 학교별 개발 연동 — GitHub 저장소 연결과 세션 요청 문구', async () => {
     const ctxI = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const p = await ctxI.newPage();
@@ -815,7 +889,7 @@ try {
     await h.waitForSelector('[data-testid=story-meta] [role=status]:has-text("저장했습니다")');
     await v.goto(`${BASE}/s/dreamy-a/stories?lang=ko`);
     assert.match(await v.textContent('[data-testid=site-list]'), /우정/);
-    // 36차: 같은 묶음을 다시 가져오면 쪽은 새 판(옛 고정 구역 모양)이 되고, 이미 있는 동화는 그대로 둔다
+    // 42차: 같은 묶음을 다시 가져오면 쪽은 새 판(옛 고정 구역 모양)이 되고, 이미 있는 동화는 그대로 둔다
     await h.goto(`${BASE}/site?box=settings`);
     await h.setInputFiles('[data-testid=import-file]', { name: 'export.zip', mimeType: 'application/zip', buffer: makeExportZip() });
     await h.click('[data-testid=import-run]');
@@ -935,12 +1009,14 @@ try {
       { op: 'insert', at: 2, block: { type: 'section', template: 'text', title: { ko: '이야기를 마치며' }, body: { ko: '합성 예시 글' } } }, { op: 'move', from: 1, to: 0 }] });
     assert.equal(ed.status, 200, JSON.stringify(ed.body));
     assert.equal((await call('/api/agent/entries/story/moon-promise/edit', 'POST', { base_version: 1, ops: [{ op: 'hide', index: 0 }] })).status, 409);
-    // 관리자 공개 → 방문자
+    // 목록 카드에서 편집기를 열지 않고 공개 → 방문자
     await h.goto(`${BASE}/site?box=story`);
-    await h.click('.triage-item:has-text("달빛 약속")');
-    await h.waitForSelector('[data-testid=entry-editor]');
-    await h.click('text=최신 판 공개');
-    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    const moonCard = h.locator('.site-entry-card:has(.triage-item-title:text-is("달빛 약속"))');
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    await moonCard.locator('button:text-is("공개하기")').click();
+    await moonCard.locator('.badge:text-is("공개 중")').waitFor();
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    assert.equal(new URL(h.url()).searchParams.has('id'), false);
     const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const v = await ctxV.newPage();
     await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise?lang=ko`);
@@ -949,8 +1025,10 @@ try {
     assert.match(await v.textContent('.site-main'), /이야기를 마치며/);
     // 공개 중에는 에이전트가 보관 못 함 → 관리자가 내린 뒤 보관
     assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 409);
-    await h.click('button:text-is("공개 내리기")');
-    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개를 내렸습니다")');
+    await moonCard.locator('button:text-is("공개 해제")').click();
+    await moonCard.locator('.badge:text-is("공개 내림")').waitFor();
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise`)).status(), 404);
     assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 200);
     assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise`)).status(), 404);
     // 관리자: 보관함에서 되살리기
@@ -965,6 +1043,32 @@ try {
     assert.equal(await h.locator('[data-testid=archive-box]').count(), 0);
     assert.equal((await call('/api/agent/entries/story/moon-promise')).status, 200);
     await ctxV.close();
+    await ctxH.close();
+  });
+
+  await step('40차: 공개 권한 — 에이전트에게 공개를 지시하면 사이트에서 누르지 않아도 바로 공개, 만들기만으로는 공개 안 됨, 공개 내림', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.check('[data-testid=agent-token-perms] label:has-text("만들기") input');
+    await h.check('[data-testid=agent-token-perms] label:has-text("공개") input');
+    await h.waitForSelector('[data-testid=agent-token-publish-note]');
+    await h.click('[data-testid=agent-token-issue]');
+    const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
+    const call = async (p, body) => (await fetch(`${BASE}${p}`, { method: body ? 'POST' : 'GET', headers: { 'x-agent-token': token, 'content-type': 'application/json' }, body: body && JSON.stringify(body) })).status;
+    assert.equal(await call('/api/agent/entries/story', { key: 'star-promise', content: { title: { ko: '별빛 약속' }, blocks: [{ type: 'story_page', text: { ko: '별이 빛나요.' } }] } }), 200);
+    assert.equal((await fetch(`${BASE}/s/dreamy-a/stories/star-promise`)).status, 404); // 만들기만으로는 공개 안 됨
+    assert.equal(await call('/api/agent/entries/story/star-promise/publish', {}), 200);
+    const v = await (await browser.newContext()).newPage();
+    await v.goto(`${BASE}/s/dreamy-a/stories/star-promise?lang=ko`);
+    await v.waitForSelector('[data-testid=storybook]');
+    assert.match(await v.textContent('.storybook-text'), /별이 빛나요/);
+    // 관리 화면에도 공개 중으로, 활동 기록에 '공개'
+    await h.goto(`${BASE}/site?box=settings`);
+    assert.match(await h.textContent('[data-testid=agent-token-list]'), /star-promise 1판 공개/);
+    assert.equal(await call('/api/agent/entries/story/star-promise/unpublish', {}), 200);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/star-promise`)).status(), 404);
     await ctxH.close();
   });
 

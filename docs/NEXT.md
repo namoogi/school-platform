@@ -7,7 +7,7 @@
 - 학교 화면: 학사 업무형(ADR 0006). 전체 관리: 분석 대시보드형 다크 + 화이트 반전(ADR 0007). 사용자별 화면 선택은 DB에 저장된다.
 - 학교 홈페이지·성품 동화 모듈(ADR 0008): `/site` 관리, `/s/<주소>` 공개.
 - 룽아룬숙사: 운영 홈페이지가 새벽빛 테마로 열려 있다(`/s/rungarunsuksa`, 쪽 7·후원자 숨은 쪽 6·소식 4·동화 1). 옛 주소 호환 경로가 있다(31차).
-- AI 작업 공간(ADR 0012·0013·0014, 34·36·38차): 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive, 기한 7~365일·무기한·연장)을 발급하고, 학교의 Claude Code·Codex가 `x-agent-token`으로 새 항목·새 판(구조 포함)·항목 정보·보관(소프트 삭제)까지 한다. 공개·내림·되살리기는 사람, base_version 409. 안내 `docs/agents/README.md`, 동화 스크립트 `scripts/agent-story-upload.mjs --create`. 블록 `download`(PDF).
+- AI 작업 공간(ADR 0012·0013·0014·0016, 34·36·38·40차): 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive·publish, 기한 7~365일·무기한·연장)을 발급한다. 학교의 Claude Code·Codex가 새 항목·새 판(구조 포함)·항목 정보·보관을 하고, 이것들은 저절로 공개되지 않는다. `publish` 권한이 있으면 사람이 공개를 지시했을 때 바로 공개·공개 내림. 되살리기·설정은 사람. 안내 `docs/agents/README.md`, 스크립트 `scripts/agent-story-upload.mjs --create --publish`.
 - Claude 점검 접근(ADR 0010)
   - 작업 환경(Default)의 Network secret `onschools.vercel.app`(머리 `x-inspector-token`)이 들어 있다.
   - 클라우드 세션은 로그인 없이 운영 화면을 읽기 전용으로 볼 수 있다.
@@ -16,13 +16,15 @@
 
 ## 세션 분담 (2026-11-23 사용자 결정)
 세션 목록·만드는 규약은 `docs/automation/SCHOOL-SESSIONS.md`(ADR 0013). 관제 세션 `session_013RZyUnii47zkGXkmqAhPmt`이 조정한다. 학교·기능 세션은 그 학교·기능만, 공통 지침·데이터 모델 변경은 관제 몫.
+- **대화창**(41차, ADR 0017): 모든 관리 화면 상단 '대화'. 학교 관리자도 학교 AI·홈페이지 인터페이스·시스템 기능(전체 관리자 승인)을 대화로 요청하고, 맡은 세션이 `/api/control`로 답한다. 유료 API 자동 답변·첨부는 다음.
+- **관제 센터**(39차, ADR 0015): 서브 세션은 승인을 기다리며 멈추지 않고 결정 요청을 `/admin/control`에 올린다. 사용자는 거기서 답·지시하고, 관제 세션은 대화할 때마다 `GET /api/control/inbox`부터 확인해 세션에 전달한다. 절차 `docs/automation/CONTROL-CENTER.md`.
 - 선생님 Mac의 옛 사이트 세션은 답장 도구가 없어 파일을 대화 기록에 조각 출력(`=== 조각 n/N ===` + sha256)하게 하고 `list_events`로 읽는다(31차 방식).
 
 - 관리 화면 입력(37차): 파일 첨부는 모두 `FileDrop`(끌어 놓기·키보드·붙여넣기), 입력은 전역 최신 모양 + `Field`·`Switch`. 규칙 `docs/design/DESIGN-SYSTEM.md` '입력·파일 첨부'.
 
 ## 이어서 할 일 (순서대로)
 1. **룽아룬숙사** (룽아룬숙사 세션 담당) — 운영 홈페이지는 열려 있고 내용·후원자 숨은 쪽·동화가 공개됨(2026-11-23 선생님 가져오기).
-   - **39차 새벽빛 디자인 맞춤**(`docs/rounds/round-39.md`): 배포 뒤 선생님이 운영 `/site`에서 같은 묶음 zip을 다시 가져와 '모두 공개'해야 옛 구역 모양이 나온다(동화는 그대로 둠). 남은 차이는 차시 문서 '아직 다른 점'.
+   - **42차 새벽빛 디자인 맞춤**(`docs/rounds/round-42.md`): 배포 뒤 선생님이 운영 `/site`에서 같은 묶음 zip을 다시 가져와 '모두 공개'해야 옛 구역 모양이 나온다(동화는 그대로 둠). 남은 차이는 차시 문서 '아직 다른 점'.
    - 동화 PDF·캐릭터 그림: 34차 통로 완성. 선생님이 토큰 발급 → Codex로 만들어 올림 → 시안 확인 → 공개(`docs/rounds/round-34.md` '선생님이 할 일'). 영상은 생략(선생님 결정).
    - 옛 주소 넘겨주기: 넘겨주기 판은 선생님 Mac `rung-arun-redirect/`에 준비만 됨. 선생님이 넘기라고 할 때만 배포 요청(307 → 하루 뒤 308).
    - 결정 대기: 동화 성품 이름(편집 화면에서 입력 가능, 33차), 학교 공식 태국어 이름, 드리미학교 학생 작품 3편·#1185 공개 여부.

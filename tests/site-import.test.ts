@@ -112,7 +112,7 @@ describe('기존 홈페이지 가져오기 변환', () => {
     expect(validateContent(fillAssets(about.content, ids)).blocks).toEqual([]); // 그림 없는 그림 블록은 검사에서 걸러지므로 빈 블록으로 남지 않게
   });
 
-  it('39차: 옛 사이트의 고정 구역을 구역 모양(variant)·머리말·링크로 옮긴다', () => {
+  it('42차: 옛 사이트의 고정 구역을 구역 모양(variant)·머리말·링크로 옮긴다', () => {
     const blocks = (key: string) => plan.entries.find((e) => e.key === key)!.content.blocks;
     const variants = (key: string) => blocks(key).map((b) => (b.type === 'section' ? `${b.template}:${b.variant ?? ''}` : b.type));
     expect(variants('home')).toEqual(['text:split', 'media-left:portrait', 'cards:index', 'photos:moments', 'news_list', 'cta:']);

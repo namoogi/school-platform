@@ -66,7 +66,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             {profile?.logo && assetUrl && <img src={assetUrl(profile.logo)} alt="" width={52} height={52} />}
             <span><strong>{title}</strong>{t(profile?.tagline) && <small>{t(profile?.tagline)}</small>}</span>
           </Link>
-          {/* 39차: 새벽빛은 옛 사이트처럼 메뉴를 머리 한 줄 안에 둔다 */}
+          {/* 42차: 새벽빛은 옛 사이트처럼 메뉴를 머리 한 줄 안에 둔다 */}
           {dawn && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>}
           {langList.length > 1 && (dawn
             ? (

@@ -79,7 +79,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
         setStep({ label: '시안 만드는 중', n: i + 1, of: plan.entries.length });
         const content = fillAssets(e.content, ids);
         const has = existing.find((x) => x.kind === e.kind && x.key === e.key);
-        // 39차: 이미 있는 동화는 다시 가져와도 건드리지 않는다 — 만든 뒤 고친 성품 이름·외부 작업(캐릭터·PDF) 판을 덮지 않게
+        // 42차: 이미 있는 동화는 다시 가져와도 건드리지 않는다 — 만든 뒤 고친 성품 이름·외부 작업(캐릭터·PDF) 판을 덮지 않게
         if (has && e.kind === 'story') { kept.push(e.key); continue; }
         if (has) {
           await send(`/api/site/entries/${has.id}/versions`, 'POST', { content, note });

@@ -18,7 +18,7 @@ const W = {
   download: { ko: 'PDF 내려받기', en: 'Download PDF', th: 'ดาวน์โหลด PDF' },
 } as const;
 const w = (k: keyof typeof W, lang: Lang) => W[k][lang];
-/** 39차: 링크·단추 끝 화살표(옛 사이트 ArrowLink). 새벽빛에서만 보인다 */
+/** 42차: 링크·단추 끝 화살표(옛 사이트 ArrowLink). 새벽빛에서만 보인다 */
 const Arrow = () => <ArrowRight className="link-arrow" size={22} strokeWidth={1.4} aria-hidden="true" />;
 
 export type NewsItem = { key: string; title: LText; summary?: LText | null; cover?: string | null; published_at?: string };
@@ -40,7 +40,7 @@ export type EditHooks = {
 
 /**
  * 쪽 머리: 머리말 · 제목 · 소개. dawn 에서는 잡지형 머리(.editorial-heading), 첫 화면은 표지 사진이 붙는 여는 머리.
- * 39차(옛 사이트 맞춤): 여는 머리는 무지개 호 · 링크 · 표지 날짜표 · 7색 띠, 안쪽 쪽은 '홈 / 제목' 길잡이(crumb)를 단다.
+ * 42차(옛 사이트 맞춤): 여는 머리는 무지개 호 · 링크 · 표지 날짜표 · 7색 띠, 안쪽 쪽은 '홈 / 제목' 길잡이(crumb)를 단다.
  */
 export function PageHead({ content, lang, fallback, asset, meta, ed, crumb, link = (h) => h }: {
   content: Content; lang: Lang; fallback: Lang; asset: (id: string) => string; meta?: string; ed?: EditHooks;
@@ -96,7 +96,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   ed?: EditHooks;
 }) {
   const t = (x: LText | null | undefined) => pick(x, lang, fallback);
-  // 39차: 줄마다 '· '로 시작하는 문단은 점 목록으로(옛 사이트 교육 단계 핵심)
+  // 42차: 줄마다 '· '로 시작하는 문단은 점 목록으로(옛 사이트 교육 단계 핵심)
   const paras = (x: LText | null | undefined) => t(x).split(/\n{2,}/).filter(Boolean).map((p, j) => {
     const lines = p.split('\n');
     return lines.length > 1 && lines.every((l) => l.startsWith('· '))
@@ -208,7 +208,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             {show(b.caption) && <figcaption>{T(at('caption'), b.caption, '사진 설명')}</figcaption>}
           </figure>
         ) : null;
-        // 39차: 구역 모양(variant)별 항목 그리기 — 정보 줄(facts·overview), 접는 질문(faq), 번호 상자(index), 사진 셋(moments), 사진–글 줄(rows)
+        // 42차: 구역 모양(variant)별 항목 그리기 — 정보 줄(facts·overview), 접는 질문(faq), 번호 상자(index), 사진 셋(moments), 사진–글 줄(rows)
         const asFacts = b.template === 'facts' || v === 'overview';
         const itemList = items.length === 0 ? null
           : v === 'faq'

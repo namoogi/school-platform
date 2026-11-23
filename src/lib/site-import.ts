@@ -92,7 +92,7 @@ export function planImport(content: Raw, files: string[], book?: Raw | null, fri
     home: same('UBON RATCHATHANI, THAILAND'), identity: same('RUNG · ARUN · SUKSA'), portrait: same('UNDER THE RAINBOW'),
     learning: same('LEARNING AT RUNG ARUN'), moments: same('EVERYDAY AT SCHOOL'), journal: same('SCHOOL JOURNAL'),
   };
-  // 39차: 옛 방문 안내 띠(VisitBand) = 다음 단계 제목·글 + '방문' 단추
+  // 42차: 옛 방문 안내 띠(VisitBand) = 다음 단계 제목·글 + '방문' 단추
   const visit = (): Block => ({
     type: 'section', template: 'cta', title: label('nextStep'), body: lt(ui.nextStepBody),
     button: { label: label('visit'), href: '/p/contact' },

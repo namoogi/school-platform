@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       groups={schoolNav(school, { openQuestions: open ? 1 : 0 })} roleLabel={roleTag(school)}
       inSchoolAsPlatform={school.isPlatformAdmin && !school.role} inspector={isInspector(account.id)}
       alerts={school.modules.includes('intake') ? { count: open ? 1 : 0, href: '/review' } : null}
-      ui={{ scope: 'school', choice: prefs.school }}>
+      ui={{ scope: 'school', choice: prefs.school }} chat={school.isAdmin ? 'school' : null}>
       {children}
     </Shell>
   );

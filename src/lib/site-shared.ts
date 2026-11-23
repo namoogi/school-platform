@@ -18,7 +18,7 @@ export const SECTION_LABEL: Record<SectionTemplate, string> = {
   photos: '사진 줄', facts: '항목–내용', steps: '차례(번호)', quote: '인용', cta: '안내 단추',
 };
 /**
- * 39차: 새벽빛(dawn) 구역 모양. 옛 룽아룬숙사 사이트의 고정 구역을 그대로 그리는 모양 이름이다(다른 테마는 무시하고 템플릿대로 그림).
+ * 42차: 새벽빛(dawn) 구역 모양. 옛 룽아룬숙사 사이트의 고정 구역을 그대로 그리는 모양 이름이다(다른 테마는 무시하고 템플릿대로 그림).
  * 템플릿은 칸(제목·글·사진·항목)을, 모양은 그 칸의 배치를 정한다. 짝이 맞지 않으면 템플릿 기본 모양으로 그린다.
  */
 export const SECTION_VARIANTS = ['split', 'portrait', 'index', 'moments', 'overview', 'emblem', 'rows', 'questions', 'aside', 'faq', 'prep', 'half'] as const;
@@ -51,7 +51,7 @@ export type Block = (
 export type SiteProfile = {
   logo?: string; tagline?: LText; address?: LText; phone?: string[]; facebook?: string; footer?: LText; visit?: Button;
 };
-/** 쪽 머리 꾸밈(dawn): 작은 머리말과 화면 모양. 39차: 여는 머리의 링크(link)와 표지 사진 날짜표(note) */
+/** 쪽 머리 꾸밈(dawn): 작은 머리말과 화면 모양. 42차: 여는 머리의 링크(link)와 표지 사진 날짜표(note) */
 export type PageHead = { eyebrow?: LText; layout?: 'editorial' | 'opening'; link?: Button; note?: LText };
 export type Content = { title: LText; summary?: LText; cover?: string; blocks: Block[]; site?: SiteProfile; head?: PageHead };
 export type EntryKind = 'page' | 'news' | 'story';
