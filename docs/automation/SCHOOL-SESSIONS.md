@@ -21,6 +21,10 @@
 - 한 PR에 한 기능. 공용 파일(`src/lib/site*.ts`, `SiteRenderer.tsx` 등)은 작은 PR로 먼저 병합하고 알린다.
 - 선생님 Mac의 세션처럼 답장 도구가 없는 세션은 대화 기록에 조각 출력(`=== 조각 n/N ===` + sha256)을 부탁하고 `list_events`로 읽는다.
 
+## 전체로 올리기
+- 서브 세션은 PR 본문 `## 전체 적용 후보`에 다른 모듈·학교에도 쓸 만한 것을 적는다.
+- 관제 세션은 서브 세션 PR이 병합될 때마다 그 칸을 읽어 `docs/design/PLATFORM-PATTERNS.md`(패턴)·`docs/automation/QUEUE.md`(할 일)·AGENTS.md(규칙)로 옮긴다.
+
 ## 끝낼 때
 - `docs/NEXT.md`에서 자기 줄을 갱신하고(끝남·남은 일), 열린 PR이 없게 한다.
 - 관제 세션에 send_message로 한 줄 보고한다. 관제는 세션을 보관(archive)할지 사용자에게 묻는다.

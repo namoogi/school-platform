@@ -17,6 +17,9 @@
 - `npm test`:
 - `npm run test:e2e`:
 
+## 전체 적용 후보
+<!-- 이 PR에서 만든 것 중 다른 모듈·학교에도 쓸 만한 것을 한 줄씩. 관제 세션이 docs/design/PLATFORM-PATTERNS.md로 옮긴다. 없으면 '없음' -->
+
 ## 확인하지 못한 항목
 
 ## 검토 요청
