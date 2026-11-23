@@ -366,6 +366,36 @@ try {
     await ctxP.close();
   });
 
+  await step('DataTable: 학교 표 열 머리로 정렬(aria-sort)·행 간격 전환', async () => {
+    const ctxT = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctxT.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    const names = () => p.$$eval('[data-testid=school-table] tbody tr td:first-child strong', (els) => els.map((e) => e.textContent));
+    const original = await names();
+    const head = p.locator('[data-testid=school-table] th', { has: p.locator('[data-sort-key=name]') });
+    assert.equal(await head.getAttribute('aria-sort'), null);
+    await p.click('[data-testid=school-table] [data-sort-key=name]');
+    await p.waitForFunction(() => document.querySelector('[data-testid=school-table] th[aria-sort]'));
+    assert.equal(await head.getAttribute('aria-sort'), 'ascending');
+    const asc = await names();
+    assert.deepEqual(asc, [...original].sort(new Intl.Collator('ko', { numeric: true, sensitivity: 'base' }).compare));
+    await p.click('[data-testid=school-table] [data-sort-key=name]');
+    await p.waitForFunction(() => document.querySelector('[data-testid=school-table] th[aria-sort=descending]'));
+    assert.deepEqual(await names(), [...asc].reverse());
+    // 행 간격: 촘촘히 → 행 높이 토큰 36px (두 줄 셀은 내용 높이에서 멈추므로 토큰으로 확인)
+    await p.click('[role=group][aria-label="학교 목록 행 간격"] button:text-is("촘촘히")');
+    await p.waitForSelector('.data-table[data-density=compact]');
+    const token = await p.$eval('[data-testid=school-table] tbody tr td', (td) => getComputedStyle(td).getPropertyValue('--row-h').trim());
+    assert.equal(token, '36px');
+    assert.equal(await p.getAttribute('[role=group] button:text-is("촘촘히")', 'aria-pressed'), 'true');
+    await shot(p, '29-datatable-sorted.png');
+    await ctxT.close();
+  });
+
   await step('17차: 개발·연구소 — 할 일 추가·완료, 종류별 탭', async () => {
     const ctxL = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const p = await ctxL.newPage();

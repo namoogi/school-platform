@@ -290,6 +290,14 @@ input[type=checkbox]:not(.pv-root *), input[type=radio]:not(.pv-root *) { width:
 .grid-table td .actions { flex-wrap: nowrap; }
 .grid-table td small { display: block; font-size: var(--fs-caption); color: var(--text-muted); line-height: var(--lh-caption); }
 .card > .grid-table { border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+/* DataTable: 정렬 머리 버튼·밀도 전환 (src/components/DataTable.tsx) */
+.data-table { display: grid; gap: var(--space-2); }
+.data-table-tools { display: flex; justify-content: flex-end; gap: var(--space-1); }
+.data-table-tools .btn[aria-pressed="true"] { background: var(--surface-subtle); color: var(--text-default); font-weight: 650; }
+.th-sort { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.th-sort:hover { color: var(--text-default); }
+.th-sort-idle { opacity: .55; }
+.data-table-empty { padding: var(--space-4) 0; }
 .sort-button { background: none; border: 0; padding: 0; font: inherit; color: inherit; display: inline-flex; align-items: center; gap: 4px; }
 .sort-button::after { content: "↕"; color: var(--gray-400); font-size: 11px; }
 [aria-sort="ascending"] .sort-button::after { content: "↑"; color: var(--text-default); }
