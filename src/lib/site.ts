@@ -106,6 +106,34 @@ function siteProfile(v: unknown): SiteProfile | undefined {
   };
 }
 
+/** 블록 한 개 검사 (hidden 표시는 validateContent 가 붙인다) */
+function blockOf(x: Record<string, unknown>, at: string): Block {
+  switch (x.type) {
+    case 'heading': return { type: 'heading', text: text(x.text, at, 200) };
+    case 'text': return { type: 'text', text: text(x.text, at) };
+    case 'notice': return { type: 'notice', text: text(x.text, at, 1000) };
+    case 'image': return { type: 'image', asset: asset(x.asset, at), alt: text(x.alt, `${at} 대체 글`, 300), caption: text(x.caption, `${at} 설명`, 500) };
+    case 'gallery': return galleryBlock(x, at);
+    case 'section': return sectionBlock(x, at);
+    case 'news_list': {
+      const count = Number(x.count ?? 3);
+      if (!Number.isInteger(count) || count < 1 || count > 10) throw new ValidationError(`${at}: 소식 개수는 1~10개입니다.`);
+      return { type: 'news_list', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, at, 1000), noText), count, style: x.style === 'list' ? 'list' : 'cards' };
+    }
+    case 'video': {
+      const url = text(x.url, `${at} 주소`, 500);
+      for (const u of Object.values(url)) {
+        let host = '';
+        try { const p = new URL(u!); if (p.protocol !== 'https:') throw new Error(); host = p.hostname; } catch { throw new ValidationError(`${at}: 영상 주소는 https 주소여야 합니다.`); }
+        if (!VIDEO_HOSTS.includes(host)) throw new ValidationError(`${at}: 영상은 YouTube·Vimeo·Google Drive 주소만 넣을 수 있습니다.`);
+      }
+      return { type: 'video', url };
+    }
+    case 'story_page': return { type: 'story_page', asset: x.asset ? asset(x.asset, at) : undefined, text: text(x.text, at, 2000) };
+    default: throw new ValidationError(`${at}: 알 수 없는 블록입니다.`);
+  }
+}
+
 export function validateContent(raw: unknown): Content {
   if (!raw || typeof raw !== 'object') throw new ValidationError('내용 형식이 올바르지 않습니다.');
   const r = raw as Record<string, unknown>;
@@ -115,31 +143,8 @@ export function validateContent(raw: unknown): Content {
   if (blocksRaw.length > 200) throw new ValidationError('블록은 200개까지 넣을 수 있습니다.');
   const blocks: Block[] = blocksRaw.map((b, i) => {
     const x = (b ?? {}) as Record<string, unknown>;
-    const at = `${i + 1}번째 블록`;
-    switch (x.type) {
-      case 'heading': return { type: 'heading', text: text(x.text, at, 200) };
-      case 'text': return { type: 'text', text: text(x.text, at) };
-      case 'notice': return { type: 'notice', text: text(x.text, at, 1000) };
-      case 'image': return { type: 'image', asset: asset(x.asset, at), alt: text(x.alt, `${at} 대체 글`, 300), caption: text(x.caption, `${at} 설명`, 500) };
-      case 'gallery': return galleryBlock(x, at);
-      case 'section': return sectionBlock(x, at);
-      case 'news_list': {
-        const count = Number(x.count ?? 3);
-        if (!Number.isInteger(count) || count < 1 || count > 10) throw new ValidationError(`${at}: 소식 개수는 1~10개입니다.`);
-        return { type: 'news_list', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, at, 1000), noText), count, style: x.style === 'list' ? 'list' : 'cards' };
-      }
-      case 'video': {
-        const url = text(x.url, `${at} 주소`, 500);
-        for (const u of Object.values(url)) {
-          let host = '';
-          try { const p = new URL(u!); if (p.protocol !== 'https:') throw new Error(); host = p.hostname; } catch { throw new ValidationError(`${at}: 영상 주소는 https 주소여야 합니다.`); }
-          if (!VIDEO_HOSTS.includes(host)) throw new ValidationError(`${at}: 영상은 YouTube·Vimeo·Google Drive 주소만 넣을 수 있습니다.`);
-        }
-        return { type: 'video', url };
-      }
-      case 'story_page': return { type: 'story_page', asset: x.asset ? asset(x.asset, at) : undefined, text: text(x.text, at, 2000) };
-      default: throw new ValidationError(`${at}: 알 수 없는 블록입니다.`);
-    }
+    const out = blockOf(x, `${i + 1}번째 블록`);
+    return x.hidden === true ? { ...out, hidden: true } : out;
   });
   const headRaw = (r.head ?? null) as Record<string, unknown> | null;
   const head = headRaw ? { eyebrow: opt(text(headRaw.eyebrow, '머리말', 120), noText), layout: headRaw.layout === 'opening' ? 'opening' as const : headRaw.layout === 'editorial' ? 'editorial' as const : undefined } : undefined;
