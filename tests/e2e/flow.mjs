@@ -505,6 +505,41 @@ try {
     await ctxL.close();
   });
 
+  await step('39차: 관제 센터 — 결정 요청에 답하고, 연구소 항목을 세션에 지시', async () => {
+    const ctxC = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxC.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.click('aside a[href="/admin/control"]');
+    await p.waitForURL(/\/admin\/control$/);
+    const card = p.locator('[data-testid=control-1]');
+    assert.match(await card.textContent(), /GitHub 이슈/);
+    await card.locator('label.control-option', { hasText: 'QUEUE.md 유지' }).click();
+    await card.locator('textarea').fill('E2E: 지금은 유지하고 다음 달에 다시 보자');
+    await card.locator('button:text-is("지시 보내기")').click();
+    await p.click('[role=tab]:has-text("전달·진행")');
+    const sent = p.locator('[data-testid=control-1]');
+    await sent.waitFor();
+    assert.match(await sent.textContent(), /전달 대기/);
+    assert.match(await sent.textContent(), /선택: QUEUE\.md 유지/);
+    await shot(p, '39-control-center.png');
+    // 개발·연구소 항목 → 세션에 지시 (세부 내용이 채워진 새 지시)
+    await p.click('aside a[href="/admin/lab"]');
+    await p.waitForURL(/\/admin\/lab$/);
+    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a:has-text("세션에 지시")').click();
+    await p.waitForURL(/\/admin\/control\?from=/);
+    const form = p.locator('[data-testid=control-compose]');
+    assert.equal(await form.locator('input').first().inputValue(), 'AI 분석 프롬프트 설계와 학교당 월 비용 추정');
+    await form.locator('textarea').nth(1).fill('E2E: 무료 범위에서 추정만');
+    await form.locator('select').selectOption('new');
+    await form.locator('button:text-is("지시 보내기")').click();
+    await p.locator('[data-testid=control-list] li', { hasText: 'AI 분석 프롬프트 설계' }).waitFor();
+    await ctxC.close();
+  });
+
   await step('22차: 학교별 개발 연동 — GitHub 저장소 연결과 세션 요청 문구', async () => {
     const ctxI = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const p = await ctxI.newPage();

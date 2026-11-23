@@ -76,6 +76,7 @@ export const platformGroup: NavGroup = {
   label: '전체 관리', items: [
     { href: '/admin', label: '학교', title: '학교·라이선스' },
     { href: '/admin/integrations', label: '연동', title: '학교별 개발 연동' },
+    { href: '/admin/control', label: '관제', title: '관제 센터' },
     { href: '/admin/lab', label: '연구소', title: '개발·연구소' },
     { href: '/admin/design', label: '디자인', title: '디자인 원형' },
   ],
