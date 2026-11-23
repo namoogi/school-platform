@@ -59,6 +59,8 @@ export type EntryStatus = 'draft' | 'live' | 'changed' | 'hidden';
 export type EntrySummary = {
   id: string; kind: EntryKind; key: string; visibility: 'public' | 'unlisted'; sort: number; meta: Record<string, unknown>;
   latest_version: number; latest_title: LText; updated_at: string; live_version: number | null; status: EntryStatus;
+  /** 38차: 보관(소프트 삭제)한 때. 보관함에만 보이고 방문자에게는 안 보인다 */
+  archived_at: string | null;
 };
 
 /** 파일 크기 표시 (1.2MB · 340KB) */

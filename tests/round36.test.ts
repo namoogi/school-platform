@@ -40,8 +40,8 @@ afterAll(async () => { await getPool().end(); });
 
 describe('AI 작업 공간: 범위 일반화', () => {
   it('쪽 토큰은 고른 쪽의 시안만 저장하고, 다른 쪽·소식·공개는 안 된다', async () => {
-    const tok = await issue(A.userId, A.schoolId, { label: '입학 안내 다듬기', kinds: ['page'], keys: ['admissions'], perms: ['read', 'draft'], agent_kind: 'claude-code', days: 7 });
-    expect(await as((db) => agent.agentWhoami(db, tok))).toMatchObject({ kinds: ['page'], keys: ['admissions'], perms: ['read', 'draft'], agent_kind: 'claude-code' });
+    const tok = await issue(A.userId, A.schoolId, { label: '입학 안내 다듬기', kinds: ['page'], keys: ['admissions'], perms: ['read', 'edit'], agent_kind: 'claude-code', days: 7 });
+    expect(await as((db) => agent.agentWhoami(db, tok))).toMatchObject({ kinds: ['page'], keys: ['admissions'], perms: ['read', 'edit'], agent_kind: 'claude-code' });
     expect((await as((db) => agent.agentEntries(db, tok, 'page')) as { key: string }[]).map((e) => e.key)).toEqual(['admissions']);
     const base = await as((db) => agent.agentEntry(db, tok, 'page', 'admissions'));
     const v = await as((db) => agent.agentSaveEntry(db, tok, 'page', 'admissions', { content: doc('입학 안내 2판'), base_version: base.latest.version }));
@@ -60,7 +60,7 @@ describe('AI 작업 공간: 범위 일반화', () => {
   it('읽기만 있는 토큰은 저장·올리기를 못 하고, 소식 전체 토큰은 소식만 본다', async () => {
     const ro = await issue(A.userId, A.schoolId, { kinds: ['page', 'news'], perms: ['read'], days: 7 });
     expect((await as((db) => agent.agentEntries(db, ro, 'page')) as unknown[]).length).toBe(2);
-    await expect(as((db) => agent.agentSaveEntry(db, ro, 'news', 'open-day', { content: doc('x'), base_version: 1 }))).rejects.toThrow('시안 저장 권한');
+    await expect(as((db) => agent.agentSaveEntry(db, ro, 'news', 'open-day', { content: doc('x'), base_version: 1 }))).rejects.toThrow('고치기 권한');
     const up = await issue(A.userId, A.schoolId, { kinds: ['news'], perms: ['upload'], days: 7 });
     expect((await as((db) => agent.agentUpload(db, up, { name: 'news.png', type: 'image/png', bytes: PNG }))).reused).toBe(false);
     expect((await as((db) => agent.agentAssets(db, up))).length).toBe(1); // 올리기 권한이면 중복 확인용 목록은 본다
@@ -93,7 +93,7 @@ describe('AI 작업 공간: 범위 일반화', () => {
   it('관리 목록에 범위·권한·최근 활동이 보이고, 학교별 개발 연동 문구에 안내 링크가 있다', async () => {
     const list = await asUser(A.userId, (db) => agent.listAgentTokens(db, A.schoolId));
     const t = list.find((x) => x.label === '입학 안내 다듬기')!;
-    expect(t).toMatchObject({ kinds: ['page'], keys: ['admissions'], perms: ['read', 'draft'], agent_kind: 'claude-code' });
+    expect(t).toMatchObject({ kinds: ['page'], keys: ['admissions'], perms: ['read', 'edit'], agent_kind: 'claude-code' });
     expect(t.recent[0]).toMatchObject({ action: 'page.version' });
     const school = { id: A.schoolId, slug: 'school-a', name: '드리미 예시학교' };
     expect(dl.sessionPrompt(school, [], 'claude')).toContain('docs/agents/claude-code.md');

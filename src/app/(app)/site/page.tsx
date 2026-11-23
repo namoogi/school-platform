@@ -6,7 +6,7 @@ import { EmptyState, StatusBadge } from '@/components/ui';
 import { TriageKeys } from '../review/TriageKeys';
 import { EntryEditor, NewEntryForm, SiteSettingsForm } from './SiteClient';
 import { ImportPanel } from './ImportClient';
-import { AgentTokenPanel } from './AgentTokenClient';
+import { AgentTokenPanel, ArchiveControl, TokenAlerts } from './AgentTokenClient';
 import { listAgentTokens } from '@/lib/agent';
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +39,9 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
 
   const boxes: Box[] = ['settings', 'page', 'news', ...(school.modules.includes('stories') ? ['story' as const] : [])];
   const box: Box = boxes.includes(sp.box as Box) ? (sp.box as Box) : settings ? 'page' : 'settings';
-  const list = box === 'settings' ? [] : entries.filter((e) => e.kind === box);
+  // 38차: 보관한 항목은 목록 아래 '보관함'으로
+  const list = box === 'settings' ? [] : entries.filter((e) => e.kind === box && !e.archived_at);
+  const archivedList = box === 'settings' ? [] : entries.filter((e) => e.kind === box && e.archived_at);
   const selected = box === 'settings' ? undefined : (detail && detail.entry.kind === box ? detail : null);
   const href = (b: Box, id?: string) => `/site?box=${b}${id ? `&id=${id}` : ''}`;
   const lang = settings?.default_lang ?? 'ko';
@@ -63,7 +65,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
           return (
             <Link key={b} href={href(b)} className="triage-box" aria-current={b === box ? 'page' : undefined}>
               <Icon size={18} aria-hidden="true" /><span>{b === 'settings' ? '설정' : KIND_LABEL[b]}</span>
-              <span className="triage-count">{b === 'settings' ? (settings?.is_open ? '열림' : '닫힘') : entries.filter((e) => e.kind === b).length}</span>
+              <span className="triage-count">{b === 'settings' ? (settings?.is_open ? '열림' : '닫힘') : entries.filter((e) => e.kind === b && !e.archived_at).length}</span>
             </Link>
           );
         })}
@@ -86,6 +88,15 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                 ))}
               </ul>
               {list.length === 0 && <p className="triage-empty">{settings ? '아직 없습니다. 위에서 새로 만드세요.' : '먼저 설정에서 홈페이지 주소를 정해 주세요.'}</p>}
+              {archivedList.length > 0 && (
+                <details className="triage-archive" data-testid="archive-box" open={!!selected?.entry.archived_at}>
+                  <summary>보관함 {archivedList.length}</summary>
+                  <ul>{archivedList.map((e) => (
+                    <li key={e.id}><Link href={href(box, e.id)} className="triage-item" aria-current={e.id === selected?.entry.id ? 'true' : undefined}>
+                      <span className="triage-item-title">{pick(e.latest_title, lang, lang) || e.key}</span><span className="triage-item-sub">/{e.key} · 보관함</span>
+                    </Link></li>))}</ul>
+                </details>
+              )}
             </>}
       </section>
 
@@ -95,6 +106,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
             ? (school.isAdmin
                 ? <>
                     {/* 가져오기 등으로 설정이 바뀌면 양식을 새 값으로 다시 연다(예전 값으로 덮어쓰지 않게) */}
+                    {tokens && <TokenAlerts tokens={JSON.parse(JSON.stringify(tokens))} />}
                     <SiteSettingsForm key={settings?.updated_at ?? 'new'} initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
                     {settings && <ImportPanel settings={JSON.parse(JSON.stringify(settings))} existing={entries.map((e) => ({ id: e.id, kind: e.kind, key: e.key }))} />}
                     {tokens && <AgentTokenPanel tokens={JSON.parse(JSON.stringify(tokens))}
@@ -103,9 +115,10 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                   </>
                 : <EmptyState title="설정은 학교 관리자가 합니다">시안 만들기와 고치기는 교사도 할 수 있습니다.</EmptyState>)
             : selected
-              ? <EntryEditor key={selected.entry.id} detail={JSON.parse(JSON.stringify(selected))}
+              ? <>{school.isAdmin && <ArchiveControl id={selected.entry.id} archived={!!selected.entry.archived_at} live={!!selected.liveVersionId} />}
+                <EntryEditor key={selected.entry.id} detail={JSON.parse(JSON.stringify(selected))}
                   langs={settings?.langs ?? ['ko']} canPublish={school.isAdmin} assets={JSON.parse(JSON.stringify(assets))}
-                  publicHref={settings?.is_open ? `${publicUrl}${box === 'page' ? (selected.entry.key === 'home' ? '' : `/p/${selected.entry.key}`) : box === 'news' ? `/news/${selected.entry.key}` : `/stories/${selected.entry.key}`}` : null} />
+                  publicHref={settings?.is_open ? `${publicUrl}${box === 'page' ? (selected.entry.key === 'home' ? '' : `/p/${selected.entry.key}`) : box === 'news' ? `/news/${selected.entry.key}` : `/stories/${selected.entry.key}`}` : null} /></>
               : <EmptyState title="왼쪽 목록에서 고르세요">고르면 여기서 고치고 판을 공개합니다.</EmptyState>}
         </div>
       </section>

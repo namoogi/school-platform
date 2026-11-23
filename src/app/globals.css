@@ -679,6 +679,9 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
 .triage-item-title { font-weight: 700; }
 .triage-item-sub { font-size: var(--fs-body-sm); color: var(--text-muted); }
 .triage-empty { padding: var(--space-8) var(--space-4); color: var(--text-muted); }
+.triage-archive { padding: var(--space-2) var(--space-4); color: var(--text-muted); }
+.triage-archive summary { cursor: pointer; padding: var(--space-2) 0; }
+.archive-control { display: flex; justify-content: flex-end; margin-bottom: var(--space-2); }
 .triage-detail { background: var(--surface-canvas); overflow: auto; min-width: 0; container-type: inline-size; }
 .triage-pad { display: grid; gap: var(--space-4); padding: var(--space-5) var(--space-6) var(--space-8); }
 .triage-detail-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
