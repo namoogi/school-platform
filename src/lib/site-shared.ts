@@ -19,7 +19,7 @@ export const SECTION_LABEL: Record<SectionTemplate, string> = {
 };
 export type SectionItem = { title?: LText; body?: LText; asset?: string; alt?: LText; href?: string };
 export type Button = { label: LText; href: string };
-export type GalleryItem = { asset: string; alt?: LText; category?: string };
+export type GalleryItem = { asset: string; alt?: LText; category?: string; file_name?: string; size_bytes?: number };
 export type GalleryFilter = { key: string; label: LText };
 
 /** 35차(ADR 0011): 어느 블록이든 hidden 이면 방문자 화면에 그리지 않는다(화면 편집의 '숨기기'). 판에 남아 다시 보이게 할 수 있다. */
@@ -28,7 +28,7 @@ export type Block = (
   | { type: 'text'; text: LText }
   | { type: 'notice'; text: LText }
   | { type: 'image'; asset: string; alt?: LText; caption?: LText }
-  | { type: 'gallery'; assets: string[]; caption?: LText; items?: GalleryItem[]; filters?: GalleryFilter[] }
+  | { type: 'gallery'; assets: string[]; caption?: LText; items?: GalleryItem[]; filters?: GalleryFilter[]; download?: 'png'; scene?: number }
   | { type: 'video'; url: LText }
   | { type: 'story_page'; asset?: string; text: LText }
   | { type: 'section'; template: SectionTemplate; eyebrow?: LText; title?: LText; body?: LText; asset?: string; alt?: LText; items?: SectionItem[]; button?: Button }

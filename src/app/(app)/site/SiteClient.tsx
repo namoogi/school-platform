@@ -281,6 +281,10 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
               <LangFields label="대체 글" value={b.alt} langs={langs} onChange={(alt) => setBlock(i, { ...b, alt })} />
             </>}
             {b.type === 'gallery' && <>
+              <label><input type="checkbox" checked={b.download === 'png'} onChange={(e) => setBlock(i, { ...b, download: e.target.checked ? 'png' : undefined, scene: e.target.checked ? b.scene ?? 1 : undefined })} />장면 캐릭터 PNG 내려받기</label>
+              {b.download === 'png' && <label>장면 번호<input type="number" min={1} max={200} value={b.scene ?? 1} onChange={(e) => setBlock(i, { ...b, scene: Number(e.target.value) })} /></label>}
+              <LangFields label="장면·사진 묶음 설명" value={b.caption} langs={langs} onChange={(caption) => setBlock(i, { ...b, caption })} />
+              {b.download === 'png' && (b.items ?? b.assets.map((asset) => ({ asset, alt: {} as LText }))).map((item, k) => <LangFields key={k} label={`${k + 1}번 캐릭터 이름·대체 글`} value={item.alt} langs={langs} onChange={(alt) => setBlock(i, { ...b, items: (b.items ?? b.assets.map((asset) => ({ asset, alt: {} as LText }))).map((it, j) => j === k ? { ...it, alt } : it) })} />)}
               <div className="gallery-pick">{b.assets.map((a, k) => (
                 <span key={a + k}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={`/site/assets/${a}`} alt="" />
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBlock(i, { ...b, assets: b.assets.filter((_, j) => j !== k), items: b.items?.filter((_, j) => j !== k) })}>빼기</button></span>))}</div>
@@ -309,7 +313,7 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
         ))}
       </ol>
       <div className="block-add" role="group" aria-label="블록 더하기">
-        {(isStory ? (['story_page', 'section', 'download', 'video', 'text'] as const) : (['heading', 'text', 'section', 'image', 'gallery', 'news_list', 'notice', 'video', 'download'] as const)).map((t) => (
+        {(isStory ? (['story_page', 'gallery', 'section', 'download', 'video', 'text'] as const) : (['heading', 'text', 'section', 'image', 'gallery', 'news_list', 'notice', 'video', 'download'] as const)).map((t) => (
           <button key={t} type="button" className="btn btn-secondary btn-sm" onClick={() => add(t)}><Plus size={14} aria-hidden="true" />{BLOCK_LABEL[t]}</button>
         ))}
       </div>
