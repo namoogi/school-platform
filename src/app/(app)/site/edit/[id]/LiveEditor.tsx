@@ -314,7 +314,9 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
       <div className="le-body">
         <div className="le-canvas" data-editing={editing || undefined}
           onClickCapture={(e) => { const a = (e.target as HTMLElement).closest('a'); if (a) { e.preventDefault(); if (!editing) setMsg({ tone: 'info', text: '편집 화면에서는 링크를 따라가지 않습니다. 공개 화면에서 확인하세요.' }); } }}
-          onFocusCapture={(e) => { if ((e.target as HTMLElement).closest('.site-head')) setSel(-1); }}>
+          // 쪽 머리 고르기도 구역과 같게: 글 칸에 들어갈 때나 누름이 끝난 뒤(click)만. 누르는 순간 빈 칸이 펼쳐지면 표지 사진 단추가 밀려 누름이 사라진다
+          onFocusCapture={(e) => { const el = e.target as HTMLElement; if (el.classList.contains('le-text') && el.closest('.site-head')) setSel(-1); }}
+          onClick={(e) => { if ((e.target as HTMLElement).closest('.site-head')) setSel(-1); }}>
           <SiteFrame site={frame} lang={lang} current={current} path="" profile={(isHome ? content.site : profile) ?? undefined} assetUrl={assetUrl}>
             <PageHead content={content} lang={lang} fallback={defaultLang} asset={assetUrl} meta={meta} ed={ed} />
             <SiteBlocks content={content} lang={lang} fallback={defaultLang} assetUrl={assetUrl} link={() => '#'} news={news}

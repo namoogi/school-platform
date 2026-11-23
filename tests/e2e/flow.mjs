@@ -1147,6 +1147,13 @@ try {
     await h.waitForSelector(`[data-testid=le-picker] .le-assets button[aria-pressed=true] img[src="/site/assets/${asset.id}"]`);
     await h.click('[data-testid=le-picker] button:text-is("다 했어요")');
     await h.waitForSelector('[data-testid=le-picker]', { state: 'detached' });
+    // 쪽 머리의 표지 사진 단추도 한 번 누르면 열린다(누르는 순간 빈 칸이 펼쳐져 단추가 밀리면 안 됨 — 운영에서 찾은 문제)
+    if (!(await h.locator('[data-testid=le-guide]').count())) await h.click('[data-testid=le-guide-toggle]');
+    await h.selectOption('[data-testid=le-guide] select', 'opening');
+    await h.locator('.site-head .le-photo-btn').click();
+    await h.waitForSelector('[data-testid=le-picker][open]');
+    await h.click('[data-testid=le-picker] button[aria-label="사진함 닫기"]');
+    await h.waitForSelector('[data-testid=le-picker]', { state: 'detached' });
     assert.ok(await h.locator(`[data-block-index="${photoIdx}"] img[src="/site/assets/${asset.id}"]`).count());
     // 구역 설정: 카드 항목 순서 바꾸기 (화면의 카드 순서가 바로 바뀐다)
     const cardsIdx = await h.locator('[data-testid=le-block]:has(.sec-cards)').first().getAttribute('data-block-index');
