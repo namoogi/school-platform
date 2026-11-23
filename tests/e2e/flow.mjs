@@ -487,6 +487,94 @@ try {
     await shot(s, '26-school-analytics.png');
     await ctxS.close();
   });
+
+  await step('27차: 학교 홈페이지 — 라이선스로 켜고, 시안 → 공개, 방문자에게는 공개한 판만, 성품 동화 그림책', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    // 라이선스에서 홈페이지·성품 동화 기능 켜기
+    await h.goto(`${BASE}/settings`);
+    await h.check('[data-testid=license] label:has-text("학교 홈페이지") input');
+    await h.check('[data-testid=license] label:has-text("성품 동화") input');
+    await h.click('text=라이선스 저장');
+    await h.waitForSelector('[data-testid=license] .tag:has-text("3판")');
+    await h.goto(`${BASE}/home`);
+    await h.click('aside a[href="/site"]');
+    await h.waitForURL(/\/site$/);
+    // 설정: 주소·언어·열기
+    await h.fill('[data-testid=site-settings] input >> nth=0', 'dreamy-a');
+    await h.check('[data-testid=site-settings] label:has-text("English") input');
+    await h.check('[data-testid=site-settings] label:has-text("홈페이지 열기") input');
+    await h.click('text=설정 저장');
+    await h.waitForSelector('[data-testid=site-settings] [role=status]:has-text("저장했습니다")');
+    // 쪽 만들고 공개
+    await h.click('.triage-box:has-text("쪽")');
+    await h.click('[data-testid=new-entry]');
+    await h.fill('.site-new input >> nth=0', '학교 소개');
+    await h.fill('.site-new input >> nth=1', 'about');
+    await h.click('text=시안 만들기');
+    await h.waitForSelector('[data-testid=entry-editor]');
+    await h.click('.block-add button:has-text("글")');
+    await h.fill('.block-card textarea >> nth=0', '드리미 예시학교는 합성 예시 학교입니다.');
+    await h.click('text=저장하고 공개');
+    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    // 새 판(공개 안 함)
+    await h.fill('.block-card textarea >> nth=0', '아직 공개하지 않은 2판 글');
+    await h.click('text=새 판으로 저장');
+    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("새 판으로 저장")');
+    await shot(h, '27-site-admin.png');
+    // 성품 동화 시안 (공개 전)
+    await h.click('.triage-box:has-text("성품 동화")');
+    await h.click('[data-testid=new-entry]');
+    await h.fill('.site-new input >> nth=0', '비 온 뒤의 약속');
+    await h.fill('.site-new input >> nth=1', 'after-rain');
+    await h.fill('.site-new label:has-text("성품") input', '우정');
+    await h.click('text=시안 만들기');
+    await h.waitForSelector('[data-testid=entry-editor]');
+    await h.click('.block-add button:has-text("동화 한 쪽")');
+    await h.click('.block-add button:has-text("동화 한 쪽")');
+    await h.fill('.block-card >> nth=0 >> textarea >> nth=0', '첫 쪽: 친구들이 모였어요.');
+    await h.fill('.block-card >> nth=1 >> textarea >> nth=0', '둘째 쪽: 비가 와도 약속은 남아요.');
+    await h.click('text=새 판으로 저장');
+    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("새 판으로 저장")');
+
+    // 방문자(로그인 없음)
+    const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const v = await ctxV.newPage();
+    await v.goto(`${BASE}/s/dreamy-a`);
+    assert.match(await v.textContent('.site-nav'), /학교 소개/);
+    await v.goto(`${BASE}/s/dreamy-a/p/about`);
+    const body = await v.textContent('.site-main');
+    assert.match(body, /합성 예시 학교/);
+    assert.doesNotMatch(body, /2판 글/);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/after-rain`)).status(), 404);
+    // 관리자가 동화 공개 → 방문자 그림책
+    await h.click('text=최신 판 공개');
+    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    await v.goto(`${BASE}/s/dreamy-a/stories`);
+    assert.match(await v.textContent('[data-testid=site-list]'), /비 온 뒤의 약속.*우정/s);
+    await v.goto(`${BASE}/s/dreamy-a/stories/after-rain?lang=en`);
+    await v.waitForSelector('[data-testid=storybook]');
+    assert.equal(await v.textContent('[data-testid=storybook-count]'), '1 / 2');
+    await v.click('[data-testid=storybook] button[aria-label="Next"]');
+    assert.equal(await v.textContent('[data-testid=storybook-count]'), '2 / 2');
+    assert.match(await v.textContent('.storybook-text'), /약속은 남아요/);
+    await shot(v, '27-site-story.png');
+    // 없는 사이트·다른 학교: 기능이 꺼진 B는 관리 화면이 잠겨 있다
+    assert.equal((await v.goto(`${BASE}/s/no-such-school`)).status(), 404);
+    await ctxV.close();
+    const ctxB2 = await browser.newContext();
+    const b2 = await ctxB2.newPage();
+    await b2.goto(`${BASE}/login`);
+    await b2.fill('input[name=email]', 'admin-b@school-b.test');
+    await b2.fill('input[name=password]', 'demo-pass-b');
+    await b2.click('button[type=submit]');
+    await b2.waitForURL(/\/home$/);
+    await b2.goto(`${BASE}/site`);
+    await b2.waitForURL(/\/locked\?module=homepage/);
+    await ctxB2.close();
+    await ctxH.close();
+  });
 } catch (e) {
   exitCode = 1;
   console.error('\n서버 로그(마지막 2000자):\n' + serverLog.slice(-2000));

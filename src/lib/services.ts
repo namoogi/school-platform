@@ -121,7 +121,8 @@ export async function accessibleSchools(db: Db) {
   return rows;
 }
 
-export function hasModule(school: School, key: 'intake' | 'records') {
+export type ModuleKey = 'intake' | 'records' | 'homepage' | 'stories';
+export function hasModule(school: School, key: ModuleKey) {
   return school.modules.includes(key);
 }
 

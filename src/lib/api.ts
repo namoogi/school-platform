@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { asUser, type Db } from './db';
 import { currentUserId } from './auth';
 import { preferredSchoolId } from './context';
-import { currentSchool, hasModule, me, NoSchoolError, NotFoundError, ValidationError, type Me, type School } from './services';
+import { currentSchool, hasModule, me, NoSchoolError, NotFoundError, ValidationError, type Me, type ModuleKey, type School } from './services';
 
 export type Ctx = { db: Db; school: School; userId: string };
-type Opts = { module?: 'intake' | 'records'; admin?: boolean };
+type Opts = { module?: ModuleKey; admin?: boolean };
 
 /**
  * API 공통 처리: 로그인 확인 → 같은 출처 확인(쓰기) → RLS가 걸린 트랜잭션 → 오류 변환.

@@ -2,9 +2,9 @@ import { notFound, redirect } from 'next/navigation';
 import { asUser, type Db } from './db';
 import { requireUser } from './auth';
 import { preferredSchoolId } from './context';
-import { currentSchool, hasModule, me, NoSchoolError, type Me, type School } from './services';
+import { currentSchool, hasModule, me, NoSchoolError, type Me, type ModuleKey, type School } from './services';
 
-type Opts = { module?: 'intake' | 'records'; admin?: boolean };
+type Opts = { module?: ModuleKey; admin?: boolean };
 
 /** 서버 페이지용: 로그인 확인 → 작업 학교 → 기능·권한 확인 → RLS가 걸린 트랜잭션에서 읽기 */
 export async function loadForPage<T>(fn: (ctx: { db: Db; school: School; userId: string }) => Promise<T>, opts: Opts = {}) {
