@@ -22,7 +22,8 @@ export type Button = { label: LText; href: string };
 export type GalleryItem = { asset: string; alt?: LText; category?: string };
 export type GalleryFilter = { key: string; label: LText };
 
-export type Block =
+/** 35차(ADR 0011): 어느 블록이든 hidden 이면 방문자 화면에 그리지 않는다(화면 편집의 '숨기기'). 판에 남아 다시 보이게 할 수 있다. */
+export type Block = (
   | { type: 'heading'; text: LText }
   | { type: 'text'; text: LText }
   | { type: 'notice'; text: LText }
@@ -33,7 +34,8 @@ export type Block =
   | { type: 'section'; template: SectionTemplate; eyebrow?: LText; title?: LText; body?: LText; asset?: string; alt?: LText; items?: SectionItem[]; button?: Button }
   | { type: 'news_list'; title?: LText; body?: LText; count: number; style: 'cards' | 'list' }
   /** 34차: 파일(PDF) 내려받기. 파일 이름·크기는 저장할 때 서버가 그 학교 자산에서 채운다(판 스냅샷에 남음) */
-  | { type: 'download'; asset: string; label?: LText; note?: LText; file_name?: string; size_bytes?: number };
+  | { type: 'download'; asset: string; label?: LText; note?: LText; file_name?: string; size_bytes?: number }
+) & { hidden?: boolean };
 
 /** 사이트 머리·바닥 정보. 'home' 쪽 내용에 두어 판·공개 흐름을 그대로 따른다(로고 그림도 공개된 판이 가리킬 때만 보임). */
 export type SiteProfile = {

@@ -862,6 +862,133 @@ try {
     await ctxH.close();
   });
 
+  await step('35차: 화면 편집 — 그 자리에서 글 고치기·언어 전환·구역 끼워 넣기·숨기기·키보드로 옮기기·사진 올리기 → 공개 → 방문자 반영', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=page`);
+    await h.click('.triage-item:has(.triage-item-sub:text-is("/about"))');
+    await h.click('[data-testid=live-edit-link]');
+    await h.waitForURL(/\/site\/edit\/[0-9a-f-]{36}$/);
+    const editUrl = h.url();
+    await h.waitForSelector('[data-testid=live-editor] .site h1 .le-text');
+    await h.click('.le-langs button:text-is("한국어")');
+    // 글 바로 고치기 (쪽 제목)
+    await h.locator('.site-head h1 .le-text').fill('합성 화면 편집 제목');
+    await h.waitForSelector('[data-testid=le-dirty]');
+    // 레이아웃 가이드: '알림'과 '제목'을 끼워 넣고 바로 적는다
+    await h.click('[data-testid=le-guide-toggle]');
+    const before = await h.locator('[data-testid=le-block]').count();
+    await h.click('[data-palette=notice]');
+    await h.waitForFunction((t) => document.activeElement?.classList.contains('le-text') && !document.activeElement.textContent && document.activeElement.closest('[data-block-index]')?.dataset.blockIndex === t, String(before));
+    await h.keyboard.type('화면에서 넣은 합성 알림');
+    await h.click('[data-palette=heading]');
+    await h.waitForFunction((t) => document.activeElement?.classList.contains('le-text') && !document.activeElement.textContent && document.activeElement.closest('[data-block-index]')?.dataset.blockIndex === t, String(before + 1));
+    await h.keyboard.type('숨길 합성 구역');
+    assert.equal(await h.locator('[data-testid=le-block]').count(), before + 2);
+    // 숨기기 (마지막 '제목' 구역)
+    await h.click(`[data-block-index="${before + 1}"] .le-bar button[aria-label="${before + 2}번 구역 숨기기"]`);
+    assert.equal(await h.getAttribute(`[data-block-index="${before + 1}"]`, 'data-hidden'), 'true');
+    assert.match(await h.textContent('[data-testid=le-outline]'), /숨김/);
+    // 키보드로 옮기기: '알림' 손잡이에서 ↑ → 한 칸 위, 초점은 옮긴 구역 손잡이에 남는다
+    await h.focus(`[data-grip="${before}"]`);
+    await h.keyboard.press('ArrowUp');
+    await h.waitForFunction((i) => document.querySelector(`[data-block-index="${i}"]`)?.textContent?.includes('화면에서 넣은 합성 알림'), before - 1);
+    assert.equal(await h.evaluate(() => document.activeElement?.getAttribute('data-grip')), String(before - 1));
+    // 언어 전환: 영어에는 알림 글이 없어 기본 언어 글을 흐리게 보인다(점선 표시)
+    await h.click('.le-langs button:text-is("English")');
+    assert.equal(await h.getAttribute(`[data-block-index="${before - 1}"] .le-text`, 'data-state'), 'missing');
+    await h.locator(`[data-block-index="${before - 1}"] .le-text`).fill('Synthetic notice added on the page');
+    await h.click('.le-langs button:text-is("한국어")');
+    // 사진 바꾸기: 첫 사진 칸에서 사진함을 열고 새 사진을 올리면 바로 바뀐다
+    const photoBtn = h.locator('.le-photo-btn').first();
+    const photoIdx = await photoBtn.evaluate((el) => el.closest('[data-block-index]')?.getAttribute('data-block-index'));
+    await photoBtn.click();
+    await h.waitForSelector('[data-testid=le-picker][open]');
+    const png = Buffer.from('89504e470d0a1a0a0000000d4948445200000002000000020806000000f478d4fa0000001549444154789c63f8cfc0f01f0418181818fe03000c1a02fe3e5a6c4d0000000049454e44ae426082', 'hex');
+    const up = h.waitForResponse((r) => r.url().endsWith('/api/site/assets') && r.request().method() === 'POST');
+    await h.setInputFiles('[data-testid=le-picker] input[type=file]', { name: 'synthetic.png', mimeType: 'image/png', buffer: png });
+    const asset = await (await up).json();
+    await h.waitForSelector(`[data-testid=le-picker] .le-assets button[aria-pressed=true] img[src="/site/assets/${asset.id}"]`);
+    await h.click('[data-testid=le-picker] button:text-is("다 했어요")');
+    await h.waitForSelector('[data-testid=le-picker]', { state: 'detached' });
+    assert.ok(await h.locator(`[data-block-index="${photoIdx}"] img[src="/site/assets/${asset.id}"]`).count());
+    // 구역 설정: 카드 항목 순서 바꾸기 (화면의 카드 순서가 바로 바뀐다)
+    const cardsIdx = await h.locator('[data-testid=le-block]:has(.sec-cards)').first().getAttribute('data-block-index');
+    const cardTitles = () => h.locator(`[data-block-index="${cardsIdx}"] .sec-cards > li h3`).allTextContents();
+    await h.click(`[data-block-index="${cardsIdx}"] .le-bar button[aria-label="${Number(cardsIdx) + 1}번 구역 설정"]`);
+    await h.click(`[data-block-index="${cardsIdx}"] [data-testid=le-settings] button:has-text("항목 더하기")`);
+    await h.locator(`[data-block-index="${cardsIdx}"] .sec-cards > li:last-child h3 .le-text`).fill('합성 새 카드');
+    await h.locator(`[data-block-index="${cardsIdx}"] .sec-cards > li:first-child h3 .le-text`).fill('합성 첫 카드');
+    const t0 = await cardTitles();
+    await h.click(`[data-block-index="${cardsIdx}"] [data-testid=le-settings] button[aria-label="1번 항목 아래로"]`);
+    assert.deepEqual((await cardTitles()).slice(0, 2), [t0[1], t0[0]]);
+    await shot(h, '35-live-edit.png');
+    // 방문자 모습 보기: 숨긴 구역이 빠진다
+    await h.click('[data-testid=le-mode]');
+    assert.doesNotMatch(await h.textContent('.le-canvas'), /숨길 합성 구역/);
+    await h.click('[data-testid=le-mode]');
+    // 저장하고 공개 → 방문자
+    await h.click('[data-testid=le-publish]');
+    await h.waitForSelector('[data-testid=le-msg]:has-text("공개했습니다")');
+    // 새로 고침으로 새 판이 오면 '저장 안 한 변경' 표시가 사라지고 공개 판 번호가 최신 판과 같다
+    await h.waitForSelector('[data-testid=le-dirty]', { state: 'detached' });
+    const head = await h.textContent('[data-testid=le-toolbar] p.fine');
+    const [, latestV, liveV] = head.match(/최신 (\d+)판 · 공개 중 (\d+)판/);
+    assert.equal(latestV, liveV);
+    const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const v = await ctxV.newPage();
+    await v.goto(`${BASE}/s/dreamy-a/p/about?lang=ko`);
+    const main = await v.textContent('.site-main');
+    assert.match(main, /합성 화면 편집 제목/);
+    assert.match(main, /화면에서 넣은 합성 알림/);
+    assert.doesNotMatch(main, /숨길 합성 구역/);
+    assert.ok(await v.locator(`img[src="/s/dreamy-a/a/${asset.id}"]`).count());
+    await v.goto(`${BASE}/s/dreamy-a/p/about?lang=en`);
+    assert.match(await v.textContent('.site-main'), /Synthetic notice added on the page/);
+    await ctxV.close();
+    // 병행 규칙(ADR 0013): 화면을 연 뒤 다른 곳에서 새 판이 저장되면, 내 저장은 막히고 내 고침은 화면에 남는다 → 최신 판 위에 저장
+    await h.reload();
+    await h.waitForSelector('[data-testid=live-editor] .site h1 .le-text');
+    const entryId = editUrl.split('/').pop();
+    const opened = Number((await h.textContent('[data-testid=le-toolbar] p.fine')).match(/최신 (\d+)판/)[1]);
+    const other = await h.evaluate(async ([id, base]) => {
+      const d = await (await fetch(`/api/site/entries/${id}/versions`, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ base_version: base, note: '다른 곳에서 저장', content: { title: { ko: '다른 곳 제목' }, blocks: [] } }) })).json();
+      return d.version;
+    }, [entryId, opened]);
+    assert.equal(other, opened + 1);
+    await h.locator('.site-head h1 .le-text').fill('내 화면 편집 제목');
+    await h.click('[data-testid=le-save]');
+    await h.waitForSelector('[data-testid=le-conflict]');
+    await h.waitForSelector(`[data-testid=le-conflict]:has-text("${opened + 1}판")`);
+    assert.equal(await h.textContent('.site-head h1 .le-text'), '내 화면 편집 제목');
+    await h.click('[data-testid=le-conflict] button:has-text("내 고침을 최신 판 위에 저장")');
+    await h.waitForSelector('[data-testid=le-conflict]', { state: 'detached' });
+    await h.waitForSelector(`[data-testid=le-toolbar] p.fine:has-text("최신 ${opened + 2}판")`);
+    assert.equal(await h.textContent('.site-head h1 .le-text'), '내 화면 편집 제목');
+    // 휴대폰 폭: 레이아웃 가이드가 아래쪽 시트로 열린다
+    await h.setViewportSize({ width: 390, height: 844 });
+    await h.reload();
+    await h.click('[data-testid=le-guide-toggle]');
+    assert.equal(await h.evaluate(() => getComputedStyle(document.querySelector('[data-testid=le-guide]')).position), 'fixed');
+    await shot(h, '35-live-edit-mobile.png');
+    await ctxH.close();
+    // 다른 학교(B, 홈페이지 기능 꺼짐)는 이 편집 주소로 들어오지 못한다
+    const ctxB3 = await browser.newContext();
+    const b3 = await ctxB3.newPage();
+    await b3.goto(`${BASE}/login`);
+    await b3.fill('input[name=email]', 'admin-b@school-b.test');
+    await b3.fill('input[name=password]', 'demo-pass-b');
+    await b3.click('button[type=submit]');
+    await b3.waitForURL(/\/home$/);
+    await b3.goto(editUrl);
+    await b3.waitForURL(/\/locked\?module=homepage/);
+    const r = await b3.request.post(`${editUrl.replace('/site/edit/', '/api/site/entries/')}/versions`, { data: { content: { title: { ko: '침입' }, blocks: [] } } });
+    assert.ok(r.status() >= 400, `B 학교의 시안 저장이 거부되어야 함: ${r.status()}`);
+    await ctxB3.close();
+  });
+
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));
