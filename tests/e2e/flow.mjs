@@ -847,6 +847,16 @@ try {
     await h.click('[data-testid=le-picker] button:text-is("다 했어요")');
     await h.waitForSelector('[data-testid=le-picker]', { state: 'detached' });
     assert.ok(await h.locator(`[data-block-index="${photoIdx}"] img[src="/site/assets/${asset.id}"]`).count());
+    // 구역 설정: 카드 항목 순서 바꾸기 (화면의 카드 순서가 바로 바뀐다)
+    const cardsIdx = await h.locator('[data-testid=le-block]:has(.sec-cards)').first().getAttribute('data-block-index');
+    const cardTitles = () => h.locator(`[data-block-index="${cardsIdx}"] .sec-cards > li h3`).allTextContents();
+    await h.click(`[data-block-index="${cardsIdx}"] .le-bar button[aria-label="${Number(cardsIdx) + 1}번 구역 설정"]`);
+    await h.click(`[data-block-index="${cardsIdx}"] [data-testid=le-settings] button:has-text("항목 더하기")`);
+    await h.locator(`[data-block-index="${cardsIdx}"] .sec-cards > li:last-child h3 .le-text`).fill('합성 새 카드');
+    await h.locator(`[data-block-index="${cardsIdx}"] .sec-cards > li:first-child h3 .le-text`).fill('합성 첫 카드');
+    const t0 = await cardTitles();
+    await h.click(`[data-block-index="${cardsIdx}"] [data-testid=le-settings] button[aria-label="1번 항목 아래로"]`);
+    assert.deepEqual((await cardTitles()).slice(0, 2), [t0[1], t0[0]]);
     await shot(h, '34-live-edit.png');
     // 방문자 모습 보기: 숨긴 구역이 빠진다
     await h.click('[data-testid=le-mode]');

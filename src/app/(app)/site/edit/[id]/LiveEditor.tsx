@@ -485,6 +485,10 @@ function BlockSettings({ i, b, langs, lang, onFocus, typed, change, assets, onAd
                       onChange={(e) => typed((c) => setAt(c, at('items', k, 'href'), e.target.value || undefined))} />
                   </label>
                 )}
+                <button type="button" className="btn btn-ghost btn-sm" disabled={k === 0} aria-label={`${k + 1}번 항목 위로`}
+                  onClick={() => { const n = [...items]; [n[k - 1], n[k]] = [n[k], n[k - 1]]; setB({ ...b, items: n }); }}><ArrowUp size={14} aria-hidden="true" /></button>
+                <button type="button" className="btn btn-ghost btn-sm" disabled={k === items.length - 1} aria-label={`${k + 1}번 항목 아래로`}
+                  onClick={() => { const n = [...items]; [n[k], n[k + 1]] = [n[k + 1], n[k]]; setB({ ...b, items: n }); }}><ArrowDown size={14} aria-hidden="true" /></button>
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setB({ ...b, items: items.filter((_, j) => j !== k) })}>{k + 1}번 항목 빼기</button>
               </li>
             ))}
