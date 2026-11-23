@@ -11,6 +11,7 @@ import pg from 'pg';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
+const AXE_SOURCE = fs.readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const FIX = path.join(ROOT, 'school-platform-handoff', 'fixtures');
@@ -67,7 +68,27 @@ try {
   const ctxB = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
   const a = await ctxA.newPage();
   const b = await ctxB.newPage();
-  const shot = async (page, name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name), fullPage: true }); } };
+  // 접근성 자동 검사(axe-core): 화면을 찍는 지점마다 WCAG 2.1 A·AA 규칙으로 검사하고,
+  // 심각도 serious 이상 위반을 모아 마지막 단계에서 0건인지 확인한다.
+  const axeFindings = [];
+  async function axeCheck(page, label) {
+    await page.addScriptTag({ content: AXE_SOURCE });
+    const found = await page.evaluate(async () => {
+      const r = await window.axe.run(document, {
+        runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+        resultTypes: ['violations'],
+      });
+      return r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => ({
+        id: v.id, impact: v.impact, help: v.help, count: v.nodes.length,
+        targets: v.nodes.slice(0, 3).map((n) => n.target.join(' ')),
+      }));
+    });
+    for (const f of found) axeFindings.push({ page: label, path: new URL(page.url()).pathname, ...f });
+  }
+  const shot = async (page, name) => {
+    await axeCheck(page, name.replace(/\.png$/, ''));
+    if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name), fullPage: true }); }
+  };
 
   async function login(page, email, password) {
     await page.goto(`${BASE}/login`);
@@ -97,6 +118,7 @@ try {
     await a.fill('input[name=password]', 'wrong');
     await a.click('button[type=submit]');
     await a.waitForURL(/error=1/);
+    await shot(a, '00-login-error.png');
   });
 
   await step('예시 A 로그인 후 일정 CSV(파일 선택) → 평가 CSV(끌어 놓기) 누적 등록', async () => {
@@ -486,6 +508,17 @@ try {
     assert.equal(await s.textContent('[data-testid=card-review]'), before);
     await shot(s, '26-school-analytics.png');
     await ctxS.close();
+  });
+
+  await step('접근성(axe): 앱 화면에서 심각도 serious 이상 위반 0건', async () => {
+    const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
+    // /preview/* 는 24차 디자인 원형 비교용 시안이다. 통과 기준에서 빼고 목록만 남긴다(채택한 형식은 앱 화면에서 검사).
+    const isPreview = (f) => f.path.startsWith('/preview/');
+    const previews = axeFindings.filter(isPreview);
+    if (previews.length) console.log(`참고: 시안 화면 위반 ${previews.length}건 (통과 기준 밖)\n` + previews.map(line).join('\n'));
+    const app = axeFindings.filter((f) => !isPreview(f));
+    if (app.length) console.error(app.map(line).join('\n'));
+    assert.equal(app.length, 0, `axe serious 이상 위반 ${app.length}건`);
   });
 } catch (e) {
   exitCode = 1;

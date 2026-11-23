@@ -35,9 +35,12 @@ export function Shell({ account, current, schools, groups, roleLabel, inSchoolAs
         <div className="topbar-right">
           <UiControls scope={ui.scope} initial={ui.choice} />
           {alerts && (
-            <Link className="bell" href={alerts.href} aria-label={alerts.count ? `확인 대기 ${alerts.count}건` : '확인 대기 없음'}>
+            <Link className="bell" href={alerts.href}>
               <Bell size={20} aria-hidden="true" />
-              {alerts.count > 0 && <span className="bell-count" aria-hidden="true">{alerts.count}</span>}
+              {/* 보이는 숫자가 접근 이름에 그대로 들어가게 한다 (WCAG 2.5.3) */}
+              {alerts.count > 0
+                ? <><span className="sr-only">확인 대기 </span><span className="bell-count">{alerts.count}</span><span className="sr-only">건</span></>
+                : <span className="sr-only">확인 대기 없음</span>}
             </Link>
           )}
           <span className="account"><span className="avatar" aria-hidden="true">{account.name.slice(0, 1)}</span>
