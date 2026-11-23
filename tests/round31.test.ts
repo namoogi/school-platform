@@ -78,6 +78,18 @@ describe('31차 사이트 정보·숨은 쪽', () => {
     expect(d!.entry.meta).toMatchObject({ text_in_image: 'true', character: 'ช้าง · หมี' });
   });
 
+  it('동화의 성품 이름·주인공은 만든 뒤에도 학교 관리자가 고친다. 그림 안 글 표시는 남고, 다른 학교는 못 고친다', async () => {
+    const story = (await asUser(A.userId, (db) => site.listEntries(db, A.schoolId))).find((e) => e.key === 'rain')!;
+    await asUser(A.userId, (db) => site.updateEntry(db, A.schoolId, story.id, { virtue: ' 우정 · 함께함 ', character: 'ช้าง' }));
+    const d = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, story.id));
+    expect(d!.entry.meta).toMatchObject({ virtue: '우정 · 함께함', character: 'ช้าง', text_in_image: 'true' });
+    await expect(asUser(B.userId, (db) => site.updateEntry(db, B.schoolId, story.id, { virtue: 'x' }))).rejects.toThrow();
+    // 쪽에는 성품 정보가 붙지 않는다
+    const page = (await asUser(A.userId, (db) => site.listEntries(db, A.schoolId))).find((e) => e.key === 'about')!;
+    await asUser(A.userId, (db) => site.updateEntry(db, A.schoolId, page.id, { virtue: 'x' }));
+    expect((await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, page.id)))!.entry.meta).toEqual({});
+  });
+
   it('B 학교는 A 학교 항목에 새 판을 더할 수 없다 (가져오기의 새 판 경로)', async () => {
     const aHome = (await asUser(A.userId, (db) => site.listEntries(db, A.schoolId))).find((e) => e.key === 'home')!;
     await expect(asUser(B.userId, (db) => site.saveVersion(db, B.schoolId, aHome.id, { content: { ...base, blocks: [] } }))).rejects.toThrow();

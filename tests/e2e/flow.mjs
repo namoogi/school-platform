@@ -784,6 +784,14 @@ try {
     // 동화: 그림 안 글 → 글은 화면 읽기용
     await v.goto(`${BASE}/s/dreamy-a/stories/dawn-story`);
     await v.waitForSelector('[data-testid=storybook] .storybook-text.sr-only');
+    // 32차: 가져온 동화는 성품 이름이 비어 있다 → 관리자가 편집 화면에서 정하면 공개 목록에 바로 보인다
+    await h.goto(`${BASE}/site?box=story`);
+    await h.click('.triage-item:has-text("นิทานตัวอย่าง"), .triage-item:has-text("예시 동화")');
+    await h.fill('[data-testid=story-meta] label:has-text("성품 이름") input', '우정');
+    await h.click('[data-testid=story-meta] button:text-is("성품 정보 저장")');
+    await h.waitForSelector('[data-testid=story-meta] [role=status]:has-text("저장했습니다")');
+    await v.goto(`${BASE}/s/dreamy-a/stories?lang=ko`);
+    assert.match(await v.textContent('[data-testid=site-list]'), /우정/);
     await ctxV.close();
     await ctxH.close();
   });

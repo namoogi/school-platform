@@ -219,7 +219,9 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
             {publicHref && live && <Link className="btn btn-ghost btn-sm" href={publicHref} target="_blank">공개본 보기</Link>}
           </div>
         </div>
-        {isStory && detail.entry.meta.virtue && <p className="fine">성품: {detail.entry.meta.virtue}{detail.entry.meta.character ? ` · 주인공: ${detail.entry.meta.character}` : ''}</p>}
+        {isStory && (canPublish
+          ? <StoryMeta id={detail.entry.id} virtue={detail.entry.meta.virtue ?? ''} character={detail.entry.meta.character ?? ''} />
+          : detail.entry.meta.virtue && <p className="fine">성품: {detail.entry.meta.virtue}{detail.entry.meta.character ? ` · 주인공: ${detail.entry.meta.character}` : ''}</p>)}
         <LangFields label="제목" value={content.title} langs={langs} onChange={(title) => setContent({ ...content, title })} />
         <LangFields label="요약" value={content.summary} langs={langs} multiline onChange={(summary) => setContent({ ...content, summary })} />
         <AssetPick label="표지 그림" value={content.cover} assets={assets} onUploaded={uploaded} onChange={(cover) => setContent({ ...content, cover: cover || undefined })} />
@@ -348,5 +350,25 @@ function ProfileFields({ value, langs, assets, onUploaded, onChange }: { value: 
       <label>페이스북 주소<input value={value.facebook ?? ''} onChange={(e) => onChange({ ...value, facebook: e.target.value || undefined })} placeholder="https://www.facebook.com/…" /></label>
       <LangFields label="바닥 글" value={value.footer} langs={langs} multiline onChange={(footer) => onChange({ ...value, footer })} />
     </section>
+  );
+}
+
+/** 32차: 동화의 성품 이름·주인공 (학교 관리자). 판과 따로 바로 저장되며 공개 목록에도 바로 보인다. */
+function StoryMeta({ id, virtue, character }: { id: string; virtue: string; character: string }) {
+  const router = useRouter();
+  const [v, setV] = useState({ virtue, character });
+  const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
+  async function save(e: React.FormEvent) {
+    e.preventDefault(); setMsg(null);
+    try { await send(`/api/site/entries/${id}`, 'PATCH', v); setMsg({ tone: 'success', text: '성품 정보를 저장했습니다.' }); router.refresh(); }
+    catch (x) { setMsg({ tone: 'danger', text: (x as Error).message }); }
+  }
+  return (
+    <form className="row-wrap" onSubmit={save} data-testid="story-meta">
+      <label>성품 이름<input value={v.virtue} onChange={(e) => setV({ ...v, virtue: e.target.value })} placeholder="예: 우정 · 함께함" maxLength={60} /></label>
+      <label>주인공<input value={v.character} onChange={(e) => setV({ ...v, character: e.target.value })} maxLength={120} /></label>
+      <div className="form-actions"><button type="submit" className="btn btn-secondary btn-sm" disabled={v.virtue === virtue && v.character === character}>성품 정보 저장</button></div>
+      {msg && <p className="banner" data-tone={msg.tone} role="status">{msg.text}</p>}
+    </form>
   );
 }

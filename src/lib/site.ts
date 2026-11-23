@@ -264,8 +264,14 @@ export async function updateEntry(db: Db, schoolId: string, entryId: string, inp
   const { entry } = await getEntry(db, schoolId, entryId);
   const visibility = input.visibility === 'unlisted' ? 'unlisted' : input.visibility === 'public' ? 'public' : entry.visibility;
   const sort = Number.isInteger(input.sort) ? Number(input.sort) : entry.sort;
+  // 32차: 동화의 성품 이름·주인공은 만든 뒤에도 고칠 수 있다(가져온 동화는 성품 이름이 비어 있음). 다른 표시(text_in_image)는 그대로 둔다.
+  const meta = { ...(entry.meta as Record<string, unknown>) };
+  if (entry.kind === 'story') {
+    if (typeof input.virtue === 'string') meta.virtue = input.virtue.trim().slice(0, 60);
+    if (typeof input.character === 'string') meta.character = input.character.trim().slice(0, 120);
+  }
   try {
-    const r = await db.query('update public.site_entries set visibility = $3, sort = $4 where id = $1 and school_id = $2', [entry.id, schoolId, visibility, sort]);
+    const r = await db.query('update public.site_entries set visibility = $3, sort = $4, meta = $5 where id = $1 and school_id = $2', [entry.id, schoolId, visibility, sort, JSON.stringify(meta)]);
     if (!r.rowCount) throw Object.assign(new Error('denied'), { code: '42501' });
   } catch (e) { dbError(e); }
   return { ok: true };
