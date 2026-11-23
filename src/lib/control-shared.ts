@@ -1,4 +1,4 @@
-/** 39·40차 관제 센터·대화창: 서버·브라우저 공용 상수·타입 (DB 의존 없음). ADR 0015·0016 */
+/** 39·41차 관제 센터·대화창: 서버·브라우저 공용 상수·타입 (DB 의존 없음). ADR 0015·0017 */
 export const STATUS = {
   pending: { label: '승인 대기', tone: 'warning' },
   open: { label: '답 기다림', tone: 'warning' },

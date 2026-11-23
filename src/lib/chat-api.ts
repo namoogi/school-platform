@@ -3,7 +3,7 @@ import type { Db } from './db';
 import type { ChatScope } from './control';
 
 /**
- * 40차 대화창 API 공통 (ADR 0016). ?scope=platform 이면 전체 관리자 전용(모든 대화),
+ * 41차 대화창 API 공통 (ADR 0017). ?scope=platform 이면 전체 관리자 전용(모든 대화),
  * 아니면 지금 학교의 관리자(그 학교 대화만). 학교 ID는 로그인 사용자의 지금 학교에서 정한다.
  */
 export function handleChat(req: Request, fn: (db: Db, scope: ChatScope) => Promise<unknown>) {

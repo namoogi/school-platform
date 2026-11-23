@@ -1228,7 +1228,7 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .control-compose h2 { font-size: var(--fs-heading-sm, 1rem); }
 .item-direct { justify-self: start; font-size: var(--fs-caption); }
 
-/* 40차: 어디서나 여는 대화창 (ADR 0016) — 옛 개선 요청 판의 떠 있는 창. 바탕만 살짝 비치고 글이 놓이는 면은 불투명 */
+/* 41차: 어디서나 여는 대화창 (ADR 0017) — 옛 개선 요청 판의 떠 있는 창. 바탕만 살짝 비치고 글이 놓이는 면은 불투명 */
 .chatdock-open { position: relative; gap: var(--space-1); }
 .chatdock-open .bell-count { position: static; border: 0; margin-left: 2px; }
 .chatdock {

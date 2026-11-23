@@ -540,7 +540,7 @@ try {
     await ctxC.close();
   });
 
-  await step('40차: 대화창 — 학교 관리자가 어디서나 열어 홈페이지 대화 → 전체 관리에서 보이고, 학교 시스템 요청은 승인', async () => {
+  await step('41차: 대화창 — 학교 관리자가 어디서나 열어 홈페이지 대화 → 전체 관리에서 보이고, 학교 시스템 요청은 승인', async () => {
     const ctxS = await browser.newContext({ viewport: { width: 1360, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const s = await ctxS.newPage();
     await login(s, 'admin-a@school-a.test', 'demo-pass-a');

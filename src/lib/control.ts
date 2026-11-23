@@ -92,7 +92,7 @@ export async function setRequestStatus(db: Db, id: string, status: unknown) {
 
 // ── Claude 세션 (점검 토큰) ── 함수가 토큰을 확인한다
 const q = async (db: Db, sql: string, args: unknown[]) => (await db.query<{ r: unknown }>(sql, args)).rows[0]?.r;
-// ── 40차: 대화창 (ADR 0016) ── 사람 쪽은 모두 RLS(전체 관리자 · 그 학교 관리자) 안에서 돈다
+// ── 41차: 대화창 (ADR 0017) ── 사람 쪽은 모두 RLS(전체 관리자 · 그 학교 관리자) 안에서 돈다
 /** 보는 범위: platform = 모든 대화, school = 그 학교 대화만(전체 관리자가 학교 화면에서 열어도 그 학교만) */
 export type ChatScope = { isPlatform: boolean; schoolId: string | null; userId: string };
 

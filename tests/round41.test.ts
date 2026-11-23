@@ -1,4 +1,4 @@
-/** 40차: 어디서나 여는 대화창 (ADR 0016) — 학교 관리자 대화, 승인 대기, 세션 답·결과 확인, 학교 간 거부(양방향) */
+/** 41차: 어디서나 여는 대화창 (ADR 0017) — 학교 관리자 대화, 승인 대기, 세션 답·결과 확인, 학교 간 거부(양방향) */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { lookupIds, resetTestDb, TEST_URL } from './helpers';

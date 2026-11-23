@@ -23,7 +23,7 @@ export function Shell({ account, current, schools, groups, roleLabel, inSchoolAs
   inspector?: boolean; alerts?: { count: number; href: string } | null;
   /** 26차(ADR 0007): 사용자가 고른 화면 형식·명암. 데이터와 무관하게 셸과 토큰만 바꾼다 */
   ui: { scope: UiScope; choice: UiChoice };
-  /** 40차(ADR 0016): 어디서나 여는 대화창. platform = 모든 대화, school = 그 학교 대화(학교 관리자) */
+  /** 41차(ADR 0017): 어디서나 여는 대화창. platform = 모든 대화, school = 그 학교 대화(학교 관리자) */
   chat?: 'platform' | 'school' | null; children: React.ReactNode;
 }) {
   return (
