@@ -9,9 +9,9 @@ const WORDS = {
   th: { intro: 'รู้จักคุณธรรมผ่านตัวละคร แล้วเลือกนิทานที่อยากอ่าน', together: 'นิทานอ่านด้วยกัน', unnamed: 'นิทาน', empty: 'ยังไม่มีนิทานที่เผยแพร่เป็นภาษาไทย' },
 };
 
-export function StoryIndex({ items, portraits, lang, fallback, link, asset }: {
+export function StoryIndex({ items, portraits, lang, fallback, link }: {
   items: StoryIndexItem[]; portraits: Record<string, string>; lang: Lang; fallback: Lang;
-  link: (path: string) => string; asset: (id: string) => string;
+  link: (path: string) => string;
 }) {
   const { groups, together } = groupStories(items);
   const words = WORDS[lang];
@@ -25,7 +25,7 @@ export function StoryIndex({ items, portraits, lang, fallback, link, asset }: {
         const portrait = Object.hasOwn(portraits, group.character) ? portraits[group.character] : undefined;
         return <section className="virtue-group" key={JSON.stringify([group.virtue, group.character])}>
           <header className="virtue-character">
-            {portrait && /* eslint-disable-next-line @next/next/no-img-element */ <img src={asset(portrait)} alt="" loading="lazy" />}
+            {portrait && /* eslint-disable-next-line @next/next/no-img-element */ <img src={portrait} alt="" width={128} height={144} loading="lazy" />}
             <div><h2>{storyTerm(group.virtue, lang)}</h2><p>{storyTerm(group.character, lang) || words.unnamed}</p></div>
           </header>
           {titles(group.stories)}
