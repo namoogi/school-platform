@@ -1544,28 +1544,48 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .character-download:hover { text-decoration: underline; }
 .photo-dialog .character-download { color: var(--text-default); background: var(--surface-default); }
 
-/* 성품 동화: 캐릭터별 책장. 에피소드는 제목 링크만 제공한다. */
-.virtue-story-index { margin-bottom: var(--space-8); }
-.virtue-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-8); }
-.virtue-group { display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: center; gap: var(--space-5); min-width: 0; padding-block: var(--space-5); border-top: 1px solid var(--border-default); }
+/* 성품 동화: 따뜻한 종이와 숲 색을 쓰는 이야기 책장. 목록 영역에만 적용한다. */
+.story-library {
+  --story-paper: #fffaf0; --story-page: #fffefa; --story-ink: #354e3f;
+  --story-muted: #626d60; --story-accent: #835b36; --story-focus: #496e51;
+  --story-sage: #edf1df; --story-peach: #f8eadd; --story-sky: #e9f0f1; --story-rose: #f4e8e5;
+  --story-font: var(--dawn-serif, var(--font-serif));
+  color: var(--story-ink); padding-bottom: var(--space-6);
+  background: radial-gradient(ellipse at 50% 0, var(--story-paper), transparent 64%);
+}
+.story-library-opening { text-align: center; padding: var(--space-8) var(--space-4) var(--space-3); }
+.story-library-emblem { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); color: var(--story-accent); margin-bottom: var(--space-3); }
+.story-library-emblem svg:last-child { color: var(--story-focus); transform: rotate(-18deg); }
+.site .story-library .story-library-eyebrow { color: var(--story-accent); max-width: none; font-size: 13px; letter-spacing: .08em; margin-bottom: var(--space-2); }
+.site .story-library .site-h1 { color: var(--story-ink); font-family: var(--story-font); font-size: clamp(34px, 4vw, 52px); font-weight: 600; line-height: 1.5; margin: 0; letter-spacing: -.035em; }
+.virtue-story-index { margin-bottom: var(--space-6); }
+.site .story-library .site-lead { color: var(--story-muted); text-align: center; white-space: pre-line; max-width: none; margin: 0 auto var(--space-6); font-size: 15px; line-height: 1.85; }
+.virtue-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-6); }
+.virtue-group { --story-wash: var(--story-sage); display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: center; gap: var(--space-5); min-width: 0; padding: var(--space-5); border: 0; border-radius: 58px 24px 44px 28px; background: linear-gradient(110deg, var(--story-wash), transparent); }
+.virtue-group:nth-child(4n + 2) { --story-wash: var(--story-peach); border-radius: 28px 48px 28px 52px; }
+.virtue-group:nth-child(4n + 3) { --story-wash: var(--story-sky); }
+.virtue-group:nth-child(4n + 4) { --story-wash: var(--story-rose); }
 .virtue-group[data-portrait="false"] { grid-template-columns: minmax(0, 1fr); }
 .virtue-portrait { width: 128px; height: 176px; object-fit: contain; }
 .virtue-stories { min-width: 0; }
 .virtue-character { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-2); }
-.virtue-character h2, .virtue-together h2 { margin: 0; font-size: var(--fs-heading-lg); }
-.virtue-character p { margin: 0; color: var(--text-muted); }
+.virtue-character h2, .virtue-together h2 { margin: 0; font-family: var(--story-font); font-weight: 600; font-size: var(--fs-heading-lg); color: var(--story-ink); }
+.site .story-library .virtue-character p { margin: 0; color: var(--story-muted); font-size: 13px; }
 .virtue-episodes { list-style: none; padding: 0; margin: 0; }
-.virtue-episodes li + li { border-top: 1px solid var(--border-default); }
-.virtue-episodes a { display: flex; align-items: center; min-height: 48px; padding-block: var(--space-3); color: inherit; text-decoration: none; overflow-wrap: anywhere; }
-.virtue-episodes a:hover { text-decoration: underline; text-underline-offset: .25em; }
-.virtue-together { margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--border-default); }
+.virtue-episodes a { display: flex; align-items: baseline; gap: var(--space-3); min-height: 44px; padding: var(--space-2); margin-inline: calc(-1 * var(--space-2)); border-radius: 12px; color: var(--story-ink); text-decoration: none; line-height: 1.65; overflow-wrap: anywhere; }
+.virtue-episode-number { flex: 0 0 auto; color: var(--story-accent); font-family: var(--story-font); font-size: 12px; }
+.virtue-episode-arrow { flex: 0 0 auto; margin-left: auto; color: var(--story-accent); font-size: 14px; }
+.virtue-episodes a:hover { background: var(--story-page); color: var(--story-accent); }
+.virtue-episodes a:focus-visible { outline: 2px solid var(--story-focus); outline-offset: 3px; background: var(--story-page); }
+.virtue-together { margin-top: var(--space-6); padding: var(--space-5); background: var(--story-peach); border-radius: 28px; }
 .virtue-together h2 { margin-bottom: var(--space-3); }
-.site[data-theme="dawn"] .virtue-group, .site[data-theme="dawn"] .virtue-episodes li + li, .site[data-theme="dawn"] .virtue-together { border-color: var(--dawn-line); }
-.site[data-theme="dawn"] .virtue-character p { color: var(--dawn-muted); }
 @media (max-width: 800px) {
-  .virtue-groups { grid-template-columns: 1fr; gap: var(--space-4); }
+  .virtue-groups { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
-  .virtue-group { grid-template-columns: 88px minmax(0, 1fr); gap: var(--space-3); }
+  .story-library-opening { padding-top: var(--space-6); }
+  .virtue-group { grid-template-columns: 88px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); border-radius: 28px; }
   .virtue-portrait { width: 88px; height: 132px; }
+  .virtue-episodes a { gap: var(--space-2); }
+  .virtue-episode-arrow { display: none; }
 }
