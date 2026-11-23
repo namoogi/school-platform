@@ -52,7 +52,7 @@ describe('외부 작업 토큰 발급', () => {
     await expect(issue(B.userId, A.schoolId, { days: 7 })).rejects.toThrow('학교 관리자');
     await expect(issue(A.userId, B.schoolId, { days: 7 })).rejects.toThrow('학교 관리자');
     await expect(issue(A.userId, A.schoolId, { days: 45 })).rejects.toThrow('7·30·90');
-    await expect(issue(A.userId, A.schoolId, { days: 7, entry_key: 'no-such-story' })).rejects.toThrow('동화가 없습니다');
+    await expect(issue(A.userId, A.schoolId, { days: 7, entry_key: 'no-such-story' })).rejects.toThrow('항목이 없습니다');
     // 사람에게도 해시 열은 보이지 않고, 목록은 그 학교 관리자에게만
     await expect(asUser(A.userId, (db) => db.query('select token_sha256 from public.agent_tokens'))).rejects.toThrow();
     expect((await asUser(A.userId, (db) => agent.listAgentTokens(db, A.schoolId))).length).toBe(1);
