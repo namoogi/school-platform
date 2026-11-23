@@ -796,7 +796,7 @@ try {
     await ctxH.close();
   });
 
-  await step('34차: 화면 편집 — 그 자리에서 글 고치기·언어 전환·구역 끼워 넣기·숨기기·키보드로 옮기기·사진 올리기 → 공개 → 방문자 반영', async () => {
+  await step('35차: 화면 편집 — 그 자리에서 글 고치기·언어 전환·구역 끼워 넣기·숨기기·키보드로 옮기기·사진 올리기 → 공개 → 방문자 반영', async () => {
     const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const h = await ctxH.newPage();
     await login(h, 'admin-a@school-a.test', 'demo-pass-a');
@@ -857,7 +857,7 @@ try {
     const t0 = await cardTitles();
     await h.click(`[data-block-index="${cardsIdx}"] [data-testid=le-settings] button[aria-label="1번 항목 아래로"]`);
     assert.deepEqual((await cardTitles()).slice(0, 2), [t0[1], t0[0]]);
-    await shot(h, '34-live-edit.png');
+    await shot(h, '35-live-edit.png');
     // 방문자 모습 보기: 숨긴 구역이 빠진다
     await h.click('[data-testid=le-mode]');
     assert.doesNotMatch(await h.textContent('.le-canvas'), /숨길 합성 구역/);
@@ -886,7 +886,7 @@ try {
     await h.reload();
     await h.click('[data-testid=le-guide-toggle]');
     assert.equal(await h.evaluate(() => getComputedStyle(document.querySelector('[data-testid=le-guide]')).position), 'fixed');
-    await shot(h, '34-live-edit-mobile.png');
+    await shot(h, '35-live-edit-mobile.png');
     await ctxH.close();
     // 다른 학교(B, 홈페이지 기능 꺼짐)는 이 편집 주소로 들어오지 못한다
     const ctxB3 = await browser.newContext();

@@ -40,7 +40,7 @@ const assetUrl = (a: string) => `/site/assets/${a}`;
 const HAS_ITEMS: SectionTemplate[] = ['cards', 'photos', 'facts', 'steps'];
 
 /**
- * 34차 화면 편집 (ADR 0011 1단계)
+ * 35차 화면 편집 (ADR 0011 1단계)
  * - 편집 모드: 글은 그 자리에서(언어별), 사진은 눌러서 사진함에서, 구역은 막대·레이아웃 가이드로 옮기기·숨기기·지우기·끼워 넣기
  * - 바뀐 내용은 기존 판 저장 API로 새 판(시안)이 된다. 공개는 학교 관리자만(서버 RLS가 다시 막는다).
  * - 편집 모드를 끄면 방문자에게 보일 모습(숨긴 구역 빠짐)을 같은 그리기로 본다.
@@ -106,15 +106,24 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
     setMsg(null);
   }, []);
 
+  // base_version: 이 화면을 연 뒤 다른 사람(또는 외부 작업 토큰)이 새 판을 저장했으면 서버가 409로 막는다(ADR 0013 병행 규칙).
+  // 그때는 내 고침을 덮어쓰지 않고, 새로 불러온 뒤 다시 고치도록 안내한다.
+  const baseRef = useRef(latest.version);
+  if (latest.version > baseRef.current) baseRef.current = latest.version;
+  const saveVersion = async () => {
+    setSent(norm(cref.current));
+    const v = await send(`/api/site/entries/${entry.id}/versions`, 'POST', { content: cref.current, note, base_version: baseRef.current });
+    if (typeof v?.version === 'number') baseRef.current = v.version; // 새로 고침 전에 한 번 더 저장해도 내 판을 기준으로
+  };
   async function run(fn: () => Promise<unknown>, ok: string) {
     setBusy(true); setMsg(null);
     try { await fn(); setMsg({ tone: 'success', text: ok }); router.refresh(); }
     catch (e) { setMsg({ tone: 'danger', text: (e as Error).message }); }
     finally { setBusy(false); }
   }
-  const saveDraft = () => run(() => { setSent(norm(cref.current)); return send(`/api/site/entries/${entry.id}/versions`, 'POST', { content: cref.current, note }); }, '시안(새 판)으로 저장했습니다. 방문자 화면은 공개할 때 바뀝니다.');
+  const saveDraft = () => run(saveVersion, '시안(새 판)으로 저장했습니다. 방문자 화면은 공개할 때 바뀝니다.');
   const publish = () => run(async () => {
-    if (dirty) { setSent(norm(cref.current)); await send(`/api/site/entries/${entry.id}/versions`, 'POST', { content: cref.current, note }); }
+    if (dirty) await saveVersion();
     await send(`/api/site/entries/${entry.id}/publish`, 'POST', {});
   }, '공개했습니다. 방문자 화면에 바로 보입니다.');
 

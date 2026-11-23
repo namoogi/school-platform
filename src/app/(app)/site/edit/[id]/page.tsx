@@ -8,7 +8,7 @@ import { LiveEditor } from './LiveEditor';
 export const dynamic = 'force-dynamic';
 
 /**
- * 34차 화면 편집 (ADR 0011 1단계). 공개 화면과 같은 틀(SiteFrame)·같은 그리기(SiteBlocks)에 최신 판을 넣고,
+ * 35차 화면 편집 (ADR 0011 1단계). 공개 화면과 같은 틀(SiteFrame)·같은 그리기(SiteBlocks)에 최신 판을 넣고,
  * 편집 모드에서 그 자리에서 고친다. 저장은 기존 판 저장 API(시안), 공개는 학교 관리자(기존 RLS).
  * 읽기는 모두 asUser(RLS) — 이 학교 항목만 보인다. 다른 학교 항목 id 는 '없는 항목'이다.
  */

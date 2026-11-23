@@ -938,7 +938,7 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .site[data-theme="dawn"] .site-main > .site-section { margin-top: 100px; }
 .site-section .site-cards + .site-link, .lb-feature .site-link { justify-self: start; }
 
-/* ══ 34차: 화면 편집 (ADR 0011 1단계) ═══════════════════════════════
+/* ══ 35차: 화면 편집 (ADR 0011 1단계) ═══════════════════════════════
    공개 화면 그리기(.site) 위에 얹는 편집 도구. 도구는 학교 운영 화면 토큰을 쓰고, .site 테마(dawn 등) 모양은 건드리지 않는다.
    상태는 색만으로 보이지 않게 글자(숨김 배지·안내 글)와 선 모양(점선·물결)을 함께 쓴다. */
 .le { display: grid; gap: var(--space-3); }

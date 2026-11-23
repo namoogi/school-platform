@@ -1,4 +1,4 @@
-/** 34차 화면 편집(ADR 0011 1단계): DB 없이 도는 편집 함수 · 숨김 블록 검사 */
+/** 35차 화면 편집(ADR 0011 1단계): DB 없이 도는 편집 함수 · 숨김 블록 검사 */
 import { describe, expect, it } from 'vitest';
 import {
   featurePalette, getAt, insertBlock, LAYOUT_PALETTE, moveBlock, removeBlock, sameContent, setAt, setLangText, toggleHidden, translationState,

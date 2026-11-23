@@ -21,7 +21,7 @@ export type NewsItem = { key: string; title: LText; summary?: LText | null; cove
 export type { EditPath };
 
 /**
- * 34차(ADR 0011): 화면 편집 갈고리. 편집 화면만 넘긴다. 없으면 방문자 화면과 똑같이 그린다.
+ * 35차(ADR 0011): 화면 편집 갈고리. 편집 화면만 넘긴다. 없으면 방문자 화면과 똑같이 그린다.
  * 렌더러는 '어디에 무엇이 있는지(길)'만 알려 주고, 고치는 칸·사진 고르기·구역 막대는 편집 화면이 만든다.
  */
 export type EditHooks = {
@@ -54,7 +54,7 @@ export function PageHead({ content, lang, fallback, asset, meta, ed }: { content
 /**
  * 27차·31차: 홈페이지 블록 그리기 (공개 화면·구성원 미리보기·화면 편집 공용).
  * 글은 텍스트로만 넣는다(HTML 해석 없음). 그림 주소·사이트 안 링크는 호출하는 쪽이 정한다(공개 판 / 구성원 미리보기).
- * 34차: 숨긴 블록(hidden)은 방문자에게 그리지 않는다. 편집 갈고리(ed)가 있으면 숨긴 블록도 그리고 칸마다 고치기를 단다.
+ * 35차: 숨긴 블록(hidden)은 방문자에게 그리지 않는다. 편집 갈고리(ed)가 있으면 숨긴 블록도 그리고 칸마다 고치기를 단다.
  */
 export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h, news = [], textInImage = false, ed }: {
   content: Content; lang: Lang; fallback: Lang; assetUrl: (id: string) => string; link?: (href: string) => string; news?: NewsItem[];
