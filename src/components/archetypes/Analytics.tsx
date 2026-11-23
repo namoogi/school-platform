@@ -180,7 +180,8 @@ function Panel({ id, area, title, sub, note, children }: { id: string; area: str
         <button type="button" className={s.menuBtn} aria-label={`${title} 패널 메뉴`}><Ellipsis size={16} aria-hidden="true" /></button>
       </header>
       {note && <p className={s.note}><Info size={12} aria-hidden="true" />{note}</p>}
-      <div className={s.panelBody}>{children}</div>
+      {/* 내용이 넘치면 스크롤되므로 키보드로 닿고 이름이 있어야 한다 (axe scrollable-region-focusable) */}
+      <div className={s.panelBody} {...(area === 'kpi' ? {} : { tabIndex: 0, role: 'region', 'aria-labelledby': `${id}-t` })}>{children}</div>
     </section>
   );
 }

@@ -155,6 +155,9 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  // 새 판이 생기면(저장·공개 후 새로 고침) 입력을 그 판으로 맞춘다. 다시 마운트하지 않아야 결과 안내가 남는다.
+  const [shownId, setShownId] = useState(latest.id);
+  if (shownId !== latest.id) { setShownId(latest.id); setContent(structuredClone(latest.content)); setNote(''); }
   const dirty = JSON.stringify(content) !== JSON.stringify(latest.content);
   const live = detail.versions.find((v) => v.id === detail.liveVersionId);
   const isStory = detail.entry.kind === 'story';

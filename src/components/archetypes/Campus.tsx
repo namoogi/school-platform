@@ -56,9 +56,10 @@ export default function Campus() {
       </nav>
 
       <header className={s.top}>
-        <button type="button" className={s.picker} aria-haspopup="listbox" aria-label={`학교 선택: ${SCHOOL.name}`}>
+        <button type="button" className={s.picker} aria-haspopup="listbox">
+          {/* 접근 이름은 보이는 글자(학교 + 이름)로 만든다 (WCAG 2.5.3) */}
           <span className={s.pickerLabel}>학교</span>
-          <b>{SCHOOL.name}</b>
+          <b>{SCHOOL.name}</b><span className="sr-only"> 선택</span>
           <ChevronDown size={16} aria-hidden="true" />
         </button>
         <label className={s.term}>
@@ -73,9 +74,10 @@ export default function Campus() {
           <Search size={16} aria-hidden="true" />
           <input placeholder="수업·자료·문서 검색" aria-label="전체 검색" />
         </label>
-        <button type="button" className={s.iconBtn} aria-label={`알림 ${waiting}건`}>
+        <button type="button" className={s.iconBtn}>
           <Bell size={20} aria-hidden="true" />
-          <span className={s.dot} aria-hidden="true">{waiting}</span>
+          <span className="sr-only">알림 </span>
+          <span className={s.dot}>{waiting}<span className="sr-only">건</span></span>
         </button>
         <span className={s.me}>
           <span className={s.avatar} aria-hidden="true">{SCHOOL.user.initial}</span>

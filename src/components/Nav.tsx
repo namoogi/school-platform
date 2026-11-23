@@ -26,10 +26,12 @@ export function Nav({ groups }: { groups: NavGroup[] }) {
           {g.items.map((i) => {
             const Icon = ICONS[i.href];
             return (
-              <Link key={i.href} href={i.href} className="nav-item" title={i.title} data-tip={i.title ?? i.label} aria-current={current?.href === i.href ? 'page' : undefined}
-                aria-label={i.title && i.title !== i.label ? `${i.title}${i.count ? ` (${i.count}건 대기)` : ''}` : undefined}>
+              <Link key={i.href} href={i.href} className="nav-item" title={i.title} data-tip={i.title ?? i.label} aria-current={current?.href === i.href ? 'page' : undefined}>
+                {/* 접근 이름은 aria-label 대신 링크 안 글자로 만든다. 보이는 이름·건수가 그대로 들어가야
+                    음성 명령·화면낭독기가 같은 이름으로 찾는다 (WCAG 2.5.3, axe label-content-name-mismatch) */}
                 <span className="nav-label">{Icon && <Icon size={22} aria-hidden="true" />}<span className="nav-text">{i.label}</span></span>
-                {!!i.count && <span className="count-badge" aria-hidden="true">{i.count}</span>}
+                {!!i.count && <> <span className="count-badge">{i.count}<span className="sr-only">건 대기</span></span></>}
+                {i.title && i.title !== i.label && <span className="sr-only"> ({i.title})</span>}
               </Link>
             );
           })}

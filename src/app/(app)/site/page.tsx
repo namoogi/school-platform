@@ -91,7 +91,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                 ? <SiteSettingsForm initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
                 : <EmptyState title="설정은 학교 관리자가 합니다">시안 만들기와 고치기는 교사도 할 수 있습니다.</EmptyState>)
             : selected
-              ? <EntryEditor key={`${selected.entry.id}-${selected.versions[0]?.version}`} detail={JSON.parse(JSON.stringify(selected))}
+              ? <EntryEditor key={selected.entry.id} detail={JSON.parse(JSON.stringify(selected))}
                   langs={settings?.langs ?? ['ko']} canPublish={school.isAdmin} assets={JSON.parse(JSON.stringify(assets))}
                   publicHref={settings?.is_open ? `${publicUrl}${box === 'page' ? (selected.entry.key === 'home' ? '' : `/p/${selected.entry.key}`) : box === 'news' ? `/news/${selected.entry.key}` : `/stories/${selected.entry.key}`}` : null} />
               : <EmptyState title="왼쪽 목록에서 고르세요">고르면 여기서 고치고 판을 공개합니다.</EmptyState>}
