@@ -44,6 +44,17 @@ async function clickUiAndSave(page, selector) {
   assert.ok(res.ok(), `화면 설정 저장 실패: ${res.status()}`);
 }
 
+// 키보드 단축키(Ctrl+K, J)는 화면이 수화(hydration)된 뒤 window keydown 처리기가 붙어야 먹는다.
+// 페이지를 열자마자 누르면 느린 CI에서는 처리기가 붙기 전이라 키가 사라진다. 반응이 올 때까지 다시 누른다.
+// (한 번 누를 때마다 3초 기다려, 늦게 처리된 누름을 두 번째 누름이 되돌리지 않게 한다)
+async function pressUntil(page, key, check, arg) {
+  for (let i = 0; i < 8; i++) {
+    await page.keyboard.press(key);
+    try { await page.waitForFunction(check, arg, { timeout: 3000 }); return; } catch { /* 다시 누른다 */ }
+  }
+  throw new Error(`${key}: 화면이 키 입력에 반응하지 않습니다`);
+}
+
 // ── DB 준비 ──
 const admin = new pg.Client({ connectionString: ADMIN_URL });
 await admin.connect();
@@ -316,8 +327,7 @@ try {
     await a.waitForURL(/box=answered$/);
     assert.equal(await a.locator('.triage-list li').count(), 2);
     const first = await a.getAttribute('.triage-item[aria-current=true]', 'href');
-    await a.keyboard.press('j');
-    await a.waitForFunction((f) => document.querySelector('.triage-item[aria-current=true]')?.getAttribute('href') !== f, first);
+    await pressUntil(a, 'j', (f) => document.querySelector('.triage-item[aria-current=true]')?.getAttribute('href') !== f, first);
     assert.match(await a.textContent('[data-testid=question]'), /판을 확정했습니다/);
     await shot(a, '25-review-triage.png');
   });
@@ -475,15 +485,13 @@ try {
     }
     // 명령 팔레트: Ctrl+K로 열고 Esc로 닫는다
     await p.goto(`${BASE}/preview/command`);
-    await p.keyboard.press('Control+k');
-    await p.waitForSelector('[role=dialog]');
+    await pressUntil(p, 'Control+k', () => !!document.querySelector('[role=dialog]'));
     await p.keyboard.press('Escape');
     await p.waitForSelector('[role=dialog]', { state: 'detached' });
     // 작업함: J로 다음 질문
     await p.goto(`${BASE}/preview/triage`);
     const first = await p.textContent('section[aria-label="질문 상세"] h2');
-    await p.keyboard.press('j');
-    await p.waitForFunction((t) => document.querySelector('section[aria-label="질문 상세"] h2')?.textContent !== t, first);
+    await pressUntil(p, 'j', (t) => document.querySelector('section[aria-label="질문 상세"] h2')?.textContent !== t, first);
     assert.deepEqual(errors, []);
     await ctxD.close();
 
