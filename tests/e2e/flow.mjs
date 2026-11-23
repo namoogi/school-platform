@@ -1059,6 +1059,8 @@ try {
     assert.equal((await call('/api/agent/me')).status, 401);
     await ctxV.close();
     await ctxH.close();
+  });
+
   await step('확인 대화상자: 처음 포커스는 취소, Esc로 닫으면 그대로, 확인하면 실행(자료 빼기·청구 확정)', async () => {
     await b.goto(`${BASE}/intake`);
     const before = await sourceItems(b).count();
