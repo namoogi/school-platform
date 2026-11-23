@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { Nav, type NavGroup } from './Nav';
 import { LeaveSchoolButton, SchoolSwitcher } from './SchoolSwitcher';
+import { UiControls } from './UiControls';
+import type { UiChoice, UiScope } from '@/lib/ui-shared';
 
 const ROLE: Record<string, string> = { admin: '학교 관리자', teacher: '교사' };
 
@@ -9,15 +11,18 @@ export type ShellAccount = { name: string; isPlatformAdmin: boolean };
 export type ShellSchool = { id: string; name: string; status: string };
 
 /**
- * 앱 셸 (25차, ADR 0006 학사 업무형): 왼쪽 아이콘 레일 + 상단 막대(학교 전환 · 알림 · 계정) + 본문.
- * 세부 처리 화면(관리자 확인 등)은 본문 안에서 3단 작업함 배치를 쓴다.
+ * 앱 셸: 왼쪽 메뉴 + 상단 막대(학교 전환 · 화면 선택 · 알림 · 계정) + 본문.
+ * 25차(ADR 0006) 학사 업무형이 학교 기본, 26차(ADR 0007) 분석 대시보드형이 전체 관리 기본.
+ * 형식은 data-ui, 명암은 data-mode로 바꾸며 같은 마크업을 CSS 토큰·배치로 다르게 그린다.
  */
-export function Shell({ account, current, schools, groups, roleLabel, inSchoolAsPlatform, alerts, children }: {
+export function Shell({ account, current, schools, groups, roleLabel, inSchoolAsPlatform, alerts, ui, children }: {
   account: ShellAccount; current: ShellSchool | null; schools: ShellSchool[]; groups: NavGroup[];
-  roleLabel: string; inSchoolAsPlatform?: boolean; alerts?: { count: number; href: string } | null; children: React.ReactNode;
+  roleLabel: string; inSchoolAsPlatform?: boolean; alerts?: { count: number; href: string } | null;
+  /** 26차(ADR 0007): 사용자가 고른 화면 형식·명암. 데이터와 무관하게 셸과 토큰만 바꾼다 */
+  ui: { scope: UiScope; choice: UiChoice }; children: React.ReactNode;
 }) {
   return (
-    <div className="app">
+    <div className="app" data-ui={ui.choice.ui} data-mode={ui.choice.mode} data-scope={ui.scope}>
       <a className="skip-link" href="#content">본문으로 건너뛰기</a>
       <aside className="sidebar" aria-label="메뉴">
         <Link className="brand" href="/" aria-label="학교 운영 플랫폼 홈"><span className="brand-mark" aria-hidden="true">學</span></Link>
@@ -28,6 +33,7 @@ export function Shell({ account, current, schools, groups, roleLabel, inSchoolAs
         {inSchoolAsPlatform && <span className="impersonation">전체 관리자로 보는 중 · 접근이 기록됩니다 <LeaveSchoolButton /></span>}
         <div className="topbar-spacer" />
         <div className="topbar-right">
+          <UiControls scope={ui.scope} initial={ui.choice} />
           {alerts && (
             <Link className="bell" href={alerts.href} aria-label={alerts.count ? `확인 대기 ${alerts.count}건` : '확인 대기 없음'}>
               <Bell size={20} aria-hidden="true" />

@@ -10,6 +10,7 @@
 | [0004](0004-domain-model-normalization.md) | 도메인 모델 정규화 (학교·사람·학사 구조·수업·평가·발행) | 채택 (안 B, Codex) |
 | [0005](0005-ui-tooling.md) | UI 구현 도구 (lucide · Radix · Pretendard, Tailwind 보류) | 채택(1단계) |
 | [0006](0006-design-direction-campus.md) | 디자인 방향: 학사 업무형 기본 틀 + 3단 작업함 세부 화면 | 채택 |
+| [0007](0007-ui-switching.md) | 화면 형식 선택: 전체 관리 = 분석형(다크·화이트 반전), 학교 = 학사 업무형, 사용자별 저장 | 채택 |
 
 상태: 제안 → 검토 중 → 채택 / 기각 / 대체됨(대체한 번호 적기). 채택된 기록은 고치지 않고, 바꿀 때는 새 기록을 만들어 "대체됨"으로 연결한다.
 새 기록은 [TEMPLATE.md](TEMPLATE.md)를 복사해 쓴다. 번호는 만들기 직전에 `ls docs/decisions`로 다음 빈 번호를 확인하고, 겹치면 CI(`npm run check:repo`)가 막는다.

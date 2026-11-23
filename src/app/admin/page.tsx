@@ -1,5 +1,7 @@
 import { loadForPlatform } from '@/lib/page';
-import { accessLog, catalog, overview, statements } from '@/lib/admin';
+import Link from 'next/link';
+import { accessLog, activityByDay, catalog, overview, statements } from '@/lib/admin';
+import { BarChart, HBars } from '@/components/Charts';
 import { EnterSchoolButton } from '@/components/SchoolSwitcher';
 import { Kpi, PageHeader, StatusBadge } from '@/components/ui';
 import { CreateSchoolForm, PriceForm, SchoolActions } from './AdminClient';
@@ -12,10 +14,16 @@ const ACTION: Record<string, string> = {
   'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경', 'devlink.add': '개발 연동 추가', 'devlink.update': '개발 연동 변경',
 };
 
-export default async function AdminPage() {
-  const { schools, modules, log, bills } = await loadForPlatform(async ({ db }) => ({
+const RANGES = [7, 14, 30] as const;
+
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
+  const { days: rawDays } = await searchParams;
+  const days = RANGES.find((d) => String(d) === rawDays) ?? 14;
+  const { schools, modules, log, bills, activity } = await loadForPlatform(async ({ db }) => ({
     schools: await overview(db), modules: await catalog(db), log: await accessLog(db, null, 40), bills: await statements(db, null),
+    activity: await activityByDay(db, days),
   }));
+  const activityTotal = activity.reduce((n, a) => n + a.count, 0);
   const names = Object.fromEntries(schools.map((s) => [s.id, s.name]));
   const moduleName = Object.fromEntries(modules.map((m) => [m.key, m.name]));
   const totalSeats = schools.reduce((n, s) => n + (s.seats ?? 0), 0);
@@ -25,12 +33,27 @@ export default async function AdminPage() {
   return (
     <>
       <PageHeader title="학교·라이선스" crumbs={[{ label: '전체 관리' }, { label: '학교·라이선스' }]}
-        description="학교를 만들고 라이선스·상태·가격·청구를 관리합니다. 학교에 들어가면 그 학교 화면을 그대로 볼 수 있고, 입장은 학교 기록에 남습니다." />
+        description="학교를 만들고 라이선스·상태·가격·청구를 관리합니다. 학교에 들어가면 그 학교 화면을 그대로 볼 수 있고, 입장은 학교 기록에 남습니다."
+        actions={
+          <nav className="segmented" aria-label="기간">
+            {RANGES.map((d) => <Link key={d} href={`/admin?days=${d}`} aria-current={d === days ? 'true' : undefined}>{d}일</Link>)}
+          </nav>
+        } />
       <div className="kpis" data-testid="platform-summary">
         <Kpi label="학교" value={`${schools.length}곳`} hint={`시범 ${schools.filter((s) => s.status === 'trial').length} · 이용 중지 ${schools.filter((s) => s.status === 'suspended').length}`} />
         <Kpi label="좌석" value={`${totalSeats}석`} hint={`사용 ${schools.reduce((n, s) => n + s.seats_used, 0)}석`} />
         <Kpi label="월 청구 예정" value={won(monthly)} hint="이용 중지 학교 제외" />
         <Kpi label="확인 대기 질문" value={`${schools.reduce((n, s) => n + s.open_questions, 0)}건`} tone={schools.some((s) => s.open_questions) ? 'warning' : undefined} />
+      </div>
+      <div className="panel-grid" data-testid="analytics-panels">
+        <section className="card panel-wide">
+          <div className="card-header"><h2>운영 기록 추이</h2><span className="fine">최근 {days}일 · 합계 <span className="analytics-value">{activityTotal}</span>건</span></div>
+          <BarChart title={`최근 ${days}일 운영 기록 수`} unit="건" data={activity.map((a) => ({ label: a.day.slice(5).replace('-', '.'), value: a.count }))} />
+        </section>
+        <section className="card">
+          <div className="card-header"><h2>학교별 좌석 사용</h2><span className="fine">사용 / 계약</span></div>
+          {schools.length ? <HBars rows={schools.map((s) => ({ label: s.name, value: s.seats_used, max: s.seats ?? 0, note: STATUS[s.status] }))} /> : <p className="muted">학교가 없습니다.</p>}
+        </section>
       </div>
       <section className="card">
         <div className="card-header"><h2>학교</h2><span className="fine">{schools.length}곳</span></div>

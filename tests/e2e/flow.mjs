@@ -430,6 +430,63 @@ try {
     assert.equal(denied.status(), 404);
     await ctxS.close();
   });
+
+  await step('26차: 화면 선택 — 전체 관리는 분석형(다크) 기본, 학교는 학사 업무형, 바꾸면 DB에 저장돼 유지', async () => {
+    const ctxU = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const p = await ctxU.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.waitForSelector('.app[data-ui=analytics][data-mode=dark][data-scope=platform]');
+    await p.waitForSelector('[data-testid=analytics-panels] svg');
+    await p.click('.segmented a:text-is("7일")');
+    await p.waitForURL(/days=7$/);
+    assert.match(await p.textContent('[data-testid=analytics-panels]'), /최근 7일/);
+    await shot(p, '26-platform-dark.png');
+    // 화이트 반전: 누르면 바로 바뀌고, 새로 고쳐도 유지(DB)
+    await p.click('[data-testid=ui-mode]');
+    await p.waitForSelector('.app[data-mode=light]');
+    await p.waitForTimeout(300);
+    await p.reload();
+    await p.waitForSelector('.app[data-ui=analytics][data-mode=light]');
+    await shot(p, '26-platform-light.png');
+    // 화면 형식 바꾸기 → 학사 업무형, 데이터(학교 표)는 그대로
+    await p.click('[data-testid=ui-menu]');
+    await p.click('[data-ui-option=campus]');
+    await p.waitForSelector('.app[data-ui=campus]');
+    await p.reload();
+    await p.waitForSelector('.app[data-ui=campus]');
+    assert.match(await p.textContent('[data-testid=school-table]'), /드리미 예시학교/);
+    // 전체 관리자가 학교에 들어가면 학교 범위 설정(기본: 학사 업무형)을 따른다
+    await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('button:text-is("들어가기")').click();
+    await p.waitForURL(/\/home$/);
+    await p.waitForSelector('.app[data-ui=campus][data-mode=light][data-scope=school]');
+    // 원래대로 (다른 단계에 영향 없게)
+    await p.goto(`${BASE}/admin`);
+    await p.click('[data-testid=ui-menu]');
+    await p.click('[data-ui-option=analytics]');
+    await p.click('[data-testid=ui-mode]');
+    await p.waitForSelector('.app[data-ui=analytics][data-mode=dark]');
+    await ctxU.close();
+
+    // 학교 관리자: 기본 학사 업무형 → 분석형으로 바꿔도 같은 기록이 보인다
+    const ctxS = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const s = await ctxS.newPage();
+    await login(s, 'admin-a@school-a.test', 'demo-pass-a');
+    await s.goto(`${BASE}/home`);
+    await s.waitForSelector('.app[data-ui=campus][data-mode=light]');
+    const before = await s.textContent('[data-testid=card-review]');
+    await s.click('[data-testid=ui-menu]');
+    await s.click('[data-ui-option=analytics]');
+    await s.waitForSelector('.app[data-ui=analytics]');
+    await s.reload();
+    await s.waitForSelector('.app[data-ui=analytics][data-mode=light]');
+    assert.equal(await s.textContent('[data-testid=card-review]'), before);
+    await shot(s, '26-school-analytics.png');
+    await ctxS.close();
+  });
 } catch (e) {
   exitCode = 1;
   console.error('\n서버 로그(마지막 2000자):\n' + serverLog.slice(-2000));
