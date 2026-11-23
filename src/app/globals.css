@@ -260,7 +260,8 @@ main { display: block; }
 
 /* ── 10. 양식 ──────────────────────────────────────────── */
 label:not(.pv-root *) { display: grid; gap: var(--space-1); font-weight: 500; font-size: var(--fs-body); }
-input:not([type=radio]):not([type=checkbox]):not(.pv-root *), select:not(.pv-root *), textarea:not(.pv-root *) {
+/* 37차: 기본 모양은 :where()로 특이성 0 — 화면별 규칙(.price-row 등)이 이긴다 */
+:where(input:not([type=radio]):not([type=checkbox]):not(.pv-root *), select:not(.pv-root *), textarea:not(.pv-root *)) {
   width: 100%; min-height: var(--control-h); padding: 0 var(--space-3); font-weight: 400;
   background: var(--surface-default); border: 1px solid var(--border-input); border-radius: var(--radius-sm); color: var(--text-default);
 }
@@ -511,7 +512,12 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
 .edit-form { display: grid; gap: var(--space-3); margin-top: var(--space-3); padding: var(--space-4); background: var(--surface-subtle); border-radius: var(--radius-md); }
 .edit-form .row label { flex: 1 1 160px; }
 .price-row { align-items: center; }
-.price-row input[type=number] { width: 140px; flex: none; }
+.price-row .input-affix { width: 160px; flex: none; }
+.price-row { padding: var(--space-1) 0; border-bottom: 1px solid var(--border-subtle); flex-wrap: nowrap; }
+/* 단위 붙은 숫자 칸: 오른쪽 정렬 + 단위 글자 */
+.input-affix { position: relative; display: inline-flex; align-items: center; min-width: 0; }
+.input-affix input { text-align: right; padding-right: calc(var(--space-3) + 1.6em); }
+.input-affix > span { position: absolute; right: var(--space-3); color: var(--text-muted); font-size: var(--fs-body-sm); pointer-events: none; }
 .price-name { flex: 1; min-width: 140px; font-weight: 600; }
 .row input[type=email] { flex: 1; min-width: 200px; }
 .row select { width: auto; }

@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { FileDrop, type FileDropContext } from '@/components/FileDrop';
+import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, PencilLine, Plus, Trash2 } from 'lucide-react';
 import { BLOCK_LABEL, KIND_LABEL, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
 
@@ -137,16 +139,13 @@ function LangFields({ value, onChange, langs, label, multiline }: { value: LText
 }
 
 function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false }: { value?: string; onChange: (id: string) => void; assets: Asset[]; onUploaded: (a: Asset) => void; label: string; pdf?: boolean }) {
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  async function upload(file: File) {
-    setBusy(true); setErr(null);
+  async function upload([file]: File[], { signal, progress }: FileDropContext) {
     const form = new FormData(); form.append('file', file);
-    const res = await fetch('/api/site/assets', { method: 'POST', body: form });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) return setErr(data.error ?? '올리지 못했습니다.');
+    const res = await uploadWithProgress('/api/site/assets', form, { signal, onProgress: progress });
+    const data = res.body as { id?: string; error?: string };
+    if (!res.ok || !data.id) throw new Error(data.error ?? '올리지 못했습니다.');
     onUploaded({ id: data.id, name: file.name, mime: file.type }); onChange(data.id);
+    return `‘${file.name}’을(를) 올리고 골랐습니다.`;
   }
   // 34차: PDF 칸에는 PDF만, 그림 칸에는 그림만 보인다
   const choices = assets.filter((a) => (a.mime === 'application/pdf') === pdf);
@@ -161,10 +160,12 @@ function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false }: 
             {choices.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </label>
-        <label className="fine">{pdf ? '새 PDF 올리기 (4MB 이하, 웹용으로 줄인 파일)' : '새 그림 올리기 (PNG·JPG·WEBP·GIF, 5MB 이하)'}
-          <input type="file" accept={pdf ? 'application/pdf' : 'image/png,image/jpeg,image/webp,image/gif'} disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
-        </label>
-        {err && <span className="ui-error" role="alert">{err}</span>}
+        <FileDrop
+          compact label={pdf ? '새 PDF 올리기' : '새 그림 올리기'} onFiles={upload}
+          accept={pdf ? ['application/pdf', '.pdf'] : ['image/png', 'image/jpeg', 'image/webp', 'image/gif']}
+          typeLabel={pdf ? 'PDF' : 'PNG·JPG·WEBP·GIF'} maxSize={(pdf ? 4 : 5) * 1024 * 1024}
+          hint={pdf ? '웹용으로 줄인 파일' : undefined}
+        />
       </div>
     </div>
   );

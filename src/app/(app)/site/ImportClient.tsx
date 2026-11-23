@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { unzip, strFromU8, type Unzipped } from 'fflate';
 import { FileArchive, Upload } from 'lucide-react';
+import { FileDrop } from '@/components/FileDrop';
 import { fillAssets, planImport, type ImportPlan } from '@/lib/site-import';
 import type { SiteSettings } from '@/lib/site-shared';
 
@@ -36,10 +37,10 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
   const [done, setDone] = useState<Done[] | null>(null);
   const [published, setPublished] = useState(false);
 
-  async function pick(f: File) {
+  // 묶음을 풀어 계획만 세운다. 읽지 못하면 FileDrop이 오류 문장을 칸 아래에 보여 준다
+  async function pick([f]: File[]) {
     setErr(null); setPlan(null); setDone(null); setPublished(false);
     try {
-      setStep({ label: '묶음을 푸는 중', n: 0, of: 1 });
       const z = await readZip(new Uint8Array(await f.arrayBuffer()));
       const json = (p: string) => (z[p] ? JSON.parse(strFromU8(z[p])) : null);
       const content = json('content.json');
@@ -49,8 +50,10 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
       const list = [...new Set([...Object.keys(z), ...(manifest?.files ?? []).map((x) => x.path)])];
       setPlan(planImport(content, list.filter((p) => z[p]), bookPath ? json(bookPath) : null, json('friends/pages.json')));
       setFiles(z);
-    } catch (e) { setErr((e as Error).message || '묶음을 읽지 못했습니다.'); }
-    finally { setStep(null); }
+      return '묶음을 읽었습니다. 아래에서 만들 것을 확인하세요.';
+    } catch (e) {
+      throw new Error(e instanceof SyntaxError ? '묶음 안의 JSON을 읽지 못했습니다. 옛 사이트에서 다시 내보내 주세요.' : ((e as Error).message || '묶음을 읽지 못했습니다.'));
+    }
   }
 
   async function run() {
@@ -104,9 +107,11 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
     <section className="card site-form" data-testid="site-import">
       <h2><FileArchive size={20} aria-hidden="true" /> 기존 홈페이지 가져오기</h2>
       <p className="fine">옛 사이트에서 만든 내보내기 묶음(zip)을 고르면 쪽·소식·동화·후원자 쪽을 <b>시안</b>으로 만듭니다. 이미 있는 항목은 덮어쓰지 않고 새 판으로 더합니다. 공개와 홈페이지 열기는 시안을 확인한 뒤 따로 합니다.</p>
-      <label>묶음 파일 (.zip)
-        <input type="file" accept=".zip,application/zip" disabled={!!step} onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])} data-testid="import-file" />
-      </label>
+      <FileDrop
+        label="묶음 파일" accept={['.zip', 'application/zip', 'application/x-zip-compressed']} typeLabel="ZIP"
+        hint="브라우저 안에서 풀고, 올리기 전에 만들 것을 먼저 보여 줍니다." disabled={!!step}
+        onFiles={pick} inputTestId="import-file" testId="import-drop"
+      />
       {plan && !done && (
         <div className="banner" data-tone="info" role="status" data-testid="import-plan">
           <p><b>만들 것:</b> 쪽 {count('page', 'public')}개 · 숨은 쪽(후원자) {count('page', 'unlisted')}개 · 소식 {count('news')}개 · 동화 {count('story')}편 · 그림 {plan.files.length}장</p>
@@ -114,7 +119,12 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
           {plan.notes.length > 0 && <ul>{plan.notes.map((n) => <li key={n}>{n}</li>)}</ul>}
         </div>
       )}
-      {step && <p role="status" aria-live="polite" data-testid="import-progress">{step.label} {step.of > 1 ? `${step.n} / ${step.of}` : '…'}<progress max={step.of} value={step.n} /></p>}
+      {step && (
+        <div className="file-drop-progress" role="status" aria-live="polite" data-testid="import-progress">
+          <span className="fine">{step.label} {step.of > 1 ? `${step.n} / ${step.of}` : '…'}</span>
+          <div className="progress" aria-hidden="true"><div className="progress-fill" style={{ width: `${(step.n / step.of) * 100}%` }} /></div>
+        </div>
+      )}
       {err && <p className="banner" data-tone="danger" role="alert">{err}</p>}
       {plan && !done && <div className="form-actions"><button type="button" className="btn btn-primary" onClick={run} disabled={!!step} data-testid="import-run"><Upload size={16} aria-hidden="true" />시안으로 가져오기</button></div>}
       {done && (

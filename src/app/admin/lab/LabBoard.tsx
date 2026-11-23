@@ -1,4 +1,5 @@
 'use client';
+import { Switch } from '@/components/Field';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Item, Kind } from '@/lib/lab';
@@ -53,8 +54,8 @@ export function LabBoard({ items, kinds, priorities }: { items: Item[]; kinds: K
 
       <div className="toolbar">
         <input type="search" placeholder="제목·내용·태그 검색" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="검색" />
-        {tab !== 'tool' && tab !== 'method' && <label className="radio"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> 끝난 항목 보기</label>}
-        <label className="radio"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> 보관한 항목 보기</label>
+        {tab !== 'tool' && tab !== 'method' && <Switch label="끝난 항목 보기" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />}
+        <Switch label="보관한 항목 보기" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
       </div>
       {error && <p className="alert" role="alert">{error}</p>}
 
