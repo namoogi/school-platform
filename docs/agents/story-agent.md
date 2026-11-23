@@ -68,7 +68,7 @@ out/brave-elephant/
 | `GET /api/agent/stories/<key>` | 최신 판 내용 `latest.content` |
 | `GET /api/agent/assets` | 이 학교 그림·PDF 목록(id, name, mime, size_bytes, sha256) |
 | `POST /api/agent/assets?name=<파일 이름>` | 본문에 파일 그대로, `Content-Type`에 형식 → `{ id, reused }` |
-| `POST /api/agent/stories/<key>/versions` | `{ content, note }` → `{ version, published: false }` |
+| `POST /api/agent/stories/<key>/versions` | `{ content, note, base_version }` → `{ version, published: false }`. `base_version`은 읽은 최신 판 번호. 그 사이 새 판이 생겼으면 **409** → 다시 읽어 고친다 |
 
 ```bash
 H="x-agent-token: $SCHOOL_AGENT_TOKEN"
@@ -95,6 +95,7 @@ curl -s -H "$H" -H 'content-type: application/json' -d @new-version.json \
 | 401 | 토큰이 없거나, 틀렸거나, 기한이 지났거나, 폐기됨 → 선생님께 새 토큰 요청 |
 | 403 | 토큰 범위 밖(다른 동화·쪽 등) |
 | 400 | 파일 형식·크기·PDF 내용(자바스크립트 등)·블록 형식 문제. 메시지대로 고친다 |
+| 409 | 그 사이 사람이나 다른 에이전트가 새 판을 만들었음 → 최신 판을 다시 읽어 덧붙인 뒤 저장(스크립트는 다시 실행) |
 | 413 | 파일이 너무 큼(PDF 4MB) |
 
 ## 실행 환경 참고

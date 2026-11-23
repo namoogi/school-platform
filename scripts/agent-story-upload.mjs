@@ -109,5 +109,6 @@ if (dry) {
   console.log(`\n(시험 실행) 저장하지 않았습니다. 새 판 블록 ${blocks.length}개: ${blocks.map((b) => b.type).join(', ')}`);
   process.exit(0);
 }
-const v = await api('POST', `/api/agent/stories/${m.story_key}/versions`, { content, note });
+// base_version: 읽은 판. 그 사이 사람이나 다른 에이전트가 새 판을 만들었으면 서버가 409로 거부한다(덮지 않음) → 다시 실행
+const v = await api('POST', `/api/agent/stories/${m.story_key}/versions`, { content, note, base_version: story.latest.version });
 console.log(`\n새 판 저장: ${v.version}판 (시안, 공개 안 됨). 학교 관리자가 ${BASE}/site?box=story 에서 미리보기 → 공개하세요.`);

@@ -276,7 +276,11 @@ export async function createEntry(db: Db, schoolId: string, input: Record<string
 }
 
 export async function saveVersion(db: Db, schoolId: string, entryId: string, input: Record<string, unknown>) {
-  const { entry } = await getEntry(db, schoolId, entryId);
+  const { entry, versions } = await getEntry(db, schoolId, entryId);
+  // ADR 0013 병행 규칙: 보고 고친 판(base_version)을 보내면, 그 사이 새 판이 생겼을 때 덮지 않고 409로 알린다
+  if (input.base_version != null && Number(input.base_version) !== versions[0]?.version) {
+    throw Object.assign(new Error(`그 사이 새 판(${versions[0]?.version}판)이 생겼습니다. 새로 고친 뒤 다시 저장해 주세요.`), { code: 'P0001' });
+  }
   const content = await withDownloads(db, schoolId, validateContent(input.content));
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 300) : null;
   try {

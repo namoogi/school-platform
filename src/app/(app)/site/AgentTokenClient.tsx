@@ -9,8 +9,11 @@ import { StatusBadge } from '@/components/ui';
  * 원문은 발급 직후 한 번만 보인다. 토큰으로는 그림·PDF 올리기와 동화 새 판(시안) 저장만 되고, 공개는 사람이 한다.
  */
 export type TokenRow = {
-  id: string; label: string; entry_key: string | null; created_at: string; expires_at: string; revoked_at: string | null; last_used_at: string | null; uses: number;
+  id: string; label: string; entry_key: string | null; agent_kind: string; created_at: string; expires_at: string; revoked_at: string | null; last_used_at: string | null; uses: number;
+  recent: { action: string; created_at: string; detail: Record<string, unknown> }[];
 };
+const KIND: Record<string, string> = { codex: 'Codex', 'claude-code': 'Claude Code', other: '기타' };
+const did = (r: TokenRow['recent'][number]) => r.action === 'story.version' ? `${String(r.detail.key ?? '')} ${String(r.detail.version ?? '')}판 시안` : `파일 올림(${r.detail.mime === 'application/pdf' ? 'PDF' : '그림'})`;
 
 async function send(url: string, body: unknown) {
   const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -25,6 +28,7 @@ export function AgentTokenPanel({ tokens, stories }: { tokens: TokenRow[]; stori
   const [label, setLabel] = useState('Codex 동화 작업');
   const [days, setDays] = useState(30);
   const [key, setKey] = useState('');
+  const [kind, setKind] = useState('codex');
   const [issued, setIssued] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -33,7 +37,7 @@ export function AgentTokenPanel({ tokens, stories }: { tokens: TokenRow[]; stori
   async function issue(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr(null); setIssued(null); setCopied(false);
-    try { setIssued((await send('/api/site/agent-tokens', { label, days, entry_key: key || null })).token); router.refresh(); }
+    try { setIssued((await send('/api/site/agent-tokens', { label, days, entry_key: key || null, agent_kind: kind })).token); router.refresh(); }
     catch (x) { setErr((x as Error).message); }
     finally { setBusy(false); }
   }
@@ -56,6 +60,11 @@ export function AgentTokenPanel({ tokens, stories }: { tokens: TokenRow[]; stori
       </p>
       <form onSubmit={issue} className="site-form-fields">
         <label>이름<input value={label} maxLength={80} onChange={(e) => setLabel(e.target.value)} required /></label>
+        <label>에이전트
+          <select value={kind} onChange={(e) => setKind(e.target.value)}>
+            {Object.entries(KIND).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </label>
         <label>기한
           <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
             <option value={7}>7일</option><option value={30}>30일</option><option value={90}>90일</option>
@@ -83,7 +92,7 @@ export function AgentTokenPanel({ tokens, stories }: { tokens: TokenRow[]; stori
       {err && <p className="banner" data-tone="danger" role="alert">{err}</p>}
       {tokens.length > 0 && (
         <div className="table-wrap"><table className="grid-table" data-testid="agent-token-list">
-          <thead><tr><th scope="col">이름</th><th scope="col">범위</th><th scope="col">상태</th><th scope="col">기한</th><th scope="col">마지막 사용</th><th scope="col">한 일</th><th scope="col"><span className="sr-only">폐기</span></th></tr></thead>
+          <thead><tr><th scope="col">이름</th><th scope="col">범위</th><th scope="col">상태</th><th scope="col">기한</th><th scope="col">에이전트</th><th scope="col">마지막 사용</th><th scope="col">한 일</th><th scope="col"><span className="sr-only">폐기</span></th></tr></thead>
           <tbody>
             {tokens.map((t) => {
               const st = state(t);
@@ -93,8 +102,9 @@ export function AgentTokenPanel({ tokens, stories }: { tokens: TokenRow[]; stori
                   <td>{t.entry_key ? `/${t.entry_key}` : '동화 모두'}</td>
                   <td><StatusBadge tone={st.tone}>{st.label}</StatusBadge></td>
                   <td>{day(t.expires_at)}</td>
+                  <td>{KIND[t.agent_kind] ?? t.agent_kind}</td>
                   <td>{day(t.last_used_at)}</td>
-                  <td>{t.uses}건</td>
+                  <td>{t.uses}건{t.recent.length > 0 && <ul className="fine">{t.recent.map((r, k) => <li key={k}>{did(r)} · {day(r.created_at)}</li>)}</ul>}</td>
                   <td>{!t.revoked_at && <button type="button" className="btn btn-ghost btn-sm" onClick={() => revoke(t.id)} aria-label={`${t.label} 폐기`}>폐기</button>}</td>
                 </tr>
               );

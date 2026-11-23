@@ -77,7 +77,7 @@ describe('토큰으로 할 수 있는 일과 없는 일', () => {
     const content = { ...base.latest.content, blocks: [...base.latest.content.blocks,
       { type: 'section', template: 'cards', title: { ko: '등장인물' }, items: [{ title: { ko: '코끼리' }, asset: png.id, alt: { ko: '코끼리' } }] },
       { type: 'download', asset: pdf.id, label: { ko: '동화 PDF' }, file_name: 'fake.exe', size_bytes: 1 }] };
-    const v = await as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content, note: '캐릭터·PDF' }));
+    const v = await as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content, note: '캐릭터·PDF', base_version: base.latest.version }));
     expect(v).toMatchObject({ version: 2, published: false });
     const saved = (await sql(`select content, note, created_by from public.site_entry_versions where id = $1`, [v.version_id]))[0];
     expect(saved.note).toBe('[작업 토큰: 코끼리 동화] 캐릭터·PDF');
@@ -91,8 +91,8 @@ describe('토큰으로 할 수 있는 일과 없는 일', () => {
 
   it('범위 밖 동화·쪽·소식은 읽지도 쓰지도 못한다', async () => {
     await expect(as((db) => agent.agentStory(db, tok, 'kind-tiger'))).rejects.toMatchObject({ code: 'P0002' });
-    await expect(as((db) => agent.agentSaveStory(db, tok, 'kind-tiger', { content: story('침입') }))).rejects.toMatchObject({ code: '42501' });
-    await expect(as((db) => agent.agentSaveStory(db, tok, 'about', { content: story('침입') }))).rejects.toMatchObject({ code: '42501' });
+    await expect(as((db) => agent.agentSaveStory(db, tok, 'kind-tiger', { content: story('침입'), base_version: 1 }))).rejects.toMatchObject({ code: '42501' });
+    await expect(as((db) => agent.agentSaveStory(db, tok, 'about', { content: story('침입'), base_version: 1 }))).rejects.toMatchObject({ code: '42501' });
     expect((await as((db) => agent.agentStories(db, tok)) as { key: string }[]).map((s) => s.key)).toEqual(['brave-elephant']);
     // 함수 밖 표·명령은 아예 권한이 없다: 공개 기록, 설정, 쪽, 다른 학교
     for (const q of [
@@ -110,7 +110,7 @@ describe('토큰으로 할 수 있는 일과 없는 일', () => {
 
   it('다른 학교 동화·자산은 양방향으로 막힌다', async () => {
     // A 토큰으로 B 학교의 같은 key 동화를 고칠 수 없다(A 학교 동화가 고쳐짐)
-    const v = await as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: story('A 동화 3판') }));
+    const v = await as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: story('A 동화 3판'), base_version: 2 }));
     expect((await sql(`select entry_id from public.site_entry_versions where id = $1`, [v.version_id]))[0].entry_id).toBe(storyA);
     expect((await sql(`select count(*)::int as n from public.site_entry_versions where entry_id = $1`, [storyB]))[0].n).toBe(1);
     // B 토큰으로는 A 자산이 보이지 않고, A 자산을 가리키는 판도 저장할 수 없다
@@ -118,11 +118,11 @@ describe('토큰으로 할 수 있는 일과 없는 일', () => {
     expect(aAssets.length).toBe(2);
     expect(await as((db) => agent.agentAssets(db, tokB))).toEqual([]);
     const withA = { title: { ko: 'B' }, blocks: [{ type: 'story_page', asset: aAssets[0].id, text: { ko: '훔친 그림' } }] };
-    await expect(as((db) => agent.agentSaveStory(db, tokB, 'brave-elephant', { content: withA }))).rejects.toThrow('이 학교에 없는');
+    await expect(as((db) => agent.agentSaveStory(db, tokB, 'brave-elephant', { content: withA, base_version: 1 }))).rejects.toThrow('이 학교에 없는');
     await expect(as((db) => agent.agentStory(db, tokB, 'kind-tiger'))).rejects.toMatchObject({ code: 'P0002' });
     // 반대로 A 토큰으로 B 자산도 못 쓴다
     const bPng = await as((db) => agent.agentUpload(db, tokB, { name: 'b.png', type: 'image/png', bytes: Buffer.concat([PNG, Buffer.from('b')]) }));
-    await expect(as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: { title: { ko: 'A' }, blocks: [{ type: 'story_page', asset: bPng.id, text: { ko: 'x' } }] } }))).rejects.toThrow('이 학교에 없는');
+    await expect(as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: { title: { ko: 'A' }, blocks: [{ type: 'story_page', asset: bPng.id, text: { ko: 'x' } }] }, base_version: 3 }))).rejects.toThrow('이 학교에 없는');
   });
 
   it('파일 형식·크기·PDF 내용을 검사한다', async () => {
@@ -134,7 +134,20 @@ describe('토큰으로 할 수 있는 일과 없는 일', () => {
     await expect(as((db) => db.query(`select agent.upload_asset($1, 'x.pdf', 'application/pdf', $2)`, [tok, PNG]))).rejects.toThrow('형식');
     // 내려받기 블록은 PDF만
     const png = (await as((db) => agent.agentAssets(db, tok))).find((a) => a.mime === 'image/png')!;
-    await expect(as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: { title: { ko: 'x' }, blocks: [{ type: 'download', asset: png.id }] } }))).rejects.toThrow('PDF');
+    await expect(as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: { title: { ko: 'x' }, blocks: [{ type: 'download', asset: png.id }] }, base_version: 3 }))).rejects.toThrow('PDF');
+  });
+
+  it('보고 고친 판이 최신이 아니면 덮지 않고 거부한다(사람·에이전트 공통, ADR 0013)', async () => {
+    await expect(as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: story('판 없음') }))).rejects.toThrow('base_version');
+    // 사람이 그 사이 4판을 만들었다 → 3판을 보고 고친 에이전트 저장은 409(P0001)
+    await asUser(T, (db) => site.saveVersion(db, A.schoolId, storyA, { content: story('사람이 고친 4판'), base_version: 3 }));
+    await expect(as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: story('늦은 판'), base_version: 3 }))).rejects.toMatchObject({ code: 'P0001' });
+    await expect(asUser(T, (db) => site.saveVersion(db, A.schoolId, storyA, { content: story('사람도 늦음'), base_version: 3 }))).rejects.toMatchObject({ code: 'P0001' });
+    const ok = await as((db) => agent.agentSaveStory(db, tok, 'brave-elephant', { content: story('다시 읽고 고친 5판'), base_version: 4 }));
+    expect(ok.version).toBe(5);
+    const [row] = (await asUser(A.userId, (db) => agent.listAgentTokens(db, A.schoolId))).filter((t) => t.label === '코끼리 동화');
+    expect(row.agent_kind).toBe('codex');
+    expect(row.recent[0]).toMatchObject({ action: 'story.version', detail: { key: 'brave-elephant', version: 5 } });
   });
 
   it('폐기·기한 지남·형식이 틀린 토큰은 거부한다', async () => {

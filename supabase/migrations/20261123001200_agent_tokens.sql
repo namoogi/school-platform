@@ -49,6 +49,7 @@ create table public.agent_tokens (
   label text not null check (length(trim(label)) between 1 and 80),
   scope_kind text not null default 'story' check (scope_kind = 'story'),
   entry_key text check (entry_key is null or entry_key ~ '^[a-z0-9][a-z0-9-]{0,59}$'),
+  agent_kind text not null default 'codex' check (agent_kind in ('codex', 'claude-code', 'other')), -- ADR 0013: 어떤 에이전트에게 주는지
   token_sha256 text not null unique check (token_sha256 ~ '^[0-9a-f]{64}$'),
   created_by uuid not null references private.app_users(id),
   created_at timestamptz not null default now(),
@@ -82,7 +83,7 @@ alter table public.agent_token_uses enable row level security;
 
 -- Supabase 기본 권한이 새 표에 모두를 주므로 먼저 거두고, 필요한 것만 준다. 해시 열은 사람에게도 보이지 않는다.
 revoke all on public.agent_tokens, public.agent_token_uses from public, anon, authenticated;
-grant select (id, school_id, label, scope_kind, entry_key, created_by, created_at, expires_at, revoked_at, last_used_at)
+grant select (id, school_id, label, scope_kind, entry_key, agent_kind, created_by, created_at, expires_at, revoked_at, last_used_at)
   on public.agent_tokens to authenticated;
 grant select on public.agent_token_uses to authenticated;
 create policy agent_tokens_read on public.agent_tokens for select to authenticated using (app.is_school_admin(school_id));
@@ -130,14 +131,14 @@ create policy site_assets_agent_insert on public.site_assets for insert to agent
 
 -- ── 토큰 확인 (표 소유자 권한: 해시로 찾고 마지막 사용 시각을 남긴다). agent_writer 만 부른다 ──
 create or replace function app.agent_resolve(p_token text)
-returns table (token_id uuid, school_id uuid, entry_key text, label text, created_by uuid, expires_at timestamptz, school_name text)
+returns table (token_id uuid, school_id uuid, entry_key text, label text, created_by uuid, expires_at timestamptz, school_name text, agent_kind text)
 language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare h text;
 begin
   if p_token is null or p_token !~ '^agt_[0-9a-f]{64}$' then return; end if;
   h := encode(sha256(convert_to(p_token, 'UTF8')), 'hex');
   return query
-    select t.id, t.school_id, t.entry_key, t.label, t.created_by, t.expires_at, c.name
+    select t.id, t.school_id, t.entry_key, t.label, t.created_by, t.expires_at, c.name, t.agent_kind
     from public.agent_tokens t join public.schools c on c.id = t.school_id
     where t.token_sha256 = h and t.revoked_at is null and t.expires_at > now()
       and c.status <> 'suspended' and private.site_kind_allowed(t.school_id, 'story');
@@ -158,13 +159,13 @@ grant create on schema app to agent_writer;
 
 -- 토큰 확인 + 맥락 정하기. 실패하면 28000(인증 실패)
 create or replace function app.agent_enter(p_token text,
-  out t_id uuid, out t_school uuid, out t_key text, out t_label text, out t_by uuid, out t_expires timestamptz, out t_school_name text)
+  out t_id uuid, out t_school uuid, out t_key text, out t_label text, out t_by uuid, out t_expires timestamptz, out t_school_name text, out t_kind text)
 language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 begin
   perform set_config('agent.school', '', true);
   perform set_config('agent.key', '', true);
-  select r.token_id, r.school_id, r.entry_key, r.label, r.created_by, r.expires_at, r.school_name
-    into t_id, t_school, t_key, t_label, t_by, t_expires, t_school_name
+  select r.token_id, r.school_id, r.entry_key, r.label, r.created_by, r.expires_at, r.school_name, r.agent_kind
+    into t_id, t_school, t_key, t_label, t_by, t_expires, t_school_name, t_kind
     from app.agent_resolve(p_token) r;
   if t_id is null then
     raise exception '작업 토큰이 올바르지 않거나, 기한이 지났거나, 폐기되었습니다.' using errcode = '28000';
@@ -178,7 +179,7 @@ language plpgsql security definer set search_path = pg_catalog, public, pg_temp 
 declare c record;
 begin
   select * into c from app.agent_enter(p_token);
-  return jsonb_build_object('school', c.t_school_name, 'label', c.t_label, 'scope', 'story', 'story_key', c.t_key,
+  return jsonb_build_object('school', c.t_school_name, 'label', c.t_label, 'agent_kind', c.t_kind, 'scope', 'story', 'story_key', c.t_key,
     'expires_at', c.t_expires, 'can', jsonb_build_array('stories.read', 'story.version', 'assets.read', 'assets.upload'));
 end $$;
 
@@ -255,14 +256,21 @@ end $$;
 
 -- 범위 안 동화의 새 판(시안) 저장. 공개는 하지 않는다. 내용 검사는 앱이 먼저 하고(validateContent),
 -- 여기서는 내용이 가리키는 그림이 모두 이 학교 것인지 확인한다.
-create or replace function agent.save_story(p_token text, p_key text, p_content jsonb, p_note text) returns jsonb
+-- ADR 0013 병행 규칙: p_base_version(보고 고친 판)이 지금 최신 판이 아니면 거부한다(P0001 → 409). 사람 편집·다른 에이전트의 판을 덮지 않게.
+create or replace function agent.save_story(p_token text, p_key text, p_content jsonb, p_note text, p_base_version integer) returns jsonb
 language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
-declare c record; eid uuid; foreign_ref integer; vid uuid; ver integer;
+declare c record; eid uuid; foreign_ref integer; vid uuid; ver integer; latest integer;
 begin
   select * into c from app.agent_enter(p_token);
   if p_content is null or jsonb_typeof(p_content) <> 'object' then raise exception '내용 형식이 올바르지 않습니다.' using errcode = '22023'; end if;
   select x.id into eid from public.site_entries x where x.school_id = c.t_school and x.kind = 'story' and x.key = p_key;
   if eid is null then raise exception '이 토큰으로 고칠 수 있는 동화가 아닙니다.' using errcode = '42501'; end if;
+  perform pg_advisory_xact_lock(hashtextextended(eid::text, 0)); -- 같은 동화에 동시에 저장할 때 판 번호 확인을 차례로
+  select max(x.version) into latest from public.site_entry_versions x where x.entry_id = eid;
+  if p_base_version is null then raise exception '보고 고친 판 번호(base_version)를 함께 보내 주세요.' using errcode = '22023'; end if;
+  if p_base_version <> latest then
+    raise exception '그 사이 새 판(%판)이 생겼습니다. 최신 판을 다시 읽어 고친 뒤 저장해 주세요.', latest using errcode = 'P0001';
+  end if;
   select count(*) into foreign_ref
     from (select distinct m[1]::uuid as id from regexp_matches(p_content::text, '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', 'g') m) r
    where not exists (select 1 from public.site_assets a where a.id = r.id and a.school_id = c.t_school);
@@ -278,7 +286,7 @@ begin
 end $$;
 
 -- ── 학교 관리자: 발급 · 폐기 (원문은 발급 때 한 번만 돌려준다) ──
-create or replace function app.create_agent_token(p_school uuid, p_label text, p_days integer, p_entry_key text default null) returns text
+create or replace function app.create_agent_token(p_school uuid, p_label text, p_days integer, p_entry_key text default null, p_agent_kind text default 'codex') returns text
 language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare token text; k text := nullif(trim(coalesce(p_entry_key, '')), '');
 begin
@@ -292,11 +300,12 @@ begin
   if k is not null and not exists (select 1 from public.site_entries e where e.school_id = p_school and e.kind = 'story' and e.key = k) then
     raise exception '그 주소 이름의 동화가 없습니다.' using errcode = '22023';
   end if;
+  if p_agent_kind is null or p_agent_kind not in ('codex', 'claude-code', 'other') then raise exception '에이전트 종류가 올바르지 않습니다.' using errcode = '22023'; end if;
   token := 'agt_' || replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
-  insert into public.agent_tokens(school_id, label, entry_key, token_sha256, created_by, expires_at)
-    values (p_school, coalesce(nullif(trim(p_label), ''), '외부 작업'), k, encode(sha256(convert_to(token, 'UTF8')), 'hex'), app.uid(),
+  insert into public.agent_tokens(school_id, label, entry_key, agent_kind, token_sha256, created_by, expires_at)
+    values (p_school, coalesce(nullif(trim(p_label), ''), '외부 작업'), k, p_agent_kind, encode(sha256(convert_to(token, 'UTF8')), 'hex'), app.uid(),
             now() + make_interval(days => p_days));
-  perform app.log_access(p_school, 'agent.token_create', jsonb_build_object('label', p_label, 'days', p_days, 'story_key', k));
+  perform app.log_access(p_school, 'agent.token_create', jsonb_build_object('label', p_label, 'days', p_days, 'story_key', k, 'agent_kind', p_agent_kind));
   return token;
 end $$;
 
@@ -319,8 +328,8 @@ begin
   foreach f in array array[
     'app.agent_enter(text)',
     'agent.whoami(text)', 'agent.stories(text)', 'agent.story(text, text)', 'agent.assets(text)',
-    'agent.upload_asset(text, text, text, bytea)', 'agent.save_story(text, text, jsonb, text)',
-    'app.create_agent_token(uuid, text, integer, text)', 'app.revoke_agent_token(uuid, uuid)'
+    'agent.upload_asset(text, text, text, bytea)', 'agent.save_story(text, text, jsonb, text, integer)',
+    'app.create_agent_token(uuid, text, integer, text, text)', 'app.revoke_agent_token(uuid, uuid)'
   ] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     if f like 'agent.%' then execute format('grant execute on function %s to agent_request', f);
