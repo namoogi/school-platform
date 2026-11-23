@@ -27,10 +27,25 @@
 
 ## 컴포넌트 (`src/components/ui.tsx`)
 
-`PageHeader`, `Steps`, `StatusBadge`, `Banner`, `EmptyState`, `Card`, `Kpi`, `Meter` + 셸의 `SchoolSwitcher`, `Nav`.
+`PageHeader`, `Steps`, `StatusBadge`, `Banner`, `EmptyState`, `Card`, `Kpi`, `Meter` + 셸의 `SchoolSwitcher`, `Nav`. 입력: `Field`·`Switch`(`Field.tsx`), `FileDrop`(아래 '입력·파일 첨부').
 `DataTable`(`src/components/DataTable.tsx`, 29차 자동 실행): 서버 화면이 셀(`cells`)과 정렬 값(`sort`)을 넘긴다. 정렬 가능한 열은 머리 버튼으로 오름 ↔ 내림 정렬하고, 현재 열에만 `aria-sort`를 붙인다. 한국어 순서와 자연 정렬(9 < 10)을 쓰고, 빈 값은 맨 뒤에 두며, 같은 값은 원래 순서를 지킨다(`src/lib/table-sort.ts`). 행이 없으면 안내 문장을 보인다. `densityControl`이면 촘촘히·기본·넉넉히를 고를 수 있다. 화면 형식별 행 높이 토큰을 따른다.
 CSS 클래스: `.btn .btn-primary|secondary|ghost|danger .btn-sm`, `.badge[data-tone]`, `.count-badge`, `.grid-table`(+`.table-wrap`, `th scope`, `.num`), `.summary-list`, `.timeline`, `.tabs`, `.toolbar`, `.kpis`.
 이전 클래스(`.primary`, `.tag.green` 등)는 같은 토큰으로 이어 두었다. 새 화면은 새 클래스를 쓴다.
+
+## 입력·파일 첨부 (36차)
+
+사용자 요청(2026-11-23): 관리 화면의 파일 첨부는 끌어 놓기로, 입력 칸은 최신 모양으로. 공개 홈페이지(`/s/**`)·시안(`/preview/*`)은 대상이 아니다.
+
+| 항목 | 규칙 |
+| --- | --- |
+| 파일 첨부 | **모든 파일 첨부는 `FileDrop`**(`src/components/FileDrop.tsx`). 끌어 놓기 · 눌러 고르기(단추, Enter/Space) · 붙여넣기(Ctrl+V) · 여러 파일 · 형식·크기 검사(`src/lib/file-check.ts`의 `checkFiles`) · 올리는 중 진행 막대와 취소 · 그림 미리보기 · 결과 글자 표시(✓ 올림 / 실패). 상태는 `role=status` aria-live로 읽어 준다. 화면이 `<input type=file>`을 직접 그리지 않는다 |
+| 업로드 진행 | 진행률이 필요하면 `uploadWithProgress`(XHR). `fetch`를 쓰면 `ctx.signal`만 넘겨 취소를 살리고 막대는 '올리는 중'으로 오간다 |
+| 검사 위치 | 브라우저 검사는 안내용이다. 서버 검사(매직 바이트·PDF 검사, PLATFORM-PATTERNS 2)를 대신하지 않는다 |
+| 입력 한 칸 | `Field`(`src/components/Field.tsx`): 위쪽 라벨 · 필수 `*`(+ 화면낭독기 '필수') · 도움말 · 오류(아이콘 + 문장, `aria-invalid`·`aria-describedby`) · 글자 수. 오류는 칸 바로 아래, 색만으로 알리지 않는다 |
+| 켜기/끄기 | 즉시 켜지고 꺼지는 설정은 `Switch`(체크박스 + `role=switch`, 손잡이 위치로도 구분). 여러 개 중 고르기는 체크박스, 하나만 고르기는 라디오 |
+| 기본 모양 | 전역 CSS가 select 화살표, 체크(✓ 모양)·라디오(가운데 점), 숫자(스피너 없이 ↑↓ 키·고정폭 숫자), 날짜(흐린 달력 단추, 다크에서 달력 창도 어둡게), 검색(돋보기·지우기)을 의미 토큰으로 그린다. 새 화면은 따로 꾸미지 않아도 된다 |
+| 크기 | 입력 높이는 `--control-h`(학사형 40 · 분석형 34). 터치 기기(`pointer: coarse`)는 44px, 체크·스위치 줄도 44px |
+| 초점 | 입력은 주 색 테두리 + 연한 고리, 체크·라디오·스위치는 2px 바깥선 |
 
 ## 도구 (ADR 0005)
 
