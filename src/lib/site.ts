@@ -9,7 +9,7 @@ import { checkPdf, sniffMime } from './pdf-check';
  * 판·공개 기록·그림은 고치지 않고 더하기만 한다(DB 트리거가 막음).
  */
 import {
-  LANGS, SECTION_TEMPLATES, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
+  LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type SectionVariant, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
   type GalleryItem, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings,
 } from './site-shared';
 export * from './site-shared';
@@ -62,11 +62,14 @@ function sectionBlock(x: Record<string, unknown>, at: string): Block {
       href: y.href ? href(y.href, f) : undefined,
     };
   });
+  const variant = x.variant == null || x.variant === '' ? undefined : (x.variant as SectionVariant);
+  if (variant !== undefined && !SECTION_VARIANTS.includes(variant)) throw new ValidationError(`${at}: 구역 배치 이름이 올바르지 않습니다.`);
   return {
-    type: 'section', template,
+    type: 'section', template, variant,
     eyebrow: opt(text(x.eyebrow, `${at} 머리말`, 120), noText), title: opt(text(x.title, `${at} 제목`, 200), noText),
     body: opt(text(x.body, at), noText), asset: x.asset ? asset(x.asset, at) : undefined,
-    alt: opt(text(x.alt, `${at} 대체 글`, 300), noText), items: items.length ? items : undefined, button: button(x.button, at),
+    alt: opt(text(x.alt, `${at} 대체 글`, 300), noText), caption: opt(text(x.caption, `${at} 사진 설명`, 300), noText),
+    items: items.length ? items : undefined, button: button(x.button, at),
   };
 }
 
@@ -119,7 +122,7 @@ function blockOf(x: Record<string, unknown>, at: string): Block {
     case 'news_list': {
       const count = Number(x.count ?? 3);
       if (!Number.isInteger(count) || count < 1 || count > 10) throw new ValidationError(`${at}: 소식 개수는 1~10개입니다.`);
-      return { type: 'news_list', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, at, 1000), noText), count, style: x.style === 'list' ? 'list' : 'cards' };
+      return { type: 'news_list', eyebrow: opt(text(x.eyebrow, `${at} 머리말`, 120), noText), title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, at, 1000), noText), count, style: x.style === 'list' ? 'list' : 'cards' };
     }
     case 'video': {
       const url = text(x.url, `${at} 주소`, 500);
@@ -151,11 +154,15 @@ export function validateContent(raw: unknown): Content {
     return x.hidden === true ? { ...out, hidden: true } : out;
   });
   const headRaw = (r.head ?? null) as Record<string, unknown> | null;
-  const head = headRaw ? { eyebrow: opt(text(headRaw.eyebrow, '머리말', 120), noText), layout: headRaw.layout === 'opening' ? 'opening' as const : headRaw.layout === 'editorial' ? 'editorial' as const : undefined } : undefined;
+  const head = headRaw ? {
+    eyebrow: opt(text(headRaw.eyebrow, '머리말', 120), noText),
+    layout: headRaw.layout === 'opening' ? 'opening' as const : headRaw.layout === 'editorial' ? 'editorial' as const : undefined,
+    link: button(headRaw.link, '쪽 머리 링크'), note: opt(text(headRaw.note, '표지 사진 날짜', 120), noText),
+  } : undefined;
   return {
     title, summary: text(r.summary, '요약', 1000),
     cover: r.cover ? asset(r.cover, '표지') : undefined, blocks,
-    site: siteProfile(r.site), head: head && (head.eyebrow || head.layout) ? head : undefined,
+    site: siteProfile(r.site), head: head && (head.eyebrow || head.layout || head.link || head.note) ? head : undefined,
   };
 }
 

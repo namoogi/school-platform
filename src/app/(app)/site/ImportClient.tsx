@@ -36,6 +36,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
   const [step, setStep] = useState<{ label: string; n: number; of: number } | null>(null);
   const [done, setDone] = useState<Done[] | null>(null);
   const [published, setPublished] = useState(false);
+  const [keptStories, setKeptStories] = useState<string[]>([]);
 
   // 묶음을 풀어 계획만 세운다. 읽지 못하면 FileDrop이 오류 문장을 칸 아래에 보여 준다
   async function pick([f]: File[]) {
@@ -60,6 +61,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
     if (!plan || !files) return;
     setErr(null);
     const results: Done[] = [];
+    const kept: string[] = [];
     try {
       const ids: Record<string, string> = {};
       for (const [i, p] of plan.files.entries()) {
@@ -77,6 +79,8 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
         setStep({ label: '시안 만드는 중', n: i + 1, of: plan.entries.length });
         const content = fillAssets(e.content, ids);
         const has = existing.find((x) => x.kind === e.kind && x.key === e.key);
+        // 39차: 이미 있는 동화는 다시 가져와도 건드리지 않는다 — 만든 뒤 고친 성품 이름·외부 작업(캐릭터·PDF) 판을 덮지 않게
+        if (has && e.kind === 'story') { kept.push(e.key); continue; }
         if (has) {
           await send(`/api/site/entries/${has.id}/versions`, 'POST', { content, note });
           results.push({ kind: e.kind, key: e.key, id: has.id, created: false });
@@ -87,7 +91,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
       }
       setStep({ label: '설정 맞추는 중', n: 1, of: 1 });
       await send('/api/site/settings', 'POST', { ...plan.settings, public_slug: settings.public_slug, is_open: settings.is_open });
-      setDone(results); router.refresh();
+      setKeptStories(kept); setDone(results); router.refresh();
     } catch (e) { setErr((e as Error).message); setDone(results.length ? results : null); }
     finally { setStep(null); }
   }
@@ -130,6 +134,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
       {done && (
         <div className="banner" data-tone="success" role="status" data-testid="import-done">
           <p>시안 {done.length}개를 만들었습니다(새로 {done.filter((d) => d.created).length} · 새 판 {done.filter((d) => !d.created).length}). 왼쪽 쪽·소식·동화 목록에서 하나씩 열어 시안 미리보기로 확인하세요.</p>
+          {keptStories.length > 0 && <p data-testid="import-kept">이미 있는 동화({keptStories.join(', ')})는 그대로 두었습니다. 동화는 성품 동화 함에서 고치세요.</p>}
           {!published
             ? <div className="form-actions"><button type="button" className="btn btn-secondary" onClick={publishAll} disabled={!!step} data-testid="import-publish">확인했습니다 — 가져온 시안 모두 공개</button></div>
             : <p data-testid="import-published">모두 공개했습니다. 방문자에게 보이려면 위 설정에서 ‘홈페이지 열기’를 켜고 저장하세요.</p>}
