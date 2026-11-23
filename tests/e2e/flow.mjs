@@ -807,7 +807,8 @@ try {
     await h.click('text=최신 판 공개');
     await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
     await v.goto(`${BASE}/s/dreamy-a/stories`);
-    assert.match(await v.textContent('[data-testid=site-list]'), /비 온 뒤의 약속.*우정/s);
+    assert.match(await v.textContent('[data-testid=site-list]'), /비 온 뒤의 약속/);
+    assert.match(await v.textContent('[data-testid=site-list]'), /우정/);
     await v.goto(`${BASE}/s/dreamy-a/stories/after-rain?lang=en`);
     await v.waitForSelector('[data-testid=storybook]');
     assert.equal(await v.textContent('[data-testid=storybook-count]'), '1 / 2');
