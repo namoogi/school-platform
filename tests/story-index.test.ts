@@ -7,12 +7,12 @@ describe('성품별 동화 책장', () => {
   it('룽아룬숙사 목록의 대표 그림은 동화 공개 여부와 무관하며 다른 학교에 섞이지 않는다', () => {
     const asset = (id: string) => `/school-assets/${id}`;
     const portraits = storyPortraitUrls('rungarunsuksa', [], asset);
-    expect(Object.keys(portraits)).toHaveLength(8);
+    expect(Object.keys(portraits)).toHaveLength(11);
     expect(portraits['사슴']).toBe('/story-characters/rungarunsuksa/deer.webp');
     expect(portraits['고슴도치']).toBe('/story-characters/rungarunsuksa/hedgehog.webp');
-    expect(portraits['수달']).toBeUndefined();
-    expect(portraits['독수리']).toBeUndefined();
-    expect(portraits['부엉이']).toBeUndefined();
+    expect(portraits['수달']).toBe('/story-characters/rungarunsuksa/otter.webp');
+    expect(portraits['독수리']).toBe('/story-characters/rungarunsuksa/eagle.webp');
+    expect(portraits['부엉이']).toBe('/story-characters/rungarunsuksa/owl.webp');
     expect(storyPortraitUrls('another-school', [], asset)).toEqual({});
     expect(storyPortraitUrls('another-school', [{ title: {}, blocks: [
       { type: 'gallery', download: 'png', assets: ['their-deer'], items: [{ asset: 'their-deer', alt: { ko: '사슴' } }] },
