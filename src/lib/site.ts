@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { asPublic, type Db } from './db';
 import { isUuid, NotFoundError, ValidationError } from './services';
+import { checkPdf, sniffMime } from './pdf-check';
 
 /**
  * 27차: 학교 홈페이지 · 성품 동화 (ADR 0008)
@@ -137,6 +138,9 @@ export function validateContent(raw: unknown): Content {
         }
         return { type: 'video', url };
       }
+      case 'download': return {
+        type: 'download', asset: asset(x.asset, at), label: opt(text(x.label, `${at} 이름`, 120), noText), note: opt(text(x.note, `${at} 설명`, 300), noText),
+      };
       case 'story_page': return { type: 'story_page', asset: x.asset ? asset(x.asset, at) : undefined, text: text(x.text, at, 2000) };
       default: throw new ValidationError(`${at}: 알 수 없는 블록입니다.`);
     }
@@ -148,6 +152,30 @@ export function validateContent(raw: unknown): Content {
     cover: r.cover ? asset(r.cover, '표지') : undefined, blocks,
     site: siteProfile(r.site), head: head && (head.eyebrow || head.layout) ? head : undefined,
   };
+}
+
+/**
+ * 34차: 내려받기 블록의 파일 이름·크기를 그 학교 자산에서 채운다. PDF가 아니거나 다른 학교 파일이면 거부.
+ * assets 는 이 학교 자산 목록(사람 경로: RLS, 토큰 경로: agent.assets)
+ */
+export function fillDownloads(content: Content, assets: { id: string; name: string; mime: string; size_bytes: number }[]): Content {
+  const by = new Map(assets.map((a) => [a.id, a]));
+  return {
+    ...content,
+    blocks: content.blocks.map((b, i) => {
+      if (b.type !== 'download') return b;
+      const a = by.get(b.asset);
+      if (!a || a.mime !== 'application/pdf') throw new ValidationError(`${i + 1}번째 블록: 내려받기에는 이 학교에 올린 PDF를 골라 주세요.`);
+      return { ...b, file_name: a.name, size_bytes: a.size_bytes };
+    }),
+  };
+}
+async function withDownloads(db: Db, schoolId: string, content: Content) {
+  const ids = content.blocks.flatMap((b) => (b.type === 'download' ? [b.asset] : []));
+  if (!ids.length) return content;
+  const { rows } = await db.query<{ id: string; name: string; mime: string; size_bytes: number }>(
+    'select id, name, mime, size_bytes from public.site_assets where school_id = $1 and id = any($2::uuid[])', [schoolId, ids]);
+  return fillDownloads(content, rows);
 }
 
 function validKey(v: unknown) {
@@ -230,7 +258,7 @@ export async function getEntry(db: Db, schoolId: string, id: string) {
 export async function createEntry(db: Db, schoolId: string, input: Record<string, unknown>) {
   const kind = kindOf(input.kind);
   const key = validKey(input.key);
-  const content = validateContent(input.content ?? { title: input.title, blocks: [] });
+  const content = await withDownloads(db, schoolId, validateContent(input.content ?? { title: input.title, blocks: [] }));
   const visibility = input.visibility === 'unlisted' ? 'unlisted' : 'public';
   const meta = kind === 'story'
     ? { virtue: String(input.virtue ?? '').slice(0, 60), character: String(input.character ?? '').slice(0, 120), ...(input.text_in_image === true ? { text_in_image: 'true' } : {}) }
@@ -249,7 +277,7 @@ export async function createEntry(db: Db, schoolId: string, input: Record<string
 
 export async function saveVersion(db: Db, schoolId: string, entryId: string, input: Record<string, unknown>) {
   const { entry } = await getEntry(db, schoolId, entryId);
-  const content = validateContent(input.content);
+  const content = await withDownloads(db, schoolId, validateContent(input.content));
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 300) : null;
   try {
     const { rows: [v] } = await db.query<{ id: string; version: number }>(
@@ -293,17 +321,28 @@ export async function publish(db: Db, schoolId: string, entryId: string, version
 }
 
 // ── 그림 ─────────────────────────────────────────────────
-const MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'];
+/**
+ * 올릴 파일 검사 (사람·작업 토큰 공용). 형식은 파일 앞부분으로 정한다(확장자·선언 형식 위조 방지).
+ * 그림끼리 선언이 달라도(.jpg 인 PNG) 실제 형식으로 저장하고, PDF와 그림을 바꿔 선언하면 거부한다. PDF는 내용 검사를 거친다.
+ */
+export function checkUpload(file: { type: string; bytes: Buffer }, allowed = MIMES): string {
+  const real = sniffMime(file.bytes);
+  if (!real || !allowed.includes(real) || !allowed.includes(file.type)) throw new ValidationError('PNG·JPG·WEBP·GIF 그림이나 PDF만 올릴 수 있습니다.');
+  if ((real === 'application/pdf') !== (file.type === 'application/pdf')) throw new ValidationError('파일 내용이 형식과 맞지 않습니다.');
+  if (real === 'application/pdf') checkPdf(file.bytes);
+  else if (!file.bytes.length || file.bytes.length > 5 * 1024 * 1024) throw new ValidationError('그림은 5MB 이하여야 합니다.');
+  return real;
+}
 export async function uploadAsset(db: Db, schoolId: string, file: { name: string; type: string; bytes: Buffer }) {
-  if (!MIMES.includes(file.type)) throw new ValidationError('PNG·JPG·WEBP·GIF 그림만 올릴 수 있습니다.');
-  if (!file.bytes.length || file.bytes.length > 5 * 1024 * 1024) throw new ValidationError('그림은 5MB 이하여야 합니다.');
+  const mime = checkUpload(file);
   const sha = createHash('sha256').update(file.bytes).digest('hex');
   const { rows: [same] } = await db.query<{ id: string }>('select id from public.site_assets where school_id = $1 and sha256 = $2 limit 1', [schoolId, sha]);
   if (same) return { id: same.id, reused: true };
   try {
     const { rows: [a] } = await db.query<{ id: string }>(
       `insert into public.site_assets(school_id, name, mime, size_bytes, sha256, bytes) values ($1,$2,$3,$4,$5,$6) returning id`,
-      [schoolId, file.name.slice(0, 200) || 'image', file.type, file.bytes.length, sha, file.bytes]);
+      [schoolId, file.name.slice(0, 200) || 'image', mime, file.bytes.length, sha, file.bytes]);
     return { id: a.id, reused: false };
   } catch (e) { dbError(e); }
 }

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowDown, ArrowUp, Eye, ImagePlus, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, Plus, Trash2 } from 'lucide-react';
 import { BLOCK_LABEL, KIND_LABEL, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
 
 async function send(url: string, method: string, body?: unknown) {
@@ -98,12 +98,13 @@ type Detail = {
   publications: { id: number; version_id: string | null; published_at: string }[];
   liveVersionId: string | null;
 };
-type Asset = { id: string; name: string };
+type Asset = { id: string; name: string; mime?: string };
 const NEW_BLOCK: Record<Block['type'], () => Block> = {
   heading: () => ({ type: 'heading', text: {} }), text: () => ({ type: 'text', text: {} }), notice: () => ({ type: 'notice', text: {} }),
   image: () => ({ type: 'image', asset: '', alt: {} }), gallery: () => ({ type: 'gallery', assets: [] }),
   video: () => ({ type: 'video', url: {} }), story_page: () => ({ type: 'story_page', text: {} }),
   section: () => ({ type: 'section', template: 'text', title: {}, body: {} }), news_list: () => ({ type: 'news_list', count: 3, style: 'cards' }),
+  download: () => ({ type: 'download', asset: '', label: {} }),
 };
 type SectionBlock = Extract<Block, { type: 'section' }>;
 const HAS_PHOTO: SectionTemplate[] = ['media-left', 'media-right', 'banner'];
@@ -135,7 +136,7 @@ function LangFields({ value, onChange, langs, label, multiline }: { value: LText
   );
 }
 
-function AssetPick({ value, onChange, assets, onUploaded, label }: { value?: string; onChange: (id: string) => void; assets: Asset[]; onUploaded: (a: Asset) => void; label: string }) {
+function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false }: { value?: string; onChange: (id: string) => void; assets: Asset[]; onUploaded: (a: Asset) => void; label: string; pdf?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   async function upload(file: File) {
@@ -145,21 +146,23 @@ function AssetPick({ value, onChange, assets, onUploaded, label }: { value?: str
     const data = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) return setErr(data.error ?? '올리지 못했습니다.');
-    onUploaded({ id: data.id, name: file.name }); onChange(data.id);
+    onUploaded({ id: data.id, name: file.name, mime: file.type }); onChange(data.id);
   }
+  // 34차: PDF 칸에는 PDF만, 그림 칸에는 그림만 보인다
+  const choices = assets.filter((a) => (a.mime === 'application/pdf') === pdf);
   return (
     <div className="asset-pick">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {value ? <img src={`/site/assets/${value}`} alt="" /> : <span className="asset-empty" aria-hidden="true"><ImagePlus size={20} /></span>}
+      {value && !pdf ? <img src={`/site/assets/${value}`} alt="" /> : <span className="asset-empty" aria-hidden="true">{pdf ? <FileDown size={20} /> : <ImagePlus size={20} />}</span>}
       <div>
         <label>{label}
           <select value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
             <option value="">고르지 않음</option>
-            {assets.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            {choices.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </label>
-        <label className="fine">새 그림 올리기 (PNG·JPG·WEBP·GIF, 5MB 이하)
-          <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
+        <label className="fine">{pdf ? '새 PDF 올리기 (4MB 이하, 웹용으로 줄인 파일)' : '새 그림 올리기 (PNG·JPG·WEBP·GIF, 5MB 이하)'}
+          <input type="file" accept={pdf ? 'application/pdf' : 'image/png,image/jpeg,image/webp,image/gif'} disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
         </label>
         {err && <span className="ui-error" role="alert">{err}</span>}
       </div>
@@ -263,6 +266,11 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
               </div>
             </>}
             {b.type === 'video' && <LangFields label="영상 주소 (YouTube·Vimeo·Google Drive)" value={b.url} langs={langs} onChange={(url) => setBlock(i, { ...b, url })} />}
+            {b.type === 'download' && <>
+              <AssetPick pdf label="PDF 파일" value={b.asset} assets={assets} onUploaded={uploaded} onChange={(asset) => setBlock(i, { ...b, asset })} />
+              <LangFields label="단추 이름 (비우면 'PDF 내려받기')" value={b.label} langs={langs} onChange={(label) => setBlock(i, { ...b, label })} />
+              <LangFields label="설명" value={b.note} langs={langs} onChange={(note) => setBlock(i, { ...b, note })} />
+            </>}
             {b.type === 'story_page' && <>
               <AssetPick label="쪽 그림" value={b.asset} assets={assets} onUploaded={uploaded} onChange={(asset) => setBlock(i, { ...b, asset: asset || undefined })} />
               <LangFields label="쪽 글" value={b.text} langs={langs} multiline onChange={(text) => setBlock(i, { ...b, text })} />
@@ -271,7 +279,7 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
         ))}
       </ol>
       <div className="block-add" role="group" aria-label="블록 더하기">
-        {(isStory ? (['story_page', 'video', 'text'] as const) : (['heading', 'text', 'section', 'image', 'gallery', 'news_list', 'notice', 'video'] as const)).map((t) => (
+        {(isStory ? (['story_page', 'section', 'download', 'video', 'text'] as const) : (['heading', 'text', 'section', 'image', 'gallery', 'news_list', 'notice', 'video', 'download'] as const)).map((t) => (
           <button key={t} type="button" className="btn btn-secondary btn-sm" onClick={() => add(t)}><Plus size={14} aria-hidden="true" />{BLOCK_LABEL[t]}</button>
         ))}
       </div>

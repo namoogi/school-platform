@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { pick, type Block, type Content, type GalleryItem, type Lang, type LText } from '@/lib/site-shared';
+import { FileDown } from 'lucide-react';
+import { fileSize, pick, type Block, type Content, type GalleryItem, type Lang, type LText } from '@/lib/site-shared';
 import { StoryBook } from './StoryBook';
 import { GalleryGrid } from './GalleryGrid';
 
@@ -10,6 +11,7 @@ const W = {
   prevPhoto: { ko: '이전 사진', en: 'Previous photo', th: 'ภาพก่อนหน้า' }, nextPhoto: { ko: '다음 사진', en: 'Next photo', th: 'ภาพถัดไป' },
   photos: { ko: '장', en: ' photos', th: ' ภาพ' }, watch: { ko: '영상 보기', en: 'Watch the video', th: 'ดูวิดีโอ' },
   allNews: { ko: '소식 모두 보기', en: 'All news', th: 'ข่าวทั้งหมด' }, read: { ko: '읽기', en: 'Read', th: 'อ่าน' },
+  download: { ko: 'PDF 내려받기', en: 'Download PDF', th: 'ดาวน์โหลด PDF' },
 } as const;
 const w = (k: keyof typeof W, lang: Lang) => W[k][lang];
 
@@ -60,6 +62,19 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             return yt
               ? <div key={i} className="site-video"><iframe src={`https://www.youtube-nocookie.com/embed/${yt[1]}`} title={t(content.title)} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" /></div>
               : <p key={i}><a href={url} target="_blank" rel="noopener noreferrer">{w('watch', lang)}</a></p>;
+          }
+          case 'download': {
+            // 34차: PDF 내려받기. 파일 이름·크기는 판에 저장된 값(스냅샷)을 쓴다. 서버는 PDF를 attachment 로만 준다
+            const name = b.file_name ?? 'story.pdf';
+            return (
+              <p key={i} className="site-download" data-testid="download-block">
+                <a href={assetUrl(b.asset)} download={name}>
+                  <FileDown size={20} aria-hidden="true" />
+                  <span><b>{t(b.label) || w('download', lang)}</b><span className="site-download-meta">PDF{b.size_bytes ? ` · ${fileSize(b.size_bytes)}` : ''}</span></span>
+                </a>
+                {t(b.note) && <span className="site-download-note">{t(b.note)}</span>}
+              </p>
+            );
           }
           case 'news_list': {
             const list = news.slice(0, b.count);

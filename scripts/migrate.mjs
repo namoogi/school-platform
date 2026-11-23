@@ -36,6 +36,7 @@ try {
       drop schema if exists _migrations cascade;
       drop schema if exists app cascade;
       drop schema if exists private cascade;
+      drop schema if exists agent cascade;
       drop schema if exists public cascade;
       create schema public;
       grant usage on schema public to public;
