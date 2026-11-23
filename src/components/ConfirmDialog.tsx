@@ -1,7 +1,6 @@
 'use client';
 import { useCallback, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import s from './ConfirmDialog.module.css';
 
 /**
  * 확인 대화상자 (DESIGN-SYSTEM.md: danger 버튼은 확인 대화상자 안에서만).
@@ -19,8 +18,10 @@ export type ConfirmOptions = {
   tone?: 'danger' | 'primary';
 };
 
-export function ConfirmDialog({ open, options, onAnswer }: {
+export function ConfirmDialog({ open, options, onAnswer, returnFocus }: {
   open: boolean; options: ConfirmOptions | null; onAnswer: (ok: boolean) => void;
+  /** 닫은 뒤 포커스를 돌려줄 요소(보통 대화상자를 연 버튼). Dialog.Trigger를 쓰지 않으므로 직접 돌려준다 */
+  returnFocus?: HTMLElement | null;
 }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
   if (!options) return null;
@@ -28,12 +29,13 @@ export function ConfirmDialog({ open, options, onAnswer }: {
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onAnswer(false); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className={s.overlay} />
-        <Dialog.Content className={s.dialog} role="alertdialog" data-testid="confirm-dialog"
-          onOpenAutoFocus={(e) => { e.preventDefault(); cancelRef.current?.focus(); }}>
-          <Dialog.Title className={s.title}>{title}</Dialog.Title>
-          <Dialog.Description className={s.desc}>{description}</Dialog.Description>
-          <div className={s.actions}>
+        <Dialog.Overlay className="confirm-overlay" />
+        <Dialog.Content className="confirm-dialog" role="alertdialog" data-testid="confirm-dialog"
+          onOpenAutoFocus={(e) => { e.preventDefault(); cancelRef.current?.focus(); }}
+          onCloseAutoFocus={(e) => { e.preventDefault(); returnFocus?.focus(); }}>
+          <Dialog.Title className="confirm-title">{title}</Dialog.Title>
+          <Dialog.Description className="confirm-desc">{description}</Dialog.Description>
+          <div className="confirm-actions">
             <button ref={cancelRef} type="button" className="btn btn-secondary" onClick={() => onAnswer(false)}>{cancelLabel}</button>
             <button type="button" className={`btn ${tone === 'danger' ? 'btn-danger' : 'btn-primary'}`} onClick={() => onAnswer(true)}>{confirmLabel}</button>
           </div>
@@ -48,11 +50,17 @@ export function ConfirmDialog({ open, options, onAnswer }: {
  * 반환한 dialog 요소를 컴포넌트 안에 함께 그린다.
  */
 export function useConfirm(): [(o: ConfirmOptions) => Promise<boolean>, React.ReactNode] {
-  const [state, setState] = useState<{ options: ConfirmOptions; resolve: (ok: boolean) => void } | null>(null);
-  const ask = useCallback((options: ConfirmOptions) => new Promise<boolean>((resolve) => setState({ options, resolve })), []);
+  const [state, setState] = useState<{ options: ConfirmOptions; resolve: (ok: boolean) => void; from: HTMLElement | null } | null>(null);
+  const ask = useCallback((options: ConfirmOptions) => new Promise<boolean>((resolve) =>
+    setState({ options, resolve, from: document.activeElement instanceof HTMLElement ? document.activeElement : null })), []);
   const dialog = (
-    <ConfirmDialog open={!!state} options={state?.options ?? null}
-      onAnswer={(ok) => { state?.resolve(ok); setState(null); }} />
+    <ConfirmDialog open={!!state} options={state?.options ?? null} returnFocus={state?.from}
+      onAnswer={(ok) => {
+        const from = state?.from;
+        state?.resolve(ok); setState(null);
+        // 대화상자가 바로 사라지므로(닫힘 효과 없음) 다음 화면 그리기 뒤에 포커스를 돌려준다
+        if (from) requestAnimationFrame(() => { if (from.isConnected) from.focus(); });
+      }} />
   );
   return [ask, dialog];
 }

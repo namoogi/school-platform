@@ -1067,7 +1067,9 @@ try {
     const dlg = b.locator('[role=alertdialog][data-testid=confirm-dialog]');
     await dlg.waitFor();
     assert.match(await dlg.textContent(), /자료를 목록에서 뺄까요\?.*b-calendar-2027\.pdf.*발행한 문서의 근거로 그대로 보관/s);
-    assert.equal(await b.evaluate(() => document.activeElement?.textContent), '취소');
+    const focusedName = () => b.evaluate(() => { const e = document.activeElement; return e === document.body ? '(body)' : (e?.textContent ?? '').slice(0, 40); });
+    await b.waitForFunction(() => document.activeElement?.textContent === '취소', null, { timeout: 3000 }).catch(() => {});
+    assert.equal(await focusedName(), '취소', '처음 포커스');
     await shot(b, '31-confirm-dialog.png');
     // Tab은 대화상자 안에서만 돈다(포커스 가둠)
     await b.keyboard.press('Tab');
@@ -1076,7 +1078,8 @@ try {
     await b.keyboard.press('Escape');
     await dlg.waitFor({ state: 'detached' });
     assert.equal(await sourceItems(b).count(), before);
-    assert.equal(await b.evaluate(() => document.activeElement?.textContent), '목록에서 빼기');
+    await b.waitForFunction(() => document.activeElement?.textContent === '목록에서 빼기', null, { timeout: 3000 }).catch(() => {});
+    assert.equal(await focusedName(), '목록에서 빼기', '닫은 뒤 포커스');
     await item.locator('button:text-is("목록에서 빼기")').click();
     await dlg.locator('button:text-is("목록에서 빼기")').click();
     await b.waitForFunction((n) => document.querySelectorAll('[data-testid=source-list] li').length === n - 1, before);
