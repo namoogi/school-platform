@@ -23,7 +23,9 @@ export function SchoolSwitcher({ current, schools, platform }: { current: S | nu
   }
   return (
     <details className="switcher" ref={ref}>
-      <summary aria-label="학교 전환">
+      <summary>
+        {/* 보이는 학교 이름이 접근 이름에 그대로 들어가도록 aria-label 대신 숨김 글자로 용도를 붙인다 (WCAG 2.5.3) */}
+        <span className="sr-only">학교 전환: </span>
         <span className="switcher-name" data-testid="school-name">{current ? current.name : '전체 관리'}</span>
         {current?.status === 'trial' && <span className="badge" data-tone="info">시범</span>}
         {current?.status === 'suspended' && <span className="badge" data-tone="danger">이용 중지</span>}

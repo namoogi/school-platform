@@ -21,7 +21,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
         description="학교마다 전용 GitHub 저장소, Claude Code 세션, Codex 환경, Vercel·Supabase 프로젝트를 연결하고, 그 학교 작업용 세션을 여는 요청 문구를 만듭니다. 주소와 설명만 저장하고 토큰·키는 저장하지 않습니다." />
       <nav className="tabs" aria-label="학교 선택">
         {schools.map((s) => (
-          <Link key={s.id} href={`/admin/integrations?school=${s.id}`} aria-selected={s.id === current?.id} className={s.id === current?.id ? 'active' : ''}>{s.name}</Link>
+          <Link key={s.id} href={`/admin/integrations?school=${s.id}`} aria-current={s.id === current?.id ? 'page' : undefined} className={s.id === current?.id ? 'active' : ''}>{s.name}</Link>
         ))}
       </nav>
       {!current ? <EmptyState title="학교가 없습니다">학교·라이선스에서 먼저 학교를 만드세요.</EmptyState> : (
