@@ -951,12 +951,14 @@ try {
       { op: 'insert', at: 2, block: { type: 'section', template: 'text', title: { ko: '이야기를 마치며' }, body: { ko: '합성 예시 글' } } }, { op: 'move', from: 1, to: 0 }] });
     assert.equal(ed.status, 200, JSON.stringify(ed.body));
     assert.equal((await call('/api/agent/entries/story/moon-promise/edit', 'POST', { base_version: 1, ops: [{ op: 'hide', index: 0 }] })).status, 409);
-    // 관리자 공개 → 방문자
+    // 목록 카드에서 편집기를 열지 않고 공개 → 방문자
     await h.goto(`${BASE}/site?box=story`);
-    await h.click('.triage-item:has-text("달빛 약속")');
-    await h.waitForSelector('[data-testid=entry-editor]');
-    await h.click('text=최신 판 공개');
-    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    const moonCard = h.locator('.site-entry-card:has(.triage-item-title:text-is("달빛 약속"))');
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    await moonCard.locator('button:text-is("공개하기")').click();
+    await moonCard.locator('.badge:text-is("공개 중")').waitFor();
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    assert.equal(new URL(h.url()).searchParams.has('id'), false);
     const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const v = await ctxV.newPage();
     await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise?lang=ko`);
@@ -965,8 +967,10 @@ try {
     assert.match(await v.textContent('.site-main'), /이야기를 마치며/);
     // 공개 중에는 에이전트가 보관 못 함 → 관리자가 내린 뒤 보관
     assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 409);
-    await h.click('button:text-is("공개 내리기")');
-    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개를 내렸습니다")');
+    await moonCard.locator('button:text-is("공개 해제")').click();
+    await moonCard.locator('.badge:text-is("공개 내림")').waitFor();
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise`)).status(), 404);
     assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 200);
     assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise`)).status(), 404);
     // 관리자: 보관함에서 되살리기
