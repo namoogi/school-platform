@@ -544,6 +544,7 @@ try {
     await h.fill('.block-card textarea >> nth=0', '드리미 예시학교는 합성 예시 학교입니다.');
     await h.click('text=저장하고 공개');
     await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    await h.waitForSelector('[data-testid=entry-editor] p.fine:has-text("공개 중 2판")');
     // 새 판(공개 안 함)
     await h.fill('.block-card textarea >> nth=0', '아직 공개하지 않은 2판 글');
     await h.click('text=새 판으로 저장');

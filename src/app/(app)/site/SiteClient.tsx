@@ -99,6 +99,17 @@ const NEW_BLOCK: Record<Block['type'], () => Block> = {
   image: () => ({ type: 'image', asset: '', alt: {} }), gallery: () => ({ type: 'gallery', assets: [] }),
   video: () => ({ type: 'video', url: {} }), story_page: () => ({ type: 'story_page', text: {} }),
 };
+/** 비교용 정규화: 빈 글·빈 묶음·undefined 를 빼고 비교한다(서버 검사가 빈 칸을 정리하므로) */
+function clean(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(clean);
+  if (v && typeof v === 'object') {
+    const o: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(v)) { const c = clean(x); if (c === undefined || c === '' || (c && typeof c === 'object' && !Array.isArray(c) && !Object.keys(c).length)) continue; o[k] = c; }
+    return o;
+  }
+  return v;
+}
+const norm = (c: Content) => JSON.stringify(clean(c));
 const when = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 
 function LangFields({ value, onChange, langs, label, multiline }: { value: LText | undefined; onChange: (v: LText) => void; langs: Lang[]; label: string; multiline?: boolean }) {
@@ -155,10 +166,16 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  // 새 판이 생기면(저장·공개 후 새로 고침) 입력을 그 판으로 맞춘다. 다시 마운트하지 않아야 결과 안내가 남는다.
+  // 새 판이 오면(저장·공개 뒤 새로 고침) — 내가 방금 저장한 내용이면 입력을 건드리지 않는다(그 사이 고친 글을 지키기 위해).
+  // 다른 사람이 만든 판처럼 내용이 다르면 그 판으로 맞춘다. 다시 마운트하지 않아야 결과 안내가 남는다.
   const [shownId, setShownId] = useState(latest.id);
-  if (shownId !== latest.id) { setShownId(latest.id); setContent(structuredClone(latest.content)); setNote(''); }
-  const dirty = JSON.stringify(content) !== JSON.stringify(latest.content);
+  const [sent, setSent] = useState<string | null>(null);
+  if (shownId !== latest.id) {
+    setShownId(latest.id);
+    if (sent === null || sent !== norm(latest.content)) { setContent(structuredClone(latest.content)); setNote(''); }
+    setSent(null);
+  }
+  const dirty = norm(content) !== norm(latest.content);
   const live = detail.versions.find((v) => v.id === detail.liveVersionId);
   const isStory = detail.entry.kind === 'story';
 
@@ -174,9 +191,9 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
     catch (e) { setMsg({ tone: 'danger', text: (e as Error).message }); }
     finally { setBusy(false); }
   }
-  const save = () => run(() => send(`/api/site/entries/${detail.entry.id}/versions`, 'POST', { content, note }), '새 판으로 저장했습니다.');
+  const save = () => run(() => { setSent(norm(content)); return send(`/api/site/entries/${detail.entry.id}/versions`, 'POST', { content, note }); }, '새 판으로 저장했습니다.');
   const publishLatest = () => run(async () => {
-    if (dirty) await send(`/api/site/entries/${detail.entry.id}/versions`, 'POST', { content, note });
+    if (dirty) { setSent(norm(content)); await send(`/api/site/entries/${detail.entry.id}/versions`, 'POST', { content, note }); }
     await send(`/api/site/entries/${detail.entry.id}/publish`, 'POST', {});
   }, '공개했습니다.');
 
