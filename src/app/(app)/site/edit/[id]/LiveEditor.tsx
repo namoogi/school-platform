@@ -6,7 +6,7 @@ import {
   ArrowDown, ArrowLeft, ArrowUp, Eye, EyeOff, GripVertical, ImagePlus, LayoutTemplate, Plus, Settings2, Trash2, Undo2, X,
 } from 'lucide-react';
 import {
-  KIND_LABEL, LANG_LABEL, SECTION_LABEL, SECTION_TEMPLATES, pick, type Block, type Content, type EntryKind, type Lang, type LText,
+  KIND_LABEL, LANG_LABEL, PHOTO_CONSENT, SECTION_LABEL, SECTION_TEMPLATES, pick, type Block, type Content, type EntryKind, type Lang, type LText,
   type SectionTemplate, type SiteProfile,
 } from '@/lib/site-shared';
 import type { PublicSite } from '@/lib/site';
@@ -635,6 +635,7 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
       <FileDrop
         compact label="새 사진 올리기" multiple maxFiles={10} onFiles={upload} testId="le-upload" inputTestId="le-upload-input"
         accept={['image/png', 'image/jpeg', 'image/webp', 'image/gif']} typeLabel="PNG·JPG·WEBP·GIF" maxSize={5 * 1024 * 1024}
+        hint={<span data-testid="photo-consent">{PHOTO_CONSENT}</span>}
       />
       {assets.length === 0 ? <p className="fine">사진함이 비어 있습니다. 위에서 올려 주세요.</p> : (
         <ul className="le-assets" aria-label="사진함">
