@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { Fragment, type ReactNode } from 'react';
-import { FileDown } from 'lucide-react';
+import { ArrowRight, FileDown, Plus } from 'lucide-react';
 import { fileSize, pick, type Block, type Content, type GalleryItem, type Lang, type LText } from '@/lib/site-shared';
 import type { EditPath } from '@/lib/site-edit';
 import { StoryBook } from './StoryBook';
 import { GalleryGrid } from './GalleryGrid';
+import { RainbowArc, Ribbon } from './Rainbow';
 
 /** 공개 화면 낱말 (블록 안) */
 const W = {
@@ -13,12 +14,15 @@ const W = {
   prevPhoto: { ko: '이전 사진', en: 'Previous photo', th: 'ภาพก่อนหน้า' }, nextPhoto: { ko: '다음 사진', en: 'Next photo', th: 'ภาพถัดไป' },
   photos: { ko: '장', en: ' photos', th: ' ภาพ' }, watch: { ko: '영상 보기', en: 'Watch the video', th: 'ดูวิดีโอ' },
   allNews: { ko: '소식 모두 보기', en: 'All news', th: 'ข่าวทั้งหมด' }, read: { ko: '읽기', en: 'Read', th: 'อ่าน' },
+  more: { ko: '더 보기', en: 'Read more', th: 'อ่านเพิ่มเติม' },
   characters: { ko: '장면별 캐릭터', en: 'Characters by scene', th: 'ตัวละครในแต่ละฉาก' },
   scene: { ko: '장면', en: 'Scene', th: 'ฉาก' },
   png: { ko: 'PNG 내려받기', en: 'Download PNG', th: 'ดาวน์โหลด PNG' },
   download: { ko: 'PDF 내려받기', en: 'Download PDF', th: 'ดาวน์โหลด PDF' },
 } as const;
 const w = (k: keyof typeof W, lang: Lang) => W[k][lang];
+/** 42차: 링크·단추 끝 화살표(옛 사이트 ArrowLink). 새벽빛에서만 보인다 */
+const Arrow = () => <ArrowRight className="link-arrow" size={22} strokeWidth={1.4} aria-hidden="true" />;
 
 export type NewsItem = { key: string; title: LText; summary?: LText | null; cover?: string | null; published_at?: string };
 
@@ -37,21 +41,48 @@ export type EditHooks = {
   showEmpty: (i: number) => boolean;
 };
 
-/** 쪽 머리: 머리말 · 제목 · 소개. dawn 에서는 잡지형 머리(.editorial-heading), 첫 화면은 표지 사진이 붙는 여는 머리. */
-export function PageHead({ content, lang, fallback, asset, meta, ed }: { content: Content; lang: Lang; fallback: Lang; asset: (id: string) => string; meta?: string; ed?: EditHooks }) {
+/**
+ * 쪽 머리: 머리말 · 제목 · 소개. dawn 에서는 잡지형 머리(.editorial-heading), 첫 화면은 표지 사진이 붙는 여는 머리.
+ * 42차(옛 사이트 맞춤): 여는 머리는 무지개 호 · 링크 · 표지 날짜표 · 7색 띠, 안쪽 쪽은 '홈 / 제목' 길잡이(crumb)를 단다.
+ */
+export function PageHead({ content, lang, fallback, asset, meta, ed, crumb, link = (h) => h }: {
+  content: Content; lang: Lang; fallback: Lang; asset: (id: string) => string; meta?: string; ed?: EditHooks;
+  /** 안쪽 쪽 길잡이: 홈 링크 주소와 이름 */ crumb?: { href: string; label: string };
+  /** 사이트 안 경로 → 공개 주소 */ link?: (href: string) => string;
+}) {
   const t = (x: LText | null | undefined) => pick(x, lang, fallback);
   const T = (path: EditPath, x: LText | undefined, label: string, multiline = false) => (ed ? ed.text(path, x, { label, multiline }) : t(x));
   const show = (x: LText | undefined) => Boolean(t(x)) || Boolean(ed?.showEmpty(-1));
   const opening = content.head?.layout === 'opening';
   // eslint-disable-next-line @next/next/no-img-element
   const cover = content.cover ? <img src={asset(content.cover)} alt="" /> : null;
+  const more = content.head?.link && (t(content.head.link.label) || ed) ? content.head.link : null;
+  const moreLabel = more ? T(['head', 'link', 'label'], more.label, '머리 링크 이름') : null;
+  const moreLink = more && (ed
+    ? <span className="site-link" data-href={more.href}>{moreLabel}<Arrow /></span>
+    : <Link className="site-link" href={more.href.startsWith('/') ? link(more.href) : more.href}>{moreLabel}<Arrow /></Link>);
+  const eyebrow = show(content.head?.eyebrow) && <span className="sec-eyebrow">{T(['head', 'eyebrow'], content.head?.eyebrow, '쪽 머리말')}</span>;
+  const h1 = <h1 className="site-h1">{T(['title'], content.title, '쪽 제목')}</h1>;
+  const lead = show(content.summary) && <p className="site-lead">{T(['summary'], content.summary, '쪽 소개', true)}</p>;
+  if (opening) return (
+    <header className="site-head site-opening">
+      <div className="site-masthead">{eyebrow}{h1}</div>
+      <div className="site-side"><RainbowArc />{lead}{moreLink}</div>
+      {(cover || ed) && (
+        <figure className="site-panorama">
+          {ed ? ed.image(['cover'], content.cover, { label: '표지 사진', optional: true }, cover) : cover}
+          {show(content.head?.note) && <figcaption className="photo-date">{T(['head', 'note'], content.head?.note, '표지 사진 날짜')}</figcaption>}
+        </figure>
+      )}
+      <Ribbon />
+    </header>
+  );
   return (
-    <header className={opening ? 'site-head site-opening' : 'site-head'}>
-      {show(content.head?.eyebrow) && <span className="sec-eyebrow">{T(['head', 'eyebrow'], content.head?.eyebrow, '쪽 머리말')}</span>}
-      <h1 className="site-h1">{T(['title'], content.title, '쪽 제목')}</h1>
+    <header className="site-head">
+      {crumb && <nav className="site-crumb" aria-label={crumb.label}><Link href={crumb.href}>{crumb.label}</Link><span aria-hidden="true">/</span><span>{t(content.title)}</span></nav>}
+      {eyebrow}{h1}
       {meta && <p className="site-meta">{meta}</p>}
-      {show(content.summary) && <p className="site-lead">{T(['summary'], content.summary, '쪽 소개', true)}</p>}
-      {opening && (cover || ed) && <figure className="site-panorama">{ed ? ed.image(['cover'], content.cover, { label: '표지 사진', optional: true }, cover) : cover}</figure>}
+      {lead}{moreLink}
     </header>
   );
 }
@@ -68,7 +99,13 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   ed?: EditHooks;
 }) {
   const t = (x: LText | null | undefined) => pick(x, lang, fallback);
-  const paras = (x: LText | null | undefined) => t(x).split(/\n{2,}/).filter(Boolean).map((p, j) => <p key={j}>{p}</p>);
+  // 42차: 줄마다 '· '로 시작하는 문단은 점 목록으로(옛 사이트 교육 단계 핵심)
+  const paras = (x: LText | null | undefined) => t(x).split(/\n{2,}/).filter(Boolean).map((p, j) => {
+    const lines = p.split('\n');
+    return lines.length > 1 && lines.every((l) => l.startsWith('· '))
+      ? <ul key={j} className="site-bullets">{lines.map((l, k) => <li key={k}>{l.slice(2)}</li>)}</ul>
+      : <p key={j}>{p}</p>;
+  });
   const storyPages = content.blocks.filter((b): b is Extract<Block, { type: 'story_page' }> => b.type === 'story_page' && !b.hidden);
   const href = (h: string) => (h.startsWith('/') || h.startsWith('#') ? link(h) : h);
   const ext = (h: string) => !(h.startsWith('/') || h.startsWith('#'));
@@ -135,8 +172,12 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         if (!list.length && !ed) return null; // 볼 것이 없으면 방문자에게 보이지 않는다
         return (
           <section className="site-section lb-feature" data-style={b.style} data-testid="news-list">
-            {show(b.title) && <h2 className="site-h2">{T(at('title'), b.title, '소식 구역 제목')}</h2>}
-            {show(b.body) && <p className="site-lead">{T(at('body'), b.body, '소식 구역 소개')}</p>}
+            <div className="sec-copy">
+              {show(b.eyebrow) && <span className="sec-eyebrow">{T(at('eyebrow'), b.eyebrow, '소식 구역 머리말')}</span>}
+              {show(b.title) && <h2 className="site-h2">{T(at('title'), b.title, '소식 구역 제목')}</h2>}
+              {show(b.body) && <p className="site-lead">{T(at('body'), b.body, '소식 구역 소개')}</p>}
+              <A className="site-link" to="/news">{w('allNews', lang)}<Arrow /></A>
+            </div>
             {!list.length && <p className="le-placeholder">공개한 소식이 생기면 최근 {b.count}개가 여기에 보입니다.</p>}
             {list.length > 0 && (b.style === 'list'
               ? <ul className="lb-board">{list.map((n) => (
@@ -145,45 +186,75 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                   <li key={n.key}><Link href={link(`/news/${n.key}`)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {n.cover && <img src={assetUrl(n.cover)} alt="" loading="lazy" />}
-                    <b>{t(n.title)}</b>{t(n.summary) && <span>{t(n.summary)}</span>}</Link></li>))}</ul>)}
-            <Link className="site-link" href={link('/news')}>{w('allNews', lang)}</Link>
+                    <b>{t(n.title)}</b>{t(n.summary) && <span>{t(n.summary)}</span>}<span className="card-more">{w('read', lang)}<Arrow /></span></Link></li>))}</ul>)}
           </section>
         );
       }
       case 'section': {
+        const v = b.variant;
         const head = <>
           {show(b.eyebrow) && <span className="sec-eyebrow">{T(at('eyebrow'), b.eyebrow, '머리말')}</span>}
           {show(b.title) && b.template !== 'quote' && <h2 className="site-h2">{T(at('title'), b.title, '구역 제목')}</h2>}
         </>;
         const btn = b.button && (t(b.button.label) || ed)
-          ? <A className="site-button" to={b.button.href}>{T(at('button', 'label'), b.button.label, '단추 이름')}</A>
+          ? <A className="site-button" to={b.button.href}>{T(at('button', 'label'), b.button.label, '단추 이름')}<Arrow /></A>
           : null;
         const items = b.items ?? [];
         const body = show(b.body) ? P(at('body'), b.body, b.template === 'quote' ? '문장' : '구역 글') : null;
         if (b.template === 'quote') return (
-          <figure className="sec sec-quote" data-template="quote"><blockquote>{body}</blockquote>{show(b.title) && <figcaption>{T(at('title'), b.title, '말한 사람')}</figcaption>}</figure>
+          <figure className="sec sec-quote" data-template="quote" data-variant={v}><blockquote>{body}</blockquote>{show(b.title) && <figcaption>{T(at('title'), b.title, '말한 사람')}</figcaption>}</figure>
         );
         const hasPhoto = b.template === 'banner' || b.template === 'media-left' || b.template === 'media-right';
-        const figure = hasPhoto && (b.asset || ed) ? <figure className="sec-photo">{photo(at('asset'), b.asset, b.alt, '구역 사진')}</figure> : null;
+        const figure = hasPhoto && (b.asset || ed) ? (
+          <figure className="sec-photo">
+            {photo(at('asset'), b.asset, b.alt, '구역 사진')}
+            {v === 'portrait' && <RainbowArc />}
+            {show(b.caption) && <figcaption>{T(at('caption'), b.caption, '사진 설명')}</figcaption>}
+          </figure>
+        ) : null;
+        // 42차: 구역 모양(variant)별 항목 그리기 — 정보 줄(facts·overview), 접는 질문(faq), 번호 상자(index), 사진 셋(moments), 사진–글 줄(rows)
+        const asFacts = b.template === 'facts' || v === 'overview';
+        const itemList = items.length === 0 ? null
+          : v === 'faq'
+            ? <div className="sec-faq">{items.map((it, k) => (
+                <details key={k} open={ed ? true : undefined}>
+                  <summary>{T(at('items', k, 'title'), it.title, `${k + 1}번 질문`)}<Plus size={20} strokeWidth={1.4} aria-hidden="true" /></summary>
+                  {P(at('items', k, 'body'), it.body, `${k + 1}번 답`)}
+                </details>))}</div>
+            : asFacts
+              ? <dl className="sec-facts">{items.map((it, k) => <div key={k}><dt>{T(at('items', k, 'title'), it.title, `${k + 1}번 항목`)}</dt><dd>{P(at('items', k, 'body'), it.body, `${k + 1}번 내용`)}</dd></div>)}</dl>
+              : b.template === 'steps'
+                ? <ol className="sec-steps">{items.map((it, k) => <li key={k}><span aria-hidden="true">{String(k + 1).padStart(2, '0')}</span><div>{show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}단계 제목`)}</h3>}{P(at('items', k, 'body'), it.body, `${k + 1}단계 글`)}</div></li>)}</ol>
+                : <ul className={b.template === 'photos' ? 'sec-photos' : 'sec-cards'}>{items.map((it, k) => {
+                    const num = String(k + 1).padStart(2, '0');
+                    const pic = (it.asset || (ed && (b.template === 'photos' || b.template === 'cards'))) && v !== 'index' ? photo(at('items', k, 'asset'), it.asset, it.alt, `${k + 1}번 사진`) : null;
+                    const inner = b.template === 'photos'
+                      ? <>
+                          {pic}
+                          {show(it.title) && <span>{T(at('items', k, 'title'), it.title, `${k + 1}번 사진 이름`)}</span>}
+                          {v === 'moments' && <span className="sec-label">{num}{(t(it.body) || ed) && <> · {T(at('items', k, 'body'), it.body, `${k + 1}번 이름표`)}</>}<Arrow /></span>}
+                        </>
+                      : <>
+                          {pic}
+                          {v === 'index' && <span className="sec-index">{num}</span>}
+                          <div className="sec-item-copy">
+                            {show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}번 카드 제목`)}</h3>}
+                            {show(it.body) ? P(at('items', k, 'body'), it.body, `${k + 1}번 카드 글`) : null}
+                            {v === 'rows' && it.href && <span className="site-link">{w('more', lang)}<Arrow /></span>}
+                          </div>
+                          {v === 'index' && <Arrow />}
+                        </>;
+                    return <li key={k}>{it.href ? <A to={it.href}>{inner}</A> : inner}</li>;
+                  })}</ul>;
+        /** 항목 뒤에 링크를 두는 모양: 개요, 문의 사무실(전화 아래 Facebook) */
+        const btnAfter = v === 'overview' || (v === 'half' && items.length > 0);
         return (
-          <section className="sec" data-template={b.template}>
+          <section className="sec" data-template={b.template} data-variant={v}>
             {b.template === 'banner' && figure}
-            <div className="sec-copy">{head}{body}{btn}</div>
+            <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
             {(b.template === 'media-left' || b.template === 'media-right') && figure}
-            {items.length > 0 && (
-              b.template === 'facts'
-                ? <dl className="sec-facts">{items.map((it, k) => <div key={k}><dt>{T(at('items', k, 'title'), it.title, `${k + 1}번 항목`)}</dt><dd>{P(at('items', k, 'body'), it.body, `${k + 1}번 내용`)}</dd></div>)}</dl>
-                : b.template === 'steps'
-                  ? <ol className="sec-steps">{items.map((it, k) => <li key={k}><span aria-hidden="true">{String(k + 1).padStart(2, '0')}</span><div>{show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}단계 제목`)}</h3>}{P(at('items', k, 'body'), it.body, `${k + 1}단계 글`)}</div></li>)}</ol>
-                  : <ul className={b.template === 'photos' ? 'sec-photos' : 'sec-cards'}>{items.map((it, k) => {
-                      const inner = <>
-                        {(it.asset || (ed && (b.template === 'photos' || b.template === 'cards'))) && photo(at('items', k, 'asset'), it.asset, it.alt, `${k + 1}번 사진`)}
-                        {show(it.title) && (b.template === 'photos' ? <span>{T(at('items', k, 'title'), it.title, `${k + 1}번 사진 이름`)}</span> : <h3>{T(at('items', k, 'title'), it.title, `${k + 1}번 카드 제목`)}</h3>)}
-                        {b.template !== 'photos' && (show(it.body) ? P(at('items', k, 'body'), it.body, `${k + 1}번 카드 글`) : null)}
-                      </>;
-                      return <li key={k}>{it.href ? <A to={it.href}>{inner}</A> : inner}</li>;
-                    })}</ul>
-            )}
+            {itemList}
+            {btnAfter && btn}
           </section>
         );
       }

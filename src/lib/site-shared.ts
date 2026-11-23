@@ -17,6 +17,16 @@ export const SECTION_LABEL: Record<SectionTemplate, string> = {
   text: '글 구역', 'media-left': '사진 왼쪽 + 글', 'media-right': '글 + 사진 오른쪽', banner: '넓은 사진', cards: '카드 묶음',
   photos: '사진 줄', facts: '항목–내용', steps: '차례(번호)', quote: '인용', cta: '안내 단추',
 };
+/**
+ * 42차: 새벽빛(dawn) 구역 모양. 옛 룽아룬숙사 사이트의 고정 구역을 그대로 그리는 모양 이름이다(다른 테마는 무시하고 템플릿대로 그림).
+ * 템플릿은 칸(제목·글·사진·항목)을, 모양은 그 칸의 배치를 정한다. 짝이 맞지 않으면 템플릿 기본 모양으로 그린다.
+ */
+export const SECTION_VARIANTS = ['split', 'portrait', 'index', 'moments', 'overview', 'emblem', 'rows', 'questions', 'aside', 'faq', 'prep', 'half'] as const;
+export type SectionVariant = (typeof SECTION_VARIANTS)[number];
+export const VARIANT_LABEL: Record<SectionVariant, string> = {
+  split: '두 단(제목 | 글)', portrait: '대표 사진(무지개 호)', index: '번호 상자', moments: '사진 셋(번호 이름표)', overview: '사진 + 정보 줄',
+  emblem: '작은 로고 + 글', rows: '사진–글 줄', questions: '제목 | 질문 목록', aside: '제목 | 목록', faq: '제목 | 접는 질문', prep: '안내 상자 + 포스터', half: '반 폭',
+};
 export type SectionItem = { title?: LText; body?: LText; asset?: string; alt?: LText; href?: string };
 export type Button = { label: LText; href: string };
 export type GalleryItem = { asset: string; alt?: LText; category?: string; file_name?: string; size_bytes?: number };
@@ -31,8 +41,8 @@ export type Block = (
   | { type: 'gallery'; assets: string[]; caption?: LText; items?: GalleryItem[]; filters?: GalleryFilter[]; download?: 'png'; scene?: number }
   | { type: 'video'; url: LText }
   | { type: 'story_page'; asset?: string; text: LText }
-  | { type: 'section'; template: SectionTemplate; eyebrow?: LText; title?: LText; body?: LText; asset?: string; alt?: LText; items?: SectionItem[]; button?: Button }
-  | { type: 'news_list'; title?: LText; body?: LText; count: number; style: 'cards' | 'list' }
+  | { type: 'section'; template: SectionTemplate; variant?: SectionVariant; eyebrow?: LText; title?: LText; body?: LText; asset?: string; alt?: LText; caption?: LText; items?: SectionItem[]; button?: Button }
+  | { type: 'news_list'; eyebrow?: LText; title?: LText; body?: LText; count: number; style: 'cards' | 'list' }
   /** 34차: 파일(PDF) 내려받기. 파일 이름·크기는 저장할 때 서버가 그 학교 자산에서 채운다(판 스냅샷에 남음) */
   | { type: 'download'; asset: string; label?: LText; note?: LText; file_name?: string; size_bytes?: number }
 ) & { hidden?: boolean };
@@ -41,8 +51,8 @@ export type Block = (
 export type SiteProfile = {
   logo?: string; tagline?: LText; address?: LText; phone?: string[]; facebook?: string; footer?: LText; visit?: Button;
 };
-/** 쪽 머리 꾸밈(dawn): 작은 머리말과 화면 모양 */
-export type PageHead = { eyebrow?: LText; layout?: 'editorial' | 'opening' };
+/** 쪽 머리 꾸밈(dawn): 작은 머리말과 화면 모양. 42차: 여는 머리의 링크(link)와 표지 사진 날짜표(note) */
+export type PageHead = { eyebrow?: LText; layout?: 'editorial' | 'opening'; link?: Button; note?: LText };
 export type Content = { title: LText; summary?: LText; cover?: string; blocks: Block[]; site?: SiteProfile; head?: PageHead };
 export type EntryKind = 'page' | 'news' | 'story';
 export const KIND_LABEL: Record<EntryKind, string> = { page: '쪽', news: '소식', story: '성품 동화' };
