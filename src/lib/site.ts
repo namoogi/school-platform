@@ -433,3 +433,15 @@ export async function publicAsset(slug: string, id: string) {
   return asPublic(async (db) => (await db.query<{ mime: string; bytes: Buffer; sha256: string }>('select * from app.public_asset($1,$2)', [slug, id])).rows[0] ?? null);
 }
 
+
+/** 목록에 공개된 동화의 캐릭터 자료만 읽는다. 기존 공개 함수로만 접근하며, 비공개·unlisted 항목은 포함하지 않는다. */
+export async function publicStoryCharacterContent(slug: string): Promise<Content[]> {
+  if (!SLUG.test(slug)) return [];
+  return asPublic(async (db) => {
+    const { rows } = await db.query<{ content: Content | null }>(`
+      select app.public_entry($1, 'story', entry ->> 'key') -> 'content' as content
+      from jsonb_array_elements(app.public_list($1, 'story')) as entry
+    `, [slug]);
+    return rows.flatMap((row) => row.content ? [row.content] : []);
+  });
+}
