@@ -26,7 +26,7 @@ export const agentAssets = (db: Db, token: string) => one<AgentAsset[]>(db, 'sel
 export const ENTRY_KINDS = ['story', 'page', 'news'] as const;
 export type AgentEntryKind = (typeof ENTRY_KINDS)[number];
 /** 38차(ADR 0014): 만들기·고치기(내용·구조·항목 정보)·보관. 36차의 draft 는 edit 로 바뀌었다 */
-export const AGENT_PERMS = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기', archive: '보관' } as const;
+export const AGENT_PERMS = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기', archive: '보관', publish: '공개' } as const;
 export type AgentPerm = keyof typeof AGENT_PERMS;
 const KEY_RE = /^[a-z0-9][a-z0-9-]{0,59}$/;
 function kindOf(v: string): AgentEntryKind {
@@ -115,6 +115,18 @@ export async function agentEditOps(db: Db, token: string, kind: string, key: str
   });
   return agentSaveEntry(db, token, kind, key, { content: c, note: input.note ?? `구조 바꾸기 ${ops.length}건`, base_version: input.base_version });
 }
+
+/**
+ * 40차(ADR 0016): 공개 · 공개 내림. publish 권한. 사람이 AI에게 공개를 지시했을 때 바로 공개한다.
+ * 만들기·고치기는 저절로 공개되지 않는다(이 함수를 따로 불러야 한다). version 이 비면 최신 판.
+ */
+export async function agentPublish(db: Db, token: string, kind: string, key: string, input: Record<string, unknown>) {
+  const v = input.version == null ? null : Number(input.version);
+  if (v !== null && (!Number.isInteger(v) || v < 1)) throw new ValidationError('공개할 판 번호가 올바르지 않습니다.');
+  return one<{ key: string; version: number; published: true }>(db, 'select agent.publish_entry($1, $2, $3, $4) as r', [token, kindOf(kind), keyOf(key), v]);
+}
+export const agentUnpublish = (db: Db, token: string, kind: string, key: string) =>
+  one<{ key: string; published: false }>(db, 'select agent.unpublish_entry($1, $2, $3) as r', [token, kindOf(kind), keyOf(key)]);
 
 // 34차 동화 경로 (같은 결과)
 export const agentStories = (db: Db, token: string) => agentEntries(db, token, 'story');

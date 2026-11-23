@@ -71,7 +71,7 @@ describe('AI 작업 공간: 범위 일반화', () => {
     await expect(issue(A.userId, A.schoolId, { kinds: ['story'], days: 7 })).rejects.toThrow('라이선스');
     await expect(issue(A.userId, A.schoolId, { kinds: ['news'], keys: ['about'], days: 7 })).rejects.toThrow('항목이 없습니다');
     await expect(issue(A.userId, A.schoolId, { kinds: ['settings'], days: 7 })).rejects.toThrow('종류');
-    await expect(issue(A.userId, A.schoolId, { kinds: ['page'], perms: ['publish'], days: 7 })).rejects.toThrow('권한');
+    await expect(issue(A.userId, A.schoolId, { kinds: ['page'], perms: ['settings'], days: 7 })).rejects.toThrow('권한');
   });
 
   it('다른 학교의 같은 주소는 양방향으로 막힌다', async () => {

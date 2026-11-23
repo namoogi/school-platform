@@ -4,6 +4,7 @@
 // 사용:
 //   export SCHOOL_AGENT_TOKEN=agt_...   # 학교 관리자가 /site → 설정 → '외부 작업 토큰'에서 발급 (원문은 출력하지 않음)
 //   node scripts/agent-story-upload.mjs <폴더> [--dry-run] [--create] [--base https://onschools.vercel.app]
+//   --publish: 저장한 새 판을 바로 공개한다(토큰에 '공개' 권한 필요, 40차). 붙이지 않으면 시안으로만 남는다
 //   --create: 동화가 아직 없으면 manifest 의 title·virtue·character 로 새로 만든다(토큰에 '만들기' 권한 필요, 38차)
 //
 // 폴더 안: manifest.json + 그 안에 적은 파일들 (캐릭터 PNG, PDF)
@@ -18,6 +19,7 @@ const args = process.argv.slice(2);
 const dir = args.find((a) => !a.startsWith('--'));
 const dry = args.includes('--dry-run');
 const create = args.includes('--create');
+const publishNow = args.includes('--publish'); // 40차: 저장한 판을 바로 공개(토큰에 '공개' 권한 필요)
 const baseArg = args.indexOf('--base');
 const BASE = (baseArg >= 0 ? args[baseArg + 1] : process.env.ONSCHOOLS_URL) || 'https://onschools.vercel.app';
 const TOKEN = process.env.SCHOOL_AGENT_TOKEN ?? '';
@@ -125,4 +127,9 @@ if (dry) {
 }
 // base_version: 읽은 판. 그 사이 사람이나 다른 에이전트가 새 판을 만들었으면 서버가 409로 거부한다(덮지 않음) → 다시 실행
 const v = await api('POST', `/api/agent/stories/${m.story_key}/versions`, { content, note, base_version: story.latest.version });
-console.log(`\n새 판 저장: ${v.version}판 (시안, 공개 안 됨). 학교 관리자가 ${BASE}/site?box=story 에서 미리보기 → 공개하세요.`);
+if (publishNow) {
+  const p = await api('POST', `/api/agent/entries/story/${m.story_key}/publish`, { version: v.version });
+  console.log(`\n새 판 저장 후 공개: ${p.version}판이 방문자에게 보입니다. ${BASE}/site?box=story 에서 공개 내림을 할 수 있습니다.`);
+} else {
+  console.log(`\n새 판 저장: ${v.version}판 (시안, 공개 안 됨). 공개하려면 --publish 를 붙여 다시 실행하거나 학교 관리자가 ${BASE}/site?box=story 에서 공개하세요.`);
+}
