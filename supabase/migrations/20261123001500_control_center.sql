@@ -356,7 +356,7 @@ begin
     execute format('grant execute on function %s to control_writer', f);
   end loop;
 end $$;
-grant execute on function control.enter(text) to control_writer;
+-- control.enter 는 소유자(control_writer)가 이미 실행할 수 있다. 소유자를 바꾼 뒤 비슈퍼유저가 권한을 주면 거부되므로 따로 주지 않는다.
 revoke create on schema control from control_writer;
 
 -- ── 시작 내용: 2026-11-23 결정 요청함(docs/automation/DECISIONS.md)과 세션 목록 ──
