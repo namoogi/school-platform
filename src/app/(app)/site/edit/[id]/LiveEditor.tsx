@@ -16,6 +16,8 @@ import {
 } from '@/lib/site-edit';
 import { PageHead, SiteBlocks, type EditHooks, type NewsItem } from '@/components/site/SiteRenderer';
 import { SiteFrame } from '@/components/site/SiteFrame';
+import { FileDrop, type FileDropContext } from '@/components/FileDrop';
+import { uploadWithProgress } from '@/lib/file-check';
 
 type Version = { id: string; version: number; content: Content; note: string | null; created_at: string };
 type Detail = {
@@ -591,8 +593,6 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const opener = useRef<Element | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     opener.current = document.activeElement;
     const d = ref.current;
@@ -602,15 +602,19 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
   const current = picker.mode === 'set' ? (getAt(content, picker.path) as string | undefined) : undefined;
   const label = picker.mode === 'set' ? picker.label : picker.mode === 'insert' ? `${picker.item.label}에 넣을 사진` : '사진 묶음에 더할 사진';
   const alt = picker.mode === 'set' && picker.altPath && current ? (getAt(content, picker.altPath) as LText | undefined) : undefined;
-  async function upload(file: File) {
-    setBusy(true); setErr(null);
-    const form = new FormData(); form.append('file', file);
-    const res = await fetch('/api/site/assets', { method: 'POST', body: form });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) { setErr(data.error ?? '올리지 못했습니다.'); return; }
-    onUploaded({ id: data.id, name: file.name });
-    onPick(data.id);
+  async function upload(files: File[], { signal, progress }: FileDropContext) {
+    let last = '';
+    for (const [i, file] of files.entries()) {
+      const form = new FormData(); form.append('file', file);
+      const res = await uploadWithProgress('/api/site/assets', form, { signal, onProgress: (r) => progress((i + r) / files.length) });
+      const data = res.body as { id?: string; error?: string };
+      if (!res.ok || !data.id) throw new Error(`${file.name}: ${data.error ?? '올리지 못했습니다.'}`);
+      onUploaded({ id: data.id, name: file.name });
+      last = data.id;
+    }
+    // 한 장이면 바로 고르고, 여러 장이면 사진함에 넣기만 한다(고르기는 아래 목록에서)
+    if (files.length === 1) onPick(last);
+    return files.length === 1 ? `‘${files[0].name}’을(를) 올렸습니다.` : `${files.length}장을 사진함에 올렸습니다.`;
   }
   return (
     <dialog ref={ref} className="le-picker" aria-labelledby="le-picker-h" onClose={onClose} data-testid="le-picker">
@@ -618,10 +622,10 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
         <h2 id="le-picker-h">{label}</h2>
         <button type="button" className="btn btn-ghost btn-sm" onClick={() => ref.current?.close()} aria-label="사진함 닫기"><X size={18} aria-hidden="true" /></button>
       </div>
-      <label className="le-upload">새 사진 올리기 <span className="fine">PNG·JPG·WEBP·GIF, 5MB 이하</span>
-        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={busy} onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
-      </label>
-      {err && <p className="ui-error" role="alert">{err}</p>}
+      <FileDrop
+        compact label="새 사진 올리기" multiple maxFiles={10} onFiles={upload} testId="le-upload" inputTestId="le-upload-input"
+        accept={['image/png', 'image/jpeg', 'image/webp', 'image/gif']} typeLabel="PNG·JPG·WEBP·GIF" maxSize={5 * 1024 * 1024}
+      />
       {assets.length === 0 ? <p className="fine">사진함이 비어 있습니다. 위에서 올려 주세요.</p> : (
         <ul className="le-assets" aria-label="사진함">
           {assets.map((a) => (

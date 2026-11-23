@@ -80,7 +80,7 @@ export function PriceForm({ modules }: { modules: Module[] }) {
       {modules.map((m) => (
         <div key={m.key} className="row price-row">
           <span className="price-name">{m.name}{!m.available && <span className="tag">준비 중</span>}</span>
-          <input type="number" min={0} step={100} value={prices[m.key]} aria-label={`${m.name} 가격`} onChange={(e) => setPrices({ ...prices, [m.key]: Number(e.target.value) })} />
+          <span className="input-affix"><input type="number" min={0} step={100} inputMode="numeric" value={prices[m.key]} aria-label={`${m.name} 가격 (원)`} onChange={(e) => setPrices({ ...prices, [m.key]: Number(e.target.value) })} /><span aria-hidden="true">원</span></span>
           <button type="button" className="secondary small" onClick={() => save(m.key)}>저장</button>
         </div>
       ))}
