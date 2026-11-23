@@ -434,14 +434,14 @@ export async function publicAsset(slug: string, id: string) {
 }
 
 
-/** 목록에 공개된 동화의 캐릭터 자료만 읽는다. 기존 공개 함수로만 접근하며, 비공개·unlisted 항목은 포함하지 않는다. */
-export async function publicStoryCharacterContent(slug: string): Promise<Content[]> {
+/** 목록에 공개된 동화의 판 내용을 읽는다. 기존 공개 함수로만 접근하며, 비공개·unlisted 항목은 포함하지 않는다. */
+export async function publicStoryContents(slug: string): Promise<{ key: string; content: Content }[]> {
   if (!SLUG.test(slug)) return [];
   return asPublic(async (db) => {
-    const { rows } = await db.query<{ content: Content | null }>(`
-      select app.public_entry($1, 'story', entry ->> 'key') -> 'content' as content
+    const { rows } = await db.query<{ key: string; content: Content | null }>(`
+      select entry ->> 'key' as key, app.public_entry($1, 'story', entry ->> 'key') -> 'content' as content
       from jsonb_array_elements(app.public_list($1, 'story')) as entry
     `, [slug]);
-    return rows.flatMap((row) => row.content ? [row.content] : []);
+    return rows.flatMap((row) => row.content ? [{ key: row.key, content: row.content }] : []);
   });
 }

@@ -3,6 +3,7 @@ import { Fragment, type ReactNode } from 'react';
 import { ArrowRight, FileDown, Plus } from 'lucide-react';
 import { fileSize, pick, type Block, type Content, type GalleryItem, type Lang, type LText } from '@/lib/site-shared';
 import type { EditPath } from '@/lib/site-edit';
+import { hasMultilingualStoryText } from '@/lib/story-language';
 import { StoryBook } from './StoryBook';
 import { GalleryGrid } from './GalleryGrid';
 import { RainbowArc, Ribbon } from './Rainbow';
@@ -107,6 +108,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
       : <p key={j}>{p}</p>;
   });
   const storyPages = content.blocks.filter((b): b is Extract<Block, { type: 'story_page' }> => b.type === 'story_page' && !b.hidden);
+  const translatedStoryText = hasMultilingualStoryText(content);
   const href = (h: string) => (h.startsWith('/') || h.startsWith('#') ? link(h) : h);
   const ext = (h: string) => !(h.startsWith('/') || h.startsWith('#'));
   /** 편집 중에는 링크 대신 같은 모양의 span: 고치는 칸·사진 단추가 링크 안에 들어가지 않게(중첩 대화형 요소 금지) */
@@ -275,8 +277,13 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   if (!ed && storyPages.length) orderedBlocks.sort((a, b) => Number(a.b.type === 'gallery' && a.b.download === 'png') - Number(b.b.type === 'gallery' && b.b.download === 'png'));
   return (
     <div className="site-blocks">
+      {!ed && textInImage && translatedStoryText && <p className="site-lead">{{
+        ko: '그림 안의 글자는 원본입니다. 선택한 언어의 본문은 그림 아래에서 읽을 수 있어요.',
+        en: 'Text inside the illustrations is from the original edition. Read the selected language below each picture.',
+        th: 'ข้อความในภาพเป็นภาษาของต้นฉบับ อ่านเนื้อหาในภาษาที่เลือกได้ใต้ภาพแต่ละหน้า',
+      }[lang]}</p>}
       {!ed && storyPages.length > 0 && (
-        <StoryBook pages={storyPages.map((p) => ({ image: p.asset ? assetUrl(p.asset) : null, text: t(p.text) }))} textInImage={textInImage}
+        <StoryBook pages={storyPages.map((p) => ({ image: p.asset ? assetUrl(p.asset) : null, text: t(p.text) }))} textInImage={textInImage && !translatedStoryText}
           labels={{ prev: w('prev', lang), next: w('next', lang), page: w('page', lang) }} />
       )}
       {orderedBlocks.map(({ b, i }) => {
