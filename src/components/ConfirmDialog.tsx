@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
+import s from './ConfirmDialog.module.css';
 
 /**
  * 확인 대화상자 (DESIGN-SYSTEM.md: danger 버튼은 확인 대화상자 안에서만).
@@ -29,13 +30,13 @@ export function ConfirmDialog({ open, options, onAnswer, returnFocus }: {
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onAnswer(false); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="confirm-overlay" />
-        <Dialog.Content className="confirm-dialog" role="alertdialog" data-testid="confirm-dialog"
+        <Dialog.Overlay className={s.overlay} />
+        <Dialog.Content className={s.dialog} role="alertdialog" data-testid="confirm-dialog"
           onOpenAutoFocus={(e) => { e.preventDefault(); cancelRef.current?.focus(); }}
           onCloseAutoFocus={(e) => { e.preventDefault(); returnFocus?.focus(); }}>
-          <Dialog.Title className="confirm-title">{title}</Dialog.Title>
-          <Dialog.Description className="confirm-desc">{description}</Dialog.Description>
-          <div className="confirm-actions">
+          <Dialog.Title className={s.title}>{title}</Dialog.Title>
+          <Dialog.Description className={s.desc}>{description}</Dialog.Description>
+          <div className={s.actions}>
             <button ref={cancelRef} type="button" className="btn btn-secondary" onClick={() => onAnswer(false)}>{cancelLabel}</button>
             <button type="button" className={`btn ${tone === 'danger' ? 'btn-danger' : 'btn-primary'}`} onClick={() => onAnswer(true)}>{confirmLabel}</button>
           </div>
