@@ -39,6 +39,27 @@ export async function asUser<T>(userId: string, fn: (db: Db) => Promise<T>): Pro
   }
 }
 
+/**
+ * 27차: 공개 홈페이지 방문자(로그인 없음). anon 역할로 바꾸고 사용자 클레임은 비운다.
+ * anon 은 표를 직접 읽지 못하고 app.public_* 함수(지금 공개된 판만 반환)만 실행할 수 있다.
+ */
+export async function asPublic<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query('begin read only');
+    await client.query('set local role anon');
+    await client.query("select set_config('request.jwt.claims', '{}', true)");
+    const result = await fn(client);
+    await client.query('commit');
+    return result;
+  } catch (e) {
+    await client.query('rollback').catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 /** 로그인 확인처럼 사용자 맥락이 생기기 전 단계에서만 쓴다. */
 export async function asSystem<T>(fn: (db: Db) => Promise<T>): Promise<T> {
   const client = await getPool().connect();

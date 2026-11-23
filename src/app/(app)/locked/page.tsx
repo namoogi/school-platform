@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-const NAMES: Record<string, string> = { intake: '학교 제도 분석', records: '학사 문서실' };
+const NAMES: Record<string, string> = { intake: '학교 제도 분석', records: '학사 문서실', homepage: '학교 홈페이지', stories: '성품 동화' };
 
 export default async function Locked({ searchParams }: { searchParams: Promise<{ module?: string; reason?: string }> }) {
   const { module, reason } = await searchParams;
