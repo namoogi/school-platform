@@ -289,7 +289,7 @@ create or replace function app.close_offering(target uuid, offering uuid, reques
   correction_reason text default null)
 returns uuid language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare
-  o record; prev record; existing record; cid uuid; ver integer; st record;
+  o record; prev record; existing record; cid uuid; ver integer; st record; snap jsonb;
 begin
   if not app.is_school_admin(target) then raise exception '학교 관리자만 마감할 수 있습니다.' using errcode = '42501'; end if;
   if coalesce(request_key, '') !~ '^[A-Za-z0-9_-]{8,80}$' then
@@ -325,25 +325,27 @@ begin
     raise exception '수업 중이거나 정정 중인 수업만 마감할 수 있습니다.' using errcode = 'P0001';
   end if;
 
-  -- 학생별 총점(임시 규칙)과 통계를 같은 스냅샷에서 계산
-  create temporary table if not exists _closure_members (person_id uuid, included boolean, reason text, total numeric, passed boolean) on commit drop;
-  delete from _closure_members;
-  insert into _closure_members
-  select e.person_id, x.person_id is null, x.reason,
-         case when count(a.id) > 0 and count(a.id) = count(r.score)
-              then round(sum(r.score / a.max_score * a.weight) / sum(a.weight) * 100, 2) end,
-         case when o.pass_fail and count(a.id) > 0 and count(a.id) = count(r.passed) then bool_and(r.passed) end
-    from public.offering_enrollments e
-    left join public.population_exclusions x on x.offering_id = e.offering_id and x.person_id = e.person_id and x.school_id = e.school_id
-    left join public.assessments a on a.offering_id = e.offering_id and a.school_id = e.school_id
-    left join public.assessment_results r on r.assessment_id = a.id and r.person_id = e.person_id and r.school_id = e.school_id
-   where e.offering_id = offering and e.school_id = target and e.status = 'enrolled'
-   group by e.person_id, x.person_id, x.reason;
+  -- 학생별 총점(임시 규칙)과 통계를 같은 스냅샷에서 계산 (임시 표 대신 jsonb 변수: 임시 표 권한에 기대지 않는다)
+  select coalesce(jsonb_agg(jsonb_build_object('person_id', q.person_id, 'included', q.included, 'reason', q.reason,
+                                                'total', q.total, 'passed', q.passed)), '[]'::jsonb)
+    into snap
+    from (
+      select e.person_id, x.person_id is null as included, x.reason,
+             case when count(a.id) > 0 and count(a.id) = count(r.score)
+                  then round(sum(r.score / a.max_score * a.weight) / sum(a.weight) * 100, 2) end as total,
+             case when o.pass_fail and count(a.id) > 0 and count(a.id) = count(r.passed) then bool_and(r.passed) end as passed
+        from public.offering_enrollments e
+        left join public.population_exclusions x on x.offering_id = e.offering_id and x.person_id = e.person_id and x.school_id = e.school_id
+        left join public.assessments a on a.offering_id = e.offering_id and a.school_id = e.school_id
+        left join public.assessment_results r on r.assessment_id = a.id and r.person_id = e.person_id and r.school_id = e.school_id
+       where e.offering_id = offering and e.school_id = target and e.status = 'enrolled'
+       group by e.person_id, x.person_id, x.reason
+    ) q;
   select count(*)::int as members,
-         count(*) filter (where included and total is not null)::int as n,
-         round(avg(total) filter (where included), 2) as mean,
-         round(stddev_pop(total) filter (where included), 2) as sd
-    into st from _closure_members;
+         count(*) filter (where m.included and m.total is not null)::int as n,
+         round(avg(m.total) filter (where m.included), 2) as mean,
+         round(stddev_pop(m.total) filter (where m.included), 2) as sd
+    into st from jsonb_to_recordset(snap) as m(person_id uuid, included boolean, reason text, total numeric, passed boolean);
 
   insert into public.offering_closures(school_id, offering_id, version, previous_id, correction_reason, request_key, base_revision,
     member_count, n, mean, sd)
@@ -351,10 +353,11 @@ begin
     st.members, st.n, st.mean, st.sd)
   returning id into cid;
   insert into public.closure_members(closure_id, school_id, offering_id, person_id, included, exclusion_reason, total, passed)
-  select cid, target, offering, m.person_id, m.included, m.reason, m.total, m.passed from _closure_members m;
+  select cid, target, offering, m.person_id, m.included, m.reason, m.total, m.passed
+    from jsonb_to_recordset(snap) as m(person_id uuid, included boolean, reason text, total numeric, passed boolean);
   insert into public.closure_results(closure_id, school_id, offering_id, person_id, assessment_id, assessment_name, max_score, weight, score, passed)
   select cid, target, offering, m.person_id, a.id, a.name, a.max_score, a.weight, r.score, r.passed
-    from _closure_members m
+    from jsonb_to_recordset(snap) as m(person_id uuid, included boolean, reason text, total numeric, passed boolean)
     join public.assessments a on a.offering_id = offering and a.school_id = target
     left join public.assessment_results r on r.assessment_id = a.id and r.person_id = m.person_id and r.school_id = target;
   update public.offering_closures set sealed = true where id = cid;
