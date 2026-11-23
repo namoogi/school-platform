@@ -796,16 +796,18 @@ try {
     await ctxH.close();
   });
 
-  await step('34차: 외부 작업 토큰 — 관리자 발급 → 스크립트가 토큰으로 캐릭터 PNG·PDF 올리고 시안 → 범위 밖 거부 → 관리자 공개 → 방문자 PDF 내려받기 → 폐기', async () => {
+  await step('34·36차: AI 작업 공간 — 관리자 발급 → 스크립트가 토큰으로 캐릭터 PNG·PDF 올리고 시안 → 범위 밖 거부 → 관리자 공개 → 방문자 PDF 내려받기 → 폐기', async () => {
     const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const h = await ctxH.newPage();
     await login(h, 'admin-a@school-a.test', 'demo-pass-a');
     await h.goto(`${BASE}/site?box=settings`);
-    await h.selectOption('[data-testid=agent-token-story]', 'after-rain');
+    // 36차: AI 작업 공간 — 종류(동화) × 항목(after-rain) × 권한(기본: 읽기·파일 올리기·시안 저장), 에이전트 Codex
+    assert.match(await h.textContent('[data-testid=agent-tokens] h2'), /AI 작업 공간/);
+    await h.check('[data-testid=agent-token-keys] label:has-text("/after-rain") input');
     await h.click('[data-testid=agent-token-issue]');
     const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
     assert.match(token, /^agt_[0-9a-f]{64}$/);
-    await h.waitForSelector('[data-testid=agent-token-list] td:text-is("/after-rain")');
+    await h.waitForSelector('[data-testid=agent-token-list] td:has-text("/after-rain")');
     await shot(h, '34-agent-token.png');
     // 합성 작업 폴더 (실제 동화 아님): 캐릭터 PNG 1장 + PDF 1개 + manifest
     const work = fs.mkdtempSync(path.join(ROOT, '.e2e-agent-'));
@@ -828,6 +830,10 @@ try {
     const call = (p, init = {}) => fetch(`${BASE}${p}`, { ...init, headers: { 'x-agent-token': token, 'content-type': 'application/json', ...(init.headers ?? {}) } });
     assert.equal((await call('/api/agent/stories/dawn-story/versions', { method: 'POST', body: JSON.stringify({ content: { title: { ko: 'x' }, blocks: [] } }) })).status, 403);
     assert.equal((await call('/api/agent/stories/dawn-story')).status, 404);
+    // 36차 일반 경로: 같은 범위 규칙
+    assert.equal((await call('/api/agent/entries/story/after-rain')).status, 200);
+    assert.equal((await call('/api/agent/entries/page/about')).status, 403); // 이 토큰은 동화만
+    assert.equal((await call('/api/agent/entries/settings')).status, 404);
     const entries = await (await fetch(`${BASE}/api/site/assets`, { headers: { 'x-agent-token': token } })).status;
     assert.equal(entries, 401); // 사람 경로는 토큰을 받지 않는다
     assert.equal((await call('/api/agent/me', { headers: { cookie: 'sp_session=x' } })).status, 400);

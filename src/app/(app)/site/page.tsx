@@ -32,8 +32,8 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
       entries,
       assets: await listAssets(db, school.id),
       detail: pickId ? await getEntry(db, school.id, pickId) : null,
-      // 34차: 외부 작업 토큰은 성품 동화 기능이 켜진 학교의 관리자만 본다(RLS도 관리자만)
-      tokens: school.isAdmin && school.modules.includes('stories') && sp.box === 'settings' ? await listAgentTokens(db, school.id) : null,
+      // 34·35차: AI 작업 공간(작업 토큰)은 학교 관리자만 본다(RLS도 관리자만)
+      tokens: school.isAdmin && sp.box === 'settings' ? await listAgentTokens(db, school.id) : null,
     };
   }, { module: 'homepage' });
 
@@ -98,7 +98,8 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                     <SiteSettingsForm key={settings?.updated_at ?? 'new'} initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
                     {settings && <ImportPanel settings={JSON.parse(JSON.stringify(settings))} existing={entries.map((e) => ({ id: e.id, kind: e.kind, key: e.key }))} />}
                     {tokens && <AgentTokenPanel tokens={JSON.parse(JSON.stringify(tokens))}
-                      stories={entries.filter((e) => e.kind === 'story').map((e) => ({ key: e.key, title: pick(e.latest_title, lang, lang) || e.key }))} />}
+                      stories={school.modules.includes('stories')}
+                      entries={entries.map((e) => ({ kind: e.kind, key: e.key, title: pick(e.latest_title, lang, lang) || e.key }))} />}
                   </>
                 : <EmptyState title="설정은 학교 관리자가 합니다">시안 만들기와 고치기는 교사도 할 수 있습니다.</EmptyState>)
             : selected

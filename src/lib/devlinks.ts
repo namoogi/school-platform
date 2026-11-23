@@ -99,6 +99,8 @@ export function sessionPrompt(school: { id: string; slug: string; name: string }
     '학교별 차이는 코드 분기가 아니라 학교 설정·규칙 판·모듈 라이선스로 표현한다. 다른 학교 기록에 영향을 주지 않는다.',
   ];
   if (repo) lines.push(`이 학교 전용 저장소 ${repo.url} 이 있으면 그 저장소의 AGENTS.md도 읽고, 플랫폼 공통 코드는 이 저장소(school-platform)에서만 고친다.`);
+  // 36차(ADR 0013): 홈페이지 내용만 바꿀 때는 코드 대신 학교 범위 작업 토큰으로 시안을 만든다
+  lines.push(`홈페이지 쪽·소식·동화의 내용·그림·PDF만 바꿀 때는 코드를 고치지 말고, 학교 관리자가 /site 설정 → 'AI 작업 공간'에서 발급한 토큰으로 시안을 만든다(공개는 학교 관리자). 안내: docs/agents/${tool === 'claude' ? 'claude-code' : 'codex'}.md`);
   lines.push(`브랜치 ${tool === 'claude' ? 'school/' : 'codex/school-'}${school.slug}-<주제>, PR 양식을 채우고 상대 쪽(${tool === 'claude' ? 'Codex' : 'Claude'}) 검토를 요청한다. 병합은 사용자 승인 후.`);
   return lines.join('\n');
 }
