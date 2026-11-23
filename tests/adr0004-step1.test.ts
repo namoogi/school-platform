@@ -4,7 +4,7 @@ import pg from 'pg';
 import { lookupIds, resetTestDb, TEST_URL } from './helpers';
 
 process.env.DATABASE_URL = TEST_URL;
-const { asUser, getPool } = await import('@/lib/db');
+const { asUser, getPool, INSPECTOR_ID } = await import('@/lib/db');
 const pp = await import('@/lib/people');
 const admin = await import('@/lib/admin');
 
@@ -136,6 +136,16 @@ describe('학사 차원과 확정 규칙 연결', () => {
     // 중등 기수를 고등 학적에 붙일 수 없다 (복합 FK: 기수·학교·학교급)
     await expect(asUser(A.userId, (db) => pp.enroll(db, A.schoolId, { personId: p, levelId: dimA.high, cohortId: dimA.cohort, startsOn: '2026-03-02' })))
       .rejects.toMatchObject({ code: 'P0002' });
+  });
+});
+
+describe('Claude 점검 계정(30차, 읽기 전용)', () => {
+  it('모든 학교를 읽을 수 있지만 명령 함수(SECURITY DEFINER)로도 쓸 수 없다', async () => {
+    expect((await asUser(INSPECTOR_ID, (db) => pp.listSchoolLevels(db, A.schoolId))).length).toBeGreaterThan(0);
+    await expect(asUser(INSPECTOR_ID, (db) => pp.addPerson(db, A.schoolId, { name: '점검 계정이 추가' })))
+      .rejects.toMatchObject({ code: '25006' });
+    await expect(asUser(INSPECTOR_ID, (db) => pp.addSchoolLevel(db, B.schoolId, { code: 'insp', name: '점검' })))
+      .rejects.toMatchObject({ code: '25006' });
   });
 });
 
