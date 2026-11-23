@@ -1238,3 +1238,62 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .control-send .field { min-width: 240px; }
 .control-compose h2 { font-size: var(--fs-heading-sm, 1rem); }
 .item-direct { justify-self: start; font-size: var(--fs-caption); }
+
+/* 41차: 어디서나 여는 대화창 (ADR 0017) — 옛 개선 요청 판의 떠 있는 창. 바탕만 살짝 비치고 글이 놓이는 면은 불투명 */
+.chatdock-open { position: relative; gap: var(--space-1); }
+.chatdock-open .bell-count { position: static; border: 0; margin-left: 2px; }
+.chatdock {
+  position: fixed; right: 16px; bottom: 16px; width: min(880px, calc(100vw - 32px)); height: min(640px, calc(100vh - 96px));
+  z-index: 60; display: flex; flex-direction: column; resize: both; overflow: hidden; min-width: 360px; min-height: 320px;
+  background: color-mix(in srgb, var(--surface-default) 90%, transparent); backdrop-filter: blur(14px);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: 0 18px 48px rgb(0 0 0 / .28);
+}
+@media (prefers-reduced-transparency: reduce) { .chatdock { background: var(--surface-default); backdrop-filter: none; } }
+.chatdock[data-wide] { inset: 72px 24px 24px 96px !important; width: auto !important; height: auto !important; resize: none; }
+.chatdock-bar { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border-default); cursor: move; user-select: none; background: var(--surface-subtle); }
+.chatdock-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(240px, 34%) 1fr; }
+.chatdock-list { border-right: 1px solid var(--border-default); display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2); min-height: 0; background: var(--surface-default); }
+.chatdock-tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+.chatdock-tabs button { background: none; border: 0; padding: 4px 8px; border-radius: var(--radius-sm); color: var(--text-muted); font-size: var(--fs-body-sm); }
+.chatdock-tabs button.active { background: var(--surface-selected); color: var(--text-default); font-weight: 600; }
+.chatdock-tabs .count { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.chatdock-threads { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; display: grid; align-content: start; gap: 2px; }
+.chatdock-threads button { width: 100%; text-align: left; background: none; border: 1px solid transparent; border-radius: var(--radius-sm); padding: var(--space-2); display: grid; gap: 4px; color: var(--text-default); }
+.chatdock-threads button:hover { background: var(--surface-subtle); }
+.chatdock-threads button[aria-current] { border-color: var(--border-focus); background: var(--surface-selected); }
+.chatdock-row2 { display: flex; gap: 4px; flex-wrap: wrap; }
+.chatdock-last { font-size: var(--fs-caption); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chatdock-thread { min-height: 0; display: flex; flex-direction: column; background: var(--surface-default); }
+.chatdock-thread-inner, .chatdock-new { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); min-height: 0; flex: 1; overflow: auto; }
+.chatdock-thread-inner { overflow: hidden; }
+.chatdock-empty { padding: var(--space-4); }
+.chatdock-back { display: none; align-items: center; gap: 4px; justify-self: start; }
+.chatdock-head { display: grid; gap: 4px; }
+.chatdock-head h3, .chatdock-new h3 { font-size: var(--fs-body); font-weight: 700; margin: 0; }
+.chatdock-feed { list-style: none; margin: 0; padding: 0 var(--space-1) 0 0; flex: 1; min-height: 80px; overflow: auto; display: grid; align-content: start; gap: var(--space-2); }
+.chatdock-msg { border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); background: var(--surface-default); display: grid; gap: 4px; max-width: 92%; }
+.chatdock-msg p { white-space: pre-wrap; font-size: var(--fs-body-sm); margin: 0; overflow-wrap: anywhere; }
+.chatdock-msg[data-author="user"] { justify-self: end; background: var(--surface-selected); }
+.chatdock-msg[data-author="session"], .chatdock-msg[data-author="control"] { border-left: 3px solid var(--border-focus); }
+.chatdock-msg-head { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; font-size: var(--fs-caption); }
+.chatdock-event { justify-self: center; }
+.chatdock-gate, .chatdock-decide { border: 1px solid var(--border-default); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); display: grid; gap: var(--space-2); background: var(--surface-subtle); }
+.chatdock-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-2); }
+/* 선택지는 눌러 바로 결정하는 카드 버튼(라디오·기본 선택 없음). 주 버튼 채움색을 쓰지 않는다 */
+.chatdock-option { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--space-2); text-align: left; min-height: 44px; padding: var(--space-2); border: 1px solid var(--border-input); border-radius: var(--radius-sm); background: var(--surface-default); color: var(--text-default); }
+.chatdock-option > span:nth-child(2) { display: grid; gap: 2px; }
+.chatdock-option:hover:not(:disabled), .chatdock-option:focus-visible { border-color: var(--border-focus); }
+.chatdock-option:active:not(:disabled) { background: var(--surface-selected); }
+.chatdock-option-no { width: 20px; height: 20px; border-radius: var(--radius-full); border: 1px solid var(--border-input); display: grid; place-items: center; font-size: var(--fs-caption); }
+.chatdock-option-go { grid-column: 2; color: var(--text-link); font-size: var(--fs-caption); font-weight: 600; }
+.chatdock-compose { display: grid; gap: var(--space-2); }
+.chatdock-input { width: 100%; resize: vertical; min-height: 64px; max-height: 200px; }
+.chatdock-topics { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.chatdock-topics legend { font-weight: 600; font-size: var(--fs-body-sm); margin-bottom: var(--space-1); }
+/* 좁은 창: 목록 ↔ 대화 하나씩 */
+@media (max-width: 760px) {
+  .chatdock { inset: 8px !important; width: auto !important; height: auto !important; resize: none; min-width: 0; }
+  .chatdock-body { grid-template-columns: 1fr; }
+  .chatdock-body[data-view="thread"] .chatdock-list, .chatdock-body[data-view="list"] .chatdock-thread { display: none; }
+  .chatdock-back { display: inline-flex; }
+}

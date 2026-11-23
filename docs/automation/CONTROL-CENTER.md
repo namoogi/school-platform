@@ -1,6 +1,6 @@
-# 관제 센터 사용법 (ADR 0015)
+# 관제 센터·대화창 사용법 (ADR 0015·0017)
 
-사람: 전체 관리 → **관제 센터**(`/admin/control`). 세부 내용을 보고 선택지를 고르거나 추가 요청사항을 적어 '지시 보내기'. 개발·연구소 항목의 '세션에 지시'로 새 지시를 만든다.
+사람: 어느 관리 화면에서든 상단 **'대화'**(대화창, ADR 0017) — 전체 관리자는 모든 대화, 학교 관리자는 그 학교 대화(학교 AI·홈페이지 인터페이스·시스템 기능). 전체 관리 → **관제 센터**(`/admin/control`)는 같은 기록을 한 페이지로 본다. 개발·연구소 항목의 '세션에 지시'로 새 지시를 만든다.
 Claude 세션: 아래 API. 클라우드 작업 환경이 `onschools.vercel.app` 요청마다 점검 토큰 머리를 붙이므로 토큰을 직접 다루지 않는다(출력·기록·커밋에 남기지 않는다).
 
 ```
@@ -25,16 +25,25 @@ B=https://onschools.vercel.app/api/control
    `status`: `done`(끝남)·`parked`(보류)·`proceeding`·`open`. 메모만이면 `"kind":"note"`.
 - 내 세션 id가 목록에 없으면 먼저 등록: `curl -s -X POST "$B/sessions" -H 'content-type: application/json' -d '{"id":"session_…","name":"…","role":"…"}'`
 
+## 세션: 대화에 답하기 (대화창에 보인다)
+- 맥락 읽기: `curl -s "$B/requests/<요청 id>"` (대화 전체). inbox 항목의 `recent`에 앞 10줄이 있다.
+- 답: `curl -s -X POST "$B/requests/<요청 id>/messages" -H 'content-type: application/json' -d '{"kind":"message","body":"…","author_session":"<내 세션 id>"}'`
+  - 사람 답이 필요하면 `"status":"open"`, 일을 마쳐 확인받을 때 `"status":"review"`(사람이 '변경 확인 완료'·'다시 수정 요청'), 작업 중임을 알릴 때 `"status":"delivered"`.
+- 학교 일의 결정 요청은 `"school":"<학교 slug>","topic":"site_ui"`(또는 `school_ai`)를 붙여 올리면 그 학교 관리자 대화창에 결정 카드로 보인다.
+- 세션 등록 때 학교를 맡으면 `"school":"<slug>"`를 넣는다. 그 학교 대화는 기본으로 이 세션에 온다.
+
 ## 관제 세션: 지시 전달 (사용자와 대화할 때마다, 그리고 예약 확인 때)
 1. `curl -s "$B/inbox"` — 사람이 남긴 답·지시 가운데 전달하지 않은 것(오래된 것부터).
 2. 항목마다
+   - `target_session`이 비어 있으면(관제가 정함) 맡을 세션을 고르거나 새로 만들고 `POST $B/requests/<request.id>/assign {"session":"…"}` 뒤 보낸다. 관제가 직접 답할 일이면 답하고 전달됨 표시.
    - `target_session`이 있으면 `send_message`:
      ```
      [관제 지시 D-<no>] <요청 제목>
      선택: <choice_label 또는 없음>
      추가 요청사항: <body>
      세부 내용: <request.detail 요약>
-     끝나면 보고: POST $B/requests/<request.id>/messages {"status":"done", ...}
+     최근 대화: <recent 요약>
+     답하기: POST $B/requests/<request.id>/messages {"kind":"message","status":"review"|"open", ...}
      ```
    - `new_session`이면 `create_session`(이 저장소, 이름 `<제목> (D-<no>)`)으로 실행한다. 첫 지시는 `SCHOOL-SESSIONS.md` '첫 지시 틀' + 요청 세부 내용 + 추가 요청사항. 만든 세션을 `POST $B/sessions`로 등록한다.
 3. 보낸 뒤 `curl -s -X POST "$B/messages/<message_id>/delivered" -H 'content-type: application/json' -d '{"note":"send_message"}'`.

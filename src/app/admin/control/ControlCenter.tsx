@@ -8,7 +8,7 @@ import { NEEDS_USER, STATUS, type Request, type Session, type Status } from '@/l
 type Lab = { id: string; title: string; body: string } | null;
 const TABS: { key: string; label: string; statuses: Status[] }[] = [
   { key: 'need', label: '답 필요', statuses: NEEDS_USER },
-  { key: 'flow', label: '전달·진행', statuses: ['answered', 'delivered'] },
+  { key: 'flow', label: '전달·진행', statuses: ['answered', 'delivered', 'review'] },
   { key: 'closed', label: '끝남', statuses: ['done', 'dropped'] },
 ];
 const KIND_LABEL: Record<string, string> = { answer: '답', directive: '지시', report: '보고', note: '메모', status: '상태' };
