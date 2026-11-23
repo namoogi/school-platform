@@ -74,7 +74,8 @@ try {
     await page.fill('input[name=email]', email);
     await page.fill('input[name=password]', password);
     await page.click('button[type=submit]');
-    await page.waitForURL(/\/intake$/);
+    await page.waitForURL(/\/home$/);
+    await page.goto(`${BASE}/intake`);
   }
   async function dropFile(page, name, text) {
     await page.evaluate(([n, t]) => {
@@ -263,6 +264,29 @@ try {
     await a.waitForURL(new RegExp(aDoc2 + '$'));
   });
 
+  await step('25차: 홈(학사 업무형)과 관리자 확인 3단 작업함', async () => {
+    await a.goto(`${BASE}/`);
+    await a.waitForURL(/\/home$/);
+    for (const c of ['intake', 'review', 'documents', 'settings']) await a.waitForSelector(`[data-testid=card-${c}]`);
+    const tasks = await a.textContent('[data-testid=tasks]');
+    assert.match(tasks, /규칙 2판 확정/);
+    assert.match(tasks, /문서 2건 발행/);
+    assert.equal(await a.getAttribute('aside a[href="/home"]', 'aria-current'), 'page');
+    await shot(a, '25-home.png');
+    await a.click('aside a[href="/review"]');
+    await a.waitForURL(/\/review$/);
+    await a.waitForSelector('[data-testid=rule-v2]');
+    assert.equal(await a.getAttribute('.triage-box[aria-current=page]', 'href'), '/review?box=rules');
+    await a.click('.triage-box:has-text("답변함")');
+    await a.waitForURL(/box=answered$/);
+    assert.equal(await a.locator('.triage-list li').count(), 2);
+    const first = await a.getAttribute('.triage-item[aria-current=true]', 'href');
+    await a.keyboard.press('j');
+    await a.waitForFunction((f) => document.querySelector('.triage-item[aria-current=true]')?.getAttribute('href') !== f, first);
+    assert.match(await a.textContent('[data-testid=question]'), /판을 확정했습니다/);
+    await shot(a, '25-review-triage.png');
+  });
+
   await step('15차: B가 PDF 학사력을 올리면 쪽·줄 위치와 정확도 확인 표시', async () => {
     const { schoolBCalendarPdf } = await import('../fixture-files.ts');
     const tmp = path.join(ROOT, 'test-results');
@@ -306,7 +330,7 @@ try {
     assert.match(table, /드리미 예시학교.*2 \/ 2.*Rungarun Example School/s);
     await shot(p, '09-platform-admin.png');
     await p.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('button:text-is("들어가기")').click();
-    await p.waitForURL(/\/intake$/);
+    await p.waitForURL(/\/home$/);
     assert.match(await p.textContent('header.top'), /전체 관리자로 보는 중/);
     assert.equal(await p.textContent('[data-testid=school-name]'), '드리미 예시학교');
     await a.goto(`${BASE}/settings`);
@@ -324,7 +348,7 @@ try {
     await p.fill('input[name=password]', 'demo-pass-p');
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
-    await p.click('aside >> text=개발·연구소');
+    await p.click('aside a[href="/admin/lab"]');
     await p.waitForURL(/\/admin\/lab$/);
     assert.match(await p.textContent('[data-testid=lab-items]'), /AI 분석 프롬프트 설계/);
     await p.fill('[data-testid=quick-add] input[aria-label="새 항목 제목"]', 'E2E 할 일 확인');
@@ -348,7 +372,7 @@ try {
     await p.fill('input[name=password]', 'demo-pass-p');
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
-    await p.click('aside >> text=학교별 개발 연동');
+    await p.click('aside a[href="/admin/integrations"]');
     await p.waitForURL(/\/admin\/integrations/);
     await p.fill('[data-testid=add-link] input >> nth=0', 'E2E 전용 저장소');
     await p.fill('[data-testid=add-link] input[aria-label="연동 주소"]', 'https://github.com/example-org/e2e-school');
@@ -373,7 +397,7 @@ try {
     await p.fill('input[name=password]', 'demo-pass-p');
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
-    await p.click('aside >> text=디자인 원형');
+    await p.click('aside a[href="/admin/design"]');
     await p.waitForURL(/\/admin\/design/);
     assert.equal(await p.locator('[data-testid^=archetype-]').count(), 8);
     assert.equal(await p.locator('table.ar-axes tbody tr').count(), 8);

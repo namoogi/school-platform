@@ -14,7 +14,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <Shell account={{ name: account.display_name, isPlatformAdmin: account.is_platform_admin }}
       current={{ id: school.id, name: school.name, status: school.status }} schools={schools}
       groups={schoolNav(school, { openQuestions: open ? 1 : 0 })} roleLabel={roleTag(school)}
-      inSchoolAsPlatform={school.isPlatformAdmin && !school.role}>
+      inSchoolAsPlatform={school.isPlatformAdmin && !school.role}
+      alerts={school.modules.includes('intake') ? { count: open ? 1 : 0, href: '/review' } : null}>
       {children}
     </Shell>
   );
