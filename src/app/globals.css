@@ -1202,3 +1202,24 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 @media (forced-colors: active) {
   .le-block[data-selected], .le-text:focus { outline: 2px solid Highlight; }
 }
+
+/* 39차: 관제 센터 (ADR 0015) */
+.control-bar { justify-content: space-between; }
+.control-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.control-head { display: grid; gap: var(--space-1); }
+.control-no { color: var(--text-muted); font-weight: 600; margin-right: var(--space-1); }
+.control-detail { white-space: pre-wrap; color: var(--text-default); font-size: var(--fs-body-sm); }
+.control-thread { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); border-left: 2px solid var(--border-default); padding-left: var(--space-3); }
+.control-thread > li { display: grid; gap: 2px; }
+.control-thread > li[data-author="user"] { border-left: 2px solid var(--action-primary-bg); margin-left: calc(-1 * var(--space-3) - 2px); padding-left: var(--space-3); }
+.control-msg-head { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; font-size: var(--fs-body-sm); }
+.control-options { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.control-options legend { font-weight: 600; font-size: var(--fs-body-sm); margin-bottom: var(--space-1); }
+.control-option { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-default); border-radius: var(--radius-sm); cursor: pointer; }
+.control-option:has(input:checked) { border-color: var(--action-primary-bg); background: var(--surface-selected); }
+.control-option > input { margin-top: 3px; flex: none; }
+.control-option > span { display: grid; gap: 2px; }
+.control-send { align-items: flex-end; }
+.control-send .field { min-width: 240px; }
+.control-compose h2 { font-size: var(--fs-heading-sm, 1rem); }
+.item-direct { justify-self: start; font-size: var(--fs-caption); }

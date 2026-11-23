@@ -86,6 +86,9 @@ export function LabBoard({ items, kinds, priorities }: { items: Item[]; kinds: K
                   {i.history_count > 0 && <span className="muted small-text">변경 {i.history_count}회</span>}
                 </div>
                 {i.body && editing !== i.id && <p className="item-body">{i.body}</p>}
+                {editing !== i.id && !i.archived_at && !DONE.has(i.status) && (
+                  <a className="btn-ghost item-direct" href={`/admin/control?from=${i.id}`}>세션에 지시 →</a>
+                )}
               </div>
             </div>
             {editing === i.id && (
@@ -152,6 +155,7 @@ function EditForm({ item, kinds, priorities, parents, onSave, onArchive }: {
         <button type="button" className="primary" onClick={() => onSave({ ...f, due_date: f.due_date || null, link: f.link || null, parent_id: f.parent_id || null })}>저장</button>
         <button type="button" className="secondary" onClick={onArchive}>{item.archived_at ? '보관 해제' : '보관'}</button>
         {item.link && <a className="button secondary" href={item.link} target="_blank" rel="noopener noreferrer">링크 열기</a>}
+        <a className="button secondary" href={`/admin/control?from=${item.id}`}>세션에 지시</a>
       </div>
     </div>
   );
