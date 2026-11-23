@@ -84,3 +84,6 @@ export function pick(t: LText | null | undefined, lang: Lang, fallback: Lang): s
   if (!t) return '';
   return t[lang] || t[fallback] || Object.values(t).find(Boolean) || '';
 }
+
+/** 관제 D-4(2026-11-23 사용자 결정): 사진 공개 허가는 기록·게시 막기 대신 올리는 화면의 안내 한 줄로 둔다(학교 관리자 책임). */
+export const PHOTO_CONSENT = '학생이 나오는 사진은 학생·보호자 공개 허가를 받은 것만 올립니다. (확인은 학교 관리자 책임)';

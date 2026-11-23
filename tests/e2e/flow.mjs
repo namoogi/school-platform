@@ -1138,6 +1138,8 @@ try {
     const photoIdx = await photoBtn.evaluate((el) => el.closest('[data-block-index]')?.getAttribute('data-block-index'));
     await photoBtn.click();
     await h.waitForSelector('[data-testid=le-picker][open]');
+    // 관제 D-4: 사진을 올리는 곳에는 공개 허가 안내 한 줄(학교 관리자 책임)
+    assert.match(await h.textContent('[data-testid=le-picker] [data-testid=photo-consent]'), /공개 허가/);
     const png = Buffer.from('89504e470d0a1a0a0000000d4948445200000002000000020806000000f478d4fa0000001549444154789c63f8cfc0f01f0418181818fe03000c1a02fe3e5a6c4d0000000049454e44ae426082', 'hex');
     const up = h.waitForResponse((r) => r.url().endsWith('/api/site/assets') && r.request().method() === 'POST');
     await h.setInputFiles('[data-testid=le-picker] input[type=file]', { name: 'synthetic.png', mimeType: 'image/png', buffer: png });

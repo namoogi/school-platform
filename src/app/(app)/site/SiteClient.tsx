@@ -5,7 +5,7 @@ import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, PencilLine, Plus, Trash2 } from 'lucide-react';
-import { BLOCK_LABEL, KIND_LABEL, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
+import { BLOCK_LABEL, KIND_LABEL, PHOTO_CONSENT, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
 
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -188,7 +188,7 @@ function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false }: 
           compact label={pdf ? '새 PDF 올리기' : '새 그림 올리기'} onFiles={upload}
           accept={pdf ? ['application/pdf', '.pdf'] : ['image/png', 'image/jpeg', 'image/webp', 'image/gif']}
           typeLabel={pdf ? 'PDF' : 'PNG·JPG·WEBP·GIF'} maxSize={(pdf ? 4 : 5) * 1024 * 1024}
-          hint={pdf ? '웹용으로 줄인 파일' : undefined}
+          hint={pdf ? '웹용으로 줄인 파일' : <span data-testid="photo-consent">{PHOTO_CONSENT}</span>}
         />
       </div>
     </div>

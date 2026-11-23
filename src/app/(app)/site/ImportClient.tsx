@@ -5,7 +5,7 @@ import { unzip, strFromU8, type Unzipped } from 'fflate';
 import { FileArchive, Upload } from 'lucide-react';
 import { FileDrop } from '@/components/FileDrop';
 import { fillAssets, planImport, type ImportPlan } from '@/lib/site-import';
-import type { SiteSettings } from '@/lib/site-shared';
+import { PHOTO_CONSENT, type SiteSettings } from '@/lib/site-shared';
 
 /**
  * 31차: 기존 홈페이지 가져오기 (룽아룬숙사 이전 3단계, ADR 0008)
@@ -113,7 +113,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
       <p className="fine">옛 사이트에서 만든 내보내기 묶음(zip)을 고르면 쪽·소식·동화·후원자 쪽을 <b>시안</b>으로 만듭니다. 이미 있는 항목은 덮어쓰지 않고 새 판으로 더합니다. 공개와 홈페이지 열기는 시안을 확인한 뒤 따로 합니다.</p>
       <FileDrop
         label="묶음 파일" accept={['.zip', 'application/zip', 'application/x-zip-compressed']} typeLabel="ZIP"
-        hint="브라우저 안에서 풀고, 올리기 전에 만들 것을 먼저 보여 줍니다." disabled={!!step}
+        hint={<>브라우저 안에서 풀고, 올리기 전에 만들 것을 먼저 보여 줍니다. {PHOTO_CONSENT}</>} disabled={!!step}
         onFiles={pick} inputTestId="import-file" testId="import-drop"
       />
       {plan && !done && (
