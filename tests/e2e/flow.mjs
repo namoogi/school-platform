@@ -44,6 +44,17 @@ async function clickUiAndSave(page, selector) {
   assert.ok(res.ok(), `화면 설정 저장 실패: ${res.status()}`);
 }
 
+// 키보드 단축키(Ctrl+K, J)는 화면이 수화(hydration)된 뒤 window keydown 처리기가 붙어야 먹는다.
+// 페이지를 열자마자 누르면 느린 CI에서는 처리기가 붙기 전이라 키가 사라진다. 반응이 올 때까지 다시 누른다.
+// (한 번 누를 때마다 3초 기다려, 늦게 처리된 누름을 두 번째 누름이 되돌리지 않게 한다)
+async function pressUntil(page, key, check, arg) {
+  for (let i = 0; i < 8; i++) {
+    await page.keyboard.press(key);
+    try { await page.waitForFunction(check, arg, { timeout: 3000 }); return; } catch { /* 다시 누른다 */ }
+  }
+  throw new Error(`${key}: 화면이 키 입력에 반응하지 않습니다`);
+}
+
 // ── DB 준비 ──
 const admin = new pg.Client({ connectionString: ADMIN_URL });
 await admin.connect();
@@ -316,8 +327,7 @@ try {
     await a.waitForURL(/box=answered$/);
     assert.equal(await a.locator('.triage-list li').count(), 2);
     const first = await a.getAttribute('.triage-item[aria-current=true]', 'href');
-    await a.keyboard.press('j');
-    await a.waitForFunction((f) => document.querySelector('.triage-item[aria-current=true]')?.getAttribute('href') !== f, first);
+    await pressUntil(a, 'j', (f) => document.querySelector('.triage-item[aria-current=true]')?.getAttribute('href') !== f, first);
     assert.match(await a.textContent('[data-testid=question]'), /판을 확정했습니다/);
     await shot(a, '25-review-triage.png');
   });
@@ -373,6 +383,36 @@ try {
     // 학교 관리자는 전체 관리 화면을 열 수 없다
     assert.equal((await a.goto(`${BASE}/admin`)).status(), 404);
     await ctxP.close();
+  });
+
+  await step('DataTable: 학교 표 열 머리로 정렬(aria-sort)·행 간격 전환', async () => {
+    const ctxT = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctxT.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    const names = () => p.$$eval('[data-testid=school-table] tbody tr td:first-child strong', (els) => els.map((e) => e.textContent));
+    const original = await names();
+    const head = p.locator('[data-testid=school-table] th', { has: p.locator('[data-sort-key=name]') });
+    assert.equal(await head.getAttribute('aria-sort'), null);
+    await p.click('[data-testid=school-table] [data-sort-key=name]');
+    await p.waitForFunction(() => document.querySelector('[data-testid=school-table] th[aria-sort]'));
+    assert.equal(await head.getAttribute('aria-sort'), 'ascending');
+    const asc = await names();
+    assert.deepEqual(asc, [...original].sort(new Intl.Collator('ko', { numeric: true, sensitivity: 'base' }).compare));
+    await p.click('[data-testid=school-table] [data-sort-key=name]');
+    await p.waitForFunction(() => document.querySelector('[data-testid=school-table] th[aria-sort=descending]'));
+    assert.deepEqual(await names(), [...asc].reverse());
+    // 행 간격: 촘촘히 → 행 높이 토큰 36px (두 줄 셀은 내용 높이에서 멈추므로 토큰으로 확인)
+    await p.click('[role=group][aria-label="학교 목록 행 간격"] button:text-is("촘촘히")');
+    await p.waitForSelector('.data-table[data-density=compact]');
+    const token = await p.$eval('[data-testid=school-table] tbody tr td', (td) => getComputedStyle(td).getPropertyValue('--row-h').trim());
+    assert.equal(token, '36px');
+    assert.equal(await p.getAttribute('[role=group] button:text-is("촘촘히")', 'aria-pressed'), 'true');
+    await shot(p, '29-datatable-sorted.png');
+    await ctxT.close();
   });
 
   await step('17차: 개발·연구소 — 할 일 추가·완료, 종류별 탭', async () => {
@@ -445,15 +485,13 @@ try {
     }
     // 명령 팔레트: Ctrl+K로 열고 Esc로 닫는다
     await p.goto(`${BASE}/preview/command`);
-    await p.keyboard.press('Control+k');
-    await p.waitForSelector('[role=dialog]');
+    await pressUntil(p, 'Control+k', () => !!document.querySelector('[role=dialog]'));
     await p.keyboard.press('Escape');
     await p.waitForSelector('[role=dialog]', { state: 'detached' });
     // 작업함: J로 다음 질문
     await p.goto(`${BASE}/preview/triage`);
     const first = await p.textContent('section[aria-label="질문 상세"] h2');
-    await p.keyboard.press('j');
-    await p.waitForFunction((t) => document.querySelector('section[aria-label="질문 상세"] h2')?.textContent !== t, first);
+    await pressUntil(p, 'j', (t) => document.querySelector('section[aria-label="질문 상세"] h2')?.textContent !== t, first);
     assert.deepEqual(errors, []);
     await ctxD.close();
 

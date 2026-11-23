@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { accessLog, activityByDay, catalog, overview, statements } from '@/lib/admin';
 import { BarChart, HBars } from '@/components/Charts';
 import { EnterSchoolButton } from '@/components/SchoolSwitcher';
+import { DataTable } from '@/components/DataTable';
 import { Kpi, PageHeader, StatusBadge } from '@/components/ui';
 import { CreateSchoolForm, PriceForm, SchoolActions } from './AdminClient';
 
@@ -57,24 +58,26 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </div>
       <section className="card">
         <div className="card-header"><h2>학교</h2><span className="fine">{schools.length}곳</span></div>
-        <div className="table-wrap">
-          <table className="grid-table" data-testid="school-table">
-            <thead><tr><th scope="col">학교</th><th scope="col">상태</th><th scope="col" className="num">좌석</th><th scope="col">기능</th><th scope="col" className="num">월 예정액</th><th scope="col" className="num">자료·문서·질문</th><th scope="col"><span className="sr-only">동작</span></th></tr></thead>
-            <tbody>
-              {schools.map((s) => (
-                <tr key={s.id}>
-                  <td><strong>{s.name}</strong><br /><small className="muted">{s.slug} · {s.locale}</small></td>
-                  <td><StatusBadge tone={s.status === 'active' ? 'success' : s.status === 'trial' ? 'info' : 'danger'}>{STATUS[s.status]}</StatusBadge></td>
-                  <td className="num">{s.seats_used} / {s.seats ?? '—'}</td>
-                  <td>{(s.modules ?? []).map((k) => moduleName[k] ?? k).join(', ')}</td>
-                  <td className="num">{won(s.monthly_estimate_krw)}</td>
-                  <td className="num">{s.sources} · {s.documents} · {s.open_questions ? <StatusBadge tone="warning">{s.open_questions}</StatusBadge> : 0}</td>
-                  <td><div className="actions"><EnterSchoolButton schoolId={s.id} /><SchoolActions schoolId={s.id} status={s.status} period={period} /></div></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable caption="학교 목록" testId="school-table" densityControl empty="학교가 없습니다."
+          columns={[
+            { key: 'name', header: '학교', sortable: true }, { key: 'status', header: '상태', sortable: true },
+            { key: 'seats', header: '좌석', num: true, sortable: true }, { key: 'modules', header: '기능' },
+            { key: 'monthly', header: '월 예정액', num: true, sortable: true },
+            { key: 'records', header: '자료·문서·질문', num: true, sortable: true }, { key: 'actions', header: '동작', srOnly: true },
+          ]}
+          rows={schools.map((s) => ({
+            id: s.id,
+            sort: { name: s.name, status: STATUS[s.status], seats: s.seats_used, monthly: s.monthly_estimate_krw, records: s.open_questions },
+            cells: {
+              name: <><strong>{s.name}</strong><br /><small className="muted">{s.slug} · {s.locale}</small></>,
+              status: <StatusBadge tone={s.status === 'active' ? 'success' : s.status === 'trial' ? 'info' : 'danger'}>{STATUS[s.status]}</StatusBadge>,
+              seats: <>{s.seats_used} / {s.seats ?? '—'}</>,
+              modules: (s.modules ?? []).map((k) => moduleName[k] ?? k).join(', '),
+              monthly: won(s.monthly_estimate_krw),
+              records: <>{s.sources} · {s.documents} · {s.open_questions ? <StatusBadge tone="warning">{s.open_questions}</StatusBadge> : 0}</>,
+              actions: <div className="actions"><EnterSchoolButton schoolId={s.id} /><SchoolActions schoolId={s.id} status={s.status} period={period} /></div>,
+            },
+          }))} />
       </section>
       <div className="grid-2">
         <section className="card"><CreateSchoolForm modules={JSON.parse(JSON.stringify(modules))} /></section>
@@ -82,9 +85,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <section className="card">
           <h2>청구 기록</h2>
           <p className="fine">청구 예정액 확정 기록입니다. 실제 결제 연동은 결제 대행사를 정한 뒤 따로 진행합니다.</p>
-          {bills.length === 0 ? <p className="muted empty">아직 없습니다.</p> : (
-            <table className="grid-table"><thead><tr><th>월</th><th>학교</th><th>좌석</th><th>금액</th></tr></thead>
-              <tbody>{bills.map((b) => <tr key={b.id}><td>{b.period}</td><td>{names[b.school_id] ?? b.school_id.slice(0, 8)}</td><td>{b.seats}</td><td>{won(b.amount_krw)}</td></tr>)}</tbody></table>)}
+          <DataTable caption="청구 기록" testId="bill-table" empty="아직 없습니다." initialSort={{ key: 'period', dir: 'desc' }}
+            columns={[{ key: 'period', header: '월', sortable: true }, { key: 'school', header: '학교', sortable: true },
+              { key: 'seats', header: '좌석', num: true, sortable: true }, { key: 'amount', header: '금액', num: true, sortable: true }]}
+            rows={bills.map((b) => ({
+              id: b.id,
+              sort: { period: b.period, school: names[b.school_id] ?? '', seats: b.seats, amount: b.amount_krw },
+              cells: { period: b.period, school: names[b.school_id] ?? b.school_id.slice(0, 8), seats: b.seats, amount: won(b.amount_krw) },
+            }))} />
         </section>
         <section className="card">
           <h2>최근 운영 기록</h2>
