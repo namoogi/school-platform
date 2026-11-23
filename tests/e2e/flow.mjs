@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import pg from 'pg';
+import { zipSync, strToU8 } from 'fflate';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -53,6 +54,48 @@ async function pressUntil(page, key, check, arg) {
     try { await page.waitForFunction(check, arg, { timeout: 3000 }); return; } catch { /* 다시 누른다 */ }
   }
   throw new Error(`${key}: 화면이 키 입력에 반응하지 않습니다`);
+}
+
+// 31차: 합성 내보내기 묶음(rung-arun-export/1). 실제 학교 글이 아니다.
+function makeExportZip() {
+  const L = (en) => ({ th: `ไทย ${en}`, en, ko: `한국어 ${en}` });
+  const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082', 'hex');
+  const ui = Object.fromEntries(['about', 'curriculum', 'life', 'gallery', 'news', 'admissions', 'contact', 'visit', 'contactSchool', 'viewGallery', 'stages',
+    'activities', 'nameTitle', 'location', 'nextStep', 'documents', 'faq', 'office', 'hours', 'map', 'facebook', 'poster'].map((k) => [k, L(k[0].toUpperCase() + k.slice(1))]));
+  Object.assign(ui, { classroom: L('Classroom'), art: L('Art'), grounds: L('Grounds') });
+  const a = (src, category) => ({ src, category, alt: L(`Photo ${src.split('/').pop()}`) });
+  const content = {
+    format: 'rung-arun-export/1', exportedAt: '2026-11-23T00:00:00Z', languages: { school: ['th', 'en', 'ko'] },
+    defaults: {
+      name: L('Dawn Example School'), location: L('Example Town'), intro: L('A synthetic example school.'), hero: L('Hero line'), nameMeaning: L('The name means dawn.'),
+      philosophyTitle: L('Learning'), philosophyIntro: L('Learning intro'), knownNote: L('Synthetic data for tests.'), curriculumNote: L('Curriculum note'),
+      galleryIntro: L('Open a photo.'), dayTitle: L('Ask about the day'), dayNote: L('Day note'), admissionsIntro: L('Admissions intro'), admissionsArchive: L('Archive note'),
+      contactIntro: L('Contact the office.'), contactNote: L('Contact note'), officeHours: L('08:30-16:30'), address: '1 Example Road', addressThai: 'ถนนตัวอย่าง 1',
+      phone: ['000-0000000'], facebook: 'https://www.facebook.com/example', ui,
+      values: [{ title: L('Making'), body: L('Making body') }],
+      stages: [{ title: L('Early years'), subtitle: L('First steps'), body: L('Stage body'), photo: 'workshop', points: [L('Drawing')], note: L('Ask') }],
+      activities: [{ title: L('Stories'), body: L('Stories body') }], dayQuestions: [L('Arrival time')],
+      admissionSteps: [{ title: L('Ask'), body: L('Ask body') }], documents: [L('ID copy')], faq: [{ q: L('Fees?'), a: L('Ask the office') }],
+      stories: [{ id: 'making', photo: 'together', title: L('Choosing colours'), teaser: L('Teaser'), body: [L('Paragraph one')] }],
+      assets: { campus: a('/assets/campus.jpg', 'grounds'), workshop: a('/assets/workshop.jpg', 'classroom'), together: a('/assets/together.jpg', 'classroom'),
+        artwork: a('/assets/artwork.jpg', 'art'), circle: a('/assets/circle.jpg', 'classroom'), classroom: a('/assets/classroom.jpg', 'classroom'),
+        entrance: a('/assets/entrance.jpg', 'grounds'), logo: a('/assets/logo.jpg', 'brand') },
+      copy: { homeTitle: L('Dawn Example.<br>A new day.'), homeIdentity: L('Rainbow and dawn'), homePortraitTitle: L('A picture'), homePortraitBody: L('Portrait body'), homeMomentsTitle: L('Together') },
+    },
+    tables: { news_posts: [], photos: [] },
+  };
+  const friends = { format: 'school-platform-pages/1', pages: [
+    { key: 'friends', content: { title: { ko: '후원자 첫 쪽', en: 'Supporters' }, blocks: [{ type: 'section', template: 'cards', items: [{ title: { ko: '예시 편지' }, href: '/p/friends-letter-welcome' }] }] } },
+    { key: 'friends-letter-welcome', content: { title: { ko: '예시 편지', en: 'Sample letter' }, blocks: [{ type: 'text', text: { ko: '합성 편지 글', en: 'Synthetic letter' } }] } },
+  ] };
+  const book = { slug: 'dawn-story', locale: 'th', title: 'นิทานตัวอย่าง', title_ko: '예시 동화', character: ['ช้าง(코끼리)'], virtue: null,
+    pages: [{ no: 1, image: 'pages/01.jpg', text: 'หน้าหนึ่ง' }, { no: 2, image: 'pages/02.jpg', text: 'หน้าสอง' }] };
+  const img = (n) => Uint8Array.from(Buffer.concat([PNG, Buffer.from([n])]));
+  const files = { 'content.json': strToU8(JSON.stringify(content)), 'friends/pages.json': strToU8(JSON.stringify(friends)),
+    'stories/dawn-story/book.json': strToU8(JSON.stringify(book)), 'stories/dawn-story/pages/01.jpg': img(1), 'stories/dawn-story/pages/02.jpg': img(2) };
+  ['campus', 'workshop', 'together', 'artwork', 'circle', 'classroom', 'entrance', 'logo'].forEach((k, i) => { files[`assets/site/assets/${k}.jpg`] = img(10 + i); });
+  files['manifest.json'] = strToU8(JSON.stringify({ format: 'rung-arun-export/1', files: Object.keys(files).map((path) => ({ path })) }));
+  return Buffer.from(zipSync(files));
 }
 
 // ── DB 준비 ──
@@ -685,6 +728,60 @@ try {
     await b2.goto(`${BASE}/site`);
     await b2.waitForURL(/\/locked\?module=homepage/);
     await ctxB2.close();
+    await ctxH.close();
+  });
+
+  await step('31차: 기존 홈페이지 가져오기 — 묶음 zip → 시안 → 모두 공개, 새벽빛 화면·갤러리·옛 주소·후원자 숨은 쪽', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.setInputFiles('[data-testid=import-file]', { name: 'export.zip', mimeType: 'application/zip', buffer: makeExportZip() });
+    const plan = await h.textContent('[data-testid=import-plan]');
+    assert.match(plan, /쪽 7개 · 숨은 쪽\(후원자\) 2개 · 소식 1개 · 동화 1편 · 그림 10장/);
+    assert.match(plan, /성품 이름/);
+    await h.click('[data-testid=import-run]');
+    await h.waitForSelector('[data-testid=import-done]', { timeout: 60000 });
+    assert.match(await h.textContent('[data-testid=import-done]'), /시안 11개/);
+    // 공개 전: 방문자에게 가져온 쪽이 없다 (27차에서 만든 about 은 새 판만 더해졌고 공개본은 그대로)
+    const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const v = await ctxV.newPage();
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/p/gallery`)).status(), 404);
+    await h.click('[data-testid=import-publish]');
+    await h.waitForSelector('[data-testid=import-published]', { timeout: 60000 });
+    await shot(h, '31-import.png');
+    // 방문자: 새벽빛 첫 화면(태국어 기본), 로고·바닥 정보, 최근 소식
+    await v.goto(`${BASE}/s/dreamy-a`);
+    await v.waitForSelector('.site[data-theme=dawn] .site-opening');
+    assert.match(await v.textContent('h1'), /ไทย Dawn Example\./);
+    assert.ok(await v.locator('.site-brand img').count());
+    assert.match(await v.textContent('.site-footer'), /000-0000000/);
+    assert.match(await v.textContent('[data-testid=news-list]'), /Choosing colours/);
+    assert.doesNotMatch(await v.textContent('.site-nav'), /후원자|Supporters/);
+    await shot(v, '31-dawn-home.png');
+    // 갤러리: 묶음 거르기 + 크게 보기(Esc로 닫힘)
+    await v.goto(`${BASE}/s/dreamy-a/p/gallery?lang=en`);
+    await v.click('.gallery-filter button:text-is("Art")');
+    await v.waitForFunction(() => document.querySelectorAll('.gallery-tile').length === 1);
+    assert.equal(await v.getAttribute('.gallery-filter button:text-is("Art")', 'aria-pressed'), 'true');
+    await v.click('.gallery-tile');
+    await v.waitForSelector('dialog.photo-dialog[open]');
+    await v.keyboard.press('Escape');
+    await v.waitForSelector('dialog.photo-dialog:not([open])', { state: 'attached' });
+    await shot(v, '31-dawn-gallery.png');
+    // 옛 주소 호환: /about → /p/about, /friends/letters/<id> → 숨은 쪽(한국어)
+    await v.goto(`${BASE}/s/dreamy-a/curriculum?lang=ko`);
+    assert.match(v.url(), /\/s\/dreamy-a\/p\/curriculum\?lang=ko$/);
+    await v.goto(`${BASE}/s/dreamy-a/friends/letters/welcome`);
+    assert.match(v.url(), /\/p\/friends-letter-welcome\?lang=ko$/);
+    assert.match(await v.textContent('.site-main'), /합성 편지 글/);
+    assert.equal(await v.locator('.site-nav').count(), 0);
+    assert.equal(await v.getAttribute('meta[name=robots]', 'content'), 'noindex, nofollow');
+    await shot(v, '31-friends.png');
+    // 동화: 그림 안 글 → 글은 화면 읽기용
+    await v.goto(`${BASE}/s/dreamy-a/stories/dawn-story`);
+    await v.waitForSelector('[data-testid=storybook] .storybook-text.sr-only');
+    await ctxV.close();
     await ctxH.close();
   });
 

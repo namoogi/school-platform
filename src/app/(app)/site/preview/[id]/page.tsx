@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
 import { NotFoundError } from '@/lib/services';
-import { getEntry, getSettings, LANG_LABEL, pick, type Lang } from '@/lib/site';
+import { getEntry, getSettings, LANG_LABEL, type Lang } from '@/lib/site';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
+import { PageHead } from '@/components/site/load';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,8 +30,10 @@ export default async function SitePreview({ params, searchParams }: { params: Pr
       </p>
       <div className="site site-preview" data-theme={settings?.theme ?? 'campus'} lang={lang}>
         <main className="site-wrap site-main">
-          <h1 className="site-h1">{pick(v.content.title, lang, fallback)}</h1>
-          <SiteBlocks content={v.content} lang={lang} fallback={fallback} assetUrl={(a) => `/site/assets/${a}`} />
+          <PageHead content={v.content} lang={lang} fallback={fallback} asset={(a) => `/site/assets/${a}`} />
+          {/* 시안에서는 사이트 안 링크를 따라가지 않는다(공개 주소가 아직 없을 수 있음) */}
+          <SiteBlocks content={v.content} lang={lang} fallback={fallback} assetUrl={(a) => `/site/assets/${a}`} link={() => '#'}
+            textInImage={String(detail.entry.meta.text_in_image) === 'true'} />
         </main>
       </div>
     </>
