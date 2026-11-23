@@ -7,6 +7,14 @@
 --  · 사람이 보낸 글은 deliver=true 이면 전달 대상이다. 받을 세션이 비어 있으면 관제가 정한다.
 --  · 결과 확인(review): 세션이 끝났다고 하면 사람이 '확인 완료' 또는 '다시 수정 요청'을 누른다(옛 개선 요청 판 방식).
 
+-- 운영 마이그레이션 연결은 request.jwt.claims 가 빈 문자열로 잡혀 있을 수 있다(로컬은 없음).
+-- app.uid() 가 빈 문자열을 json 으로 읽다 실패하지 않게: 이 트랜잭션은 사용자 없음으로 두고, 함수도 빈 문자열을 '없음'으로 본다.
+select set_config('request.jwt.claims', '{}', true);
+create or replace function app.uid() returns uuid
+language sql stable as $$
+  select nullif(coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::json ->> 'sub', '')::uuid
+$$;
+
 -- ── 표 바꾸기 ─────────────────────────────────────────────
 alter table public.control_sessions
   add column school_id uuid references public.schools(id);
