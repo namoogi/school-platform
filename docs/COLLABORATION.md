@@ -114,3 +114,7 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
 - 사용자 1회 설정: Codex Code review를 이 저장소에 켜기, Codex 환경(Environment) 하나 만들기. 그 뒤로는 사람이 중계하지 않는다.
 - 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
 
+## Vercel 미리보기 빌드 (2026-11-24 사용자 결정, 관제 D-12)
+- `claude/**`·`codex/**` 브랜치는 Vercel 배포를 만들지 않는다(`vercel.json` `git.deploymentEnabled`). 무료 요금제의 하루 배포 100회를 세션 브랜치가 다 써서 운영 배포가 막힌 일(2026-11-23) 때문.
+- 이 브랜치들의 확인은 로컬 `npm test`·`npm run build`·`npm run test:e2e`로 한다. 미리보기는 원래 운영 DB를 같이 써서 시험용으로 적합하지 않았다.
+- 다른 브랜치(`auto/**`, 사람 브랜치)와 `main`은 그대로 배포된다. 다시 검토할 조건: 미리보기 DB가 분리되거나 요금제가 바뀔 때.
