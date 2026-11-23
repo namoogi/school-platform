@@ -23,12 +23,14 @@ export function StoryIndex({ items, portraits, lang, fallback, link }: {
     <div className="virtue-groups">
       {groups.map((group) => {
         const portrait = Object.hasOwn(portraits, group.character) ? portraits[group.character] : undefined;
-        return <section className="virtue-group" key={JSON.stringify([group.virtue, group.character])}>
-          <header className="virtue-character">
-            {portrait && /* eslint-disable-next-line @next/next/no-img-element */ <img src={portrait} alt="" width={128} height={144} loading="lazy" />}
-            <div><h2>{storyTerm(group.virtue, lang)}</h2><p>{storyTerm(group.character, lang) || words.unnamed}</p></div>
-          </header>
-          {titles(group.stories)}
+        return <section className="virtue-group" data-portrait={Boolean(portrait)} key={JSON.stringify([group.virtue, group.character])}>
+          {portrait && /* eslint-disable-next-line @next/next/no-img-element */ <img className="virtue-portrait" src={portrait} alt="" width={128} height={176} loading="lazy" />}
+          <div className="virtue-stories">
+            <header className="virtue-character">
+              <h2>{storyTerm(group.virtue, lang)}</h2><p>{storyTerm(group.character, lang) || words.unnamed}</p>
+            </header>
+            {titles(group.stories)}
+          </div>
         </section>;
       })}
     </div>
