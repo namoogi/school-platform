@@ -1,7 +1,8 @@
 import crypto from 'node:crypto';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { asSystem } from './db';
+import { asSystem, INSPECTOR_ID } from './db';
+export { INSPECTOR_ID };
 
 /**
  * 14차 최소 인증: 이 프로젝트 DB의 private.app_users 와 서명된 세션 쿠키.
@@ -75,7 +76,23 @@ export async function checkCredentials(email: string, password: string): Promise
 
 export async function currentUserId(): Promise<string | null> {
   const store = await cookies();
-  return verifySession(store.get(SESSION_COOKIE)?.value);
+  const fromSession = await verifySession(store.get(SESSION_COOKIE)?.value);
+  if (fromSession) return fromSession;
+  // 30차: Claude 점검 토큰 (요청 머리). 토큰 원문은 저장하지 않고 DB가 해시로 확인한다.
+  const token = (await headers()).get('x-inspector-token');
+  if (token && /^insp_[0-9a-f]{64}$/.test(token)) return verifyInspector(token);
+  return null;
+}
+
+async function verifyInspector(token: string): Promise<string | null> {
+  return asSystem(async (db) => {
+    const { rows: [r] } = await db.query('select private.inspector_user_for($1) as id', [token]);
+    return (r?.id as string | null) ?? null;
+  });
+}
+
+export function isInspector(userId: string | null) {
+  return userId === INSPECTOR_ID;
 }
 
 /** 페이지용: 로그인하지 않았으면 로그인 화면으로 보낸다. */

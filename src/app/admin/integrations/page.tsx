@@ -5,13 +5,16 @@ import { LINK_KINDS, LINK_STATUS, listLinks, sessionPrompt } from '@/lib/devlink
 import { isUuid } from '@/lib/services';
 import { EmptyState, PageHeader, StatusBadge } from '@/components/ui';
 import { AddLinkForm, CopyBox, LinkActions } from './IntegrationsClient';
+import { InspectorPanel } from './InspectorPanel';
+import { listInspectorTokens } from '@/lib/inspector';
+import { INSPECTOR_ID } from '@/lib/db';
 
 export default async function IntegrationsPage({ searchParams }: { searchParams: Promise<{ school?: string }> }) {
   const { school: selected } = await searchParams;
-  const { schools, links } = await loadForPlatform(async ({ db }) => {
+  const { schools, links, tokens, account } = await loadForPlatform(async ({ db }) => {
     const schools = await overview(db);
     const id = selected && isUuid(selected) && schools.some((s) => s.id === selected) ? selected : schools[0]?.id;
-    return { schools, links: id ? await listLinks(db, id, true) : [] };
+    return { schools, links: id ? await listLinks(db, id, true) : [], tokens: await listInspectorTokens(db) };
   });
   const current = schools.find((s) => s.id === (selected && schools.some((x) => x.id === selected) ? selected : schools[0]?.id));
   const kinds = Object.fromEntries(Object.entries(LINK_KINDS).map(([k, v]) => [k, { label: v.label, example: v.example }]));
@@ -54,6 +57,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
           </section>
         </div>
       )}
+      <InspectorPanel tokens={JSON.parse(JSON.stringify(tokens))} readOnly={account.id === INSPECTOR_ID} />
     </>
   );
 }

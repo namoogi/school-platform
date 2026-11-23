@@ -85,7 +85,8 @@ try {
        on conflict (email) do update set is_platform_admin = true`, [e, '전체 관리자']);
   }
   const { rowCount: demoted } = await client.query(
-    `update private.app_users set is_platform_admin = false where is_platform_admin and not (lower(email) = any($1::text[]))`, [admins]);
+    `update private.app_users set is_platform_admin = false where is_platform_admin and not (lower(email) = any($1::text[]))
+       and email <> 'inspector@onschools.internal'`, [admins]);
   console.log(`전체 관리자 ${admins.length}명` + (demoted ? `, 권한 해제 ${demoted}명` : ''));
 
   await client.query('commit');

@@ -514,6 +514,45 @@ try {
     await ctxS.close();
   });
 
+  await step('30차: Claude 점검 접근 — 전체 관리자가 토큰 발급, 머리 토큰만으로 화면 읽기, 바꾸기는 거부, 폐기하면 차단', async () => {
+    const ctxP = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const p = await ctxP.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.goto(`${BASE}/admin/integrations`);
+    await p.click('[data-testid=inspector-panel] button:text-is("점검 토큰 발급")');
+    const token = (await p.textContent('[data-testid=issued-token]')).trim();
+    assert.match(token, /^insp_[0-9a-f]{64}$/);
+    // 쿠키 없이 머리 토큰만으로
+    const ctxI = await browser.newContext({ viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { 'x-inspector-token': token } });
+    const i = await ctxI.newPage();
+    await i.goto(`${BASE}/admin`);
+    await i.waitForSelector('[data-testid=school-table]');
+    assert.match(await i.textContent('header.top'), /Claude 점검/);
+    // 바꾸기는 DB가 막는다
+    const w = await i.evaluate(async () => {
+      const r = await fetch('/api/admin/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'todo', title: '점검 계정 쓰기 시도', status: 'todo' }) });
+      return { status: r.status, body: await r.json() };
+    });
+    assert.equal(w.status, 403);
+    assert.match(w.body.error, /읽기 전용/);
+    // 학교에 들어가 학교 화면도 읽는다
+    await i.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('button:text-is("들어가기")').click();
+    await i.waitForURL(/\/home$/);
+    await i.waitForSelector('[data-testid=card-review]');
+    // 폐기하면 바로 막힌다
+    await p.reload();
+    await p.click('[data-testid=inspector-panel] button:text-is("폐기")');
+    await p.waitForSelector('[data-testid=inspector-panel] .badge:has-text("폐기됨")');
+    await i.goto(`${BASE}/admin`);
+    await i.waitForURL(/\/login$/);
+    await ctxI.close();
+    await ctxP.close();
+  });
+
   await step('27차: 학교 홈페이지 — 라이선스로 켜고, 시안 → 공개, 방문자에게는 공개한 판만, 성품 동화 그림책', async () => {
     const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const h = await ctxH.newPage();
