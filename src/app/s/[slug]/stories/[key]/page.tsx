@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { pick, publicEntry } from '@/lib/site';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
-import { SiteFrame } from '@/components/site/SiteFrame';
+import { SiteFrame, siteText } from '@/components/site/SiteFrame';
 import { ReadingNav } from '@/components/site/ReadingNav';
 import { loadSite, newsFor, PageHead, robotsFor } from '@/components/site/load';
 
@@ -18,7 +18,8 @@ export default async function Item({ params, searchParams }: P) {
   return (
     <SiteFrame site={L.site} lang={L.lang} current="stories" path={`/stories/${key}`} profile={L.profile} assetUrl={L.asset}>
       <ReadingNav listHref={L.link('/stories')} listLabel={listLabel} />
-      <PageHead content={entry.content} lang={L.lang} fallback={L.site.default_lang} asset={L.asset} meta={meta} />
+      <PageHead content={entry.content} lang={L.lang} fallback={L.site.default_lang} asset={L.asset} meta={meta} link={L.link}
+        crumb={L.site.theme === 'dawn' ? { href: L.link('/'), label: siteText('home', L.lang) } : undefined} />
       <SiteBlocks content={entry.content} lang={L.lang} fallback={L.site.default_lang} assetUrl={L.asset} link={L.link}
         news={await newsFor(L.site, entry.content)} textInImage={String(entry.meta.text_in_image) === 'true'} />
       <ReadingNav listHref={L.link('/stories')} listLabel={listLabel} />

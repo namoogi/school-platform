@@ -37,6 +37,8 @@ export function GalleryGrid({ items, filters, caption, labels, downloadLabel }: 
             <button type="button" className="gallery-tile" onClick={() => show(i)} aria-label={g.alt || g.fileName || `${i + 1}`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={g.src} alt="" loading="lazy" />
+              {/* 42차: 새벽빛은 옛 사이트처럼 사진 아래 설명을 보인다(이름은 aria-label 이 이미 읽어 줌) */}
+              {!downloadLabel && g.alt && <span className="gallery-tile-caption" aria-hidden="true">{g.alt}</span>}
             </button>
             {downloadLabel && <>
               <b>{g.alt || g.fileName}</b>

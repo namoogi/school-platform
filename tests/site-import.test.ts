@@ -16,7 +16,7 @@ const content = {
     address: '1 Example Road', addressThai: 'ถนนตัวอย่าง 1', phone: ['000-0000000', '<전화>'], facebook: 'https://www.facebook.com/example',
     ui: Object.fromEntries(['home', 'about', 'curriculum', 'life', 'gallery', 'news', 'admissions', 'contact', 'visit', 'contactSchool', 'viewGallery',
       'stages', 'activities', 'nameTitle', 'location', 'nextStep', 'nextStepBody', 'documents', 'faq', 'office', 'hours', 'map', 'facebook', 'poster',
-      'classroom', 'art', 'grounds'].map((k) => [k, L(k)])),
+      'classroom', 'art', 'grounds', 'explore', 'more', 'viewLearning', 'inquiryPrep', 'stageLabel', 'schoolStages', 'type', 'schoolType', 'unknown'].map((k) => [k, L(k)])),
     values: [{ title: L('Value 1'), body: L('Value body') }],
     stages: [{ id: 'early', title: L('Early'), subtitle: L('Sub'), body: L('Stage body'), photo: 'workshop', points: [L('Point A'), L('Point B')], note: L('Note') }],
     activities: [{ title: L('Act'), body: L('Act body') }],
@@ -78,7 +78,7 @@ describe('기존 홈페이지 가져오기 변환', () => {
     const home = plan.entries.find((e) => e.key === 'home')!;
     expect(home.content.title.en).toBe('Home\ntitle');
     expect(plan.entries.find((e) => e.key === 'making')!.content.title.en).toBe('Making');
-    const stage = plan.entries.find((e) => e.key === 'curriculum')!.content.blocks[0];
+    const stage = plan.entries.find((e) => e.key === 'curriculum')!.content.blocks.find((b) => b.type === 'section')!;
     expect(stage.type === 'section' && stage.body?.en).toContain('· Point A\n· Point B');
   });
 
@@ -110,6 +110,36 @@ describe('기존 홈페이지 가져오기 변환', () => {
     expect(plan.notes.some((n) => n.includes('missing.webp'))).toBe(true);
     const about = plan.entries.find((e) => e.key === 'friends-about')!;
     expect(validateContent(fillAssets(about.content, ids)).blocks).toEqual([]); // 그림 없는 그림 블록은 검사에서 걸러지므로 빈 블록으로 남지 않게
+  });
+
+  it('42차: 옛 사이트의 고정 구역을 구역 모양(variant)·머리말·링크로 옮긴다', () => {
+    const blocks = (key: string) => plan.entries.find((e) => e.key === key)!.content.blocks;
+    const variants = (key: string) => blocks(key).map((b) => (b.type === 'section' ? `${b.template}:${b.variant ?? ''}` : b.type));
+    expect(variants('home')).toEqual(['text:split', 'media-left:portrait', 'cards:index', 'photos:moments', 'news_list', 'cta:']);
+    expect(variants('about')).toEqual(['media-left:overview', 'media-left:emblem', 'cards:rows', 'cta:']);
+    expect(variants('life')).toEqual(['cards:rows', 'steps:questions', 'cta:', 'cta:']);
+    expect(variants('admissions')).toEqual(['media-right:prep', 'steps:', 'facts:aside', 'facts:faq', 'cta:']);
+    expect(variants('contact')).toEqual(['facts:half', 'banner:half', 'steps:questions']);
+    const home = plan.entries.find((e) => e.key === 'home')!.content;
+    expect(home.head).toMatchObject({ layout: 'opening', eyebrow: { en: 'UBON RATCHATHANI, THAILAND' }, link: { label: { en: 'explore' }, href: '/p/about' } });
+    // 첫 화면 이야기 링크는 옛 기본 이야기(making)의 소식 주소로, 소식은 옛처럼 2개
+    const portrait = home.blocks[1];
+    expect(portrait.type === 'section' && portrait.button?.href).toBe('/news/making');
+    expect(home.blocks.find((b) => b.type === 'news_list')).toMatchObject({ count: 2, eyebrow: { en: 'SCHOOL JOURNAL' } });
+    // 방문 안내 띠 = 다음 단계 제목·글 + 방문 단추
+    expect(blocks('about').at(-1)).toMatchObject({ title: { en: 'nextStep' }, body: { en: 'nextStepBody' }, button: { label: { en: 'visit' }, href: '/p/contact' } });
+    // 교육 가치 줄에는 옛 사진(작품·함께·둥글게)이 붙는다
+    const rows = blocks('about')[2];
+    expect(rows.type === 'section' && rows.items?.[0].asset).toBe(`${FILE_REF}assets/site/assets/artwork-960.webp`);
+  });
+
+  it('구역 모양 이름은 정해진 것만 받는다', () => {
+    const base = { title: { en: 'T' }, blocks: [{ type: 'section', template: 'text', variant: 'split', title: { en: 'A' } }] };
+    expect(validateContent(base).blocks[0]).toMatchObject({ variant: 'split' });
+    expect(() => validateContent({ ...base, blocks: [{ type: 'section', template: 'text', variant: 'fancy' }] })).toThrow(/배치 이름/);
+    const head = validateContent({ ...base, head: { layout: 'opening', link: { label: { en: 'More' }, href: '/p/about' }, note: { en: '2018' } } }).head;
+    expect(head).toMatchObject({ link: { href: '/p/about' }, note: { en: '2018' } });
+    expect(() => validateContent({ ...base, head: { link: { label: { en: 'x' }, href: 'javascript:alert(1)' } } })).toThrow(/링크/);
   });
 
   it('형식이 다른 묶음은 거부한다', () => {

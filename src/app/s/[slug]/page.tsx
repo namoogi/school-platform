@@ -22,7 +22,7 @@ export default async function SiteHome({ params, searchParams }: P) {
   return (
     <SiteFrame site={site} lang={lang} current="home" path="" profile={L.profile} assetUrl={asset}>
       {home
-        ? <><PageHead content={home.content} lang={lang} fallback={site.default_lang} asset={asset} />
+        ? <><PageHead content={home.content} lang={lang} fallback={site.default_lang} asset={asset} link={link} />
             <SiteBlocks content={home.content} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} /></>
         : <h1 className="site-h1">{t(site.title) || site.school}</h1>}
       {news.length > 0 && (

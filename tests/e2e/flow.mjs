@@ -890,6 +890,25 @@ try {
     await h.waitForSelector('[data-testid=story-meta] [role=status]:has-text("저장했습니다")');
     await v.goto(`${BASE}/s/dreamy-a/stories?lang=ko`);
     assert.match(await v.textContent('[data-testid=site-list]'), /우정/);
+    // 42차: 같은 묶음을 다시 가져오면 쪽은 새 판(옛 고정 구역 모양)이 되고, 이미 있는 동화는 그대로 둔다
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.setInputFiles('[data-testid=import-file]', { name: 'export.zip', mimeType: 'application/zip', buffer: makeExportZip() });
+    await h.click('[data-testid=import-run]');
+    await h.waitForSelector('[data-testid=import-done]', { timeout: 60000 });
+    assert.match(await h.textContent('[data-testid=import-kept]'), /dawn-story/);
+    assert.match(await h.textContent('[data-testid=import-done]'), /시안 10개/);
+    await h.click('[data-testid=import-publish]');
+    await h.waitForSelector('[data-testid=import-published]', { timeout: 60000 });
+    await v.goto(`${BASE}/s/dreamy-a`);
+    for (const sel of ['.site-opening .rainbow-signature', '.site-opening .rainbow-arc', '.sec[data-variant=split]', '.sec[data-variant=portrait] .rainbow-arc',
+      '.sec[data-variant=index] .sec-index', '.sec[data-variant=moments] .sec-label', '.site-lang-menu', '.site-footer-staff']) {
+      assert.ok(await v.locator(sel).count(), `새벽빛 첫 화면에 ${sel}`);
+    }
+    await v.goto(`${BASE}/s/dreamy-a/p/about`);
+    assert.match(await v.textContent('.site-crumb'), /หน้าแรก/);
+    assert.ok(await v.locator('.sec[data-variant=overview] .sec-facts').count());
+    await v.goto(`${BASE}/s/dreamy-a/stories?lang=ko`);
+    assert.match(await v.textContent('[data-testid=site-list]'), /우정/); // 동화 성품 이름이 다시 가져오기로 지워지지 않았다
     await ctxV.close();
     await ctxH.close();
   });
