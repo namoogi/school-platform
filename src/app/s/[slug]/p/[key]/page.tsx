@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { pick, publicEntry } from '@/lib/site';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
-import { SiteFrame } from '@/components/site/SiteFrame';
+import { SiteFrame, siteText } from '@/components/site/SiteFrame';
 import { loadSite, newsFor, PageHead, robotsFor } from '@/components/site/load';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,8 @@ export default async function SitePage({ params, searchParams }: P) {
   return (
     <SiteFrame site={L.site} lang={L.lang} current={`p:${key}`} path={`/p/${key}`} profile={L.profile} assetUrl={L.asset} hidden={hidden} brandHref={hidden ? `/p/${groupRoot(key)}` : '/'}
       langs={hidden ? L.site.langs.filter((l) => entry.content.title[l]) : undefined}>
-      <PageHead content={entry.content} lang={L.lang} fallback={L.site.default_lang} asset={L.asset} />
+      <PageHead content={entry.content} lang={L.lang} fallback={L.site.default_lang} asset={L.asset} link={L.link}
+        crumb={L.site.theme === 'dawn' && !hidden ? { href: L.link('/'), label: siteText('home', L.lang) } : undefined} />
       <SiteBlocks content={entry.content} lang={L.lang} fallback={L.site.default_lang} assetUrl={L.asset} link={L.link} news={await newsFor(L.site, entry.content)} />
     </SiteFrame>
   );

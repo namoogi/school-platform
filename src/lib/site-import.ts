@@ -84,13 +84,26 @@ export function planImport(content: Raw, files: string[], book?: Raw | null, fri
   };
   const alt = (key: unknown) => (typeof key === 'string' && assets[key] ? lt(assets[key].alt) : {});
   const label = (k: string) => lt(ui[k]);
-  const visit = (body?: LText): Block => ({
-    type: 'section', template: 'cta', title: label('visit'), body: body ?? lt(d.contactIntro),
-    button: { label: label('contactSchool'), href: '/p/contact' },
+  /** 옛 글 칸: defaults 에 있으면 그것, 없으면 copy (옛 i.Cx 와 같은 순서) */
+  const cx = (k: string) => (has(lt(d[k])) ? lt(d[k]) : lt(copy[k]));
+  const same = (s: string): LText => ({ th: s, en: s, ko: s });
+  /** 옛 첫 화면 구역의 영어 머리말(옛 코드에 고정된 글) */
+  const EYEBROW = {
+    home: same('UBON RATCHATHANI, THAILAND'), identity: same('RUNG · ARUN · SUKSA'), portrait: same('UNDER THE RAINBOW'),
+    learning: same('LEARNING AT RUNG ARUN'), moments: same('EVERYDAY AT SCHOOL'), journal: same('SCHOOL JOURNAL'),
+  };
+  // 36차: 옛 방문 안내 띠(VisitBand) = 다음 단계 제목·글 + '방문' 단추
+  const visit = (): Block => ({
+    type: 'section', template: 'cta', title: label('nextStep'), body: lt(ui.nextStepBody),
+    button: { label: label('visit'), href: '/p/contact' },
   });
 
   const entries: PlannedEntry[] = [];
   const page = (key: string, sort: number, c: Content) => entries.push({ kind: 'page', key, visibility: 'public', sort, content: c });
+  // 옛 이야기 주소(story-<id>) → 이 플랫폼 소식 주소. 공지 표로 소식을 만들면 기본 이야기가 없으므로 소식 목록으로
+  const posts = list((content.tables as Raw | undefined)?.news_posts).filter((p) => p.published === true);
+  const storyIds = new Set(posts.length ? [] : list(d.stories).map((x) => String(x.id ?? '')));
+  const storyHref = (id: string) => (storyIds.has(id) ? `/news/${safeKey(id, 'news')}` : '/news');
 
   // ── 첫 화면 (opening → identity → portrait → learning → moments → stories → visit) ──
   const stages = list(d.stages);
@@ -104,53 +117,63 @@ export function planImport(content: Raw, files: string[], book?: Raw | null, fri
   };
   if (!has(profile.address)) profile.address = undefined;
   page('home', 0, {
-    title: has(lt(copy.homeTitle)) ? lt(copy.homeTitle) : lt(d.name), summary: join([lt(d.intro), lt(d.hero)]),
-    cover: photo('campus'), head: { eyebrow: lt(d.location), layout: 'opening' }, site: profile,
+    title: has(lt(copy.homeTitle)) ? lt(copy.homeTitle) : lt(d.name), summary: lt(d.intro),
+    cover: photo('campus'), head: { eyebrow: EYEBROW.home, layout: 'opening', link: { label: label('explore'), href: '/p/about' }, note: cx('campusDate') }, site: profile,
     blocks: [
-      { type: 'section', template: 'text', title: lt(copy.homeIdentity), body: lt(d.nameMeaning), button: { label: label('about'), href: '/p/about' } },
-      { type: 'section', template: 'media-left', title: lt(copy.homePortraitTitle), body: lt(copy.homePortraitBody), asset: photo('artwork'), alt: alt('artwork') },
-      { type: 'section', template: 'cards', title: label('stages'), items: stages.map((s): SectionItem => ({ title: lt(s.title), body: lt(s.subtitle), asset: photo(s.photo), alt: alt(s.photo), href: '/p/curriculum' })) },
-      { type: 'section', template: 'photos', title: lt(copy.homeMomentsTitle), items: ['workshop', 'circle', 'classroom'].map((k) => ({ asset: photo(k), alt: alt(k), title: alt(k) })) },
-      { type: 'news_list', title: label('news'), count: 4, style: 'cards' },
+      { type: 'section', template: 'text', variant: 'split', eyebrow: EYEBROW.identity, title: lt(copy.homeIdentity), body: cx('nameMeaning'), button: { label: label('about'), href: '/p/about' } },
+      { type: 'section', template: 'media-left', variant: 'portrait', eyebrow: EYEBROW.portrait, title: lt(copy.homePortraitTitle), body: lt(copy.homePortraitBody),
+        asset: photo('artwork'), alt: alt('artwork'), caption: alt('artwork'), button: { label: label('more'), href: storyHref('making') } },
+      { type: 'section', template: 'cards', variant: 'index', eyebrow: EYEBROW.learning, title: label('stages'), button: { label: label('viewLearning'), href: '/p/curriculum' },
+        items: stages.map((s): SectionItem => ({ title: lt(s.title), body: lt(s.subtitle), href: '/p/curriculum' })) },
+      { type: 'section', template: 'photos', variant: 'moments', eyebrow: EYEBROW.moments, title: lt(copy.homeMomentsTitle), button: { label: label('viewGallery'), href: '/p/gallery' },
+        items: ['workshop', 'together', 'circle'].map((k, n) => ({ asset: photo(k), alt: alt(k), title: alt(k), body: same(['MAKE', 'SHARE', 'TOGETHER'][n]), href: n === 0 ? storyHref('making') : '/p/life' })) },
+      { type: 'news_list', eyebrow: EYEBROW.journal, title: label('news'), count: 2, style: 'cards' },
       visit(),
     ],
   });
 
-  // ── 학교 소개 ──
+  // ── 학교 소개: 개요(사진 + 정보 4줄) → 이름 뜻(로고) → 교육 가치(사진–글 줄) → 방문 안내 ──
   const values = list(d.values);
   page('about', 10, {
-    title: label('about'), summary: lt(d.intro), head: { eyebrow: lt(d.name) },
+    title: label('about'), summary: lt(d.intro),
     blocks: [
-      { type: 'section', template: 'text', title: label('nameTitle'), body: lt(d.nameMeaning) },
-      { type: 'section', template: 'cards', title: lt(d.philosophyTitle), body: lt(d.philosophyIntro), items: values.map((v) => ({ title: lt(v.title), body: lt(v.body) })) },
-      { type: 'section', template: 'media-right', title: lt(copy.homePortraitTitle), body: lt(copy.homePortraitBody), asset: photo('artwork'), alt: alt('artwork') },
-      { type: 'notice', text: lt(d.knownNote) },
+      { type: 'section', template: 'media-left', variant: 'overview', asset: photo('campus'), alt: alt('campus'), caption: alt('campus'),
+        items: [
+          { title: label('location'), body: cx('location') }, { title: label('stageLabel'), body: label('schoolStages') },
+          { title: label('type'), body: label('schoolType') }, { title: lt(copy.aboutPeople), body: label('unknown') },
+        ].filter((f) => has(f.title) && has(f.body)) },
+      { type: 'section', template: 'media-left', variant: 'emblem', asset: logo, alt: lt(d.name), title: label('nameTitle'), body: cx('nameMeaning') },
+      { type: 'section', template: 'cards', variant: 'rows', title: cx('philosophyTitle'), body: cx('philosophyIntro'),
+        items: values.map((v, n) => { const k = ['artwork', 'together', 'circle'][n]; return { title: lt(v.title), body: lt(v.body), asset: k ? photo(k) : undefined, alt: k ? alt(k) : undefined }; }) },
       visit(),
     ],
   });
 
-  // ── 교육 과정 ──
+  // ── 교육 과정: 단계(사진 | 글·핵심·메모·입학 링크) → 활동 → 자료 안내 → 방문 안내 ──
   page('curriculum', 20, {
-    title: label('curriculum'), summary: lt(d.philosophyIntro), head: { eyebrow: label('stages') },
+    title: label('curriculum'), summary: lt(d.curriculumNote),
     blocks: [
-      ...stages.map((s, i): Block => ({
-        type: 'section', template: i % 2 ? 'media-right' : 'media-left', eyebrow: lt(s.subtitle), title: lt(s.title),
+      { type: 'heading', text: label('stages') },
+      ...stages.map((s): Block => ({
+        type: 'section', template: 'media-left', title: lt(s.title),
         body: join([lt(s.body), join((Array.isArray(s.points) ? s.points : []).map((p) => bullet(lt(p))), '\n'), lt(s.note)]),
-        asset: photo(s.photo), alt: alt(s.photo),
+        asset: photo(s.photo), alt: alt(s.photo), button: { label: label('admissions'), href: '/p/admissions' },
       })),
       { type: 'section', template: 'cards', title: label('activities'), items: list(d.activities).map((a) => ({ title: lt(a.title), body: lt(a.body) })) },
-      { type: 'notice', text: lt(d.curriculumNote) },
+      { type: 'notice', text: cx('knownNote') },
       visit(),
     ],
   });
 
-  // ── 학교생활 ──
+  // ── 학교생활: 주요 활동 3줄(사진 | 제목·글·더 보기) → 하루 생활 질문 → 갤러리 단추 → 방문 안내 ──
+  const lifeRows: [string, number, string][] = [['workshop', 0, 'making'], ['circle', 2, 'together'], ['classroom', 1, 'together']];
   page('life', 30, {
-    title: label('life'), summary: lt(d.dayNote), head: { eyebrow: lt(copy.homeMomentsTitle) },
+    title: label('life'), summary: lt(d.hero),
     blocks: [
-      { type: 'section', template: 'photos', items: ['workshop', 'circle', 'classroom'].map((k) => ({ asset: photo(k), alt: alt(k), title: alt(k) })) },
-      { type: 'section', template: 'steps', title: lt(d.dayTitle), body: lt(d.dayNote), items: (Array.isArray(d.dayQuestions) ? d.dayQuestions : []).map((q) => ({ title: lt(q) })) },
-      { type: 'section', template: 'cta', title: label('gallery'), body: lt(d.galleryIntro), button: { label: label('viewGallery'), href: '/p/gallery' } },
+      { type: 'section', template: 'cards', variant: 'rows',
+        items: lifeRows.filter(([, n]) => values[n]).map(([k, n, story]) => ({ title: lt(values[n].title), body: lt(values[n].body), asset: photo(k), alt: alt(k), href: storyHref(story) })) },
+      { type: 'section', template: 'steps', variant: 'questions', title: cx('dayTitle'), body: cx('dayNote'), items: (Array.isArray(d.dayQuestions) ? d.dayQuestions : []).map((q) => ({ title: lt(q) })) },
+      { type: 'section', template: 'cta', button: { label: label('viewGallery'), href: '/p/gallery' } },
       visit(),
     ],
   });
@@ -178,38 +201,38 @@ export function planImport(content: Raw, files: string[], book?: Raw | null, fri
     }] : [],
   });
 
-  // ── 입학 안내 ──
+  // ── 입학 안내: 상담 준비(안내 상자 | 포스터) → 절차 → 서류 → 자주 묻는 질문 → 방문 안내 ──
   page('admissions', 60, {
     title: label('admissions'), summary: lt(d.admissionsIntro),
     blocks: [
-      { type: 'notice', text: lt(d.admissionsArchive) },
-      { type: 'section', template: 'steps', title: label('nextStep'), body: lt(ui.nextStepBody), items: list(d.admissionSteps).map((s) => ({ title: lt(s.title), body: lt(s.body) })) },
-      { type: 'section', template: 'facts', title: label('documents'), items: (Array.isArray(d.documents) ? d.documents : []).map((x, i) => ({ title: { th: String(i + 1), en: String(i + 1), ko: String(i + 1) }, body: lt(x) })) },
-      { type: 'section', template: 'facts', title: label('faq'), items: list(d.faq).map((f) => ({ title: lt(f.q), body: lt(f.a) })) },
-      ...(photo('poster') ? [{ type: 'image' as const, asset: photo('poster')!, alt: alt('poster'), caption: label('poster') }] : []),
+      { type: 'section', template: 'media-right', variant: 'prep', title: label('inquiryPrep'), body: cx('admissionsArchive'),
+        button: { label: label('contactSchool'), href: '/p/contact' }, asset: photo('poster'), alt: alt('poster') },
+      { type: 'section', template: 'steps', items: list(d.admissionSteps).map((s) => ({ title: lt(s.title), body: lt(s.body) })) },
+      { type: 'section', template: 'facts', variant: 'aside', title: label('documents'), items: (Array.isArray(d.documents) ? d.documents : []).map((x, i) => ({ title: same(String(i + 1)), body: lt(x) })) },
+      { type: 'section', template: 'facts', variant: 'faq', title: label('faq'), items: list(d.faq).map((f) => ({ title: lt(f.q), body: lt(f.a) })) },
       visit(),
     ],
   });
 
-  // ── 문의·위치 ──
-  const facts: SectionItem[] = [
-    { title: label('location'), body: profile.address },
-    ...(profile.phone?.length ? [{ title: { th: 'โทร', en: 'Phone', ko: '전화' }, body: { th: profile.phone.join(' · '), en: profile.phone.join(' · '), ko: profile.phone.join(' · ') } }] : []),
-    { title: label('hours'), body: lt(d.officeHours) },
-  ].filter((f) => has(f.body));
-  const mapQuery = encodeURIComponent(String(d.address ?? ''));
+  // ── 문의·위치: 사무실(전화·운영 시간·Facebook) | 위치(입구 사진·주소·지도) → 상담 질문 ──
+  const mapQuery = encodeURIComponent([lt(d.name).en, String(d.address ?? '')].filter(Boolean).join(' '));
+  const phones = profile.phone ?? [];
   page('contact', 70, {
     title: label('contact'), summary: lt(d.contactIntro),
     blocks: [
-      { type: 'section', template: 'facts', title: label('office'), items: facts },
-      ...(mapQuery ? [{ type: 'section' as const, template: 'cta' as const, title: label('map'), body: profile.address, button: { label: label('map'), href: `https://www.google.com/maps/search/?api=1&query=${mapQuery}` } }] : []),
-      ...(profile.facebook ? [{ type: 'section' as const, template: 'cta' as const, title: label('facebook'), button: { label: label('facebook'), href: profile.facebook } }] : []),
-      { type: 'notice', text: lt(d.contactNote) },
+      { type: 'section', template: 'facts', variant: 'half', title: label('office'),
+        items: [
+          ...(phones.length ? [{ title: { th: 'โทร', en: 'Phone', ko: '전화' }, body: same(phones.join('\n')) }] : []),
+          { title: label('hours'), body: join([lt(d.officeHours), lt(d.contactNote)]) },
+        ].filter((f) => has(f.body)),
+        ...(profile.facebook ? { button: { label: label('facebook'), href: profile.facebook } } : {}) },
+      { type: 'section', template: 'banner', variant: 'half', asset: photo('entrance'), alt: alt('entrance'), title: label('location'), body: profile.address,
+        ...(String(d.address ?? '') ? { button: { label: label('map'), href: `https://www.google.com/maps/search/?api=1&query=${mapQuery}` } } : {}) },
+      { type: 'section', template: 'steps', variant: 'questions', title: label('inquiryPrep'), items: (Array.isArray(d.dayQuestions) ? d.dayQuestions : []).map((q) => ({ title: lt(q) })) },
     ],
   });
 
   // ── 소식: 공지 표(news_posts)가 있으면 그것, 없으면 기본 소식 ──
-  const posts = list(tables.news_posts).filter((p) => p.published === true);
   if (posts.length) {
     posts.forEach((p, i) => {
       const L3 = (f: string): LText => lt({ th: p[`${f}_th`], en: p[`${f}_en`], ko: p[`${f}_ko`] });

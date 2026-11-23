@@ -1,6 +1,9 @@
 import { pick, publicEntry, publicList, publicSite, type Content, type Lang, type PublicEntry, type PublicSite } from '@/lib/site';
 import { resolveLang, siteLinker } from './SiteFrame';
 import type { NewsItem } from './SiteRenderer';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+import { RainbowArc, Ribbon } from './Rainbow';
 
 /**
  * 31차: 공개 화면 공용 읽기. 사이트 + 'home' 쪽(머리·바닥 정보가 든 판)을 함께 읽는다.
@@ -20,18 +23,52 @@ export async function newsFor(site: PublicSite, content: Content | undefined): P
   return site.has_news && content?.blocks.some((b) => b.type === 'news_list') ? publicList(site.slug, 'news') : [];
 }
 
-/** 쪽 머리: 머리말 · 제목 · 소개. dawn 에서는 잡지형 머리(.editorial-heading), 첫 화면은 표지 사진이 붙는 여는 머리. */
-export function PageHead({ content, lang, fallback, asset, meta }: { content: Content; lang: Lang; fallback: Lang; asset: (id: string) => string; meta?: string }) {
+/**
+ * 쪽 머리: 머리말 · 제목 · 소개. dawn 에서는 잡지형 머리(.editorial-heading), 첫 화면은 표지 사진이 붙는 여는 머리.
+ * 36차(옛 사이트 맞춤): 여는 머리는 무지개 호 · 링크 · 표지 날짜표 · 7색 띠, 안쪽 쪽은 '홈 / 제목' 길잡이(crumb)를 단다.
+ */
+export function PageHead({ content, lang, fallback, asset, meta, crumb, link = (h) => h }: {
+  content: Content; lang: Lang; fallback: Lang; asset: (id: string) => string; meta?: string;
+  /** 안쪽 쪽 길잡이: 홈 링크 주소와 이름 */ crumb?: { href: string; label: string };
+  /** 사이트 안 경로 → 공개 주소 */ link?: (href: string) => string;
+}) {
   const t = (x: Parameters<typeof pick>[0]) => pick(x, lang, fallback);
   const opening = content.head?.layout === 'opening';
+  const more = content.head?.link && t(content.head.link.label) ? content.head.link : null;
+  const moreLink = more && (
+    <Link className="site-link" href={more.href.startsWith('/') ? link(more.href) : more.href}>
+      {t(more.label)}<ArrowRight className="link-arrow" size={22} strokeWidth={1.4} aria-hidden="true" />
+    </Link>
+  );
+  if (opening) return (
+    <header className="site-head site-opening">
+      <div className="site-masthead">
+        {t(content.head?.eyebrow) && <span className="sec-eyebrow">{t(content.head?.eyebrow)}</span>}
+        <h1 className="site-h1">{t(content.title)}</h1>
+      </div>
+      <div className="site-side">
+        <RainbowArc />
+        {t(content.summary) && <p className="site-lead">{t(content.summary)}</p>}
+        {moreLink}
+      </div>
+      {content.cover && (
+        <figure className="site-panorama">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={asset(content.cover)} alt="" />
+          {t(content.head?.note) && <figcaption className="photo-date">{t(content.head?.note)}</figcaption>}
+        </figure>
+      )}
+      <Ribbon />
+    </header>
+  );
   return (
-    <header className={opening ? 'site-head site-opening' : 'site-head'}>
+    <header className="site-head">
+      {crumb && <nav className="site-crumb" aria-label={crumb.label}><Link href={crumb.href}>{crumb.label}</Link><span aria-hidden="true">/</span><span>{t(content.title)}</span></nav>}
       {t(content.head?.eyebrow) && <span className="sec-eyebrow">{t(content.head?.eyebrow)}</span>}
       <h1 className="site-h1">{t(content.title)}</h1>
       {meta && <p className="site-meta">{meta}</p>}
       {t(content.summary) && <p className="site-lead">{t(content.summary)}</p>}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      {opening && content.cover && <figure className="site-panorama"><img src={asset(content.cover)} alt="" /></figure>}
+      {moreLink}
     </header>
   );
 }
