@@ -11,16 +11,17 @@
 | --- | --- |
 | 항목 종류 | `story`(성품 동화) · `page`(쪽) · `news`(소식) 가운데 발급 때 고른 것 |
 | 주소 | 발급 때 고른 항목(key)만. 고르지 않았으면 고른 종류 모두 |
-| 권한 | `read`(읽기) · `upload`(그림·PDF 올리기) · `create`(새 항목 + 첫 판) · `edit`(새 판: 내용·구조, 항목 정보·순서) · `archive`(보관) 가운데 고른 것 |
+| 권한 | `read`(읽기) · `upload`(그림·PDF 올리기) · `create`(새 항목 + 첫 판) · `edit`(새 판: 내용·구조, 항목 정보·순서) · `archive`(보관) · `publish`(공개·공개 내림) 가운데 고른 것 |
 | 기한 | 7·30·90·365일 또는 무기한. 학교 관리자가 연장하거나 폐기한다(폐기하면 바로 멈춤) |
 
-어떤 토큰으로도 할 수 없는 일(서버가 거부): **공개·공개 내림·되살리기**, 홈페이지 설정, 구성원, 다른 학교. 공개 중인 항목은 보관할 수 없다.
+어떤 토큰으로도 할 수 없는 일(서버가 거부): **되살리기**, 홈페이지 설정, 구성원, 다른 학교. 공개 중인 항목은 보관할 수 없다. 공개·공개 내림은 `publish` 권한이 있는 토큰만 한다.
 
 ## 지킬 것
 - 토큰은 환경 변수 `SCHOOL_AGENT_TOKEN`으로만 쓴다. 출력·로그·커밋·채팅·문서에 남기지 않는다.
 - 실제 학생 이름·사진을 지어내거나 넣지 않는다. 사실(날짜·연락처·수치)은 지어내지 않고, 모르면 비워 두고 사람에게 묻는다.
 - 새 판은 최신 판을 읽고, 그 위에 고친다. 저장할 때 읽은 판 번호(`base_version`)를 보낸다. 그 사이 사람이나 다른 에이전트가 새 판을 만들었으면 **409** → 다시 읽어 고친다. 남의 판을 덮어쓰지 않는다.
-- 끝나면 사람에게 "무엇을 몇 판으로 저장했는지"를 알린다. 공개는 학교 관리자가 `/site`에서 시안 미리보기를 보고 한다.
+- 끝나면 사람에게 "무엇을 몇 판으로 저장했는지"를 알린다.
+- **공개는 사람이 공개를 지시했을 때만 한다**(`publish` 권한). 만들거나 고쳤다고 스스로 공개하지 않는다. 공개 전에 무엇을(어느 항목 몇 판) 공개하는지 사람에게 보여 주고, 공개한 뒤 공개 주소를 알린다. 지시가 없으면 학교 관리자가 `/site`에서 시안을 보고 공개한다.
 
 ## API
 기본 주소 `https://onschools.vercel.app`. 모든 요청에 머리 `x-agent-token: $SCHOOL_AGENT_TOKEN`. 로그인 쿠키는 보내지 않는다.
@@ -34,6 +35,8 @@
 | `POST /api/agent/entries/<kind>/<key>/versions` | edit | 새 판 = 전체 내용(구조 포함) `{ content, note, base_version }` → `{ version, published: false }` |
 | `POST /api/agent/entries/<kind>/<key>/edit` | edit | 구조 연산 `{ ops, base_version, note? }`. 아래 '구조 바꾸기' |
 | `PATCH /api/agent/entries/<kind>/<key>` | edit | 항목 정보·순서 `{ meta: { virtue, character, text_in_image }, sort }`(동화만 meta, 허용한 칸만) |
+| `POST /api/agent/entries/<kind>/<key>/publish` | publish | 바로 공개 `{ version? }`(비우면 최신 판). **사람이 공개를 지시했을 때만** 부른다 |
+| `POST /api/agent/entries/<kind>/<key>/unpublish` | publish | 공개 내림 |
 | `POST /api/agent/entries/<kind>/<key>/archive` | archive | 보관(소프트 삭제). 공개 중이면 409 → 사람에게 공개 내림을 부탁 |
 | `GET /api/agent/assets` | read 또는 upload | 이 학교 그림·PDF(id, name, mime, size_bytes, sha256) |
 | `POST /api/agent/assets?name=<파일 이름>` | upload | 본문에 파일 그대로, `Content-Type`에 형식 → `{ id, reused }` |

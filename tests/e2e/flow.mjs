@@ -984,6 +984,32 @@ try {
     await ctxH.close();
   });
 
+  await step('40차: 공개 권한 — 에이전트에게 공개를 지시하면 사이트에서 누르지 않아도 바로 공개, 만들기만으로는 공개 안 됨, 공개 내림', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.check('[data-testid=agent-token-perms] label:has-text("만들기") input');
+    await h.check('[data-testid=agent-token-perms] label:has-text("공개") input');
+    await h.waitForSelector('[data-testid=agent-token-publish-note]');
+    await h.click('[data-testid=agent-token-issue]');
+    const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
+    const call = async (p, body) => (await fetch(`${BASE}${p}`, { method: body ? 'POST' : 'GET', headers: { 'x-agent-token': token, 'content-type': 'application/json' }, body: body && JSON.stringify(body) })).status;
+    assert.equal(await call('/api/agent/entries/story', { key: 'star-promise', content: { title: { ko: '별빛 약속' }, blocks: [{ type: 'story_page', text: { ko: '별이 빛나요.' } }] } }), 200);
+    assert.equal((await fetch(`${BASE}/s/dreamy-a/stories/star-promise`)).status, 404); // 만들기만으로는 공개 안 됨
+    assert.equal(await call('/api/agent/entries/story/star-promise/publish', {}), 200);
+    const v = await (await browser.newContext()).newPage();
+    await v.goto(`${BASE}/s/dreamy-a/stories/star-promise?lang=ko`);
+    await v.waitForSelector('[data-testid=storybook]');
+    assert.match(await v.textContent('.storybook-text'), /별이 빛나요/);
+    // 관리 화면에도 공개 중으로, 활동 기록에 '공개'
+    await h.goto(`${BASE}/site?box=settings`);
+    assert.match(await h.textContent('[data-testid=agent-token-list]'), /star-promise 1판 공개/);
+    assert.equal(await call('/api/agent/entries/story/star-promise/unpublish', {}), 200);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/star-promise`)).status(), 404);
+    await ctxH.close();
+  });
+
   await step('35차: 화면 편집 — 그 자리에서 글 고치기·언어 전환·구역 끼워 넣기·숨기기·키보드로 옮기기·사진 올리기 → 공개 → 방문자 반영', async () => {
     const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const h = await ctxH.newPage();
