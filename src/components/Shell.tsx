@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Bell } from 'lucide-react';
 import { Nav, type NavGroup } from './Nav';
 import { LeaveSchoolButton, SchoolSwitcher } from './SchoolSwitcher';
 
@@ -8,30 +9,36 @@ export type ShellAccount = { name: string; isPlatformAdmin: boolean };
 export type ShellSchool = { id: string; name: string; status: string };
 
 /**
- * 앱 셸: 상단 막대(로고 · 학교 전환 · 계정) + 그룹형 왼쪽 탐색 + 본문.
- * 근거: docs/research/ui-rea-2026-11.md §5.2
+ * 앱 셸 (25차, ADR 0006 학사 업무형): 왼쪽 아이콘 레일 + 상단 막대(학교 전환 · 알림 · 계정) + 본문.
+ * 세부 처리 화면(관리자 확인 등)은 본문 안에서 3단 작업함 배치를 쓴다.
  */
-export function Shell({ account, current, schools, groups, roleLabel, inSchoolAsPlatform, children }: {
+export function Shell({ account, current, schools, groups, roleLabel, inSchoolAsPlatform, alerts, children }: {
   account: ShellAccount; current: ShellSchool | null; schools: ShellSchool[]; groups: NavGroup[];
-  roleLabel: string; inSchoolAsPlatform?: boolean; children: React.ReactNode;
+  roleLabel: string; inSchoolAsPlatform?: boolean; alerts?: { count: number; href: string } | null; children: React.ReactNode;
 }) {
   return (
     <div className="app">
       <a className="skip-link" href="#content">본문으로 건너뛰기</a>
+      <aside className="sidebar" aria-label="메뉴">
+        <Link className="brand" href="/" aria-label="학교 운영 플랫폼 홈"><span className="brand-mark" aria-hidden="true">學</span></Link>
+        <Nav groups={groups} />
+      </aside>
       <header className="topbar top">
-        <Link className="brand" href="/"><span className="brand-mark" aria-hidden="true">學</span><span className="brand-text">학교 운영 플랫폼</span></Link>
         <SchoolSwitcher current={current} schools={schools} platform={account.isPlatformAdmin} />
         {inSchoolAsPlatform && <span className="impersonation">전체 관리자로 보는 중 · 접근이 기록됩니다 <LeaveSchoolButton /></span>}
         <div className="topbar-spacer" />
         <div className="topbar-right">
+          {alerts && (
+            <Link className="bell" href={alerts.href} aria-label={alerts.count ? `확인 대기 ${alerts.count}건` : '확인 대기 없음'}>
+              <Bell size={20} aria-hidden="true" />
+              {alerts.count > 0 && <span className="bell-count" aria-hidden="true">{alerts.count}</span>}
+            </Link>
+          )}
           <span className="account"><span className="avatar" aria-hidden="true">{account.name.slice(0, 1)}</span>
-            <span className="account-name">{account.name}{roleLabel && <span className="muted"> · {roleLabel}</span>}</span></span>
+            <span className="account-name"><b>{account.name}</b>{roleLabel}</span></span>
           <form method="post" action="/api/logout"><button type="submit" className="btn btn-ghost btn-sm">로그아웃</button></form>
         </div>
       </header>
-      <aside className="sidebar" aria-label="메뉴">
-        <Nav groups={groups} />
-      </aside>
       <div className="content" id="content">
         <main className="content-inner">{children}</main>
       </div>
@@ -40,20 +47,24 @@ export function Shell({ account, current, schools, groups, roleLabel, inSchoolAs
 }
 
 export function schoolNav(school: { modules: string[]; isAdmin: boolean; isPlatformAdmin: boolean }, counts: { openQuestions?: number } = {}): NavGroup[] {
-  const work: NavGroup['items'] = [];
+  const work: NavGroup['items'] = [{ href: '/home', label: '홈', title: '홈 · 오늘의 학사 업무' }];
   if (school.modules.includes('intake')) {
-    work.push({ href: '/intake', label: '자료 첨부' }, { href: '/review', label: '관리자 확인', count: counts.openQuestions });
+    work.push({ href: '/intake', label: '자료', title: '자료 첨부' }, { href: '/review', label: '확인', title: '관리자 확인', count: counts.openQuestions });
   }
-  if (school.modules.includes('records')) work.push({ href: '/documents', label: '학사 문서실' });
-  const groups: NavGroup[] = [];
-  if (work.length) groups.push({ label: '학사 운영', items: work });
-  if (school.isAdmin) groups.push({ label: '학교 관리', items: [{ href: '/settings', label: '학교 설정' }] });
+  if (school.modules.includes('records')) work.push({ href: '/documents', label: '문서', title: '학사 문서실' });
+  const groups: NavGroup[] = [{ label: '학사', items: work }];
+  if (school.isAdmin) groups.push({ label: '학교', items: [{ href: '/settings', label: '설정', title: '학교 설정' }] });
   if (school.isPlatformAdmin) groups.push(platformGroup);
   return groups;
 }
 
 export const platformGroup: NavGroup = {
-  label: '전체 관리', items: [{ href: '/admin', label: '학교·라이선스' }, { href: '/admin/integrations', label: '학교별 개발 연동' }, { href: '/admin/lab', label: '개발·연구소' }, { href: '/admin/design', label: '디자인 원형' }],
+  label: '전체 관리', items: [
+    { href: '/admin', label: '학교', title: '학교·라이선스' },
+    { href: '/admin/integrations', label: '연동', title: '학교별 개발 연동' },
+    { href: '/admin/lab', label: '연구소', title: '개발·연구소' },
+    { href: '/admin/design', label: '디자인', title: '디자인 원형' },
+  ],
 };
 
 export function roleTag(school: { role: string | null; isPlatformAdmin: boolean }) {

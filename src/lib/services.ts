@@ -276,6 +276,15 @@ export async function openQuestion(db: Db, schoolId: string): Promise<Question |
   return rows[0] ?? null;
 }
 
+/** 관리자 확인 작업함용: 이 학교의 모든 확인 질문(최근 순). 상태는 open · answered · superseded */
+export async function listQuestions(db: Db, schoolId: string): Promise<(Question & { answered_at: string | null })[]> {
+  const { rows } = await db.query<Question & { answered_at: string | null }>(
+    `select id, status, prompt, proposal, evidence, issues, analyzer, differs_from_rule_id, created_at, answered_at
+     from public.rule_questions where school_id = $1 and topic = 'period_structure'
+     order by created_at desc, id limit 200`, [schoolId]);
+  return rows;
+}
+
 export async function latestRule(db: Db, schoolId: string): Promise<Rule | null> {
   const { rows } = await db.query<Rule>(
     `select id, version, value, decision, rationale, evidence, question_id, confirmed_at from public.school_rules
