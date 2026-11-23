@@ -990,12 +990,14 @@ try {
       { op: 'insert', at: 2, block: { type: 'section', template: 'text', title: { ko: '이야기를 마치며' }, body: { ko: '합성 예시 글' } } }, { op: 'move', from: 1, to: 0 }] });
     assert.equal(ed.status, 200, JSON.stringify(ed.body));
     assert.equal((await call('/api/agent/entries/story/moon-promise/edit', 'POST', { base_version: 1, ops: [{ op: 'hide', index: 0 }] })).status, 409);
-    // 관리자 공개 → 방문자
+    // 목록 카드에서 편집기를 열지 않고 공개 → 방문자
     await h.goto(`${BASE}/site?box=story`);
-    await h.click('.triage-item:has-text("달빛 약속")');
-    await h.waitForSelector('[data-testid=entry-editor]');
-    await h.click('text=최신 판 공개');
-    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    const moonCard = h.locator('.site-entry-card:has(.triage-item-title:text-is("달빛 약속"))');
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    await moonCard.locator('button:text-is("공개하기")').click();
+    await moonCard.locator('.badge:text-is("공개 중")').waitFor();
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    assert.equal(new URL(h.url()).searchParams.has('id'), false);
     const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const v = await ctxV.newPage();
     await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise?lang=ko`);
@@ -1004,8 +1006,10 @@ try {
     assert.match(await v.textContent('.site-main'), /이야기를 마치며/);
     // 공개 중에는 에이전트가 보관 못 함 → 관리자가 내린 뒤 보관
     assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 409);
-    await h.click('button:text-is("공개 내리기")');
-    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개를 내렸습니다")');
+    await moonCard.locator('button:text-is("공개 해제")').click();
+    await moonCard.locator('.badge:text-is("공개 내림")').waitFor();
+    assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise`)).status(), 404);
     assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 200);
     assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise`)).status(), 404);
     // 관리자: 보관함에서 되살리기
@@ -1020,6 +1024,32 @@ try {
     assert.equal(await h.locator('[data-testid=archive-box]').count(), 0);
     assert.equal((await call('/api/agent/entries/story/moon-promise')).status, 200);
     await ctxV.close();
+    await ctxH.close();
+  });
+
+  await step('40차: 공개 권한 — 에이전트에게 공개를 지시하면 사이트에서 누르지 않아도 바로 공개, 만들기만으로는 공개 안 됨, 공개 내림', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.check('[data-testid=agent-token-perms] label:has-text("만들기") input');
+    await h.check('[data-testid=agent-token-perms] label:has-text("공개") input');
+    await h.waitForSelector('[data-testid=agent-token-publish-note]');
+    await h.click('[data-testid=agent-token-issue]');
+    const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
+    const call = async (p, body) => (await fetch(`${BASE}${p}`, { method: body ? 'POST' : 'GET', headers: { 'x-agent-token': token, 'content-type': 'application/json' }, body: body && JSON.stringify(body) })).status;
+    assert.equal(await call('/api/agent/entries/story', { key: 'star-promise', content: { title: { ko: '별빛 약속' }, blocks: [{ type: 'story_page', text: { ko: '별이 빛나요.' } }] } }), 200);
+    assert.equal((await fetch(`${BASE}/s/dreamy-a/stories/star-promise`)).status, 404); // 만들기만으로는 공개 안 됨
+    assert.equal(await call('/api/agent/entries/story/star-promise/publish', {}), 200);
+    const v = await (await browser.newContext()).newPage();
+    await v.goto(`${BASE}/s/dreamy-a/stories/star-promise?lang=ko`);
+    await v.waitForSelector('[data-testid=storybook]');
+    assert.match(await v.textContent('.storybook-text'), /별이 빛나요/);
+    // 관리 화면에도 공개 중으로, 활동 기록에 '공개'
+    await h.goto(`${BASE}/site?box=settings`);
+    assert.match(await h.textContent('[data-testid=agent-token-list]'), /star-promise 1판 공개/);
+    assert.equal(await call('/api/agent/entries/story/star-promise/unpublish', {}), 200);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/star-promise`)).status(), 404);
     await ctxH.close();
   });
 

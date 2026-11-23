@@ -20,13 +20,14 @@ type Entry = { kind: string; key: string; title: string };
 
 const AGENT: Record<string, string> = { codex: 'Codex', 'claude-code': 'Claude Code', other: '기타' };
 const KIND: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식' };
-const PERM: Record<string, string> = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기(내용·구조)', archive: '보관' };
+const PERM: Record<string, string> = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기(내용·구조)', archive: '보관', publish: '공개(지시하면 바로)' };
 const DAYS: { v: string; label: string }[] = [{ v: '7', label: '7일' }, { v: '30', label: '30일' }, { v: '90', label: '90일' }, { v: '365', label: '365일' }, { v: 'none', label: '무기한' }];
-const ACT: Record<string, string> = { version: '판 시안', create: '새로 만듦', meta: '항목 정보 고침', archive: '보관' };
+const ACT: Record<string, string> = { version: '판 시안', create: '새로 만듦', meta: '항목 정보 고침', archive: '보관', publish: '공개', unpublish: '공개 내림' };
 const did = (r: TokenRow['recent'][number]) => {
   if (r.action === 'asset.upload') return `파일 올림(${r.detail.mime === 'application/pdf' ? 'PDF' : '그림'})`;
   const [, act] = r.action.split('.');
   const what = `${KIND[String(r.detail.kind ?? 'story')] ?? ''} /${String(r.detail.key ?? '')}`;
+  if (act === 'publish') return `${what} ${String(r.detail.version ?? '')}판 공개`;
   if (act === 'version') return `${what} ${String(r.detail.version ?? '')}판 시안${r.detail.structure_changed ? ` (구조 바뀜: 블록 ${r.detail.blocks_before}→${r.detail.blocks_after})` : ''}`;
   return `${what} ${ACT[act] ?? act}`;
 };
@@ -175,6 +176,12 @@ export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow
               <label key={k} className="radio"><input type="checkbox" checked={perms.includes(k)} onChange={() => setPerms(toggle(perms, k))} />{v}</label>
             ))}
           </div>
+          {perms.includes('publish') && (
+            <p className="fine" role="note" data-testid="agent-token-publish-note">
+              '공개' 권한이 있으면 에이전트에게 공개를 지시했을 때 이 사이트에서 누르지 않아도 바로 방문자에게 보입니다. 만들기·고치기만으로는 공개되지 않습니다.
+              공개 기록·활동 기록에 남고, 공개 내림은 언제든 여기서 할 수 있습니다.
+            </p>
+          )}
         </fieldset>
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={busy || !kinds.length || !perms.length} data-testid="agent-token-issue"><KeyRound size={16} aria-hidden="true" />토큰 발급</button>

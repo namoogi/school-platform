@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
@@ -12,6 +12,30 @@ async function send(url: string, method: string, body?: unknown) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error ?? '저장하지 못했습니다.');
   return data;
+}
+
+/** 목록에서 저장된 최신 판을 공개한다. 편집기에서 아직 저장하지 않은 글은 포함하지 않는다. */
+export function EntryPublishControl({ id, title, latestVersion, liveVersion }: { id: string; title: string; latestVersion: number; liveVersion: number | null }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [refreshing, startTransition] = useTransition();
+  const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
+  async function change(publish: boolean) {
+    setBusy(true); setMsg(null);
+    try {
+      await send(`/api/site/entries/${id}/publish`, 'POST', publish ? {} : { versionId: null });
+      setMsg({ tone: 'success', text: publish ? '저장된 최신 판을 공개했습니다.' : '공개를 해제했습니다.' });
+      startTransition(() => router.refresh());
+    } catch (err) { setMsg({ tone: 'danger', text: (err as Error).message }); }
+    finally { setBusy(false); }
+  }
+  return <div className="site-list-publish" data-testid="entry-publish-control" role="group" aria-label={`${title} 공개 설정`}>
+    <div className="row-wrap">
+      {liveVersion !== latestVersion && <button type="button" className="btn btn-secondary btn-sm" disabled={busy || refreshing} onClick={() => change(true)} title="저장된 최신 판을 공개합니다">{liveVersion === null ? '공개하기' : '새 판 공개'}</button>}
+      {liveVersion !== null && <button type="button" className="btn btn-ghost btn-sm" disabled={busy || refreshing} onClick={() => change(false)}>공개 해제</button>}
+    </div>
+    {msg && <p className="banner" data-tone={msg.tone} role="status">{msg.text}</p>}
+  </div>;
 }
 
 // ── 설정 ─────────────────────────────────────────────────

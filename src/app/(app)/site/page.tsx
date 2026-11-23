@@ -4,7 +4,7 @@ import { loadForPage } from '@/lib/page';
 import { getEntry, getSettings, KIND_LABEL, listAssets, listEntries, pick, type EntryKind, type EntryStatus } from '@/lib/site';
 import { EmptyState, StatusBadge } from '@/components/ui';
 import { TriageKeys } from '../review/TriageKeys';
-import { EntryEditor, NewEntryForm, SiteSettingsForm } from './SiteClient';
+import { EntryEditor, EntryPublishControl, NewEntryForm, SiteSettingsForm } from './SiteClient';
 import { ImportPanel } from './ImportClient';
 import { AgentTokenPanel, ArchiveControl, TokenAlerts } from './AgentTokenClient';
 import { listAgentTokens } from '@/lib/agent';
@@ -78,12 +78,14 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
               <NewEntryForm kind={box} disabled={!settings} />
               <ul>
                 {list.map((e) => (
-                  <li key={e.id}>
+                  <li key={e.id} className="site-entry-card" data-selected={e.id === selected?.entry.id ? 'true' : undefined}>
                     <Link href={href(box, e.id)} className="triage-item" aria-current={e.id === selected?.entry.id ? 'true' : undefined}>
                       <span className="triage-item-top"><StatusBadge tone={STATUS[e.status].tone}>{STATUS[e.status].label}</StatusBadge><span className="triage-time">{e.latest_version}판</span></span>
                       <span className="triage-item-title">{pick(e.latest_title, lang, lang) || e.key}</span>
                       <span className="triage-item-sub">/{e.key}{e.visibility === 'unlisted' ? ' · 숨은 주소' : ''}{typeof e.meta.virtue === 'string' && e.meta.virtue ? ` · ${e.meta.virtue}` : ''}</span>
                     </Link>
+                    {school.isAdmin && box === 'story' && <EntryPublishControl id={e.id}
+                      title={pick(e.latest_title, lang, lang) || e.key} latestVersion={e.latest_version} liveVersion={e.live_version} />}
                   </li>
                 ))}
               </ul>
