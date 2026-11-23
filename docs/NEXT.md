@@ -19,7 +19,6 @@
    - 그다음 Claude: 룽아룬숙사 세션(`session_013RZyUqmXotCXgQK1a22bDW`)에 넘겨주기 배포를 요청한다. `vercel.json` redirects `/:path*` → `https://onschools.vercel.app/s/rungarunsuksa/:path*`(처음 307, 확인 뒤 308). 플랫폼 호환 경로가 /about·/friends/** 를 받는다.
    - 그 세션은 답장 도구가 없다. 파일을 대화 기록에 조각으로 출력하게 하고 `list_events`로 읽는다(31차 방식).
 2. **성품 동화** 「비가 지워도 남는 것」: 가져오기로 시안이 생긴다. 선생님 결정 대기: 성품 이름, 영상 위치(YouTube 일부 공개 또는 Drive), 드리미학교 학생 작품 3편과 #1185 공개 여부.
-3. **작은 수정:** 점검 계정으로 학교에 들어가면 상단에 "접근이 기록됩니다"가 뜨지만 실제로는 토큰 마지막 사용만 남는다. 문구를 고친다. `docs/rounds/round-30.md`가 없다(ADR 0010으로 대신).
 
 ## 함께 도는 것
 - 매시간 자동 개발 세션: `session_013RZyUomAv7AE6YjhpHp6Kc`. 예약 작업이 37분마다 깨운다. PR까지만 하고 병합하지 않는다.
