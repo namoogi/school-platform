@@ -50,6 +50,21 @@ export async function handlePlatform(req: Request, fn: (ctx: { db: Db; account: 
   }
 }
 
+/** 로그인만 확인하는 개인 설정 API (학교·권한과 무관, 본인 행만 RLS로 허용) */
+export async function handleUser(req: Request, fn: (ctx: { db: Db; userId: string }) => Promise<unknown>) {
+  const userId = await currentUserId();
+  if (!userId) return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+  if (req.method !== 'GET' && !sameOrigin(req)) {
+    return NextResponse.json({ error: '허용되지 않은 요청 출처입니다.' }, { status: 403 });
+  }
+  try {
+    const result = await asUser(userId, (db) => fn({ db, userId }));
+    return NextResponse.json(result ?? { ok: true });
+  } catch (e) {
+    return errorResponse(e);
+  }
+}
+
 export class ForbiddenError extends Error {}
 
 const hangul = /[가-힣]/;

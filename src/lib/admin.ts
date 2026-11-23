@@ -67,6 +67,18 @@ export async function accessLog(db: Db, schoolId: string | null, limit = 30): Pr
   return rows;
 }
 
+/** 26차 분석 패널: 최근 N일 운영 기록 수(서울 날짜 기준, 빈 날은 0). 전체 관리자만 모든 학교 기록을 본다(RLS). */
+export async function activityByDay(db: Db, days: number) {
+  const n = [7, 14, 30].includes(days) ? days : 14;
+  const { rows } = await db.query<{ day: string; count: number }>(
+    `with d as (
+       select generate_series((now() at time zone 'Asia/Seoul')::date - ($1::int - 1), (now() at time zone 'Asia/Seoul')::date, interval '1 day')::date as day)
+     select to_char(d.day, 'YYYY-MM-DD') as day,
+            (select count(*)::int from public.access_log a where (a.created_at at time zone 'Asia/Seoul')::date = d.day) as count
+     from d order by d.day`, [n]);
+  return rows;
+}
+
 export async function statements(db: Db, schoolId: string | null): Promise<Statement[]> {
   const { rows } = schoolId
     ? await db.query<Statement>('select * from public.billing_statements where school_id = $1 order by period desc', [schoolId])
