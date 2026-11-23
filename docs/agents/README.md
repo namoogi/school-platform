@@ -1,0 +1,57 @@
+# 학교 AI 작업 공간: 외부 에이전트 공통 안내
+
+학교 관리자가 `/site` → 설정 → **AI 작업 공간**에서 발급한 토큰으로, 학교가 쓰는 에이전트(Claude Code·Codex 등)가 홈페이지 내용의 **시안**을 만든다.
+설계: [ADR 0012](../decisions/0012-agent-work-token.md)(토큰·명령 함수), [ADR 0013](../decisions/0013-school-ai-workspace.md)(학교별 AI 작업 공간·병행 규칙).
+
+- 시작 안내: [Claude Code](claude-code.md) · [Codex](codex.md)
+- 일 하나의 예: [성품 동화에 캐릭터 그림·PDF 붙이기](story-agent.md)
+
+## 토큰 범위
+| 범위 | 값 |
+| --- | --- |
+| 항목 종류 | `story`(성품 동화) · `page`(쪽) · `news`(소식) 가운데 발급 때 고른 것 |
+| 주소 | 발급 때 고른 항목(key)만. 고르지 않았으면 고른 종류 모두 |
+| 권한 | `read`(읽기) · `upload`(그림·PDF 올리기) · `draft`(새 판=시안 저장) 가운데 고른 것 |
+| 기한 | 7·30·90일. 폐기하면 바로 멈춘다 |
+
+어떤 토큰으로도 할 수 없는 일(서버가 거부): **공개·공개 내림**, 홈페이지 설정, 구성원, 새 항목 만들기, 다른 학교.
+
+## 지킬 것
+- 토큰은 환경 변수 `SCHOOL_AGENT_TOKEN`으로만 쓴다. 출력·로그·커밋·채팅·문서에 남기지 않는다.
+- 실제 학생 이름·사진을 지어내거나 넣지 않는다. 사실(날짜·연락처·수치)은 지어내지 않고, 모르면 비워 두고 사람에게 묻는다.
+- 새 판은 최신 판을 읽고, 그 위에 고친다. 저장할 때 읽은 판 번호(`base_version`)를 보낸다. 그 사이 사람이나 다른 에이전트가 새 판을 만들었으면 **409** → 다시 읽어 고친다. 남의 판을 덮어쓰지 않는다.
+- 끝나면 사람에게 "무엇을 몇 판으로 저장했는지"를 알린다. 공개는 학교 관리자가 `/site`에서 시안 미리보기를 보고 한다.
+
+## API
+기본 주소 `https://onschools.vercel.app`. 모든 요청에 머리 `x-agent-token: $SCHOOL_AGENT_TOKEN`. 로그인 쿠키는 보내지 않는다.
+
+| 요청 | 권한 | 하는 일 |
+| --- | --- | --- |
+| `GET /api/agent/me` | — | 학교·종류·주소·권한·기한 |
+| `GET /api/agent/entries/<kind>` | read | 범위 안 항목 목록(최신 판·공개 판 번호) |
+| `GET /api/agent/entries/<kind>/<key>` | read | 최신 판 `latest.version`, `latest.content` |
+| `POST /api/agent/entries/<kind>/<key>/versions` | draft | `{ content, note, base_version }` → `{ version, published: false }` |
+| `GET /api/agent/assets` | read 또는 upload | 이 학교 그림·PDF(id, name, mime, size_bytes, sha256) |
+| `POST /api/agent/assets?name=<파일 이름>` | upload | 본문에 파일 그대로, `Content-Type`에 형식 → `{ id, reused }` |
+
+- 34차 동화 경로 `/api/agent/stories…`도 그대로 쓸 수 있다(`entries/story…`와 같음).
+- 파일: PNG·JPG·WEBP 그림 5MB, PDF 4MB(웹용으로 줄인 것). 자바스크립트·첨부 파일·양식·암호가 든 PDF는 거부된다.
+- 내용(`content`)은 `{ title, summary?, cover?, blocks[] }`. 블록 종류: heading·text·notice·image·gallery·section·news_list·video·story_page·download. 내용이 가리키는 그림·파일은 모두 그 학교에 올린 것이어야 한다. 모양은 최신 판에서 그대로 본뜬다.
+
+```bash
+H="x-agent-token: $SCHOOL_AGENT_TOKEN"; S=https://onschools.vercel.app
+curl -s -H "$H" $S/api/agent/me
+curl -s -H "$H" $S/api/agent/entries/page/admissions > latest.json
+# latest.json 의 latest.content 를 고쳐 new.json 에 { "content": …, "note": "…", "base_version": <latest.version> }
+curl -s -H "$H" -H 'content-type: application/json' -d @new.json $S/api/agent/entries/page/admissions/versions
+```
+
+## 오류
+| 상태 | 뜻 · 할 일 |
+| --- | --- |
+| 401 | 토큰이 없거나 틀림·기한 지남·폐기 → 사람에게 새 토큰 요청 |
+| 403 | 범위 밖(종류·주소) 또는 권한 없음 → 범위를 넓히지 말고 사람에게 알림 |
+| 404 | 그 항목이 없거나 범위 밖 |
+| 400 | 파일 형식·크기·PDF 내용·블록 형식 → 메시지대로 고침 |
+| 409 | 그 사이 새 판이 생김 → 다시 읽어 고친 뒤 저장 |
+| 413 | 파일이 너무 큼 |

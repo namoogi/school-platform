@@ -1,4 +1,4 @@
-import { pick, publicEntry, publicList, publicSite, type Content, type Lang, type PublicEntry, type PublicSite } from '@/lib/site';
+import { publicEntry, publicList, publicSite, type Content, type PublicEntry, type PublicSite } from '@/lib/site';
 import { resolveLang, siteLinker } from './SiteFrame';
 import type { NewsItem } from './SiteRenderer';
 
@@ -20,20 +20,6 @@ export async function newsFor(site: PublicSite, content: Content | undefined): P
   return site.has_news && content?.blocks.some((b) => b.type === 'news_list') ? publicList(site.slug, 'news') : [];
 }
 
-/** 쪽 머리: 머리말 · 제목 · 소개. dawn 에서는 잡지형 머리(.editorial-heading), 첫 화면은 표지 사진이 붙는 여는 머리. */
-export function PageHead({ content, lang, fallback, asset, meta }: { content: Content; lang: Lang; fallback: Lang; asset: (id: string) => string; meta?: string }) {
-  const t = (x: Parameters<typeof pick>[0]) => pick(x, lang, fallback);
-  const opening = content.head?.layout === 'opening';
-  return (
-    <header className={opening ? 'site-head site-opening' : 'site-head'}>
-      {t(content.head?.eyebrow) && <span className="sec-eyebrow">{t(content.head?.eyebrow)}</span>}
-      <h1 className="site-h1">{t(content.title)}</h1>
-      {meta && <p className="site-meta">{meta}</p>}
-      {t(content.summary) && <p className="site-lead">{t(content.summary)}</p>}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      {opening && content.cover && <figure className="site-panorama"><img src={asset(content.cover)} alt="" /></figure>}
-    </header>
-  );
-}
+export { PageHead } from './SiteRenderer';
 
 export const robotsFor = (entry: PublicEntry | null) => (entry?.visibility === 'unlisted' ? { index: false, follow: false } : undefined);

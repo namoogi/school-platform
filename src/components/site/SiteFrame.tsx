@@ -4,7 +4,8 @@ import '@fontsource/noto-sans-thai/500.css';
 import '@fontsource/noto-serif-thai/400.css';
 import '@fontsource/noto-serif-kr/400.css';
 import Link from 'next/link';
-import { LANG_LABEL, pick, type Lang, type PublicSite, type SiteProfile } from '@/lib/site';
+import { LANG_LABEL, pick, type Lang, type SiteProfile } from '@/lib/site-shared';
+import type { PublicSite } from '@/lib/site';
 
 const T = {
   home: { ko: '홈', en: 'Home', th: 'หน้าแรก' }, news: { ko: '소식', en: 'News', th: 'ข่าวสาร' },

@@ -1,4 +1,4 @@
-# 다음 세션 인계 (2026-11-23, 34차 끝)
+# 다음 세션 인계 (2026-11-23, 36차 끝)
 
 새 Claude 세션은 이 파일 → `AGENTS.md` → `docs/rounds/round-27~31.md` → ADR 0006~0010 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
@@ -7,7 +7,7 @@
 - 학교 화면: 학사 업무형(ADR 0006). 전체 관리: 분석 대시보드형 다크 + 화이트 반전(ADR 0007). 사용자별 화면 선택은 DB에 저장된다.
 - 학교 홈페이지·성품 동화 모듈(ADR 0008): `/site` 관리, `/s/<주소>` 공개.
 - 룽아룬숙사: 운영 홈페이지가 새벽빛 테마로 열려 있다(`/s/rungarunsuksa`, 쪽 7·후원자 숨은 쪽 6·소식 4·동화 1). 옛 주소 호환 경로가 있다(31차).
-- 외부 작업 토큰(ADR 0012, 34차): 학교 관리자가 `/site` 설정에서 발급, Codex 등이 `x-agent-token`으로 그 학교 성품 동화에 그림·PDF를 올리고 시안 판만 저장(공개는 사람). 안내 `docs/agents/story-agent.md`, 스크립트 `scripts/agent-story-upload.mjs`. 새 블록 `download`(PDF 내려받기).
+- AI 작업 공간(ADR 0012·0013, 34·36차): 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·draft)을 발급하고, 학교의 Claude Code·Codex가 `x-agent-token`으로 그림·PDF를 올리고 시안 판만 저장(공개는 사람, base_version 409). 안내 `docs/agents/README.md`, 동화 스크립트 `scripts/agent-story-upload.mjs`. 블록 `download`(PDF 내려받기).
 - Claude 점검 접근(ADR 0010)
   - 작업 환경(Default)의 Network secret `onschools.vercel.app`(머리 `x-inspector-token`)이 들어 있다.
   - 클라우드 세션은 로그인 없이 운영 화면을 읽기 전용으로 볼 수 있다.
@@ -24,9 +24,9 @@
    - 옛 주소 넘겨주기: 넘겨주기 판은 선생님 Mac `rung-arun-redirect/`에 준비만 됨. 선생님이 넘기라고 할 때만 배포 요청(307 → 하루 뒤 308).
    - 결정 대기: 동화 성품 이름(편집 화면에서 입력 가능, 33차), 학교 공식 태국어 이름, 드리미학교 학생 작품 3편·#1185 공개 여부.
 2. **학교 자율 운영 (ADR 0011)** — 사용자 방향(2026-11-23): 중앙이 대신 해 주지 않고, 각 학교가 실시간 화면 편집과 생성형 대화로 스스로 운영.
-   - 1단계 실시간 화면 편집(관리자 모드): 착수. 개발 세션이 맡고, 옛 사이트 세션이 정리한 `ADMIN-FEATURES.md`(선생님 Mac, MIGRATION.md 옆)를 참고한다.
+   - 1단계 실시간 화면 편집: **35차 완료**(`/site/edit/<id>`, `docs/rounds/round-35.md`). 남은 것: 공개 화면에서 바로 편집 들어가기, 가이드 창 끌기·위치 기억, 홈 머리·바닥 정보 화면 편집. 옛 사이트 `ADMIN-FEATURES.md`가 오면 빠진 기능을 대조한다.
    - 2단계 대화형 편집(Claude API, 유료): 비용 추정 → 사용자 승인 뒤 착수. 3단계 학교별 생성형 개발: 설계만.
-3. **학교별 AI 작업 공간 (ADR 0013)** — 학교가 자기 구독의 Claude Code·Codex를 범위 토큰으로 붙인다(구독 로그인은 받지 않음). 콘텐츠 토큰·등록·활동 기록·base_version 충돌 방지는 'ADR 0012' 세션. 학교별 코드 개발(학교 저장소·확장 지점)은 관제가 다음에 설계.
+3. **학교별 AI 작업 공간 (ADR 0013)** — 학교가 자기 구독의 Claude Code·Codex를 범위 토큰으로 붙인다(구독 로그인은 받지 않음). 콘텐츠 토큰·등록·활동 기록·base_version 충돌 방지는 34·36차 완료(`docs/rounds/round-36.md`, 안내 `docs/agents/`). 학교별 코드 개발(학교 저장소·확장 지점)은 관제가 다음에 설계.
    - 첫 사용: 룽아룬숙사 동화 — Codex(선생님 ChatGPT 구독)가 캐릭터 PNG·동화 PDF를 만들어 토큰으로 시안 → 선생님 공개.
 4. **플랫폼 전체** (관제 세션) — ADR 0009(세션·에이전트 연결) 결정, 자동 개발 대기열(ADR 0004 단계 2 등) 진행 상황 점검.
 
