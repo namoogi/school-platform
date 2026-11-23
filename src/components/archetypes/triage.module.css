@@ -1,6 +1,6 @@
 /* 원형 8. 3단 작업함형 — 이 파일 안에서만 쓰는 토큰 (원시 → 의미) */
 .root {
-  --t-ink: #16181d; --t-ink-2: #4a505c; --t-ink-3: #767c88;
+  --t-ink: #16181d; --t-ink-2: #4a505c; --t-ink-3: #656b75; /* folder·accent-soft 위 4.6:1 이상 (axe color-contrast) */
   --t-line: #e3e5ea; --t-line-strong: #c9ccd3;
   --t-bg: #ffffff; --t-bg-sub: #f6f7f9; --t-bg-folder: #eef0f3;
   --t-accent: #0f62fe; --t-accent-soft: #e5eeff; --t-accent-ink: #0043ce;

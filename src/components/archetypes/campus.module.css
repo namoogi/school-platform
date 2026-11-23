@@ -2,7 +2,7 @@
 .root {
   /* 원시 */
   --c-slate-900: #252a33; --c-slate-800: #313844; --c-slate-300: #b9c0cc;
-  --c-stone-900: #2a2622; --c-stone-600: #5c554d; --c-stone-500: #736b62;
+  --c-stone-900: #2a2622; --c-stone-600: #5c554d; --c-stone-500: #70685f; /* stone-100 위 4.66:1 (axe color-contrast) */
   --c-stone-200: #e7e1d8; --c-stone-100: #f1ece4; --c-stone-50: #f8f5f0;
   --c-white: #ffffff;
   --c-teal-700: #1f6b63; --c-teal-800: #17534d; --c-teal-50: #e4f1ef;

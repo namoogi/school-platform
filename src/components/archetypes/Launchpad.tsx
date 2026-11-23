@@ -95,10 +95,11 @@ export default function Launchpad() {
           </form>
           <div className={s.shellActions}>
             <div className={s.popWrap} data-popover>
-              <button type="button" className={s.iconBtn} aria-label={`알림 ${notifications.length}건`} aria-expanded={menu === 'bell'}
+              <button type="button" className={s.iconBtn} aria-expanded={menu === 'bell'}
                 aria-controls="lp-bell" onClick={() => setMenu(menu === 'bell' ? null : 'bell')}>
                 <Bell size={18} aria-hidden="true" />
-                <span className={s.badge} aria-hidden="true">{notifications.length}</span>
+                <span className="sr-only">알림 </span>
+                <span className={s.badge}>{notifications.length}<span className="sr-only">건</span></span>
               </button>
               {menu === 'bell' && (
                 <div id="lp-bell" className={s.popover} role="region" aria-label="알림">

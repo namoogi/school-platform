@@ -371,9 +371,8 @@ export default function Grid() {
               <button type="button" className={s.tool} aria-pressed={grouped} onClick={() => setGrouped((g) => !g)}>
                 <Group size={14} aria-hidden="true" />묶기{grouped && `: ${groupField.label}`}
               </button>
-              <button type="button" className={s.tool} onClick={() => setRowHeight((h) => (h === 'short' ? 'medium' : 'short'))}
-                aria-label={`행 높이: ${ROW_HEIGHTS.find((h) => h.key === rowHeight)?.label}. 바꾸기`}>
-                <Rows3 size={14} aria-hidden="true" />행 높이<span className={s.toolValue} aria-hidden="true">{ROW_HEIGHTS.find((h) => h.key === rowHeight)?.label}</span>
+              <button type="button" className={s.tool} onClick={() => setRowHeight((h) => (h === 'short' ? 'medium' : 'short'))}>
+                <Rows3 size={14} aria-hidden="true" />행 높이<span className={s.srOnly}>: </span><span className={s.toolValue}>{ROW_HEIGHTS.find((h) => h.key === rowHeight)?.label}</span><span className={s.srOnly}>. 바꾸기</span>
               </button>
 
               {checked.length > 0 && (

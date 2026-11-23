@@ -2,7 +2,7 @@
 .root {
   /* 원시 */
   --w-paper: #fbfaf7; --w-paper-2: #f4f2ec; --w-paper-3: #ebe8e0; --w-white: #ffffff;
-  --w-ink-900: #2b2925; --w-ink-600: #5f5a52; --w-ink-500: #77716a;
+  --w-ink-900: #2b2925; --w-ink-600: #5f5a52; --w-ink-500: #6c6660; /* paper-3 위 4.63:1 (axe color-contrast) */
   --w-line-200: #e6e2d9; --w-line-300: #d6d1c6;
   --w-blue-700: #2c5f8f; --w-blue-50: #e7eef5;
   --w-green-700: #2f6b3f; --w-green-50: #e6f0e7;
