@@ -1,4 +1,4 @@
-# 다음 세션 인계 (2026-11-23, 36차 끝)
+# 다음 세션 인계 (2026-11-23, 38차 끝)
 
 새 Claude 세션은 이 파일 → `AGENTS.md` → `docs/rounds/round-27~31.md` → ADR 0006~0010 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
@@ -7,7 +7,7 @@
 - 학교 화면: 학사 업무형(ADR 0006). 전체 관리: 분석 대시보드형 다크 + 화이트 반전(ADR 0007). 사용자별 화면 선택은 DB에 저장된다.
 - 학교 홈페이지·성품 동화 모듈(ADR 0008): `/site` 관리, `/s/<주소>` 공개.
 - 룽아룬숙사: 운영 홈페이지가 새벽빛 테마로 열려 있다(`/s/rungarunsuksa`, 쪽 7·후원자 숨은 쪽 6·소식 4·동화 1). 옛 주소 호환 경로가 있다(31차).
-- AI 작업 공간(ADR 0012·0013, 34·36차): 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·draft)을 발급하고, 학교의 Claude Code·Codex가 `x-agent-token`으로 그림·PDF를 올리고 시안 판만 저장(공개는 사람, base_version 409). 안내 `docs/agents/README.md`, 동화 스크립트 `scripts/agent-story-upload.mjs`. 블록 `download`(PDF 내려받기).
+- AI 작업 공간(ADR 0012·0013·0014, 34·36·38차): 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive, 기한 7~365일·무기한·연장)을 발급하고, 학교의 Claude Code·Codex가 `x-agent-token`으로 새 항목·새 판(구조 포함)·항목 정보·보관(소프트 삭제)까지 한다. 공개·내림·되살리기는 사람, base_version 409. 안내 `docs/agents/README.md`, 동화 스크립트 `scripts/agent-story-upload.mjs --create`. 블록 `download`(PDF).
 - Claude 점검 접근(ADR 0010)
   - 작업 환경(Default)의 Network secret `onschools.vercel.app`(머리 `x-inspector-token`)이 들어 있다.
   - 클라우드 세션은 로그인 없이 운영 화면을 읽기 전용으로 볼 수 있다.

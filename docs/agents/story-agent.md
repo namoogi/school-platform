@@ -56,6 +56,8 @@ out/brave-elephant/
 }
 ```
 
+- 동화가 아직 없으면 `--create`를 붙인다(토큰에 '만들기' 권한 필요). manifest에 `"title": { "ko": "…" }`, `"virtue"`, `"character"`를 적으면 그 값으로 새 동화(시안)를 만든 뒤 이어서 올린다.
+
 스크립트가 하는 일: 토큰 확인 → 동화 최신 판 읽기 → 파일 올리기 → 최신 판 블록 + '등장인물' 카드 구역 + 'PDF 내려받기' 블록으로 새 판 저장. 다시 돌리면 이전에 붙인 같은 제목의 등장인물 구역과 내려받기 블록을 바꿔 끼운다.
 
 ## API (직접 부를 때)
@@ -101,3 +103,23 @@ curl -s -H "$H" -H 'content-type: application/json' -d @new-version.json \
 ## 실행 환경 참고
 - Codex 클라우드에서 돌리면 그 환경의 인터넷 허용 목록에 `onschools.vercel.app`이 있어야 한다.
 - 프록시를 거치는 환경이면 Node 24의 `NODE_USE_ENV_PROXY=1`을 켜거나, curl을 쓴다.
+
+## 새 동화 만들기 · 정보 고치기 · 구조 바꾸기 · 보관 (38차)
+토큰에 그 권한(만들기·고치기·보관)이 있어야 한다. 공통 설명은 [README.md](README.md)의 API와 '구조 바꾸기'를 본다.
+
+```bash
+H="x-agent-token: $SCHOOL_AGENT_TOKEN"; S=https://onschools.vercel.app; J='content-type: application/json'
+# 새 동화(시안). 같은 주소가 있으면 409
+curl -s -H "$H" -H "$J" -d '{"key":"moon-promise","meta":{"virtue":"신뢰","character":"부엉이"},
+  "content":{"title":{"ko":"달빛 약속"},"blocks":[{"type":"story_page","text":{"ko":"첫 쪽"}}]}}' $S/api/agent/entries/story
+# 성품 이름·주인공·순서
+curl -s -X PATCH -H "$H" -H "$J" -d '{"meta":{"virtue":"정직"},"sort":3}' $S/api/agent/entries/story/moon-promise
+# 구조 바꾸기: 1판을 보고 → 마지막 쪽 앞에 등장인물 구역을 끼우고, 첫 쪽을 둘째로 옮긴다
+curl -s -H "$H" -H "$J" -d '{"base_version":1,"ops":[
+  {"op":"insert","at":1,"block":{"type":"section","template":"cards","title":{"ko":"등장인물"},"items":[{"title":{"ko":"부엉이"}}]}},
+  {"op":"move","from":0,"to":1}]}' $S/api/agent/entries/story/moon-promise/edit
+# 보관(공개 중이면 409: 선생님께 공개 내림을 부탁)
+curl -s -X POST -H "$H" $S/api/agent/entries/story/moon-promise/archive
+```
+- 409(그 사이 새 판)가 나면 `GET /api/agent/entries/story/moon-promise`로 다시 읽고 연산을 다시 만든다.
+- 보관한 동화는 학교 관리자가 /site 성품 동화 목록 아래 '보관함'에서 되살린다. 판 기록은 모두 남는다.

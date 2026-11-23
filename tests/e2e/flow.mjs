@@ -891,6 +891,64 @@ try {
     await ctxH.close();
   });
 
+  await step('38차: 토큰 권한 확장 — 무기한·만들기·보관 발급 → 에이전트가 새 동화 만들고 구조 바꿈 → 관리자 공개 → 내림 → 에이전트 보관 → 관리자 되살리기', async () => {
+    const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const h = await ctxH.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.selectOption('[data-testid=agent-token-days]', 'none');
+    await h.waitForSelector('[data-testid=agent-token-long-warning]');
+    await h.check('[data-testid=agent-token-perms] label:has-text("만들기") input');
+    await h.check('[data-testid=agent-token-perms] label:has-text("보관") input');
+    await h.click('[data-testid=agent-token-issue]');
+    const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
+    await h.waitForSelector('[data-testid=agent-token-list] td:text-is("무기한")');
+    await shot(h, '38-agent-token.png');
+    const call = async (p, method = 'GET', body) => {
+      const r = await fetch(`${BASE}${p}`, { method, headers: { 'x-agent-token': token, 'content-type': 'application/json' }, body: body && JSON.stringify(body) });
+      return { status: r.status, body: await r.json() };
+    };
+    const made = await call('/api/agent/entries/story', 'POST', { key: 'moon-promise', meta: { virtue: '신뢰', character: '부엉이' },
+      content: { title: { ko: '달빛 약속' }, blocks: [{ type: 'story_page', text: { ko: '첫 쪽: 달이 떴어요.' } }, { type: 'story_page', text: { ko: '둘째 쪽: 약속을 지켜요.' } }] } });
+    assert.equal(made.status, 200, JSON.stringify(made.body));
+    assert.equal((await call('/api/agent/entries/story', 'POST', { key: 'moon-promise', content: { title: { ko: 'x' }, blocks: [] } })).status, 409);
+    const ed = await call('/api/agent/entries/story/moon-promise/edit', 'POST', { base_version: 1, ops: [
+      { op: 'insert', at: 2, block: { type: 'section', template: 'text', title: { ko: '이야기를 마치며' }, body: { ko: '합성 예시 글' } } }, { op: 'move', from: 1, to: 0 }] });
+    assert.equal(ed.status, 200, JSON.stringify(ed.body));
+    assert.equal((await call('/api/agent/entries/story/moon-promise/edit', 'POST', { base_version: 1, ops: [{ op: 'hide', index: 0 }] })).status, 409);
+    // 관리자 공개 → 방문자
+    await h.goto(`${BASE}/site?box=story`);
+    await h.click('.triage-item:has-text("달빛 약속")');
+    await h.waitForSelector('[data-testid=entry-editor]');
+    await h.click('text=최신 판 공개');
+    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
+    const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const v = await ctxV.newPage();
+    await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise?lang=ko`);
+    await v.waitForSelector('[data-testid=storybook]');
+    assert.match(await v.textContent('.storybook-text'), /둘째 쪽/); // 구조 바꾸기(순서)가 반영
+    assert.match(await v.textContent('.site-main'), /이야기를 마치며/);
+    // 공개 중에는 에이전트가 보관 못 함 → 관리자가 내린 뒤 보관
+    assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 409);
+    await h.click('button:text-is("공개 내리기")');
+    await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개를 내렸습니다")');
+    assert.equal((await call('/api/agent/entries/story/moon-promise/archive', 'POST')).status, 200);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/moon-promise`)).status(), 404);
+    // 관리자: 보관함에서 되살리기
+    await h.goto(`${BASE}/site?box=story`);
+    await h.waitForSelector('[data-testid=archive-box]');
+    await h.click('[data-testid=archive-box] summary');
+    await h.click('[data-testid=archive-box] .triage-item:has-text("달빛 약속")');
+    await h.waitForSelector('[data-testid=archive-control] button:has-text("되살리기")');
+    await shot(h, '38-archive.png');
+    await h.click('[data-testid=archive-control] button:has-text("되살리기")');
+    await h.waitForSelector('[data-testid=archive-control] button:has-text("보관함으로")');
+    assert.equal(await h.locator('[data-testid=archive-box]').count(), 0);
+    assert.equal((await call('/api/agent/entries/story/moon-promise')).status, 200);
+    await ctxV.close();
+    await ctxH.close();
+  });
+
   await step('35차: 화면 편집 — 그 자리에서 글 고치기·언어 전환·구역 끼워 넣기·숨기기·키보드로 옮기기·사진 올리기 → 공개 → 방문자 반영', async () => {
     const ctxH = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
     const h = await ctxH.newPage();

@@ -3,7 +3,8 @@
 //
 // 사용:
 //   export SCHOOL_AGENT_TOKEN=agt_...   # 학교 관리자가 /site → 설정 → '외부 작업 토큰'에서 발급 (원문은 출력하지 않음)
-//   node scripts/agent-story-upload.mjs <폴더> [--dry-run] [--base https://onschools.vercel.app]
+//   node scripts/agent-story-upload.mjs <폴더> [--dry-run] [--create] [--base https://onschools.vercel.app]
+//   --create: 동화가 아직 없으면 manifest 의 title·virtue·character 로 새로 만든다(토큰에 '만들기' 권한 필요, 38차)
 //
 // 폴더 안: manifest.json + 그 안에 적은 파일들 (캐릭터 PNG, PDF)
 // 하는 일: 1) 토큰 확인 2) 동화의 최신 판 읽기 3) 파일 올리기(같은 파일은 다시 올리지 않음)
@@ -16,6 +17,7 @@ import crypto from 'node:crypto';
 const args = process.argv.slice(2);
 const dir = args.find((a) => !a.startsWith('--'));
 const dry = args.includes('--dry-run');
+const create = args.includes('--create');
 const baseArg = args.indexOf('--base');
 const BASE = (baseArg >= 0 ? args[baseArg + 1] : process.env.ONSCHOOLS_URL) || 'https://onschools.vercel.app';
 const TOKEN = process.env.SCHOOL_AGENT_TOKEN ?? '';
@@ -37,13 +39,14 @@ const lt = (v) => (v && typeof v === 'object' ? Object.fromEntries(Object.entrie
 const sameText = (a, b) => !!a && !!b && LANGS.some((l) => a[l] && a[l] === b[l]);
 
 // ── 서버 요청 (토큰은 머리에만, 출력에는 남기지 않음) ─────
-async function api(method, p, body, type) {
+async function api(method, p, body, type, { allow404 = false } = {}) {
   const res = await fetch(`${BASE}${p}`, {
     method,
     headers: { 'x-agent-token': TOKEN, ...(type ? { 'content-type': type } : body ? { 'content-type': 'application/json' } : {}) },
     body: body === undefined ? undefined : type ? body : JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  if (allow404 && res.status === 404) return null;
   if (!res.ok) fail(`${method} ${p.split('?')[0]} → ${res.status} ${data.error ?? ''}`);
   return data;
 }
@@ -70,8 +73,19 @@ function readFile(rel) {
 
 // ── 1) 토큰·동화 확인 ─────────────────────────────────────
 const me = await api('GET', '/api/agent/me');
-console.log(`학교: ${me.school} · 토큰: ${me.label} · 범위: ${me.story_key ? `동화 /${me.story_key}` : '성품 동화 모두'} · 기한 ${String(me.expires_at).slice(0, 10)}`);
-const story = await api('GET', `/api/agent/stories/${m.story_key}`);
+const scope = `${(me.kinds ?? ['story']).join('·')} ${me.keys ? me.keys.map((k) => `/${k}`).join(' ') : '모두'}`;
+console.log(`학교: ${me.school} · 토큰: ${me.label} · 범위: ${scope} · 권한: ${(me.perms ?? []).join('·')} · 기한 ${me.expires_at ? String(me.expires_at).slice(0, 10) : '무기한'}`);
+let story = await api('GET', `/api/agent/stories/${m.story_key}`, undefined, undefined, { allow404: true });
+if (!story) {
+  if (!create) fail(`동화 /${m.story_key} 가 없습니다. 새로 만들려면 --create 를 붙이세요(토큰에 '만들기' 권한 필요).`);
+  const title = lt(m.title);
+  if (!title || !Object.keys(title).length) fail('새 동화를 만들려면 manifest.title(언어별 제목)이 필요합니다.');
+  if (dry) { console.log(`(시험 실행) 동화 /${m.story_key} 를 새로 만들 예정입니다.`); process.exit(0); }
+  await api('POST', '/api/agent/entries/story', { key: m.story_key, content: { title, summary: lt(m.summary), blocks: [] },
+    meta: { virtue: m.virtue ?? '', character: m.character ?? '' }, note: '에이전트가 새로 만듦' });
+  console.log(`새 동화 /${m.story_key} 를 시안으로 만들었습니다.`);
+  story = await api('GET', `/api/agent/stories/${m.story_key}`);
+}
 console.log(`동화 /${story.key}: 최신 ${story.latest.version}판 · 공개 ${story.live_version ?? '없음'}`);
 
 // ── 2) 파일 준비 ──────────────────────────────────────────

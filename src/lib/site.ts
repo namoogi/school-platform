@@ -229,7 +229,7 @@ export async function saveSettings(db: Db, schoolId: string, input: Record<strin
 // ── 항목·판·공개 ─────────────────────────────────────────
 export async function listEntries(db: Db, schoolId: string): Promise<EntrySummary[]> {
   const { rows } = await db.query<Omit<EntrySummary, 'status'> & { was_published: boolean }>(
-    `select e.id, e.kind, e.key, e.visibility, e.sort, e.meta,
+    `select e.id, e.kind, e.key, e.visibility, e.sort, e.meta, e.archived_at,
             v.version as latest_version, v.content -> 'title' as latest_title, v.created_at as updated_at,
             lv.version as live_version, p.id is not null as was_published
      from public.site_entries e
@@ -247,7 +247,7 @@ export async function listEntries(db: Db, schoolId: string): Promise<EntrySummar
 export async function getEntry(db: Db, schoolId: string, id: string) {
   if (!isUuid(id)) throw new NotFoundError('항목을 찾을 수 없습니다.');
   const { rows: [entry] } = await db.query(
-    'select id, kind, key, visibility, sort, meta, created_at from public.site_entries where id = $1 and school_id = $2', [id, schoolId]);
+    'select id, kind, key, visibility, sort, meta, created_at, archived_at from public.site_entries where id = $1 and school_id = $2', [id, schoolId]);
   if (!entry) throw new NotFoundError('항목을 찾을 수 없습니다.');
   const { rows: versions } = await db.query<{ id: string; version: number; content: Content; note: string | null; created_at: string }>(
     'select id, version, content, note, created_at from public.site_entry_versions where entry_id = $1 order by version desc', [id]);
@@ -255,7 +255,7 @@ export async function getEntry(db: Db, schoolId: string, id: string) {
     'select id, version_id, published_at from public.site_publications where entry_id = $1 order by id desc', [id]);
   const liveId = pubs[0]?.version_id ?? null;
   return {
-    entry: entry as { id: string; kind: EntryKind; key: string; visibility: 'public' | 'unlisted'; sort: number; meta: Record<string, unknown> },
+    entry: entry as { id: string; kind: EntryKind; key: string; visibility: 'public' | 'unlisted'; sort: number; meta: Record<string, unknown>; archived_at: string | null },
     versions, publications: pubs, liveVersionId: liveId, wasPublished: pubs.length > 0,
   };
 }
@@ -317,6 +317,7 @@ export async function updateEntry(db: Db, schoolId: string, entryId: string, inp
 /** 공개: 고른 판(없으면 최신 판)을 공개 기록에 더한다. versionId=null 이면 공개 내림. 학교 관리자만(RLS). */
 export async function publish(db: Db, schoolId: string, entryId: string, versionId: string | null | undefined) {
   const { entry, versions } = await getEntry(db, schoolId, entryId);
+  if (entry.archived_at && versionId !== null) throw new ValidationError('보관한 항목은 공개할 수 없습니다. 먼저 되살려 주세요.');
   let target: string | null;
   if (versionId === null) target = null;
   else {
@@ -327,6 +328,25 @@ export async function publish(db: Db, schoolId: string, entryId: string, version
     await db.query('insert into public.site_publications(school_id, entry_id, version_id) values ($1,$2,$3)', [schoolId, entry.id, target]);
   } catch (e) { dbError(e); }
   return { ok: true, version_id: target };
+}
+
+/**
+ * 38차(ADR 0014): 보관(소프트 삭제)·되살리기. 학교 관리자만(RLS site_entries_update).
+ * 판·공개 기록·그림은 그대로 남는다. 공개 중인 항목은 먼저 공개를 내려야 보관할 수 있다.
+ */
+export async function setArchived(db: Db, schoolId: string, entryId: string, archived: boolean, userId: string) {
+  const { entry, liveVersionId } = await getEntry(db, schoolId, entryId);
+  if (archived && liveVersionId) throw Object.assign(new Error('공개 중인 항목은 보관할 수 없습니다. 먼저 공개를 내려 주세요.'), { code: 'P0001' });
+  try {
+    const r = await db.query(
+      archived
+        ? 'update public.site_entries set archived_at = now(), archived_by = $3, archived_by_token = null where id = $1 and school_id = $2 and archived_at is null'
+        : 'update public.site_entries set archived_at = null, archived_by = null, archived_by_token = null where id = $1 and school_id = $2',
+      archived ? [entry.id, schoolId, userId] : [entry.id, schoolId]);
+    if (!r.rowCount && archived) throw new ValidationError('이미 보관한 항목입니다.');
+  } catch (e) { dbError(e); }
+  await db.query('select app.log_access($1, $2, $3)', [schoolId, archived ? 'site.entry_archive' : 'site.entry_restore', JSON.stringify({ id: entry.id, kind: entry.kind, key: entry.key })]);
+  return { ok: true, archived };
 }
 
 // ── 그림 ─────────────────────────────────────────────────

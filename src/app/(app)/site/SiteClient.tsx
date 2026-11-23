@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
+import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, PencilLine, Plus, Trash2 } from 'lucide-react';
 import { BLOCK_LABEL, KIND_LABEL, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
