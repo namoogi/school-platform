@@ -41,6 +41,8 @@ try {
   if (applyHere) {
     execFileSync('node', ['scripts/migrate.mjs'], { stdio: 'inherit' });
     execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
+    // 실제 학교 준비는 운영 빌드에서만 (미리보기용 DB 분리 여부와 무관하게)
+    if (process.env.VERCEL_ENV === 'production') execFileSync('node', ['scripts/provision.mjs'], { stdio: 'inherit' });
   } else {
     console.log('[predeploy] 미리보기 빌드: 마이그레이션·시드를 적용하지 않습니다(운영 DB 공용). 대기 목록만 확인합니다.');
     execFileSync('node', ['scripts/migrate.mjs', '--check'], { stdio: 'inherit' });

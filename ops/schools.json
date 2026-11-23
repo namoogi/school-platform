@@ -1,0 +1,20 @@
+{
+  "_설명": "운영 배포 때 한 번만 만드는 실제 학교 목록 (scripts/provision.mjs). 이미 있는 학교는 건드리지 않는다. 학생·교직원 정보나 이메일은 넣지 않는다(첫 관리자는 PLATFORM_ADMIN_EMAILS 의 첫 계정).",
+  "schools": [
+    {
+      "slug": "rungarunsuksa",
+      "name": "Rung Arun Suksa",
+      "locale": "th",
+      "seats": 10,
+      "modules": ["homepage", "stories"],
+      "site": {
+        "public_slug": "rungarunsuksa",
+        "langs": ["th", "en", "ko"],
+        "default_lang": "th",
+        "theme": "campus",
+        "title": { "en": "Rung Arun Suksa", "ko": "룽아룬숙사" },
+        "is_open": false
+      }
+    }
+  ]
+}
