@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, Eye, ImagePlus, Plus, Trash2 } from 'lucide-react';
-import { BLOCK_LABEL, KIND_LABEL, LANG_LABEL, LANGS, type Block, type Content, type EntryKind, type Lang, type LText, type SiteSettings } from '@/lib/site-shared';
+import { BLOCK_LABEL, KIND_LABEL, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
 
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -49,6 +49,11 @@ export function SiteSettingsForm({ initial, schoolName }: { initial: SiteSetting
           <input value={s.site_title[l] ?? ''} onChange={(e) => setS({ ...s, site_title: { ...s.site_title, [l]: e.target.value } })} />
         </label>
       ))}
+      <label>화면 모양
+        <select value={s.theme} onChange={(e) => setS({ ...s, theme: e.target.value as 'campus' | 'dawn' })} data-testid="site-theme">
+          <option value="campus">학사 기본</option><option value="dawn">새벽빛 매거진</option>
+        </select>
+      </label>
       <label className="radio"><input type="checkbox" checked={s.is_open} onChange={(e) => setS({ ...s, is_open: e.target.checked })} /> 홈페이지 열기 (방문자가 공개한 판을 볼 수 있음)</label>
       {msg && <p className="banner" data-tone={msg.tone} role="status">{msg.text}</p>}
       <div className="form-actions"><button type="submit" className="btn btn-primary">설정 저장</button></div>
@@ -98,7 +103,11 @@ const NEW_BLOCK: Record<Block['type'], () => Block> = {
   heading: () => ({ type: 'heading', text: {} }), text: () => ({ type: 'text', text: {} }), notice: () => ({ type: 'notice', text: {} }),
   image: () => ({ type: 'image', asset: '', alt: {} }), gallery: () => ({ type: 'gallery', assets: [] }),
   video: () => ({ type: 'video', url: {} }), story_page: () => ({ type: 'story_page', text: {} }),
+  section: () => ({ type: 'section', template: 'text', title: {}, body: {} }), news_list: () => ({ type: 'news_list', count: 3, style: 'cards' }),
 };
+type SectionBlock = Extract<Block, { type: 'section' }>;
+const HAS_PHOTO: SectionTemplate[] = ['media-left', 'media-right', 'banner'];
+const HAS_ITEMS: SectionTemplate[] = ['cards', 'photos', 'facts', 'steps'];
 /** 비교용 정규화: 빈 글·빈 묶음·undefined 를 빼고 비교한다(서버 검사가 빈 칸을 정리하므로) */
 function clean(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(clean);
@@ -215,6 +224,9 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
         <LangFields label="요약" value={content.summary} langs={langs} multiline onChange={(summary) => setContent({ ...content, summary })} />
         <AssetPick label="표지 그림" value={content.cover} assets={assets} onUploaded={uploaded} onChange={(cover) => setContent({ ...content, cover: cover || undefined })} />
       </div>
+      {detail.entry.kind === 'page' && detail.entry.key === 'home' && (
+        <ProfileFields value={content.site ?? {}} langs={langs} assets={assets} onUploaded={uploaded} onChange={(site) => setContent({ ...content, site })} />
+      )}
 
       <ol className="block-list">
         {content.blocks.map((b, i) => (
@@ -236,8 +248,17 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
             {b.type === 'gallery' && <>
               <div className="gallery-pick">{b.assets.map((a, k) => (
                 <span key={a + k}>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={`/site/assets/${a}`} alt="" />
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBlock(i, { ...b, assets: b.assets.filter((_, j) => j !== k) })}>빼기</button></span>))}</div>
-              <AssetPick label="사진 더하기" assets={assets} onUploaded={uploaded} onChange={(a) => a && setBlock(i, { ...b, assets: [...b.assets, a] })} />
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBlock(i, { ...b, assets: b.assets.filter((_, j) => j !== k), items: b.items?.filter((_, j) => j !== k) })}>빼기</button></span>))}</div>
+              <AssetPick label="사진 더하기" assets={assets} onUploaded={uploaded} onChange={(a) => a && setBlock(i, { ...b, assets: [...b.assets, a], items: b.items ? [...b.items, { asset: a }] : undefined })} />
+            </>}
+            {b.type === 'gallery' && b.items && <p className="fine">사진마다 묶음·대체 글이 있습니다({b.items.length}장{b.filters ? ` · 거르기 ${b.filters.length}개` : ''}). 사진을 빼면 함께 빠집니다.</p>}
+            {b.type === 'section' && <SectionFields b={b} langs={langs} assets={assets} onUploaded={uploaded} onChange={(nb) => setBlock(i, nb)} />}
+            {b.type === 'news_list' && <>
+              <LangFields label="제목" value={b.title} langs={langs} onChange={(title) => setBlock(i, { ...b, title })} />
+              <div className="row-wrap">
+                <label>개수<input type="number" min={1} max={10} value={b.count} onChange={(e) => setBlock(i, { ...b, count: Number(e.target.value) || 3 })} /></label>
+                <label>모양<select value={b.style} onChange={(e) => setBlock(i, { ...b, style: e.target.value as 'cards' | 'list' })}><option value="cards">카드</option><option value="list">목록</option></select></label>
+              </div>
             </>}
             {b.type === 'video' && <LangFields label="영상 주소 (YouTube·Vimeo·Google Drive)" value={b.url} langs={langs} onChange={(url) => setBlock(i, { ...b, url })} />}
             {b.type === 'story_page' && <>
@@ -248,7 +269,7 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
         ))}
       </ol>
       <div className="block-add" role="group" aria-label="블록 더하기">
-        {(isStory ? (['story_page', 'video', 'text'] as const) : (['heading', 'text', 'image', 'gallery', 'notice', 'video'] as const)).map((t) => (
+        {(isStory ? (['story_page', 'video', 'text'] as const) : (['heading', 'text', 'section', 'image', 'gallery', 'news_list', 'notice', 'video'] as const)).map((t) => (
           <button key={t} type="button" className="btn btn-secondary btn-sm" onClick={() => add(t)}><Plus size={14} aria-hidden="true" />{BLOCK_LABEL[t]}</button>
         ))}
       </div>
@@ -280,5 +301,52 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
         <p className="fine">판과 공개 기록은 지우거나 고칠 수 없습니다. 예전 판으로 되돌리려면 그 판을 다시 공개하세요.</p>
       </section>
     </div>
+  );
+}
+
+function SectionFields({ b, langs, assets, onUploaded, onChange }: { b: SectionBlock; langs: Lang[]; assets: Asset[]; onUploaded: (a: Asset) => void; onChange: (b: SectionBlock) => void }) {
+  const items = b.items ?? [];
+  const setItem = (k: number, it: SectionItem) => onChange({ ...b, items: items.map((x, j) => (j === k ? it : x)) });
+  return <>
+    <label>모양
+      <select value={b.template} onChange={(e) => onChange({ ...b, template: e.target.value as SectionTemplate })}>
+        {SECTION_TEMPLATES.map((t) => <option key={t} value={t}>{SECTION_LABEL[t]}</option>)}
+      </select>
+    </label>
+    <LangFields label="머리말" value={b.eyebrow} langs={langs} onChange={(eyebrow) => onChange({ ...b, eyebrow })} />
+    <LangFields label={b.template === 'quote' ? '말한 사람' : '제목'} value={b.title} langs={langs} onChange={(title) => onChange({ ...b, title })} />
+    <LangFields label={b.template === 'quote' ? '문장' : '글'} value={b.body} langs={langs} multiline onChange={(body) => onChange({ ...b, body })} />
+    {HAS_PHOTO.includes(b.template) && <>
+      <AssetPick label="사진" value={b.asset} assets={assets} onUploaded={onUploaded} onChange={(asset) => onChange({ ...b, asset: asset || undefined })} />
+      <LangFields label="사진 대체 글" value={b.alt} langs={langs} onChange={(alt) => onChange({ ...b, alt })} />
+    </>}
+    {HAS_ITEMS.includes(b.template) && <fieldset><legend>항목 ({items.length})</legend>
+      <ol className="block-list">{items.map((it, k) => (
+        <li key={k} className="block-card">
+          <LangFields label={`${k + 1}. 제목`} value={it.title} langs={langs} onChange={(title) => setItem(k, { ...it, title })} />
+          {b.template !== 'photos' && <LangFields label={`${k + 1}. 글`} value={it.body} langs={langs} multiline onChange={(body) => setItem(k, { ...it, body })} />}
+          {(b.template === 'cards' || b.template === 'photos') && <AssetPick label={`${k + 1}. 사진`} value={it.asset} assets={assets} onUploaded={onUploaded} onChange={(asset) => setItem(k, { ...it, asset: asset || undefined })} />}
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChange({ ...b, items: items.filter((_, j) => j !== k) })}>{k + 1}번 항목 빼기</button>
+        </li>))}</ol>
+      {items.length < 12 && <button type="button" className="btn btn-secondary btn-sm" onClick={() => onChange({ ...b, items: [...items, {}] })}><Plus size={14} aria-hidden="true" />항목 더하기</button>}
+    </fieldset>}
+    {(b.template === 'cta' || b.button) && <div className="row-wrap">
+      <LangFields label="단추 이름" value={b.button?.label} langs={langs} onChange={(label) => onChange({ ...b, button: { href: b.button?.href ?? '/p/contact', label } })} />
+      <label>단추 링크 <span className="fine">/p/contact 또는 https://…</span><input value={b.button?.href ?? ''} onChange={(e) => onChange({ ...b, button: { label: b.button?.label ?? {}, href: e.target.value } })} /></label>
+    </div>}
+  </>;
+}
+
+function ProfileFields({ value, langs, assets, onUploaded, onChange }: { value: SiteProfile; langs: Lang[]; assets: Asset[]; onUploaded: (a: Asset) => void; onChange: (v: SiteProfile) => void }) {
+  return (
+    <section className="card site-form" data-testid="site-profile">
+      <h3>사이트 머리·바닥 정보 <span className="fine">첫 화면 판과 함께 공개됩니다</span></h3>
+      <AssetPick label="학교 로고" value={value.logo} assets={assets} onUploaded={onUploaded} onChange={(logo) => onChange({ ...value, logo: logo || undefined })} />
+      <LangFields label="학교 소개 한 줄" value={value.tagline} langs={langs} onChange={(tagline) => onChange({ ...value, tagline })} />
+      <LangFields label="주소" value={value.address} langs={langs} onChange={(address) => onChange({ ...value, address })} />
+      <label>전화 <span className="fine">쉼표로 나눔, 3개까지</span><input value={(value.phone ?? []).join(', ')} onChange={(e) => onChange({ ...value, phone: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} /></label>
+      <label>페이스북 주소<input value={value.facebook ?? ''} onChange={(e) => onChange({ ...value, facebook: e.target.value || undefined })} placeholder="https://www.facebook.com/…" /></label>
+      <LangFields label="바닥 글" value={value.footer} langs={langs} multiline onChange={(footer) => onChange({ ...value, footer })} />
+    </section>
   );
 }

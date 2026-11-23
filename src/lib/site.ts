@@ -7,7 +7,10 @@ import { isUuid, NotFoundError, ValidationError } from './services';
  * 구성원 함수는 asUser 트랜잭션(RLS)에서, 방문자 함수는 asPublic(anon, 공개된 판만)에서 실행한다.
  * 판·공개 기록·그림은 고치지 않고 더하기만 한다(DB 트리거가 막음).
  */
-import { LANGS, type Block, type Content, type EntryKind, type EntryStatus, type EntrySummary, type Lang, type LText, type SiteSettings } from './site-shared';
+import {
+  LANGS, SECTION_TEMPLATES, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
+  type GalleryItem, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings,
+} from './site-shared';
 export * from './site-shared';
 
 // ── 내용 검사 ─────────────────────────────────────────────
@@ -29,6 +32,79 @@ function asset(v: unknown, field: string) {
   if (typeof v !== 'string' || !isUuid(v)) throw new ValidationError(`${field}의 그림을 다시 골라 주세요.`);
   return v;
 }
+/** 링크: 사이트 안 경로(/p/about, /news, /stories/x, 끝의 #구역 허용) 또는 https 주소 */
+function href(v: unknown, field: string): string {
+  const s = String(v ?? '').trim();
+  if (/^\/(?:[a-z0-9-]+(?:\/[a-z0-9-]+)*)?(?:#[a-z0-9-]+)?$/.test(s)) return s;
+  try { const u = new URL(s); if (u.protocol === 'https:' && s.length <= 500) return u.toString(); } catch { /* 아래에서 거부 */ }
+  throw new ValidationError(`${field}: 링크는 사이트 안 경로(/p/…)나 https 주소여야 합니다.`);
+}
+function button(v: unknown, field: string): Button | undefined {
+  if (v == null) return undefined;
+  const x = v as Record<string, unknown>;
+  return { label: text(x.label, `${field} 단추 이름`, 80), href: href(x.href, `${field} 단추`) };
+}
+function opt<T>(v: T | undefined, empty: (t: T) => boolean): T | undefined { return v === undefined || empty(v) ? undefined : v; }
+const noText = (t: LText) => !Object.values(t).some(Boolean);
+
+function sectionBlock(x: Record<string, unknown>, at: string): Block {
+  const template = x.template as SectionTemplate;
+  if (!SECTION_TEMPLATES.includes(template)) throw new ValidationError(`${at}: 구역 모양이 올바르지 않습니다.`);
+  const itemsRaw = x.items == null ? [] : Array.isArray(x.items) ? x.items : null;
+  if (!itemsRaw || itemsRaw.length > 12) throw new ValidationError(`${at}: 항목은 12개까지 넣을 수 있습니다.`);
+  const items: SectionItem[] = itemsRaw.map((it, j) => {
+    const y = (it ?? {}) as Record<string, unknown>;
+    const f = `${at} ${j + 1}번째 항목`;
+    return {
+      title: opt(text(y.title, f, 200), noText), body: opt(text(y.body, f, 3000), noText),
+      asset: y.asset ? asset(y.asset, f) : undefined, alt: opt(text(y.alt, `${f} 대체 글`, 300), noText),
+      href: y.href ? href(y.href, f) : undefined,
+    };
+  });
+  return {
+    type: 'section', template,
+    eyebrow: opt(text(x.eyebrow, `${at} 머리말`, 120), noText), title: opt(text(x.title, `${at} 제목`, 200), noText),
+    body: opt(text(x.body, at), noText), asset: x.asset ? asset(x.asset, at) : undefined,
+    alt: opt(text(x.alt, `${at} 대체 글`, 300), noText), items: items.length ? items : undefined, button: button(x.button, at),
+  };
+}
+
+function galleryBlock(x: Record<string, unknown>, at: string): Block {
+  const itemsRaw = Array.isArray(x.items) ? x.items : null;
+  const filtersRaw = Array.isArray(x.filters) ? x.filters : [];
+  const items: GalleryItem[] | undefined = itemsRaw?.map((it, j) => {
+    const y = (it ?? {}) as Record<string, unknown>;
+    const cat = y.category == null || y.category === '' ? undefined : String(y.category);
+    if (cat !== undefined && !/^[a-z0-9-]{1,30}$/.test(cat)) throw new ValidationError(`${at} ${j + 1}번째 사진: 묶음 이름이 올바르지 않습니다.`);
+    return { asset: asset(y.asset, at), alt: opt(text(y.alt, `${at} 대체 글`, 300), noText), category: cat };
+  });
+  const assets = items ? items.map((i) => i.asset) : (Array.isArray(x.assets) ? x.assets : []).map((a) => asset(a, at));
+  if (!assets.length || assets.length > 60) throw new ValidationError(`${at}: 사진은 1~60장이어야 합니다.`);
+  if (filtersRaw.length > 8) throw new ValidationError(`${at}: 묶음 거르기는 8개까지입니다.`);
+  const filters: GalleryFilter[] = filtersRaw.map((f) => {
+    const y = (f ?? {}) as Record<string, unknown>;
+    const key = String(y.key ?? '');
+    if (!/^[a-z0-9-]{1,30}$/.test(key)) throw new ValidationError(`${at}: 묶음 이름이 올바르지 않습니다.`);
+    return { key, label: text(y.label, `${at} 묶음`, 60) };
+  });
+  return { type: 'gallery', assets, caption: text(x.caption, `${at} 설명`, 500), items, filters: filters.length ? filters : undefined };
+}
+
+function siteProfile(v: unknown): SiteProfile | undefined {
+  if (v == null) return undefined;
+  if (typeof v !== 'object' || Array.isArray(v)) throw new ValidationError('사이트 정보 형식이 올바르지 않습니다.');
+  const x = v as Record<string, unknown>;
+  const phone = x.phone == null ? [] : Array.isArray(x.phone) ? x.phone : null;
+  if (!phone || phone.length > 3 || phone.some((p) => typeof p !== 'string' || !/^[0-9+()\- ]{3,30}$/.test(p))) {
+    throw new ValidationError('전화번호는 숫자·+·-·괄호로 3개까지 적어 주세요.');
+  }
+  return {
+    logo: x.logo ? asset(x.logo, '로고') : undefined,
+    tagline: opt(text(x.tagline, '학교 소개 한 줄', 200), noText), address: opt(text(x.address, '주소', 300), noText),
+    phone: phone.length ? (phone as string[]) : undefined, facebook: x.facebook ? href(x.facebook, '페이스북') : undefined,
+    footer: opt(text(x.footer, '바닥 글', 500), noText), visit: button(x.visit, '방문 안내'),
+  };
+}
 
 export function validateContent(raw: unknown): Content {
   if (!raw || typeof raw !== 'object') throw new ValidationError('내용 형식이 올바르지 않습니다.');
@@ -45,10 +121,12 @@ export function validateContent(raw: unknown): Content {
       case 'text': return { type: 'text', text: text(x.text, at) };
       case 'notice': return { type: 'notice', text: text(x.text, at, 1000) };
       case 'image': return { type: 'image', asset: asset(x.asset, at), alt: text(x.alt, `${at} 대체 글`, 300), caption: text(x.caption, `${at} 설명`, 500) };
-      case 'gallery': {
-        const list = Array.isArray(x.assets) ? x.assets : [];
-        if (!list.length || list.length > 60) throw new ValidationError(`${at}: 사진은 1~60장이어야 합니다.`);
-        return { type: 'gallery', assets: list.map((a) => asset(a, at)), caption: text(x.caption, `${at} 설명`, 500) };
+      case 'gallery': return galleryBlock(x, at);
+      case 'section': return sectionBlock(x, at);
+      case 'news_list': {
+        const count = Number(x.count ?? 3);
+        if (!Number.isInteger(count) || count < 1 || count > 10) throw new ValidationError(`${at}: 소식 개수는 1~10개입니다.`);
+        return { type: 'news_list', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, at, 1000), noText), count, style: x.style === 'list' ? 'list' : 'cards' };
       }
       case 'video': {
         const url = text(x.url, `${at} 주소`, 500);
@@ -63,9 +141,12 @@ export function validateContent(raw: unknown): Content {
       default: throw new ValidationError(`${at}: 알 수 없는 블록입니다.`);
     }
   });
+  const headRaw = (r.head ?? null) as Record<string, unknown> | null;
+  const head = headRaw ? { eyebrow: opt(text(headRaw.eyebrow, '머리말', 120), noText), layout: headRaw.layout === 'opening' ? 'opening' as const : headRaw.layout === 'editorial' ? 'editorial' as const : undefined } : undefined;
   return {
-    title, summary: text(r.summary, '요약', 500),
+    title, summary: text(r.summary, '요약', 1000),
     cover: r.cover ? asset(r.cover, '표지') : undefined, blocks,
+    site: siteProfile(r.site), head: head && (head.eyebrow || head.layout) ? head : undefined,
   };
 }
 
@@ -151,14 +232,17 @@ export async function createEntry(db: Db, schoolId: string, input: Record<string
   const key = validKey(input.key);
   const content = validateContent(input.content ?? { title: input.title, blocks: [] });
   const visibility = input.visibility === 'unlisted' ? 'unlisted' : 'public';
-  const meta = kind === 'story' ? { virtue: String(input.virtue ?? '').slice(0, 60), character: String(input.character ?? '').slice(0, 60) } : {};
+  const meta = kind === 'story'
+    ? { virtue: String(input.virtue ?? '').slice(0, 60), character: String(input.character ?? '').slice(0, 120), ...(input.text_in_image === true ? { text_in_image: 'true' } : {}) }
+    : {};
+  const sort = Number.isInteger(input.sort) && Number(input.sort) >= 0 && Number(input.sort) <= 9999 ? Number(input.sort) : 0;
   try {
     const { rows: [e] } = await db.query<{ id: string }>(
-      `insert into public.site_entries(school_id, kind, key, visibility, meta) values ($1,$2,$3,$4,$5) returning id`,
-      [schoolId, kind, key, visibility, JSON.stringify(meta)]);
+      `insert into public.site_entries(school_id, kind, key, visibility, meta, sort) values ($1,$2,$3,$4,$5,$6) returning id`,
+      [schoolId, kind, key, visibility, JSON.stringify(meta), sort]);
     await db.query(
-      `insert into public.site_entry_versions(school_id, entry_id, version, content, note) values ($1,$2,1,$3,'처음 만듦')`,
-      [schoolId, e.id, JSON.stringify(content)]);
+      `insert into public.site_entry_versions(school_id, entry_id, version, content, note) values ($1,$2,1,$3,$4)`,
+      [schoolId, e.id, JSON.stringify(content), typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 300) : '처음 만듦']);
     return { id: e.id };
   } catch (e) { dbError(e); }
 }

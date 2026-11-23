@@ -5,6 +5,7 @@ import { getEntry, getSettings, KIND_LABEL, listAssets, listEntries, pick, type 
 import { EmptyState, StatusBadge } from '@/components/ui';
 import { TriageKeys } from '../review/TriageKeys';
 import { EntryEditor, NewEntryForm, SiteSettingsForm } from './SiteClient';
+import { ImportPanel } from './ImportClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,7 +89,11 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
         <div className="triage-pad">
           {box === 'settings'
             ? (school.isAdmin
-                ? <SiteSettingsForm initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
+                ? <>
+                    {/* 가져오기 등으로 설정이 바뀌면 양식을 새 값으로 다시 연다(예전 값으로 덮어쓰지 않게) */}
+                    <SiteSettingsForm key={settings?.updated_at ?? 'new'} initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
+                    {settings && <ImportPanel settings={JSON.parse(JSON.stringify(settings))} existing={entries.map((e) => ({ id: e.id, kind: e.kind, key: e.key }))} />}
+                  </>
                 : <EmptyState title="설정은 학교 관리자가 합니다">시안 만들기와 고치기는 교사도 할 수 있습니다.</EmptyState>)
             : selected
               ? <EntryEditor key={selected.entry.id} detail={JSON.parse(JSON.stringify(selected))}

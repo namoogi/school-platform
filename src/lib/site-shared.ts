@@ -4,19 +4,47 @@ export type Lang = (typeof LANGS)[number];
 export type LText = Partial<Record<Lang, string>>;
 export const LANG_LABEL: Record<Lang, string> = { ko: '한국어', en: 'English', th: 'ไทย' };
 
+/**
+ * 31차: 새벽빛 매거진(dawn)·이전 블록 (ADR 0008 이전 2단계)
+ * - section: 잡지형 구역. 템플릿 하나에 칸(제목·글·사진·항목·단추)을 담는다.
+ * - gallery.items: 사진마다 대체 글·묶음(분류). 묶음이 있으면 거르기 단추와 크게 보기를 단다.
+ * - news_list: 공개된 소식 N개를 불러온다(방문자 입력 없음).
+ * 링크(href)는 사이트 안 경로('/p/about', '/news')나 https 주소만 받는다.
+ */
+export const SECTION_TEMPLATES = ['text', 'media-left', 'media-right', 'banner', 'cards', 'photos', 'facts', 'steps', 'quote', 'cta'] as const;
+export type SectionTemplate = (typeof SECTION_TEMPLATES)[number];
+export const SECTION_LABEL: Record<SectionTemplate, string> = {
+  text: '글 구역', 'media-left': '사진 왼쪽 + 글', 'media-right': '글 + 사진 오른쪽', banner: '넓은 사진', cards: '카드 묶음',
+  photos: '사진 줄', facts: '항목–내용', steps: '차례(번호)', quote: '인용', cta: '안내 단추',
+};
+export type SectionItem = { title?: LText; body?: LText; asset?: string; alt?: LText; href?: string };
+export type Button = { label: LText; href: string };
+export type GalleryItem = { asset: string; alt?: LText; category?: string };
+export type GalleryFilter = { key: string; label: LText };
+
 export type Block =
   | { type: 'heading'; text: LText }
   | { type: 'text'; text: LText }
   | { type: 'notice'; text: LText }
   | { type: 'image'; asset: string; alt?: LText; caption?: LText }
-  | { type: 'gallery'; assets: string[]; caption?: LText }
+  | { type: 'gallery'; assets: string[]; caption?: LText; items?: GalleryItem[]; filters?: GalleryFilter[] }
   | { type: 'video'; url: LText }
-  | { type: 'story_page'; asset?: string; text: LText };
-export type Content = { title: LText; summary?: LText; cover?: string; blocks: Block[] };
+  | { type: 'story_page'; asset?: string; text: LText }
+  | { type: 'section'; template: SectionTemplate; eyebrow?: LText; title?: LText; body?: LText; asset?: string; alt?: LText; items?: SectionItem[]; button?: Button }
+  | { type: 'news_list'; title?: LText; body?: LText; count: number; style: 'cards' | 'list' };
+
+/** 사이트 머리·바닥 정보. 'home' 쪽 내용에 두어 판·공개 흐름을 그대로 따른다(로고 그림도 공개된 판이 가리킬 때만 보임). */
+export type SiteProfile = {
+  logo?: string; tagline?: LText; address?: LText; phone?: string[]; facebook?: string; footer?: LText; visit?: Button;
+};
+/** 쪽 머리 꾸밈(dawn): 작은 머리말과 화면 모양 */
+export type PageHead = { eyebrow?: LText; layout?: 'editorial' | 'opening' };
+export type Content = { title: LText; summary?: LText; cover?: string; blocks: Block[]; site?: SiteProfile; head?: PageHead };
 export type EntryKind = 'page' | 'news' | 'story';
 export const KIND_LABEL: Record<EntryKind, string> = { page: '쪽', news: '소식', story: '성품 동화' };
 export const BLOCK_LABEL: Record<Block['type'], string> = {
   heading: '제목', text: '글', notice: '알림', image: '그림', gallery: '사진 묶음', video: '영상', story_page: '동화 한 쪽',
+  section: '잡지형 구역', news_list: '최근 소식',
 };
 
 export type SiteSettings = {
