@@ -1,4 +1,6 @@
+import { headers } from 'next/headers';
 import { publicEntry, publicList, publicSite, type Content, type PublicEntry, type PublicSite } from '@/lib/site';
+import { SCHOOL_HOST_HEADER } from '@/lib/site-hosts';
 import { resolveLang, siteLinker } from './SiteFrame';
 import type { NewsItem } from './SiteRenderer';
 
@@ -7,8 +9,10 @@ import type { NewsItem } from './SiteRenderer';
  * 모두 asPublic(anon, 지금 공개된 판만)으로 읽으므로 시안이나 내린 판은 나오지 않는다.
  */
 export async function loadSite(slug: string, requestedLang?: string) {
-  const site = await publicSite(slug);
-  if (!site) return null;
+  const found = await publicSite(slug);
+  if (!found) return null;
+  // 47차: 학교 자체 주소로 들어왔으면(proxy 가 표시) 링크를 깨끗한 경로로 만든다
+  const site: PublicSite = { ...found, on_own_host: (await headers()).get(SCHOOL_HOST_HEADER) === slug };
   const home = await publicEntry(slug, 'page', 'home');
   const lang = resolveLang(site, requestedLang);
   return { site, home, profile: home?.content.site, lang, link: siteLinker(site, lang), asset: (id: string) => `/s/${slug}/a/${id}` };

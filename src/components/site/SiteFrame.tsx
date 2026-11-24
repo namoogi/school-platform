@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { LANG_LABEL, pick, type Lang, type SiteProfile } from '@/lib/site-shared';
 import type { PublicSite } from '@/lib/site';
+import { hostLink } from '@/lib/site-hosts';
 
 const T = {
   home: { ko: '홈', en: 'Home', th: 'หน้าแรก' }, news: { ko: '소식', en: 'News', th: 'ข่าวสาร' },
@@ -27,8 +28,13 @@ export function siteLinker(site: PublicSite, lang: Lang) {
   return (p: string) => {
     if (p.startsWith('#')) return p;
     const [path, hash] = p.split('#');
-    return `/s/${site.slug}${path === '/' ? '' : path}${q}${hash ? `#${hash}` : ''}`;
+    return `${sitePath(site, path)}${q}${hash ? `#${hash}` : ''}`;
   };
+}
+/** 47차: 학교 자체 주소로 볼 때는 /about 처럼, 플랫폼 주소로 볼 때는 /s/<학교>/p/about 처럼 */
+export function sitePath(site: PublicSite, path: string) {
+  if (site.on_own_host) return path === '/' || path === '' ? '/' : hostLink(path);
+  return `/s/${site.slug}${path === '/' ? '' : path}`;
 }
 
 /**
@@ -55,7 +61,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   const visit = !hidden && profile?.visit && t(profile.visit.label) ? profile.visit : null;
   const navList = nav.map((n) => <Link key={n.key} href={n.href} aria-current={n.key === current ? 'page' : undefined}>{n.label}</Link>);
   const langList = langs ?? site.langs;
-  const langLinks = langList.map((l) => <Link key={l} href={`/s/${site.slug}${path}${q(l)}`} aria-current={l === lang ? 'true' : undefined} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link>);
+  const langLinks = langList.map((l) => <Link key={l} href={`${sitePath(site, path || '/')}${q(l)}`} aria-current={l === lang ? 'true' : undefined} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link>);
   return (
     <div className="site" data-theme={site.theme} data-hidden={hidden || undefined} lang={lang}>
       <a className="skip-link" href="#site-main">{siteText('skip', lang)}</a>
