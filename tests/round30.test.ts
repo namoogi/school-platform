@@ -1,4 +1,4 @@
-/** 30차: Claude 점검 접근 — 토큰으로만, 읽기 전용, 발급·폐기는 전체 관리자 */
+/** 30차: Claude 점검 접근 — 토큰으로만, 발급·폐기는 전체 관리자. 51차(ADR 0024): 이 계정은 관제 세션 = 전체 관리자(쓰기 가능) */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { lookupIds, resetTestDb, TEST_URL } from './helpers';
@@ -7,6 +7,8 @@ process.env.DATABASE_URL = TEST_URL;
 const { asUser, asSystem, getPool, INSPECTOR_ID } = await import('@/lib/db');
 const insp = await import('@/lib/inspector');
 const admin = await import('@/lib/admin');
+const ctx = admin;
+const site = await import('@/lib/site');
 
 let A: { schoolId: string; userId: string };
 let P: string;
@@ -44,11 +46,17 @@ describe('Claude 점검 접근', () => {
     await expect(asUser(INSPECTOR_ID, (db) => insp.createInspectorToken(db, { days: 7 }))).rejects.toThrow();
   });
 
-  it('점검 계정은 모든 학교 화면을 읽을 수 있지만 아무것도 바꾸지 못한다', async () => {
+  it('ADR 0024: 관제 세션 계정은 전체 관리자 — 학교에 입장(기록)해 홈페이지 쪽을 만들고 공개한다', async () => {
     const schools = await asUser(INSPECTOR_ID, (db) => admin.overview(db));
     expect(schools.length).toBeGreaterThanOrEqual(2);
-    await expect(asUser(INSPECTOR_ID, (db) => db.query(`select app.set_license($1, 5, array['intake'])`, [A.schoolId]))).rejects.toMatchObject({ code: '25006' });
-    await expect(asUser(INSPECTOR_ID, (db) => db.query(`insert into public.user_preferences(user_id) values (app.uid())`))).rejects.toMatchObject({ code: '25006' });
+    await asUser(INSPECTOR_ID, (db) => db.query(`select app.set_license($1, 5, array['intake','records','homepage','stories'])`, [A.schoolId]));
+    await asUser(INSPECTOR_ID, (db) => ctx.enterSchool(db, A.schoolId));
+    await asUser(INSPECTOR_ID, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'school-a-control', langs: ['ko'], default_lang: 'ko', is_open: true }));
+    const e = await asUser(INSPECTOR_ID, (db) => site.createEntry(db, A.schoolId, { kind: 'page', key: 'control-made', title: { ko: '관제가 만든 쪽' } })) as { id: string };
+    await asUser(INSPECTOR_ID, (db) => site.publish(db, A.schoolId, e.id, undefined));
+    expect((await site.publicEntry('school-a-control', 'page', 'control-made'))!.content.title.ko).toBe('관제가 만든 쪽');
+    const log = await asSystem((db) => db.query(`select actor_label from public.access_log where school_id = $1 and actor = $2`, [A.schoolId, INSPECTOR_ID]));
+    expect(log.rows.length).toBeGreaterThan(0); // 입장·변경이 사람 전체 관리자처럼 기록된다
   });
 
   it('시드를 다시 돌려도 점검 계정의 권한은 내려가지 않는다', async () => {

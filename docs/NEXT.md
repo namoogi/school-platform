@@ -10,8 +10,8 @@
 - AI 작업 공간(ADR 0012·0013·0014·0016, 34·36·38·40차): 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive·publish, 기한 7~365일·무기한·연장)을 발급한다. 학교의 Claude Code·Codex가 새 항목·새 판(구조 포함)·항목 정보·보관을 하고, 이것들은 저절로 공개되지 않는다. `publish` 권한이 있으면 사람이 공개를 지시했을 때 바로 공개·공개 내림. 되살리기·설정은 사람. 안내 `docs/agents/README.md`, 스크립트 `scripts/agent-story-upload.mjs --create --publish`. 46차(ADR 0022): 발급 직후 **AI 연결** 글(지시문 + 토큰)을 '한 번에 복사'해 AI 대화창에 붙여 넣으면 연결된다. 이미 발급한 토큰은 목록의 '지시문만 복사'.
 - Claude 점검 접근(ADR 0010)
   - 작업 환경(Default)의 Network secret `onschools.vercel.app`(머리 `x-inspector-token`)이 들어 있다.
-  - 클라우드 세션은 로그인 없이 운영 화면을 읽기 전용으로 볼 수 있다.
-  - 확인: `curl https://onschools.vercel.app/admin`이 200이고 화면에 'Claude 점검(읽기 전용)'이 보이면 된다.
+  - 클라우드 세션은 로그인 없이 **전체 관리자(관제 세션)**로 운영 화면·API를 쓴다(ADR 0024, 51차).
+  - 확인: `curl https://onschools.vercel.app/admin`이 200이고 화면에 'Claude 관제 세션'이 보이면 된다.
   - Playwright는 `chromium.launch({ proxy: { server: process.env.HTTPS_PROXY } })`로 띄운다.
 
 ## 세션 분담 (2026-11-23 사용자 결정)

@@ -19,7 +19,7 @@ export type ShellSchool = { id: string; name: string; status: string };
 export function Shell({ account, current, schools, groups, roleLabel, inSchoolAsPlatform, inspector = false, alerts, ui, chat, children }: {
   account: ShellAccount; current: ShellSchool | null; schools: ShellSchool[]; groups: NavGroup[];
   roleLabel: string; inSchoolAsPlatform?: boolean;
-  /** 30차 Claude 점검 계정(읽기 전용). 쓰기가 막혀 입장 기록을 남기지 못하고 토큰 마지막 사용 시각만 남는다(ADR 0010) */
+  /** 관제 세션 계정(전체 관리자, ADR 0024) */
   inspector?: boolean; alerts?: { count: number; href: string } | null;
   /** 26차(ADR 0007): 사용자가 고른 화면 형식·명암. 데이터와 무관하게 셸과 토큰만 바꾼다 */
   ui: { scope: UiScope; choice: UiChoice };
@@ -36,7 +36,7 @@ export function Shell({ account, current, schools, groups, roleLabel, inSchoolAs
       <header className="topbar top">
         <SchoolSwitcher current={current} schools={schools} platform={account.isPlatformAdmin} />
         {inSchoolAsPlatform && (inspector
-          ? <span className="impersonation" data-testid="inspector-banner">Claude 점검(읽기 전용)으로 보는 중 · 점검 토큰의 마지막 사용 시각이 남습니다 <LeaveSchoolButton /></span>
+          ? <span className="impersonation" data-testid="inspector-banner">관제 세션(전체 관리자)으로 작업 중 · 학교 입장과 바꾼 내용이 기록됩니다 <LeaveSchoolButton /></span>
           : <span className="impersonation">전체 관리자로 보는 중 · 접근이 기록됩니다 <LeaveSchoolButton /></span>)}
         <div className="topbar-spacer" />
         <div className="topbar-right">

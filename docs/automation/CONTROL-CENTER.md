@@ -57,5 +57,12 @@ B=https://onschools.vercel.app/api/control
 4. 서브 세션이 `send_message`로 결정 요청을 보내 오면(API를 못 쓰는 세션) 관제가 `POST $B/requests`로 대신 올린다.
 5. 사용자가 관제 대화에서 바로 답하면, 관제가 그 내용을 사람 대신 쓰지 않는다(`user` 작성은 로그인한 사람만). 세션에 바로 전달하고 `POST $B/requests/<id>/messages`에 `{"kind":"note","body":"대화에서 답: …"}`로 남긴다.
 
+## 관제 세션: 학교 작업 (ADR 0024)
+관제 세션은 전체 관리자다. 학교를 고르고 사람이 쓰는 API를 그대로 부른다(점검 토큰은 환경이 붙인다, 로그인 쿠키는 보내지 않음).
+```bash
+curl -s -c jar -X POST https://onschools.vercel.app/api/context -H 'content-type: application/json' -d '{"schoolId":"<학교 id>"}'
+curl -s -b jar https://onschools.vercel.app/api/site/entries/<id>
+```
+
 ## 전달 시점
 웹에서 세션을 바로 깨우지 못한다. 관제는 (1) 사용자와 대화할 때마다 inbox부터 확인하고, (2) 예약 확인이 켜져 있으면 그 주기로 확인한다. 예약 확인은 실행마다 사용량이 들므로 사용자가 주기를 정한다(관제 센터 D-요청 참고).

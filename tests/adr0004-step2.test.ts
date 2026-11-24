@@ -276,9 +276,8 @@ describe('두 학교 양방향 거부', () => {
   });
 });
 
-describe('Claude 점검 계정(읽기 전용)', () => {
-  it('개설을 읽을 수 있지만 명령 함수로도 바꿀 수 없다', async () => {
+describe('관제 세션 계정(전체 관리자, ADR 0024)', () => {
+  it('개설을 읽는다', async () => {
     expect((await asUser(INSPECTOR_ID, (db) => cs.offeringsOfTerm(db, A.schoolId, a.term, a.middle))).length).toBeGreaterThan(0);
-    await expect(asUser(INSPECTOR_ID, (db) => cs.startTerm(db, A.schoolId, a.term))).rejects.toMatchObject({ code: '25006' });
   });
 });

@@ -20,15 +20,13 @@ export type Db = pg.PoolClient;
  * authenticated 역할과 JWT 클레임을 설정하므로 모든 쿼리에 RLS가 적용된다.
  * (Supabase PostgREST가 요청마다 하는 일과 같다.)
  */
-/** 30차: Claude 점검 계정 (마이그레이션 20261123000300). 토큰으로만 들어오고 읽기 전용 */
+/** 관제 세션 계정 (마이그레이션 20261123000300). 점검 토큰으로만 들어오는 전체 관리자(ADR 0024) */
 export const INSPECTOR_ID = '0c1a0de0-0000-4000-8000-000000000001';
 
 export async function asUser<T>(userId: string, fn: (db: Db) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
   try {
     await client.query('begin');
-    // 30차: Claude 점검 계정은 모든 트랜잭션을 읽기 전용으로 (화면은 보되 아무것도 바꾸지 못함)
-    if (userId === INSPECTOR_ID) await client.query('set transaction read only');
     await client.query('set local role authenticated');
     await client.query("select set_config('request.jwt.claims', $1, true)", [
       JSON.stringify({ sub: userId, role: 'authenticated' }),

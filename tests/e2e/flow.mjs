@@ -718,7 +718,7 @@ try {
     await ctxS.close();
   });
 
-  await step('30차: Claude 점검 접근 — 전체 관리자가 토큰 발급, 머리 토큰만으로 화면 읽기, 바꾸기는 거부, 폐기하면 차단', async () => {
+  await step('30차·51차: 관제 세션 접근 — 전체 관리자가 토큰 발급, 머리 토큰만으로 전체 관리자로 일함(ADR 0024), 폐기하면 차단', async () => {
     const ctxP = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const p = await ctxP.newPage();
     await p.goto(`${BASE}/login`);
@@ -735,21 +735,18 @@ try {
     const i = await ctxI.newPage();
     await i.goto(`${BASE}/admin`);
     await i.waitForSelector('[data-testid=school-table]');
-    assert.match(await i.textContent('header.top'), /Claude 점검/);
-    // 바꾸기는 DB가 막는다
+    assert.match(await i.textContent('header.top'), /Claude 관제 세션/);
+    // 51차: 관제 세션은 전체 관리자 — 바꾸기도 된다
     const w = await i.evaluate(async () => {
       const r = await fetch('/api/admin/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: 'todo', title: '점검 계정 쓰기 시도', status: 'todo' }) });
       return { status: r.status, body: await r.json() };
     });
-    assert.equal(w.status, 403);
-    assert.match(w.body.error, /읽기 전용/);
+    assert.equal(w.status, 200, JSON.stringify(w.body));
     // 학교에 들어가 학교 화면도 읽는다
     await i.locator('[data-testid=school-table] tr', { hasText: '드리미 예시학교' }).locator('button:text-is("들어가기")').click();
     await i.waitForURL(/\/home$/);
     await i.waitForSelector('[data-testid=card-review]');
-    // 점검 계정은 입장 기록을 남기지 못하므로, 위 띠는 '접근이 기록됩니다' 대신 실제로 남는 것(토큰 마지막 사용)을 알린다
-    assert.match(await i.textContent('[data-testid=inspector-banner]'), /읽기 전용.*마지막 사용/);
-    assert.doesNotMatch(await i.textContent('header.top'), /접근이 기록됩니다/);
+    assert.match(await i.textContent('[data-testid=inspector-banner]'), /관제 세션\(전체 관리자\).*기록/);
     // 폐기하면 바로 막힌다
     await p.reload();
     await p.click('[data-testid=inspector-panel] button:text-is("폐기")');

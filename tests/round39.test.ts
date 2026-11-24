@@ -12,7 +12,6 @@ let A: { schoolId: string; userId: string };
 let P: string;
 let T: string;
 const RAS = 'session_013RZyUq3bukJr2ggdSiQ2vt';
-const CTRL = 'session_013RZyUnii47zkGXkmqAhPmt';
 
 beforeAll(async () => {
   (globalThis as { __schoolPlatformPool?: unknown }).__schoolPlatformPool = undefined;
@@ -96,14 +95,12 @@ describe('관제 센터', () => {
     await expect(asAgent((db) => c.control.post(db, T, r.id, { kind: 'answer', body: 'x' }))).rejects.toThrow('보고·메모·상태');
   });
 
-  it('학교 관리자는 관제 센터를 읽지도 쓰지도 못한다. 점검 계정의 화면 요청(로그인 경로)은 읽기만', async () => {
+  it('학교 관리자는 관제 센터를 읽지도 쓰지도 못한다. 점검 계정(관제 세션 = 전체 관리자, ADR 0024)은 화면 경로로도 읽는다', async () => {
     const { requests } = await asUser(A.userId, (db) => c.listControl(db));
     expect(requests).toHaveLength(0);
     await expect(asUser(A.userId, (db) => c.createDirective(db, { title: 'x', target_session: RAS }))).rejects.toThrow();
     const insRead = await asUser(INSPECTOR_ID, (db) => c.listControl(db));
     expect(insRead.requests.length).toBeGreaterThan(0);
-    const r = insRead.requests[0];
-    await expect(asUser(INSPECTOR_ID, (db) => c.answerRequest(db, r.id, { body: 'x', target_session: CTRL }))).rejects.toMatchObject({ code: '25006' });
   });
 
   it('대화 기록은 고치거나 지울 수 없고, 요청은 지우지 않는다', async () => {

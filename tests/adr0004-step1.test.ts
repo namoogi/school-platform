@@ -139,13 +139,9 @@ describe('학사 차원과 확정 규칙 연결', () => {
   });
 });
 
-describe('Claude 점검 계정(30차, 읽기 전용)', () => {
-  it('모든 학교를 읽을 수 있지만 명령 함수(SECURITY DEFINER)로도 쓸 수 없다', async () => {
+describe('관제 세션 계정(전체 관리자, ADR 0024)', () => {
+  it('모든 학교를 읽는다(쓰기는 사람 전체 관리자와 같은 규칙 — round30)', async () => {
     expect((await asUser(INSPECTOR_ID, (db) => pp.listSchoolLevels(db, A.schoolId))).length).toBeGreaterThan(0);
-    await expect(asUser(INSPECTOR_ID, (db) => pp.addPerson(db, A.schoolId, { name: '점검 계정이 추가' })))
-      .rejects.toMatchObject({ code: '25006' });
-    await expect(asUser(INSPECTOR_ID, (db) => pp.addSchoolLevel(db, B.schoolId, { code: 'insp', name: '점검' })))
-      .rejects.toMatchObject({ code: '25006' });
   });
 });
 
