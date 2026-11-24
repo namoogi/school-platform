@@ -1231,6 +1231,42 @@ try {
     await ctxB3.close();
   });
 
+
+  await step('성품 동화 새 판 일괄 공개: 선택·충돌·공개 내림 제외·태국어 노출', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    const post = async (url, body) => {
+      const response = await ctx.request.post(`${BASE}${url}`, { data: body });
+      assert.equal(response.status(), 200); return response.json();
+    };
+    const content = (title) => ({ title: { ko: title, th: 'นิทานตัวอย่าง' }, blocks: [{ type: 'story_page', text: { ko: '합성 예시 본문', th: 'เรื่องราวตัวอย่าง' } }] });
+    const first = await post('/api/site/entries', { kind: 'story', key: 'bulk-first', content: content('일괄 첫 동화') });
+    const stale = await post('/api/site/entries', { kind: 'story', key: 'bulk-stale', content: content('일괄 바뀐 동화') });
+    const hidden = await post('/api/site/entries', { kind: 'story', key: 'bulk-hidden', content: content('일괄 내린 동화') });
+    await post(`/api/site/entries/${hidden.id}/publish`, {});
+    await post(`/api/site/entries/${hidden.id}/publish`, { versionId: null });
+    await h.goto(`${BASE}/site?box=story`);
+    const control = h.locator('[data-testid=bulk-publish-control]');
+    await control.getByRole('button', { name: /새 판 일괄 공개/ }).click();
+    await control.getByLabel(/전체 선택/).uncheck();
+    assert.equal(await control.getByLabel(/일괄 내린 동화/).count(), 0);
+    await control.getByLabel(/일괄 첫 동화/).check();
+    await control.getByLabel(/일괄 바뀐 동화/).check();
+    // 선택을 확인하는 동안 다른 작업자가 새 판을 저장한다.
+    await post(`/api/site/entries/${stale.id}/versions`, { content: content('일괄 바뀐 동화 2'), base_version: 1 });
+    await control.getByRole('button', { name: '선택한 2편 공개', exact: true }).click();
+    await control.getByRole('status').getByText('공개 1편 · 이미 최신 판 공개 0편 · 확인 필요 1편', { exact: true }).waitFor();
+    await control.getByText(/일괄 바뀐 동화: 그 사이 새 판/).waitFor();
+    await shot(h, 'bulk-publish-result.png');
+    const visitor = await browser.newContext();
+    const v = await visitor.newPage();
+    await v.goto(`${BASE}/s/dreamy-a/stories/bulk-first?lang=th`);
+    assert.match(await v.textContent('.site-main'), /นิทานตัวอย่าง/);
+    assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/bulk-stale`)).status(), 404);
+    assert.equal((await visitor.request.post(`${BASE}/api/site/entries/bulk-publish`, { data: { items: [{ id: first.id, base_version: 1, live_version: null }] } })).status(), 401);
+    await visitor.close(); await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

@@ -5,6 +5,7 @@ import { getEntry, getSettings, KIND_LABEL, listAssets, listEntries, pick, type 
 import { EmptyState, StatusBadge } from '@/components/ui';
 import { TriageKeys } from '../review/TriageKeys';
 import { EntryEditor, EntryPublishControl, NewEntryForm, SiteSettingsForm } from './SiteClient';
+import { BulkPublishControl } from './BulkPublishControl';
 import { ImportPanel } from './ImportClient';
 import { AgentTokenPanel, ArchiveControl, TokenAlerts } from './AgentTokenClient';
 import { listAgentTokens } from '@/lib/agent';
@@ -76,6 +77,10 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
           ? <p className="triage-empty">홈페이지 주소·언어·이름을 정하고 열거나 닫습니다.</p>
           : <>
               <NewEntryForm kind={box} disabled={!settings} />
+              {school.isAdmin && box === 'story' && <BulkPublishControl candidates={list
+                .filter((e) => e.status === 'draft' || e.status === 'changed')
+                .map((e) => ({ id: e.id, title: pick(e.latest_title, lang, lang) || e.key, base_version: e.latest_version, live_version: e.live_version }))} />}
+
               <ul>
                 {list.map((e) => (
                   <li key={e.id} className="site-entry-card" data-selected={e.id === selected?.entry.id ? 'true' : undefined}>
