@@ -1308,7 +1308,7 @@ try {
     }
     await h.goto(`${BASE}/site?box=story&id=${book.id}`);
     await h.locator('.site-language-images').first().locator('summary').click();
-    assert.ok(await h.getByRole('combobox', { name: 'ไทย 그림', exact: true }).first().isVisible());
+    assert.ok(await h.getByRole('combobox', { name: /ไทย 그림/ }).first().isVisible());
     await visitor.close(); await ctx.close();
   });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {

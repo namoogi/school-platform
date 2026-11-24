@@ -1609,3 +1609,4 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .story-synopsis strong { font-weight: 600; }
 .story-synopsis .story-synopsis-subtitle { font-size: var(--fs-body-sm); color: var(--text-muted); }
 .site-language-images > .asset-pick { margin-top: var(--space-3); }
+.site[data-theme="dawn"] .site-blocks > .site-figure + .story-synopsis { margin-top: calc(var(--space-4) - var(--dawn-gap)); }
