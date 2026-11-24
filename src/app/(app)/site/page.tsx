@@ -24,7 +24,7 @@ const ICON: Record<Box, LucideIcon> = { settings: Settings2, page: FileText, new
  * 27차 학교 홈페이지 관리 (ADR 0008): 함(설정·쪽·소식·성품 동화) → 목록 → 편집.
  * 편집은 새 판으로 쌓이고, 공개는 학교 관리자가 판을 골라 한다. 방문자에게는 공개한 판만 보인다.
  */
-export default async function SiteAdminPage({ searchParams }: { searchParams: Promise<{ box?: string; id?: string }> }) {
+export default async function SiteAdminPage({ searchParams }: { searchParams: Promise<{ box?: string; id?: string; new?: string }> }) {
   const sp = await searchParams;
   const { school, settings, entries, assets, detail, tokens } = await loadForPage(async ({ db, school }) => {
     const entries = await listEntries(db, school.id);
@@ -79,7 +79,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
         {box === 'settings'
           ? <p className="triage-empty">홈페이지 주소·언어·이름을 정하고 열거나 닫습니다.</p>
           : <>
-              <NewEntryForm kind={box} disabled={!settings} />
+              <NewEntryForm kind={box} disabled={!settings} initialOpen={sp.new === '1'} />
               {school.isAdmin && box === 'story' && <BulkPublishControl candidates={list
                 .filter((e) => e.status === 'draft' || e.status === 'changed')
                 .map((e) => ({ id: e.id, title: pick(e.latest_title, lang, lang) || e.key, base_version: e.latest_version, live_version: e.live_version }))} />}

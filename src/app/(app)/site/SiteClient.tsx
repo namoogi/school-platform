@@ -88,9 +88,9 @@ export function SiteSettingsForm({ initial, schoolName }: { initial: SiteSetting
 }
 
 // ── 새 항목 ──────────────────────────────────────────────
-export function NewEntryForm({ kind, disabled }: { kind: EntryKind; disabled: boolean }) {
+export function NewEntryForm({ kind, disabled, initialOpen = false }: { kind: EntryKind; disabled: boolean; initialOpen?: boolean }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialOpen);
   const [f, setF] = useState({ key: '', title: '', virtue: '', character: '' });
   const [err, setErr] = useState<string | null>(null);
   async function create(e: React.FormEvent) {
