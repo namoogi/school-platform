@@ -903,9 +903,10 @@ try {
     assert.equal(await v.locator('.site-nav').count(), 0);
     assert.equal(await v.getAttribute('meta[name=robots]', 'content'), 'noindex, nofollow');
     await shot(v, '31-friends.png');
-    // 동화: 그림 안 글 → 글은 화면 읽기용
+    // 그림 안 글이 있어도 선택 언어의 이야기는 그림 아래에 표시한다.
     await v.goto(`${BASE}/s/dreamy-a/stories/dawn-story`);
-    await v.waitForSelector('[data-testid=storybook] .storybook-text.sr-only');
+    await v.waitForSelector('[data-testid=storybook] .storybook-copy .storybook-text');
+    assert.equal(await v.locator('.storybook-text.sr-only').count(), 0);
     // 32차: 가져온 동화는 성품 이름이 비어 있다 → 관리자가 편집 화면에서 정하면 공개 목록에 바로 보인다
     await h.goto(`${BASE}/site?box=story`);
     await h.click('.triage-item:has-text("นิทานตัวอย่าง"), .triage-item:has-text("예시 동화")');
