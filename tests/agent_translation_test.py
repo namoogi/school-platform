@@ -11,6 +11,12 @@ spec.loader.exec_module(m)
 
 
 class TranslationTests(unittest.TestCase):
+    def test_language_image_ids_are_not_translation_tasks(self):
+        content = {'title': {'ko': '제목', 'en': 'Title', 'th': 'ชื่อเรื่อง'}, 'blocks': [
+            {'type': 'image', 'asset': 'original', 'images': {'th': {'asset': 'thai-image-id'}, 'en': {'asset': 'english-image-id'}}}]}
+        tasks, _, _ = m.plan(content)
+        self.assertEqual(tasks, [])
+
     def test_only_missing_prose_not_urls_hidden_or_assets(self):
         c = {'title': {'ko': '제목', 'th': 'ชื่อ'}, 'cover': 'asset-id', 'blocks': [
             {'type': 'video', 'url': {'ko': 'https://example.test'}},

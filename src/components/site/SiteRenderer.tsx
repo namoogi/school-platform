@@ -3,7 +3,7 @@ import { Fragment, type ReactNode } from 'react';
 import { ArrowRight, FileDown, Plus } from 'lucide-react';
 import { fileSize, pick, type Block, type Content, type GalleryItem, type Lang, type LText } from '@/lib/site-shared';
 import type { EditPath } from '@/lib/site-edit';
-import { hasMultilingualStoryText } from '@/lib/story-language';
+import { isStoryOutline, storyImageAsset } from '@/lib/story-language';
 import { StoryBook } from './StoryBook';
 import { GalleryGrid } from './GalleryGrid';
 import { RainbowArc, Ribbon } from './Rainbow';
@@ -18,6 +18,8 @@ const W = {
   more: { ko: '더 보기', en: 'Read more', th: 'อ่านเพิ่มเติม' },
   characters: { ko: '장면별 캐릭터', en: 'Characters by scene', th: 'ตัวละครในแต่ละฉาก' },
   scene: { ko: '장면', en: 'Scene', th: 'ฉาก' },
+  outline: { ko: '이야기 줄거리', en: 'Story summary', th: 'เรื่องย่อ' },
+  sceneStory: { ko: '이 장면의 이야기', en: 'The story in this scene', th: 'เรื่องราวในฉากนี้' },
   png: { ko: 'PNG 내려받기', en: 'Download PNG', th: 'ดาวน์โหลด PNG' },
   download: { ko: 'PDF 내려받기', en: 'Download PDF', th: 'ดาวน์โหลด PDF' },
 } as const;
@@ -108,7 +110,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
       : <p key={j}>{p}</p>;
   });
   const storyPages = content.blocks.filter((b): b is Extract<Block, { type: 'story_page' }> => b.type === 'story_page' && !b.hidden);
-  const translatedStoryText = hasMultilingualStoryText(content);
+
   const href = (h: string) => (h.startsWith('/') || h.startsWith('#') ? link(h) : h);
   const ext = (h: string) => !(h.startsWith('/') || h.startsWith('#'));
   /** 편집 중에는 링크 대신 같은 모양의 span: 고치는 칸·사진 단추가 링크 안에 들어가지 않게(중첩 대화형 요소 금지) */
@@ -126,7 +128,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
     const photo = (path: EditPath, id: string | undefined, alt: LText | undefined, label: string, optional = true) => {
       // eslint-disable-next-line @next/next/no-img-element
       const img = id ? <img src={assetUrl(id)} alt={t(alt)} loading="lazy" /> : null;
-      return ed ? ed.image(path, id, { label, altPath: [...path.slice(0, -1), 'alt'], optional }, img) : img;
+      return ed ? ed.image(path, id, { label, altPath: path.includes('images') ? at('alt') : [...path.slice(0, -1), 'alt'], optional }, img) : img;
     };
     switch (b.type) {
       case 'heading': return <h2 className="site-h2">{T(at('text'), b.text, '제목')}</h2>;
@@ -134,7 +136,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
       case 'notice': return <p className="site-notice" role="note">{ed ? ed.text(at('text'), b.text, { label: '알림', multiline: true }) : t(b.text)}</p>;
       case 'image': return (
         <figure className="site-figure">
-          {photo(at('asset'), b.asset, b.alt, '그림', false)}
+          {photo(b.images?.[lang] ? at('images', lang, 'asset') : at('asset'), storyImageAsset(b, lang), b.alt, b.images?.[lang] ? '선택 언어 그림' : '원본 그림', false)}
           {show(b.caption) && <figcaption>{T(at('caption'), b.caption, '그림 설명')}</figcaption>}
         </figure>
       );
@@ -193,6 +195,13 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         );
       }
       case 'section': {
+        if (!ed && textInImage && isStoryOutline(content.blocks, i)) return (
+          <section className="story-synopsis" data-testid="story-synopsis" lang={lang}>
+            <h2>{w('outline', lang)}</h2>
+            {b.title && <p className="story-synopsis-subtitle">{t(b.title)}</p>}
+            {b.items?.map((item, j) => <p key={j}>{item.title && <strong>{t(item.title)} · </strong>}{t(item.body)}</p>)}
+          </section>
+        );
         const v = b.variant;
         const head = <>
           {show(b.eyebrow) && <span className="sec-eyebrow">{T(at('eyebrow'), b.eyebrow, '머리말')}</span>}
@@ -264,7 +273,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         if (!ed) return null; // 방문자에게는 위의 그림책으로 넘겨 본다
         return (
           <figure className="le-story-page">
-            {photo(at('asset'), b.asset, undefined, '쪽 그림')}
+            {photo(b.images?.[lang] ? at('images', lang, 'asset') : at('asset'), storyImageAsset(b, lang), undefined, b.images?.[lang] ? '선택 언어 쪽 그림' : '원본 쪽 그림')}
             <figcaption>{ed.text(at('text'), b.text, { label: '쪽 글', multiline: true })}</figcaption>
           </figure>
         );
@@ -277,14 +286,14 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   if (!ed && storyPages.length) orderedBlocks.sort((a, b) => Number(a.b.type === 'gallery' && a.b.download === 'png') - Number(b.b.type === 'gallery' && b.b.download === 'png'));
   return (
     <div className="site-blocks">
-      {!ed && textInImage && translatedStoryText && <p className="site-lead">{{
-        ko: '그림 안의 글자는 원본입니다. 선택한 언어의 본문은 그림 아래에서 읽을 수 있어요.',
-        en: 'Text inside the illustrations is from the original edition. Read the selected language below each picture.',
-        th: 'ข้อความในภาพเป็นภาษาของต้นฉบับ อ่านเนื้อหาในภาษาที่เลือกได้ใต้ภาพแต่ละหน้า',
+      {!ed && textInImage && content.blocks.some((b) => !b.hidden && (b.type === 'image' || b.type === 'story_page') && b.asset && !b.images?.[lang]) && <p className="site-lead">{{
+        ko: '별도 번역 그림이 없는 장면은 원본 그림을 사용해요. 선택한 언어의 줄거리와 이야기는 그림 아래에서 읽을 수 있어요.',
+        en: 'Where a translated illustration is not available, the original is shown. Read the summary or story in your chosen language below the picture.',
+        th: 'หากยังไม่มีภาพฉบับแปล จะแสดงภาพต้นฉบับ อ่านเรื่องย่อหรือเรื่องราวในภาษาที่เลือกได้ใต้ภาพ',
       }[lang]}</p>}
       {!ed && storyPages.length > 0 && (
-        <StoryBook pages={storyPages.map((p) => ({ image: p.asset ? assetUrl(p.asset) : null, text: t(p.text) }))} textInImage={textInImage && !translatedStoryText}
-          labels={{ prev: w('prev', lang), next: w('next', lang), page: w('page', lang) }} />
+        <StoryBook key={lang} pages={storyPages.map((p) => { const image = storyImageAsset(p, lang); return { image: image ? assetUrl(image) : null, text: t(p.text) }; })}
+          labels={{ prev: w('prev', lang), next: w('next', lang), page: w('page', lang), story: w('sceneStory', lang) }} />
       )}
       {orderedBlocks.map(({ b, i }) => {
         if (ed) return <Fragment key={i}>{ed.wrap(i, b, renderBlock(b, i))}</Fragment>;

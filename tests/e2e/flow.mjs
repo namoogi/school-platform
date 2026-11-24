@@ -903,9 +903,10 @@ try {
     assert.equal(await v.locator('.site-nav').count(), 0);
     assert.equal(await v.getAttribute('meta[name=robots]', 'content'), 'noindex, nofollow');
     await shot(v, '31-friends.png');
-    // 동화: 그림 안 글 → 글은 화면 읽기용
+    // 그림 안 글이 있어도 선택 언어의 이야기는 그림 아래에 표시한다.
     await v.goto(`${BASE}/s/dreamy-a/stories/dawn-story`);
-    await v.waitForSelector('[data-testid=storybook] .storybook-text.sr-only');
+    await v.waitForSelector('[data-testid=storybook] .storybook-copy .storybook-text');
+    assert.equal(await v.locator('.storybook-text.sr-only').count(), 0);
     // 32차: 가져온 동화는 성품 이름이 비어 있다 → 관리자가 편집 화면에서 정하면 공개 목록에 바로 보인다
     await h.goto(`${BASE}/site?box=story`);
     await h.click('.triage-item:has-text("นิทานตัวอย่าง"), .triage-item:has-text("예시 동화")');
@@ -1285,6 +1286,30 @@ try {
     assert.match(await v.textContent('.site-main'), /นิทานตัวอย่าง/);
     assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/bulk-stale`)).status(), 404);
     assert.equal((await visitor.request.post(`${BASE}/api/site/entries/bulk-publish`, { data: { items: [{ id: first.id, base_version: 1, live_version: null }] } })).status(), 401);
+    // 별도 번역 그림은 이미 등록된 합성 파일만 연결한다. 생성 서비스는 호출하지 않는다.
+    const png = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082', 'hex');
+    const uploaded = await ctx.request.post(`${BASE}/api/site/assets`, { multipart: { file: { name: 'language-test.png', mimeType: 'image/png', buffer: png } } });
+    assert.equal(uploaded.status(), 200);
+    const art = (await uploaded.json()).id;
+    const localized = { title: { ko: '그림 아래 줄거리', en: 'Summary under the picture', th: 'เรื่องย่อใต้ภาพ' }, blocks: [
+      { type: 'image', asset: art, images: { th: { asset: art } } },
+      { type: 'section', template: 'steps', title: { ko: '이야기 흐름', en: 'Story outline', th: 'โครงเรื่อง' }, items: [
+        { title: { ko: '시작', en: 'Beginning', th: 'เริ่มเรื่อง' }, body: { ko: '친구의 말을 들어요.', en: 'Listen to a friend.', th: 'ฟังสิ่งที่เพื่อนพูด' } },
+      ] },
+      { type: 'story_page', asset: art, images: { en: { asset: art } }, text: { ko: '장면의 이야기', en: 'The scene story', th: 'เรื่องราวในฉาก' } },
+    ] };
+    const book = await post('/api/site/entries', { kind: 'story', key: 'language-images', text_in_image: true, content: localized });
+    await post(`/api/site/entries/${book.id}/publish`, {});
+    for (const [lang, text] of [['th', 'ฟังสิ่งที่เพื่อนพูด'], ['en', 'Listen to a friend.'], ['ko', '친구의 말을 들어요.']]) {
+      await v.goto(`${BASE}/s/dreamy-a/stories/language-images?lang=${lang}`);
+      assert.ok(await v.getByTestId('story-synopsis').isVisible());
+      assert.ok((await v.getByTestId('story-synopsis').innerText()).includes(text));
+      assert.ok(await v.locator('.storybook-text').isVisible());
+      assert.equal(await v.locator('.site-figure img').getAttribute('src'), `/s/dreamy-a/a/${art}`);
+    }
+    await h.goto(`${BASE}/site?box=story&id=${book.id}`);
+    await h.locator('.site-language-images').first().locator('summary').click();
+    assert.ok(await h.getByRole('combobox', { name: /ไทย 그림/ }).first().isVisible());
     await visitor.close(); await ctx.close();
   });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {

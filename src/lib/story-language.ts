@@ -1,4 +1,4 @@
-import { LANGS, type Content, type Lang } from './site-shared';
+import { LANGS, type Block, type Content, type Lang, type LanguageImages } from './site-shared';
 
 const TERMS: Record<string, { en: string; th: string }> = {
   '경청': { en: 'Attentiveness', th: 'การตั้งใจฟัง' },
@@ -50,4 +50,18 @@ export function storyLanguages(content: Content): Lang[] {
 /** 다국어 본문은 원본 그림에 글자가 있더라도 화면에서 읽을 수 있게 한다. */
 export function hasMultilingualStoryText(content: Content): boolean {
   return content.blocks.some((b) => b.type === 'story_page' && !b.hidden && LANGS.filter((l) => b.text[l]?.trim()).length > 1);
+}
+
+/** 선택 언어의 그림이 없으면 다른 언어 그림을 추측하지 않고 원본을 쓴다. */
+export function storyImageAsset(block: { asset?: string; images?: LanguageImages }, lang: Lang): string | undefined {
+  return block.images?.[lang]?.asset ?? block.asset;
+}
+
+/** 그림 바로 뒤의 단순한 이야기 흐름을 번역된 줄거리로 보여 준다. 저장된 블록은 그대로 둔다. */
+export function isStoryOutline(blocks: Block[], index: number): boolean {
+  const block = blocks[index];
+  const previous = blocks[index - 1];
+  return Boolean(previous && !previous.hidden && previous.type === 'image' && block && !block.hidden
+    && block.type === 'section' && block.template === 'steps' && !block.asset && !block.body && !block.button && !block.eyebrow && !block.variant
+    && block.items?.length && block.items.every((item) => item.body && !item.asset && !item.href));
 }
