@@ -349,3 +349,127 @@ export function fillAssets(value: Content, ids: Record<string, string>): Content
   });
   return { ...c, blocks };
 }
+
+// ── 50차: 빠진 칸만 채우기 (다시 가져오기를 덮어쓰지 않게) ─────────────
+/**
+ * 지금 판(current)을 그대로 두고, 묶음 판(planned)에만 있고 지금 판에 비어 있는 칸만 채운다.
+ * - 글(LText)은 없는 언어만 채운다. 있는 글·그림·단추·구역 배치는 바꾸지 않는다.
+ * - 구역은 순서대로 같은 종류(구역이면 같은 템플릿)끼리 짝짓는다. 짝이 없는 옛 구역은 넣지 않고 skipped 로 알린다
+ *   (지금 판에서 일부러 지운 구역일 수 있으므로).
+ * - 항목 목록(items)은 지금 판에 없을 때만 통째로, 개수가 같으면 항목마다 빈 칸만.
+ * - 숨긴 구역(hidden)도 그대로 둔다.
+ * 반환: 새 내용, 채운 칸 이름(사람이 읽는 말), 넣지 않은 옛 구역.
+ */
+export type MergeResult = { content: Content; filled: string[]; skipped: string[] };
+
+const LKEYS: Lang[] = ['th', 'en', 'ko'];
+const isLText = (v: unknown): v is LText => !!v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).every((k) => (LKEYS as string[]).includes(k));
+const emptyVal = (v: unknown) => v == null || v === '' || (Array.isArray(v) && v.length === 0) || (isLText(v) && !Object.values(v).some(Boolean));
+const FIELD_LABEL: Record<string, string> = {
+  eyebrow: '머리말', title: '제목', summary: '소개', body: '글', caption: '사진 설명', alt: '사진 대체 글', button: '단추', variant: '배치 모양',
+  asset: '사진', cover: '표지 사진', items: '항목', href: '링크', more: '카드 링크 이름', all: '머리 링크 이름', filters: '사진 분류',
+  layout: '머리 모양', link: '머리 링크', note: '날짜표', tagline: '소개 한 줄', address: '주소', phone: '전화', facebook: 'Facebook', footer: '바닥 글',
+  visit: '방문 단추', logo: '로고', text: '글', label: '이름', copy: '복사 단추', zoom: '크게 보기', textfile: '내려받기',
+};
+const label = (k: string) => FIELD_LABEL[k] ?? k;
+
+/** 값 하나 합치기. 채웠으면 무엇을 채웠는지 이름을 돌려준다 */
+function fillValue(cur: unknown, plan: unknown): { value: unknown; what: string | null } {
+  if (emptyVal(plan)) return { value: cur, what: null };
+  if (emptyVal(cur)) return { value: plan, what: 'all' };
+  if (isLText(cur) && isLText(plan)) {
+    const add = LKEYS.filter((l) => !cur[l] && plan[l]);
+    return add.length ? { value: { ...cur, ...Object.fromEntries(add.map((l) => [l, plan[l]])) }, what: add.join('·') } : { value: cur, what: null };
+  }
+  return { value: cur, what: null };
+}
+function fillObject(cur: Record<string, unknown>, plan: Record<string, unknown>, where: string, filled: string[], skip: string[] = []): Record<string, unknown> {
+  const out = { ...cur };
+  for (const [k, pv] of Object.entries(plan)) {
+    if (k === 'type' || k === 'hidden' || skip.includes(k)) continue;
+    const r = fillValue(cur[k], pv);
+    if (r.what) { out[k] = r.value; filled.push(`${where}${label(k)}${r.what === 'all' ? '' : `(${r.what})`}`); }
+  }
+  return out;
+}
+const blockName = (b: Block, i: number) => {
+  const tt = 'title' in b && b.title ? (b.title as LText) : null;
+  const t = tt ? (tt.ko || tt.en || Object.values(tt).find(Boolean) || '') : '';
+  return `${i + 1}번째 ${b.type === 'section' ? '구역' : b.type === 'news_list' ? '소식 구역' : '블록'}${t ? `(${String(t).slice(0, 16)})` : ''} `;
+};
+const sameKind = (a: Block, b: Block) => a.type === b.type && (a.type !== 'section' || b.type !== 'section' || a.template === b.template);
+
+function mergeBlock(cur: Block, plan: Block, i: number, filled: string[]): Block {
+  const where = blockName(cur, i);
+  const curItems = 'items' in cur ? (cur.items as unknown[] | undefined) : undefined;
+  const planItems = 'items' in plan ? (plan.items as unknown[] | undefined) : undefined;
+  const out = fillObject(cur as unknown as Record<string, unknown>, plan as unknown as Record<string, unknown>, where, filled, ['items', 'assets']);
+  if (planItems?.length && curItems?.length && curItems.length === planItems.length) {
+    out.items = curItems.map((it, k) => fillObject(it as Record<string, unknown>, planItems[k] as Record<string, unknown>, `${where}${k + 1}번 항목 `, filled, ['asset']));
+  } else if (planItems?.length && !curItems?.length && cur.type !== 'gallery') {
+    out.items = planItems; filled.push(`${where}항목 ${planItems.length}개`);
+  }
+  return out as unknown as Block;
+}
+
+export function mergeMissing(current: Content, planned: Content): MergeResult {
+  const filled: string[] = [];
+  const skipped: string[] = [];
+  const top = fillObject(current as unknown as Record<string, unknown>, planned as unknown as Record<string, unknown>, '', filled, ['blocks', 'head', 'site']) as unknown as Content;
+  if (planned.head) top.head = (current.head ? fillObject(current.head as Record<string, unknown>, planned.head as Record<string, unknown>, '쪽 머리 ', filled) : (filled.push('쪽 머리'), planned.head)) as Content['head'];
+  if (planned.site) top.site = (current.site ? fillObject(current.site as Record<string, unknown>, planned.site as Record<string, unknown>, '머리·바닥 정보 ', filled) : (filled.push('머리·바닥 정보'), planned.site)) as Content['site'];
+  const blocks = [...current.blocks];
+  let j = 0;
+  planned.blocks.forEach((pb, pi) => {
+    let k = j;
+    while (k < blocks.length && !sameKind(blocks[k], pb)) k++;
+    if (k < blocks.length) { blocks[k] = mergeBlock(blocks[k], pb, k, filled); j = k + 1; }
+    else skipped.push(blockName(pb, pi).trim());
+  });
+  return { content: { ...top, blocks }, filled, skipped };
+}
+
+/** 합친 내용에 쓰인 묶음 그림 경로(올릴 것만 올리려고) */
+export function refsIn(c: Content): string[] { return [...collectRefs(c)]; }
+
+/** 가져오기가 남기는 판 설명의 머리(이 글로 시작하는 판은 사람이 고치지 않은 가져온 판) */
+export const IMPORT_NOTE = '기존 홈페이지 가져오기';
+/** 빈 칸만 채운 판의 설명에 붙는 표시 */
+export const MERGED_MARK = '빠진 칸만 채움';
+export type ReimportDecision =
+  | { action: 'replace'; content: Content; reason: string }
+  | { action: 'merge'; content: Content; filled: string[]; skipped: string[]; reason: string }
+  | { action: 'none'; reason: string; skipped: string[] }
+  | { action: 'keep'; reason: string };
+
+/**
+ * 50차: 이미 있는 항목을 다시 가져올 때 어떻게 할지 스스로 정한다.
+ * - 동화: 그대로(성품 이름·외부 작업 판 보존, 42차)
+ * - 최신 판이 지난 가져오기 판 그대로(사람이 고친 적 없음): 새로 가져온 판으로 바꾼다
+ * - 사람이 고친 적 있음: 빠진 칸만 채운다(없으면 새 판을 만들지 않음)
+ */
+export function decideReimport(kind: string, latest: { note: string | null; content: Content }, planned: Content): ReimportDecision {
+  if (kind === 'story') return { action: 'keep', reason: '동화는 다시 가져와도 그대로 둡니다' };
+  // '빠진 칸만 채움' 판은 사람이 고친 내용을 품고 있으므로 바꾸지 않고 다시 채우기만 한다
+  if ((latest.note ?? '').startsWith(IMPORT_NOTE) && !(latest.note ?? '').includes(MERGED_MARK)) return { action: 'replace', content: planned, reason: '가져온 판을 아무도 고치지 않아 새로 가져온 판으로 바꿉니다' };
+  const r = mergeMissing(latest.content, planned);
+  return r.filled.length
+    ? { action: 'merge', content: r.content, filled: r.filled, skipped: r.skipped, reason: '고친 적이 있어 빠진 칸만 채웁니다' }
+    : { action: 'none', reason: '고친 적이 있고 채울 빈 칸이 없습니다', skipped: r.skipped };
+}
+
+/**
+ * 50차: 사이트 설정 빈 칸만 — 바뀔 것이 없으면 null.
+ * 제목은 없는 언어만, 언어는 더하기만(빼지 않음), 기본 언어는 지금 것, 테마는 지금이 기본(campus)일 때만 묶음 테마로.
+ */
+export function mergeSettings(
+  cur: { site_title: LText; langs: Lang[]; default_lang: Lang; theme: string },
+  plan: ImportPlan['settings'],
+): { site_title: LText; langs: Lang[]; default_lang: Lang; theme: 'campus' | 'dawn' } | null {
+  const title = { ...plan.site_title, ...Object.fromEntries(Object.entries(cur.site_title ?? {}).filter(([, v]) => v)) } as LText;
+  const langs = [...new Set([...(cur.langs ?? []), ...plan.langs])] as Lang[];
+  const theme = (cur.theme === 'campus' ? plan.theme : cur.theme) as 'campus' | 'dawn';
+  const default_lang = cur.langs?.includes(cur.default_lang) ? cur.default_lang : plan.default_lang;
+  const same = JSON.stringify(title) === JSON.stringify(cur.site_title) && langs.length === cur.langs.length && theme === cur.theme && default_lang === cur.default_lang;
+  return same ? null : { site_title: title, langs, default_lang, theme };
+}

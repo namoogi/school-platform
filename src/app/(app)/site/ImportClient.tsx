@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { unzip, strFromU8, type Unzipped } from 'fflate';
 import { FileArchive, Upload } from 'lucide-react';
 import { FileDrop } from '@/components/FileDrop';
-import { fillAssets, planImport, type ImportPlan } from '@/lib/site-import';
+import { decideReimport, fillAssets, IMPORT_NOTE, MERGED_MARK, mergeSettings, planImport, refsIn, type ImportPlan, type ReimportDecision } from '@/lib/site-import';
 import { PHOTO_CONSENT, type SiteSettings } from '@/lib/site-shared';
 
 /**
@@ -17,6 +17,8 @@ const SKIP_BYTES = 20 * 1024 * 1024; // 영상 등 큰 파일은 풀지 않는�
 const MIME: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
 type Existing = { id: string; kind: string; key: string };
 type Done = { kind: string; key: string; id: string; created: boolean };
+/** 50차: 이미 있는 항목마다 다시 가져오기 판단(사람이 고쳤는지 보고 스스로 정함) */
+type Decided = { key: string; kind: string; id: string; version: number; latestIsLive: boolean; imported: boolean; d: ReimportDecision };
 
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -37,10 +39,11 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
   const [done, setDone] = useState<Done[] | null>(null);
   const [published, setPublished] = useState(false);
   const [keptStories, setKeptStories] = useState<string[]>([]);
+  const [decided, setDecided] = useState<Decided[] | null>(null);
 
   // 묶음을 풀어 계획만 세운다. 읽지 못하면 FileDrop이 오류 문장을 칸 아래에 보여 준다
   async function pick([f]: File[]) {
-    setErr(null); setPlan(null); setDone(null); setPublished(false);
+    setErr(null); setPlan(null); setDone(null); setPublished(false); setDecided(null);
     try {
       const z = await readZip(new Uint8Array(await f.arrayBuffer()));
       const json = (p: string) => (z[p] ? JSON.parse(strFromU8(z[p])) : null);
@@ -49,7 +52,17 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
       const bookPath = Object.keys(z).find((p) => /^stories\/[^/]+\/book\.json$/.test(p));
       const manifest = json('manifest.json') as { files?: { path: string }[] } | null;
       const list = [...new Set([...Object.keys(z), ...(manifest?.files ?? []).map((x) => x.path)])];
-      setPlan(planImport(content, list.filter((p) => z[p]), bookPath ? json(bookPath) : null, json('friends/pages.json')));
+      const nextPlan = planImport(content, list.filter((p) => z[p]), bookPath ? json(bookPath) : null, json('friends/pages.json'));
+      // 50차: 이미 있는 항목은 최신 판을 읽어 '바꿈 / 빈 칸만 채움 / 그대로'를 미리 정한다
+      const ds: Decided[] = [];
+      for (const e of nextPlan.entries) {
+        const has = existing.find((x) => x.kind === e.kind && x.key === e.key);
+        if (!has) continue;
+        const cur = await send(`/api/site/entries/${has.id}`, 'GET') as { version: number; note: string | null; content: ImportPlan['entries'][number]['content']; latest_is_live: boolean };
+        ds.push({ key: e.key, kind: e.kind, id: has.id, version: cur.version, latestIsLive: cur.latest_is_live, imported: (cur.note ?? '').startsWith(IMPORT_NOTE), d: decideReimport(e.kind, { note: cur.note, content: cur.content }, e.content) });
+      }
+      setDecided(ds);
+      setPlan(nextPlan);
       setFiles(z);
       return '묶음을 읽었습니다. 아래에서 만들 것을 확인하세요.';
     } catch (e) {
@@ -64,8 +77,18 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
     const kept: string[] = [];
     try {
       const ids: Record<string, string> = {};
-      for (const [i, p] of plan.files.entries()) {
-        setStep({ label: '그림 올리는 중', n: i + 1, of: plan.files.length });
+      const decision = (kind: string, key: string) => decided?.find((x) => x.kind === kind && x.key === key);
+      // 실제로 쓸 내용만 모아, 거기 쓰인 그림만 올린다
+      const writes = plan.entries.flatMap((e) => {
+        const dd = decision(e.kind, e.key);
+        if (!dd) return [{ e, content: e.content, id: null as string | null, base: null as number | null }];
+        if (dd.d.action === 'replace' || dd.d.action === 'merge') return [{ e, content: dd.d.content, id: dd.id, base: dd.version }];
+        if (dd.d.action === 'keep' && e.kind === 'story') kept.push(e.key);
+        return [];
+      });
+      const needed = [...new Set(writes.flatMap((w) => refsIn(w.content)))];
+      for (const [i, p] of needed.entries()) {
+        setStep({ label: '그림 올리는 중', n: i + 1, of: needed.length });
         const ext = p.split('.').pop()?.toLowerCase() ?? '';
         const form = new FormData();
         form.append('file', new File([files[p] as BlobPart], p.split('/').pop() ?? 'image', { type: MIME[ext] ?? 'application/octet-stream' }));
@@ -74,23 +97,28 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
         if (!res.ok) throw new Error(`${p.split('/').pop()}: ${data.error ?? '올리지 못했습니다.'}`);
         ids[p] = data.id;
       }
-      const note = `기존 홈페이지 가져오기${plan.exportedAt ? ` (${plan.exportedAt.slice(0, 10)} 묶음)` : ''}`;
-      for (const [i, e] of plan.entries.entries()) {
-        setStep({ label: '시안 만드는 중', n: i + 1, of: plan.entries.length });
-        const content = fillAssets(e.content, ids);
-        const has = existing.find((x) => x.kind === e.kind && x.key === e.key);
-        // 42차: 이미 있는 동화는 다시 가져와도 건드리지 않는다 — 만든 뒤 고친 성품 이름·외부 작업(캐릭터·PDF) 판을 덮지 않게
-        if (has && e.kind === 'story') { kept.push(e.key); continue; }
-        if (has) {
-          await send(`/api/site/entries/${has.id}/versions`, 'POST', { content, note });
-          results.push({ kind: e.kind, key: e.key, id: has.id, created: false });
+      const note = `${IMPORT_NOTE}${plan.exportedAt ? ` (${plan.exportedAt.slice(0, 10)} 묶음)` : ''}`;
+      for (const [i, w] of writes.entries()) {
+        const e = w.e;
+        setStep({ label: '시안 만드는 중', n: i + 1, of: writes.length });
+        const content = fillAssets(w.content, ids);
+        // 42차: 이미 있는 동화는 건드리지 않는다(decideReimport 'keep'). 50차: 고친 판은 빈 칸만, 안 고친 가져온 판은 바꿈 — 둘 다 base_version 으로 덮어쓰기 방지
+        if (w.id) {
+          const dd = decision(e.kind, e.key)!;
+          await send(`/api/site/entries/${w.id}/versions`, 'POST', { content, note: dd.d.action === 'merge' ? `${note} — ${MERGED_MARK}` : note, base_version: w.base });
+          results.push({ kind: e.kind, key: e.key, id: w.id, created: false });
         } else {
           const r = await send('/api/site/entries', 'POST', { kind: e.kind, key: e.key, visibility: e.visibility, sort: e.sort, virtue: e.virtue, character: e.character, text_in_image: e.text_in_image, content, note });
           results.push({ kind: e.kind, key: e.key, id: r.id, created: true });
         }
       }
-      setStep({ label: '설정 맞추는 중', n: 1, of: 1 });
-      await send('/api/site/settings', 'POST', { ...plan.settings, public_slug: settings.public_slug, is_open: settings.is_open });
+      // 50차: 처음 가져오기(가져온 판이 하나도 없음)는 묶음 설정 그대로, 다시 가져오기는 빈 칸만(mergeSettings)
+      const firstImport = !(decided ?? []).some((x) => x.imported);
+      const merged = firstImport ? plan.settings : mergeSettings(settings, plan.settings);
+      if (merged) {
+        setStep({ label: '설정 맞추는 중', n: 1, of: 1 });
+        await send('/api/site/settings', 'POST', { ...merged, public_slug: settings.public_slug, is_open: settings.is_open });
+      }
       setKeptStories(kept); setDone(results); router.refresh();
     } catch (e) { setErr((e as Error).message); setDone(results.length ? results : null); }
     finally { setStep(null); }
@@ -110,7 +138,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
   return (
     <section className="card site-form" data-testid="site-import">
       <h2><FileArchive size={20} aria-hidden="true" /> 기존 홈페이지 가져오기</h2>
-      <p className="fine">옛 사이트에서 만든 내보내기 묶음(zip)을 고르면 쪽·소식·동화·후원자 쪽을 <b>시안</b>으로 만듭니다. 이미 있는 항목은 덮어쓰지 않고 새 판으로 더합니다. 공개와 홈페이지 열기는 시안을 확인한 뒤 따로 합니다.</p>
+      <p className="fine">옛 사이트에서 만든 내보내기 묶음(zip)을 고르면 쪽·소식·동화·후원자 쪽을 <b>시안</b>으로 만듭니다. 이미 있는 항목은 사람이 고쳤는지 보고 — 고친 적 없으면 새 판으로 바꾸고, 고친 적 있으면 빈 칸만 채웁니다(지운 기록 없이 새 판으로 더함). 공개와 홈페이지 열기는 시안을 확인한 뒤 따로 합니다.</p>
       <FileDrop
         label="묶음 파일" accept={['.zip', 'application/zip', 'application/x-zip-compressed']} typeLabel="ZIP"
         hint={<>브라우저 안에서 풀고, 올리기 전에 만들 것을 먼저 보여 줍니다. {PHOTO_CONSENT}</>} disabled={!!step}
@@ -121,6 +149,21 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
           <p><b>만들 것:</b> 쪽 {count('page', 'public')}개 · 숨은 쪽(후원자) {count('page', 'unlisted')}개 · 소식 {count('news')}개 · 동화 {count('story')}편 · 그림 {plan.files.length}장</p>
           <p>화면 모양을 새벽빛 매거진으로, 언어를 {plan.settings.langs.join('·')}(기본 {plan.settings.default_lang})로 맞춥니다.</p>
           {plan.notes.length > 0 && <ul>{plan.notes.map((n) => <li key={n}>{n}</li>)}</ul>}
+          {decided && decided.length > 0 && (
+            <div data-testid="import-decisions">
+              <p><b>이미 있는 항목 {decided.length}개 — 사람이 고쳤는지 보고 스스로 정했습니다.</b> 사이트 설정(제목·언어·테마)은 바꾸지 않습니다.</p>
+              <ul className="import-decisions">
+                {decided.map((x) => (
+                  <li key={`${x.kind}:${x.key}`} data-action={x.d.action}>
+                    <b>{x.key}</b> — {x.d.action === 'replace' ? '새로 가져온 판으로 바꿈' : x.d.action === 'merge' ? `빈 칸 ${x.d.filled.length}개만 채움` : x.d.action === 'keep' ? '그대로 둠(동화)' : '바뀔 것 없음'}
+                    <span className="fine"> · {x.d.reason}{(x.d.action === 'merge' || x.d.action === 'replace') && !x.latestIsLive ? ' · 아직 공개하지 않은 최신 판이 함께 공개될 수 있습니다' : ''}</span>
+                    {x.d.action === 'merge' && <details><summary>채울 칸 보기</summary><ul>{x.d.filled.map((f) => <li key={f}>{f}</li>)}</ul></details>}
+                    {(x.d.action === 'merge' || x.d.action === 'none') && x.d.skipped.length > 0 && <p className="fine">옛 사이트에만 있는 구역 {x.d.skipped.length}개는 넣지 않았습니다(지운 구역일 수 있음): {x.d.skipped.join(', ')}</p>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
       {step && (
