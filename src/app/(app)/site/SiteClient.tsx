@@ -172,7 +172,7 @@ function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false, la
     return `‘${file.name}’을(를) 올리고 골랐습니다.`;
   }
   // 34차: PDF 칸에는 PDF만, 그림 칸에는 그림만 보인다
-  const choices = assets.filter((a) => (a.mime === 'application/pdf') === pdf && (!languageImage || ['image/png', 'image/jpeg', 'image/webp'].includes(a.mime)));
+  const choices = assets.filter((a) => (a.mime === 'application/pdf') === pdf && (!languageImage || ['image/png', 'image/jpeg', 'image/webp'].includes(a.mime ?? '')));
   return (
     <div className="asset-pick">
       {/* eslint-disable-next-line @next/next/no-img-element */}
