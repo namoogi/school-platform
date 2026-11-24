@@ -1258,7 +1258,7 @@ try {
       const response = await ctx.request.post(`${BASE}${url}`, { data: body });
       assert.equal(response.status(), 200); return response.json();
     };
-    const content = (title) => ({ title: { ko: title, th: 'นิทานตัวอย่าง' }, blocks: [{ type: 'story_page', text: { ko: '합성 예시 본문', th: 'เรื่องราวตัวอย่าง' } }] });
+    const content = (title) => ({ title: { ko: title, th: `นิทานตัวอย่าง: ${title}` }, blocks: [{ type: 'story_page', text: { ko: '합성 예시 본문', th: 'เรื่องราวตัวอย่าง' } }] });
     const first = await post('/api/site/entries', { kind: 'story', key: 'bulk-first', content: content('일괄 첫 동화') });
     const stale = await post('/api/site/entries', { kind: 'story', key: 'bulk-stale', content: content('일괄 바뀐 동화') });
     const hidden = await post('/api/site/entries', { kind: 'story', key: 'bulk-hidden', content: content('일괄 내린 동화') });
