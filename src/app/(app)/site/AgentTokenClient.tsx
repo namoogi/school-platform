@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Archive, ArchiveRestore, Bot, Copy, KeyRound } from 'lucide-react';
+import { Archive, ArchiveRestore, Bot, ClipboardCopy, Copy, KeyRound } from 'lucide-react';
 import { StatusBadge } from '@/components/ui';
 import { Field } from '@/components/Field';
+import { AI_LABEL, buildConnectText, type AiKind } from '@/lib/agent-connect';
 
 /**
  * 34차 외부 작업 토큰(ADR 0012) → 36차 'AI 작업 공간'(ADR 0013).
@@ -18,7 +19,7 @@ export type TokenRow = {
 };
 type Entry = { kind: string; key: string; title: string };
 
-const AGENT: Record<string, string> = { codex: 'Codex', 'claude-code': 'Claude Code', other: '기타' };
+const AGENT: Record<string, string> = AI_LABEL;
 const KIND: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식' };
 const PERM: Record<string, string> = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기(내용·구조)', archive: '보관', publish: '공개(지시하면 바로)', autopublish: '자동 공개(저장하면 바로)' };
 const DAYS: { v: string; label: string }[] = [{ v: '7', label: '7일' }, { v: '30', label: '30일' }, { v: '90', label: '90일' }, { v: '365', label: '365일' }, { v: 'none', label: '무기한' }];
@@ -86,7 +87,80 @@ async function send(url: string, body: unknown) {
 function day(s: string | null) { return s ? new Date(s).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }) : '—'; }
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow[]; entries: Entry[]; stories: boolean }) {
+/** 클립보드 복사. 막혀 있으면(권한·http) 숨은 글상자로 한 번 더 시도한다 */
+async function copyText(text: string) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* 아래로 */ }
+  const t = document.createElement('textarea');
+  t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+  document.body.appendChild(t); t.select();
+  try { return document.execCommand('copy'); } finally { t.remove(); }
+}
+
+type School = { name: string; slug: string | null };
+type Scope = { kinds: string[]; keys: string[] | null; perms: string[]; expiresAt: string | null };
+const aiOf = (k: string): AiKind => (k === 'codex' || k === 'claude-code' ? k : 'other');
+const connectText = (ai: AiKind, school: School, scope: Scope, token: string | null) => buildConnectText({
+  ai, schoolName: school.name, publicSlug: school.slug, baseUrl: window.location.origin, token, ...scope,
+});
+
+/** 46차 'AI 연결'(ADR 0022): 발급 직후 — AI 종류를 고르면 지시문 + 토큰이 든 붙여넣기 글 하나 */
+function ConnectBox({ token, agent, scope, school }: { token: string; agent: string; scope: Scope; school: School }) {
+  const [ai, setAi] = useState<AiKind>(aiOf(agent));
+  const [copied, setCopied] = useState<'all' | 'token' | 'fail' | null>(null);
+  const text = connectText(ai, school, scope, token);
+  const copy = async (what: 'all' | 'token') => setCopied((await copyText(what === 'all' ? text : token)) ? what : 'fail');
+  return (
+    <div className="banner" data-tone="warning" role="region" aria-label="AI 연결" data-testid="agent-connect">
+      <h3>AI 연결</h3>
+      <p><b>지금 한 번만 보입니다.</b> 아래 글을 복사해 내 AI 대화창에 그대로 붙여 넣으면 연결됩니다.</p>
+      <fieldset data-testid="agent-connect-ai">
+        <legend>어느 AI에 붙여 넣나요?</legend>
+        <div className="row-wrap">
+          {(Object.keys(AI_LABEL) as AiKind[]).map((k) => (
+            <label key={k} className="radio"><input type="radio" name="agent-connect-ai" checked={ai === k} onChange={() => { setAi(k); setCopied(null); }} />{AI_LABEL[k]}</label>
+          ))}
+        </div>
+      </fieldset>
+      <Field label="붙여 넣을 글" hint="학교·맡긴 범위·권한·지킬 규칙과 토큰이 들어 있습니다.">
+        <textarea readOnly rows={10} value={text} data-testid="agent-connect-text" onFocus={(e) => e.currentTarget.select()} />
+      </Field>
+      <div className="form-actions">
+        <button type="button" className="btn btn-primary" onClick={() => copy('all')} data-testid="agent-connect-copy">
+          <ClipboardCopy size={16} aria-hidden="true" />연결 글 한 번에 복사
+        </button>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => copy('token')} data-testid="agent-token-copy">
+          <Copy size={14} aria-hidden="true" />토큰만 복사
+        </button>
+        <span role="status" aria-live="polite" className="fine">
+          {copied === 'all' ? '연결 글을 복사했습니다' : copied === 'token' ? '토큰을 복사했습니다' : copied === 'fail' ? '복사하지 못했습니다. 글상자를 눌러 직접 복사하세요' : ''}
+        </span>
+      </div>
+      <p className="fine" data-testid="agent-connect-risk">
+        토큰이 AI 대화 기록에 남습니다. 필요한 종류·주소·권한만 고르고 기한은 짧게(7일) 두세요. 일이 끝나면 폐기하면 바로 멈추고, 한 일은 아래 목록에 남습니다.
+      </p>
+      <details>
+        <summary>토큰만 보기 (환경 변수 SCHOOL_AGENT_TOKEN에 넣을 때)</summary>
+        <p><code data-testid="agent-token-value" style={{ wordBreak: 'break-all' }}>{token}</code></p>
+      </details>
+    </div>
+  );
+}
+
+/** 이미 발급한 토큰: 원문이 없으니 지시문만(토큰 자리는 환경 변수 안내) */
+function InstructionCopy({ t, school }: { t: TokenRow; school: School }) {
+  const [done, setDone] = useState<boolean | null>(null);
+  return (
+    <>
+      <button type="button" className="btn btn-ghost btn-sm" aria-label={`${t.label} 지시문만 복사`} data-testid="agent-instruction-copy"
+        onClick={async () => setDone(await copyText(connectText(aiOf(t.agent_kind), school, { kinds: t.kinds, keys: t.keys, perms: t.perms, expiresAt: t.expires_at }, null)))}>
+        지시문만 복사
+      </button>
+      <span role="status" aria-live="polite" className="fine">{done === true ? '복사했습니다' : done === false ? '복사하지 못했습니다' : ''}</span>
+    </>
+  );
+}
+
+export function AgentTokenPanel({ tokens, entries, stories, school }: { tokens: TokenRow[]; entries: Entry[]; stories: boolean; school: School }) {
   const router = useRouter();
   const kindChoices = stories ? ['story', 'page', 'news'] : ['page', 'news'];
   const [label, setLabel] = useState('동화 그림·PDF 작업');
@@ -96,17 +170,21 @@ export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow
   const [kinds, setKinds] = useState<string[]>([kindChoices[0]]);
   const [keys, setKeys] = useState<string[]>([]);
   const [perms, setPerms] = useState<string[]>(['read', 'upload', 'edit']);
-  const [issued, setIssued] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [issued, setIssued] = useState<{ token: string; agent: string; scope: Scope } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const shown = entries.filter((e) => kinds.includes(e.kind));
 
   async function issue(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true); setErr(null); setIssued(null); setCopied(false);
+    setBusy(true); setErr(null); setIssued(null);
     const pickedKeys = keys.filter((k) => shown.some((s) => s.key === k));
-    try { setIssued((await send('/api/site/agent-tokens', { label, days: days === 'none' ? null : Number(days), kinds, keys: pickedKeys, perms, agent_kind: agent })).token); router.refresh(); }
+    const n = days === 'none' ? null : Number(days);
+    try {
+      const { token } = await send('/api/site/agent-tokens', { label, days: n, kinds, keys: pickedKeys, perms, agent_kind: agent });
+      setIssued({ token, agent, scope: { kinds, keys: pickedKeys.length ? pickedKeys : null, perms, expiresAt: n ? new Date(Date.now() + n * DAY_MS).toISOString() : null } });
+      router.refresh();
+    }
     catch (x) { setErr((x as Error).message); }
     finally { setBusy(false); }
   }
@@ -129,9 +207,8 @@ export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow
     <section className="card site-form" data-testid="agent-tokens">
       <h2><Bot size={20} aria-hidden="true" /> AI 작업 공간</h2>
       <p className="fine">
-        학교가 쓰는 Claude Code·Codex 같은 에이전트에게 홈페이지 내용의 <b>시안</b>만 맡깁니다. 토큰으로는 고른 항목을 읽고, 그림·PDF를 올리고,
-        새 판(시안)을 저장하는 일만 됩니다. 공개·설정·구성원·다른 학교는 할 수 없습니다. 시안을 확인한 뒤 해당 함에서 직접 공개하세요.
-        에이전트 안내: 저장소의 <code>docs/agents/claude-code.md</code>, <code>docs/agents/codex.md</code>
+        내가 쓰는 Codex·Claude Code 같은 AI에게 홈페이지 일을 맡깁니다. 맡길 범위와 권한을 고르고 발급하면 <b>AI 연결 글</b>이 나옵니다.
+        그 글을 AI 대화창에 붙여 넣기만 하면 됩니다. 설정·구성원·다른 학교는 어떤 토큰으로도 할 수 없고, 공개는 공개 권한을 준 때만 됩니다.
       </p>
       <form onSubmit={issue} className="site-form-fields">
         <Field label="이름" required hint="무엇을 맡기는지 알아보기 쉽게" count={{ value: label.length, max: 80 }}>
@@ -193,17 +270,7 @@ export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow
           <button type="submit" className="btn btn-primary" disabled={busy || !kinds.length || !perms.length} data-testid="agent-token-issue"><KeyRound size={16} aria-hidden="true" />토큰 발급</button>
         </div>
       </form>
-      {issued && (
-        <div className="banner" data-tone="warning" role="status">
-          <p><b>지금 한 번만 보입니다.</b> 복사해서 에이전트 쪽 환경 변수 <code>SCHOOL_AGENT_TOKEN</code>에 넣으세요. 채팅·문서·저장소에 붙여 넣지 마세요.</p>
-          <p><code data-testid="agent-token-value" style={{ wordBreak: 'break-all' }}>{issued}</code></p>
-          <div className="form-actions">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => navigator.clipboard?.writeText(issued).then(() => setCopied(true))}>
-              <Copy size={14} aria-hidden="true" />{copied ? '복사했습니다' : '복사'}
-            </button>
-          </div>
-        </div>
-      )}
+      {issued && <ConnectBox key={issued.token} token={issued.token} agent={issued.agent} scope={issued.scope} school={school} />}
       {err && <p className="banner" data-tone="danger" role="alert">{err}</p>}
       {tokens.length > 0 && (
         <Field label="연장 기한" hint="목록의 '연장' 단추에 씁니다. 남은 기한 끝부터 늘립니다(토큰 값은 그대로).">
@@ -214,7 +281,7 @@ export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow
       )}
       {tokens.length > 0 && (
         <div className="table-wrap"><table className="grid-table" data-testid="agent-token-list">
-          <thead><tr><th scope="col">이름</th><th scope="col">범위</th><th scope="col">상태</th><th scope="col">기한</th><th scope="col">에이전트</th><th scope="col">마지막 사용</th><th scope="col">한 일</th><th scope="col"><span className="sr-only">폐기</span></th></tr></thead>
+          <thead><tr><th scope="col">이름</th><th scope="col">범위</th><th scope="col">상태</th><th scope="col">기한</th><th scope="col">에이전트</th><th scope="col">마지막 사용</th><th scope="col">한 일</th><th scope="col"><span className="sr-only">지시문·연장·폐기</span></th></tr></thead>
           <tbody>
             {tokens.map((t) => {
               const st = state(t);
@@ -228,6 +295,7 @@ export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow
                   <td>{day(t.last_used_at)}</td>
                   <td>{t.uses}건{t.recent.length > 0 && <ul className="fine">{t.recent.map((r, k) => <li key={k}>{did(r)} · {day(r.created_at)}</li>)}</ul>}</td>
                   <td>{!t.revoked_at && <span className="row-wrap">
+                    <InstructionCopy t={t} school={school} />
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => extend(t.id)} aria-label={`${t.label} 기한 연장`}>연장</button>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => revoke(t.id)} aria-label={`${t.label} 폐기`}>폐기</button>
                   </span>}</td>

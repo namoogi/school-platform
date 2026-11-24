@@ -415,7 +415,7 @@ export async function memberAsset(db: Db, schoolId: string, id: string) {
 export type PublicSite = {
   slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: 'campus' | 'dawn'; title: LText;
   stories: boolean; has_news: boolean; nav: { key: string; title: LText }[];
-  /** 46차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
+  /** 47차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
   on_own_host?: boolean;
 };
 export type PublicEntry = { kind: EntryKind; key: string; visibility: 'public' | 'unlisted'; meta: Record<string, string>; version: number; content: Content; published_at: string };

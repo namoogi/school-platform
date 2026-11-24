@@ -31,7 +31,7 @@ export function siteLinker(site: PublicSite, lang: Lang) {
     return `${sitePath(site, path)}${q}${hash ? `#${hash}` : ''}`;
   };
 }
-/** 46차: 학교 자체 주소로 볼 때는 /about 처럼, 플랫폼 주소로 볼 때는 /s/<학교>/p/about 처럼 */
+/** 47차: 학교 자체 주소로 볼 때는 /about 처럼, 플랫폼 주소로 볼 때는 /s/<학교>/p/about 처럼 */
 export function sitePath(site: PublicSite, path: string) {
   if (site.on_own_host) return path === '/' || path === '' ? '/' : hostLink(path);
   return `/s/${site.slug}${path === '/' ? '' : path}`;

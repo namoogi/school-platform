@@ -11,7 +11,7 @@ import type { NewsItem } from './SiteRenderer';
 export async function loadSite(slug: string, requestedLang?: string) {
   const found = await publicSite(slug);
   if (!found) return null;
-  // 46차: 학교 자체 주소로 들어왔으면(proxy 가 표시) 링크를 깨끗한 경로로 만든다
+  // 47차: 학교 자체 주소로 들어왔으면(proxy 가 표시) 링크를 깨끗한 경로로 만든다
   const site: PublicSite = { ...found, on_own_host: (await headers()).get(SCHOOL_HOST_HEADER) === slug };
   const home = await publicEntry(slug, 'page', 'home');
   const lang = resolveLang(site, requestedLang);

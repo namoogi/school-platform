@@ -1,4 +1,4 @@
-/** 46차: 학교 자체 주소 → 공개 홈페이지 (ADR 0023) — DB 없이 도는 경로 규칙 시험 */
+/** 47차: 학교 자체 주소 → 공개 홈페이지 (ADR 0023) — DB 없이 도는 경로 규칙 시험 */
 import { describe, expect, it } from 'vitest';
 import { friendsKey, hostForSlug, hostLink, routeSchoolHost, slugForHost } from '@/lib/site-hosts';
 

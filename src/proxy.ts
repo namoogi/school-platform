@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { routeSchoolHost, SCHOOL_HOST_HEADER, slugForHost } from './lib/site-hosts';
 
 /**
- * 46차(ADR 0023): 학교 자체 주소로 온 요청을 그 학교 공개 홈페이지로 다시 쓴다(주소창은 그대로).
+ * 47차(ADR 0023): 학교 자체 주소로 온 요청을 그 학교 공개 홈페이지로 다시 쓴다(주소창은 그대로).
  * 다른 주소(플랫폼)로 온 요청은 그대로 두되, 바깥에서 붙여 보낸 학교 주소 머리는 지운다(링크 모양을 속이지 못하게).
  */
 export function proxy(req: NextRequest) {

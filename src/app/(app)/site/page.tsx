@@ -46,7 +46,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
   const selected = box === 'settings' ? undefined : (detail && detail.entry.kind === box ? detail : null);
   const href = (b: Box, id?: string) => `/site?box=${b}${id ? `&id=${id}` : ''}`;
   const lang = settings?.default_lang ?? 'ko';
-  // 46차: 학교 자체 주소가 연결돼 있으면 그 주소를 보인다(예: https://rungarunsuksa.vercel.app)
+  // 47차: 학교 자체 주소가 연결돼 있으면 그 주소를 보인다(예: https://rungarunsuksa.vercel.app)
   const ownHost = settings ? hostForSlug(settings.public_slug) : null;
   const publicUrl = settings ? (ownHost ? `https://${ownHost}` : `/s/${settings.public_slug}`) : null;
 
@@ -116,6 +116,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                     {settings && <ImportPanel settings={JSON.parse(JSON.stringify(settings))} existing={entries.map((e) => ({ id: e.id, kind: e.kind, key: e.key }))} />}
                     {tokens && <AgentTokenPanel tokens={JSON.parse(JSON.stringify(tokens))}
                       stories={school.modules.includes('stories')}
+                      school={{ name: school.name, slug: settings?.public_slug ?? null }}
                       entries={entries.map((e) => ({ kind: e.kind, key: e.key, title: pick(e.latest_title, lang, lang) || e.key }))} />}
                   </>
                 : <EmptyState title="설정은 학교 관리자가 합니다">시안 만들기와 고치기는 교사도 할 수 있습니다.</EmptyState>)

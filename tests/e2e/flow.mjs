@@ -947,6 +947,24 @@ try {
     const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
     assert.match(token, /^agt_[0-9a-f]{64}$/);
     await h.waitForSelector('[data-testid=agent-token-list] td:has-text("/after-rain")');
+    // 46차 AI 연결(ADR 0022): AI 종류를 고르면 지시문 + 토큰 한 덩어리 → 한 번에 복사
+    await h.check('[data-testid=agent-connect-ai] label:has-text("Claude Code") input');
+    const connect = await h.inputValue('[data-testid=agent-connect-text]');
+    assert.equal(connect.split(token).length - 1, 1); // 토큰은 정확히 한 번
+    assert.match(connect, /드리미 예시학교/);
+    assert.match(connect, /after-rain → .*\/s\/dreamy-a\/stories\/after-rain/);
+    assert.match(connect, /Claude Code 클라우드/);
+    assert.match(connect, /base_version/);
+    await ctxH.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
+    await h.click('[data-testid=agent-connect-copy]');
+    await h.waitForSelector('[data-testid=agent-connect] [role=status]:has-text("연결 글을 복사했습니다")');
+    assert.equal(await h.evaluate(() => navigator.clipboard.readText()), connect);
+    // 이미 발급한 토큰: 지시문만(원문 없음)
+    await h.click('[data-testid=agent-token-list] tr:has-text("/after-rain") [data-testid=agent-instruction-copy]');
+    await h.waitForSelector('[data-testid=agent-token-list] [role=status]:has-text("복사했습니다")');
+    const only = await h.evaluate(() => navigator.clipboard.readText());
+    assert.doesNotMatch(only, /agt_/);
+    assert.match(only, /환경 변수 SCHOOL_AGENT_TOKEN 에 있다/);
     await shot(h, '34-agent-token.png');
     // 합성 작업 폴더 (실제 동화 아님): 캐릭터 PNG 1장 + PDF 1개 + manifest
     const work = fs.mkdtempSync(path.join(ROOT, '.e2e-agent-'));
