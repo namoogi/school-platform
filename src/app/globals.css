@@ -1610,3 +1610,8 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .story-synopsis .story-synopsis-subtitle { font-size: var(--fs-body-sm); color: var(--text-muted); }
 .site-language-images > .asset-pick { margin-top: var(--space-3); }
 .site[data-theme="dawn"] .site-blocks > .site-figure + .story-synopsis { margin-top: calc(var(--space-4) - var(--dawn-gap)); }
+
+/* 48차: 바닥 한 줄 안의 '교직원 로그인'은 바닥 글자색을 따른다(바탕이 바뀌는 숨은 쪽에서도 대비 유지) */
+.site-footer .site-footer-inline { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.site[data-theme="dawn"] .site-footer .site-footer-inline { text-decoration: underline; text-underline-offset: 2px; }
+.site[data-theme="dawn"][data-hidden] .site-footer .site-footer-inline { color: var(--dawn-ink); }

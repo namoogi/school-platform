@@ -1,3 +1,4 @@
+import { safeBack } from '@/lib/next-path';
 import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
 import { NotFoundError } from '@/lib/services';
@@ -12,8 +13,10 @@ export const dynamic = 'force-dynamic';
  * 편집 모드에서 그 자리에서 고친다. 저장은 기존 판 저장 API(시안), 공개는 학교 관리자(기존 RLS).
  * 읽기는 모두 asUser(RLS) — 이 학교 항목만 보인다. 다른 학교 항목 id 는 '없는 항목'이다.
  */
-export default async function SiteEditPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SiteEditPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ back?: string }> }) {
   const { id } = await params;
+  // 48차: 공개 화면의 '교직원 로그인'으로 왔으면 편집을 마치고 그 화면으로 돌아갈 링크
+  const back = safeBack((await searchParams).back);
   const data = await loadForPage(async ({ db, school }) => {
     const settings = await getSettings(db, school.id);
     let detail;
@@ -41,7 +44,7 @@ export default async function SiteEditPage({ params }: { params: Promise<{ id: s
       detail={plain(detail)} frame={plain(frame)} langs={settings.langs as Lang[]} defaultLang={settings.default_lang as Lang}
       canPublish={school.isAdmin} assets={plain(assets.filter((a) => a.mime.startsWith('image/')).map((a) => ({ id: a.id, name: a.name })))} news={plain(news)}
       profile={plain((detail.entry.key === 'home' && detail.entry.kind === 'page' ? detail.versions[0]?.content.site : homeContent?.site) ?? null)}
-      siteOpen={settings.is_open}
+      siteOpen={settings.is_open} backHref={back}
     />
   );
 }

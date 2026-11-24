@@ -14,7 +14,11 @@ export default function AuthCallback() {
     if (failed || !token) { setError(failed || '로그인 정보를 받지 못했습니다.'); return; }
     fetch('/api/auth/google', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ access_token: token }) })
       .then(async (res) => {
-        if (res.ok) window.location.replace('/');
+        if (res.ok) {
+          let next: string | null = null;
+          try { next = sessionStorage.getItem('sp_next'); sessionStorage.removeItem('sp_next'); } catch { /* 없음 */ }
+          window.location.replace(next && next.startsWith('/') && !next.startsWith('//') && !next.includes('\\') ? next : '/');
+        }
         else setError((await res.json()).error ?? '로그인하지 못했습니다.');
       })
       .catch(() => setError('로그인 서버에 연결하지 못했습니다.'));
