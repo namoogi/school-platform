@@ -18,6 +18,8 @@ export async function GET(req: Request) {
   const kind = url.searchParams.get('kind') ?? '';
   const key = url.searchParams.get('key') ?? '';
   const back = safeBack(url.searchParams.get('back'));
+  // 49차: 관리 막대의 다른 길 — 소식 쓰기·홈페이지 관리·개선 요청(대화창)
+  const goto = url.searchParams.get('to') ?? 'edit';
   const userId = await currentUserId();
   if (!userId) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(url.pathname + url.search)}`, url), 303);
   if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(slug)) return NextResponse.redirect(new URL('/site', url), 303);
@@ -35,9 +37,12 @@ export async function GET(req: Request) {
   }).catch(() => null);
   if (!found) return NextResponse.redirect(new URL('/locked?reason=admin', url), 303);
   if (!found.admin) return NextResponse.redirect(new URL('/locked?reason=admin', url), 303);
-  const to = found.entry
-    ? `/site/edit/${found.entry}${back ? `?back=${encodeURIComponent(back)}` : ''}`
-    : `/site${kind === 'news' ? '?box=news' : kind === 'story' ? '?box=story' : ''}`;
+  const to = goto === 'news' ? '/site?box=news&new=1'
+    : goto === 'manage' ? '/site'
+    : goto === 'chat' ? '/site?chat=1'
+    : found.entry
+      ? `/site/edit/${found.entry}${back ? `?back=${encodeURIComponent(back)}` : ''}`
+      : `/site${kind === 'news' ? '?box=news' : kind === 'story' ? '?box=story' : ''}`;
   const res = NextResponse.redirect(new URL(to, url), 303);
   res.cookies.set(SCHOOL_COOKIE, found.school, sessionCookieOptions());
   return res;

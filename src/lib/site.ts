@@ -440,6 +440,8 @@ export type PublicSite = {
   stories: boolean; has_news: boolean; nav: { key: string; title: LText }[];
   /** 47차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
   on_own_host?: boolean;
+  /** 49차: 로그인한 이 학교 관리자가 보는 중이면 true — 공개 화면 위에 관리 막대를 보인다 */
+  viewer_admin?: boolean;
 };
 export type PublicEntry = { kind: EntryKind; key: string; visibility: 'public' | 'unlisted'; meta: Record<string, string>; version: number; content: Content; published_at: string };
 export type PublicListItem = { key: string; meta: Record<string, string>; title: LText; summary: LText | null; cover: string | null; published_at: string };

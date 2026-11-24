@@ -43,6 +43,8 @@ export function staffEditHref(site: PublicSite, path: string) {
   const q = new URLSearchParams({ slug: site.slug, kind, key, back });
   return `${host ? PLATFORM_ORIGIN : ''}/site/open?${q}`;
 }
+/** 49차: 관리 막대의 다른 길(소식 쓰기·홈페이지 관리·개선 요청) — 학교를 먼저 맞추려고 모두 /site/open 을 거친다 */
+const staffHref = (site: PublicSite, to: 'news' | 'manage' | 'chat') => `${site.on_own_host ? PLATFORM_ORIGIN : ''}/site/open?${new URLSearchParams({ slug: site.slug, to })}`;
 /** 47차: 학교 자체 주소로 볼 때는 /about 처럼, 플랫폼 주소로 볼 때는 /s/<학교>/p/about 처럼 */
 export function sitePath(site: PublicSite, path: string) {
   if (site.on_own_host) return path === '/' || path === '' ? '/' : hostLink(path);
@@ -77,6 +79,15 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   return (
     <div className="site" data-theme={site.theme} data-hidden={hidden || undefined} lang={lang}>
       <a className="skip-link" href="#site-main">{siteText('skip', lang)}</a>
+      {site.viewer_admin && (
+        <nav className="site-admin-bar" aria-label="학교 관리자" data-testid="site-admin-bar">
+          <span>관리자로 보는 중</span>
+          <a href={staffEditHref(site, path)}>이 화면 편집</a>
+          <a href={staffHref(site, 'news')}>소식 쓰기</a>
+          <a href={staffHref(site, 'manage')}>홈페이지 관리</a>
+          <a href={staffHref(site, 'chat')}>개선 요청</a>
+        </nav>
+      )}
       <header className="site-header">
         <div className="site-wrap site-header-row">
           <Link href={link(brandHref)} className="site-brand">

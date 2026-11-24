@@ -44,6 +44,13 @@ export function ChatDock({ scope }: { scope: Scope }) {
   const [error, setError] = useState<string | null>(null);
   const [wide, setWide] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
+  // 49차: 다른 화면에서 대화창 열기 — 주소의 ?chat=1, 또는 'chatdock:open' 사건(편집 화면의 '개선 요청')
+  useEffect(() => {
+    try { if (new URLSearchParams(window.location.search).get('chat') === '1') setOpen(true); } catch { /* 없음 */ }
+    const onOpen = () => setOpen(true);
+    window.addEventListener('chatdock:open', onOpen);
+    return () => window.removeEventListener('chatdock:open', onOpen);
+  }, []);
 
   const refreshList = useCallback(async () => {
     try { const d = await call<ListData>(`/api/chat${q}`); setData(d); setCount(d.count); setError(null); }

@@ -1280,6 +1280,38 @@ try {
     await ctxB.close();
   });
 
+  await step('49차: 공개 화면 관리 막대(관리자에게만) · 소식 쓰기 · 개선 요청 · 편집 화면 바로가기', async () => {
+    const anon = await (await browser.newContext()).newPage();
+    await anon.goto(`${BASE}/s/dreamy-a/p/about`);
+    assert.equal(await anon.locator('[data-testid=site-admin-bar]').count(), 0);
+    await anon.context().close();
+    const ctxB = await browser.newContext();
+    const b = await ctxB.newPage();
+    await login(b, 'admin-b@school-b.test', 'demo-pass-b');
+    await b.goto(`${BASE}/s/dreamy-a/p/about`);
+    assert.equal(await b.locator('[data-testid=site-admin-bar]').count(), 0); // 다른 학교 관리자에게는 없음
+    await ctxB.close();
+    const ctxA = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+    const a = await ctxA.newPage();
+    await login(a, 'admin-a@school-a.test', 'demo-pass-a');
+    await a.goto(`${BASE}/s/dreamy-a/p/about`);
+    const bar = a.locator('[data-testid=site-admin-bar]');
+    await bar.waitFor();
+    await bar.locator('a:text-is("소식 쓰기")').click();
+    await a.waitForURL(/\/site\?box=news&new=1$/);
+    await a.waitForSelector('.site-new.site-form');
+    await a.goto(`${BASE}/s/dreamy-a/p/about`);
+    await a.locator('[data-testid=site-admin-bar] a:text-is("개선 요청")').click();
+    await a.waitForSelector('[data-testid=chatdock]');
+    await a.goto(`${BASE}/s/dreamy-a/p/about`);
+    await a.locator('[data-testid=site-admin-bar] a:text-is("이 화면 편집")').click();
+    await a.waitForSelector('[data-testid=live-editor]');
+    await a.click('[data-testid=live-edit-chat]');
+    await a.waitForSelector('[data-testid=chatdock]');
+    assert.equal(await a.locator('[data-testid=live-edit-news]').count(), 1);
+    await ctxA.close();
+  });
+
   await step('성품 동화 새 판 일괄 공개: 선택·충돌·공개 내림 제외·태국어 노출', async () => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const h = await ctx.newPage();

@@ -257,6 +257,8 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
         <div className="le-toolbar-row">
           <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`}><ArrowLeft size={16} aria-hidden="true" />목록</Link>
           {backHref && <a className="btn btn-ghost btn-sm" href={backHref} data-testid="live-edit-back">공개 화면으로</a>}
+          <Link className="btn btn-ghost btn-sm" href="/site?box=news&new=1" data-testid="live-edit-news">소식 쓰기</Link>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('chatdock:open'))} data-testid="live-edit-chat">개선 요청</button>
           <div className="le-title">
             <h1>{title}</h1>
             <p className="fine">
