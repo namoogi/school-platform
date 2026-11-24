@@ -19,11 +19,16 @@ export default async function SiteHome({ params, searchParams }: P) {
     !ownNews && site.has_news ? publicList(slug, 'news') : [], site.stories ? publicList(slug, 'story') : [], newsFor(site, home?.content),
   ]);
   const t = (x: Parameters<typeof pick>[0]) => pick(x, lang, site.default_lang);
+  // 52차: 맨 끝 안내 띠(cta)는 자동 목록(소식·동화) 뒤로 — 쪽은 늘 '다음 할 일'로 끝난다
+  const blocks = home?.content.blocks ?? [];
+  let cut = blocks.length;
+  while (cut > 0 && blocks[cut - 1].type === 'section' && (blocks[cut - 1] as { template?: string }).template === 'cta') cut--;
+  const body = blocks.slice(0, cut), closing = blocks.slice(cut);
   return (
     <SiteFrame site={site} lang={lang} current="home" path="" profile={L.profile} assetUrl={asset}>
       {home
         ? <><PageHead content={home.content} lang={lang} fallback={site.default_lang} asset={asset} link={link} />
-            <SiteBlocks content={home.content} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} /></>
+            <SiteBlocks content={{ ...home.content, blocks: body }} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} /></>
         : <h1 className="site-h1">{t(site.title) || site.school}</h1>}
       {news.length > 0 && (
         <section className="site-section"><h2 className="site-h2">{siteText('news', lang)}</h2>
@@ -32,11 +37,12 @@ export default async function SiteHome({ params, searchParams }: P) {
         </section>
       )}
       {stories.length > 0 && (
-        <section className="site-section"><h2 className="site-h2">{siteText('stories', lang)}</h2>
+        <section className="site-section story-strip"><h2 className="site-h2">{siteText('stories', lang)}</h2>
           <ul className="site-cards">{stories.slice(0, 4).map((s) => (
             <li key={s.key}><Link href={link(`/stories/${s.key}`)}>{s.cover && /* eslint-disable-next-line @next/next/no-img-element */ <img src={asset(s.cover)} alt="" />}<b>{t(s.title)}</b>{s.meta.virtue && <small>{s.meta.virtue}</small>}</Link></li>))}</ul>
         </section>
       )}
+      {home && closing.length > 0 && <SiteBlocks content={{ ...home.content, blocks: closing }} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} />}
     </SiteFrame>
   );
 }

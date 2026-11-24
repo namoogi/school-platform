@@ -1245,6 +1245,82 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .site[data-theme="dawn"] .site-footer-staff { font-size: 11px; padding: 10px 0; border-bottom: 1px solid var(--dawn-footer-muted); }
 .site[data-theme="dawn"][data-hidden] .site-footer { background: var(--dawn-soft); color: var(--dawn-muted); }
 
+/* ══ 52차: 새벽빛 디자인 체계 정돈 (docs/design/DAWN-SYSTEM.md) ══════════════════════
+ * 옛 사이트 값을 하나씩 옮기면서 구역마다 글자 크기·간격·사진 비율이 달라져 '나열된 느낌'이 났다. 아래 단계로 통일한다.
+ * 글자 5단계(표제 · 구역 제목 · 항목 제목 · 본문 · 머리말) · 구역 사이 한 간격 · 사진은 4:3 채우기 · 묶음은 연회색 띠로 구분. */
+.site[data-theme="dawn"] {
+  --dawn-fs-h2: clamp(28px, 2.6vw, 36px); --dawn-fs-h3: 22px; --dawn-fs-body: 16px; --dawn-fs-small: 14px; --dawn-fs-label: 12px;
+  --dawn-gap: clamp(72px, 8vw, 112px); --dawn-band: 72px;
+}
+.site[data-theme="dawn"] .site-wrap { width: min(1240px, 100% - 120px); }
+.site[data-theme="dawn"] p { font-size: var(--dawn-fs-body); line-height: 1.85; }
+/* 머리: 메뉴 글자를 읽을 수 있는 크기로 */
+.site[data-theme="dawn"] .site-nav { font-size: var(--dawn-fs-small); gap: 24px; }
+.site[data-theme="dawn"] .site-brand strong { font-size: 18px; }
+.site[data-theme="dawn"] .site-brand small { font-size: 10px; }
+/* 머리말: 금색 작은 대문자 — 구역의 시작을 알리는 한 가지 표시 */
+.site[data-theme="dawn"] .sec-eyebrow { font-size: var(--dawn-fs-label); letter-spacing: .14em; color: var(--dawn-accent-hover); }
+/* 구역 제목·항목 제목 크기 통일(구역 모양마다 달랐다) */
+.site[data-theme="dawn"] :is(.sec, .lb-feature, .site-section) h2, .site[data-theme="dawn"] .site-h2,
+.site[data-theme="dawn"] :is(.sec[data-variant="split"], .sec[data-variant="portrait"], .sec[data-variant="emblem"], .sec[data-variant="prep"]) h2,
+.site[data-theme="dawn"] :is(.sec[data-template="media-left"], .sec[data-template="media-right"]) h2 { font-size: var(--dawn-fs-h2); }
+.site[data-theme="dawn"] :is(.sec h3, .sec[data-variant="index"] h3, .sec-steps h3, .sec[data-variant="rows"] li > a h3) { font-size: var(--dawn-fs-h3); }
+.site[data-theme="dawn"] :is(.sec-cards, .sec-steps, .sec[data-variant="index"]) p { font-size: var(--dawn-fs-small); line-height: 1.8; }
+.site[data-theme="dawn"] .sec-copy > p { margin-top: 16px; }
+/* 사진–글 나란히: 위 맞춤 대신 가운데 맞춤, 두 칸 5:7 */
+.site[data-theme="dawn"] :is(.sec[data-template="media-left"], .sec[data-template="media-right"]):not([data-variant]) { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 64px; align-items: center; }
+.site[data-theme="dawn"] .sec[data-template="media-left"]:not([data-variant]) { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+.site[data-theme="dawn"] :is(.sec[data-template="media-left"], .sec[data-template="media-right"]):not([data-variant]) .sec-photo img { aspect-ratio: 4 / 3; object-fit: cover; }
+.site[data-theme="dawn"] :is(.sec[data-template="media-left"], .sec[data-template="media-right"]):not([data-variant]) + :is(.sec[data-template="media-left"], .sec[data-template="media-right"]):not([data-variant]) { margin-top: calc(48px - var(--dawn-gap)); }
+/* 대표 사진(portrait): 5:6, 사진은 4:5로 채움 */
+.site[data-theme="dawn"] .sec[data-variant="portrait"] { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 72px; align-items: center; }
+.site[data-theme="dawn"] .sec[data-variant="portrait"] .sec-photo { padding: 0; }
+.site[data-theme="dawn"] .sec[data-variant="portrait"] .sec-photo img { max-width: none; aspect-ratio: 4 / 5; object-fit: cover; }
+/* 사진–글 줄(rows): 사진 5 · 글 7, 사진은 4:3 채움, 짝수 줄은 좌우를 바꿔 리듬을 준다 */
+.site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards { gap: 56px; }
+.site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li, .site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li > a { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
+.site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li:nth-child(even) > a > img, .site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li:nth-child(even) > img { order: 2; }
+.site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li:nth-child(even), .site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li:nth-child(even) > a { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards img, .site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li:nth-child(3) > a img,
+.site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li > a img { width: 100%; max-width: none; max-height: none; aspect-ratio: 4 / 3; object-fit: cover; }
+.site[data-theme="dawn"] .sec[data-variant="rows"] .sec-item-copy { border-top: 0; padding-top: 0; }
+/* 사진 묶음·카드: 연회색 여백(잘림 없이) 대신 4:3로 채운다 — 줄이 가지런해진다 */
+.site[data-theme="dawn"] :is(.sec-photos, .site-cards) img { object-fit: cover; background: var(--dawn-photo); }
+.site[data-theme="dawn"] .sec-cards { gap: 32px; }
+/* 소식·동화 카드: 3단(동화는 4단), 제목은 항목 제목 크기 */
+.site[data-theme="dawn"] .site-cards.story-grid, .site[data-theme="dawn"] .site-main > .site-section .site-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px 32px; }
+.site[data-theme="dawn"] .site-cards b { font-size: var(--dawn-fs-h3); margin-top: 20px; }
+.site[data-theme="dawn"] .site-cards span { font-size: var(--dawn-fs-small); }
+.site[data-theme="dawn"] .site-main > .site-section.story-strip .site-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px 24px; }
+.site[data-theme="dawn"] .story-strip .site-cards b { font-size: 18px; margin-top: 14px; }
+.site[data-theme="dawn"] .site-main > .site-section > .site-h2 { margin: 0; }
+.site[data-theme="dawn"] .site-main > .site-section + .site-blocks { margin-top: var(--dawn-gap); }
+/* 묶음 띠: 배움(index)과 안내 띠(cta)는 화면 끝까지 연회색 — 쪽의 마디가 보인다 */
+.site[data-theme="dawn"] :is(.sec[data-variant="index"], .sec[data-template="cta"]:has(.sec-copy > :not(.site-button))) {
+  background: var(--dawn-soft); box-shadow: 0 0 0 100vmax var(--dawn-soft); clip-path: inset(0 -100vmax); padding-block: var(--dawn-band);
+}
+.site[data-theme="dawn"] .sec[data-variant="index"] .sec-cards li > :is(a, .sec-item-copy) { background: var(--dawn-paper); padding: 28px 56px 28px 28px; border-top: 2px solid var(--dawn-ink); border-bottom: 0; }
+.site[data-theme="dawn"] .sec[data-variant="index"] li .link-arrow { right: 24px; }
+/* 한눈에 보기(facts 기본 모양): 네 칸 한 줄, 값은 진하게 */
+.site[data-theme="dawn"] .sec[data-template="facts"]:not([data-variant]) .sec-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 32px; margin-top: 28px; }
+.site[data-theme="dawn"] .sec[data-template="facts"]:not([data-variant]) .sec-facts > div { border-top: 2px solid var(--dawn-ink); }
+.site[data-theme="dawn"] .sec[data-template="facts"]:not([data-variant]) dd p { font-size: 18px; color: var(--dawn-ink); }
+@media (max-width: 1050px) {
+  .site[data-theme="dawn"] .site-main > .site-section.story-strip .site-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .site[data-theme="dawn"] .sec[data-template="facts"]:not([data-variant]) .sec-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+  .site[data-theme="dawn"] { --dawn-band: 48px; }
+  .site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li:nth-child(even) > a > img, .site[data-theme="dawn"] .sec[data-variant="rows"] .sec-cards li:nth-child(even) > img { order: 0; }
+  .site[data-theme="dawn"] :is(.sec[data-variant="rows"] .sec-cards li:nth-child(even), .sec[data-variant="rows"] .sec-cards li:nth-child(even) > a,
+    .sec[data-template="media-left"]:not([data-variant]), .sec[data-template="media-right"]:not([data-variant])) { grid-template-columns: 1fr; gap: 24px; }
+  .site[data-theme="dawn"] :is(.site-cards.story-grid, .site-main > .site-section .site-cards) { grid-template-columns: 1fr; }
+  .site[data-theme="dawn"] .site-main > .site-section.story-strip .site-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .site[data-theme="dawn"] .sec[data-template="facts"]:not([data-variant]) .sec-facts { grid-template-columns: 1fr; }
+}
+
 /* 중단점: 1220 · 1050 · 800 · 600 (옛 Edition 9) */
 @media (max-width: 1220px) {
   .site[data-theme="dawn"] .site-wrap { width: calc(100% - 64px); }
