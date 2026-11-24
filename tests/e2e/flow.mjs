@@ -204,8 +204,10 @@ try {
     const before = await sourceItems(a).count();
     // 키보드: Tab으로 단추에 가서 Enter → 파일 창
     await a.waitForSelector('[data-testid=dropzone][data-ready]');
-    await a.focus('[data-testid=dropzone] button');
-    const [chooser] = await Promise.all([a.waitForEvent('filechooser'), a.keyboard.press('Enter')]);
+    // 직전 업로드의 완료·새로고침 뒤 활성화된 단추에 키를 보낸다.
+    const chooseButton = a.locator('[data-testid=dropzone] button:not(:disabled)').first();
+    await chooseButton.waitFor({ state: 'visible' });
+    const [chooser] = await Promise.all([a.waitForEvent('filechooser'), chooseButton.press('Enter')]);
     assert.ok(chooser.isMultiple(), '여러 파일 고르기');
     await chooser.setFiles({ name: 'setup.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ') });
     await a.waitForSelector('[data-testid=dropzone-errors]:has-text("올릴 수 없는 형식")');
