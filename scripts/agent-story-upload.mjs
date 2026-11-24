@@ -127,7 +127,9 @@ if (dry) {
 }
 // base_version: 읽은 판. 그 사이 사람이나 다른 에이전트가 새 판을 만들었으면 서버가 409로 거부한다(덮지 않음) → 다시 실행
 const v = await api('POST', `/api/agent/stories/${m.story_key}/versions`, { content, note, base_version: story.latest.version });
-if (publishNow) {
+if (v.published) {
+  console.log(`\n새 판 저장 + 자동 공개: ${v.version}판이 방문자에게 보입니다(토큰의 '자동 공개' 권한). ${BASE}/site?box=story 에서 공개 내림을 할 수 있습니다.`);
+} else if (publishNow) {
   const p = await api('POST', `/api/agent/entries/story/${m.story_key}/publish`, { version: v.version });
   console.log(`\n새 판 저장 후 공개: ${p.version}판이 방문자에게 보입니다. ${BASE}/site?box=story 에서 공개 내림을 할 수 있습니다.`);
 } else {
