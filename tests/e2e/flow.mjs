@@ -1253,6 +1253,33 @@ try {
   });
 
 
+  await step('48차: 공개 화면의 교직원 로그인 → 로그인 → 그 쪽 화면 편집 → 공개 화면으로', async () => {
+    const ctxS = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+    const v = await ctxS.newPage();
+    await v.goto(`${BASE}/s/dreamy-a/p/about`);
+    await v.click('[data-testid=staff-edit]');
+    await v.waitForURL(/\/login\?next=/);
+    await v.waitForSelector('[data-testid=login-edit-note]');
+    await v.fill('input[name=email]', 'admin-a@school-a.test');
+    await v.fill('input[name=password]', 'demo-pass-a');
+    await v.click('button[type=submit]');
+    await v.waitForURL(/\/site\/edit\/[0-9a-f-]{36}\?back=/);
+    await v.waitForSelector('[data-testid=live-editor]');
+    await v.click('[data-testid=live-edit-back]');
+    await v.waitForURL(/\/s\/dreamy-a\/p\/about$/);
+    // 이미 로그인했으면 바로 편집으로
+    await v.click('[data-testid=staff-edit]');
+    await v.waitForURL(/\/site\/edit\/[0-9a-f-]{36}\?back=/);
+    await ctxS.close();
+    // 다른 학교 관리자는 이 학교 편집으로 들어가지 못한다
+    const ctxB = await browser.newContext();
+    const b = await ctxB.newPage();
+    await login(b, 'admin-b@school-b.test', 'demo-pass-b');
+    await b.goto(`${BASE}/site/open?slug=dreamy-a&kind=page&key=about`);
+    assert.doesNotMatch(b.url(), /\/site\/edit\//);
+    await ctxB.close();
+  });
+
   await step('성품 동화 새 판 일괄 공개: 선택·충돌·공개 내림 제외·태국어 노출', async () => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const h = await ctx.newPage();

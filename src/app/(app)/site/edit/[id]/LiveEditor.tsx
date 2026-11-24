@@ -47,7 +47,8 @@ const HAS_ITEMS: SectionTemplate[] = ['cards', 'photos', 'facts', 'steps'];
  * - 바뀐 내용은 기존 판 저장 API로 새 판(시안)이 된다. 공개는 학교 관리자만(서버 RLS가 다시 막는다).
  * - 편집 모드를 끄면 방문자에게 보일 모습(숨긴 구역 빠짐)을 같은 그리기로 본다.
  */
-export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, assets: initialAssets, news, profile, siteOpen }: {
+export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, assets: initialAssets, news, profile, siteOpen, backHref }: {
+  /** 48차: 공개 화면에서 왔으면 돌아갈 주소 */ backHref?: string | null;
   detail: Detail; frame: PublicSite; langs: Lang[]; defaultLang: Lang; canPublish: boolean; assets: Asset[]; news: NewsItem[];
   profile: SiteProfile | null; siteOpen: boolean;
 }) {
@@ -255,6 +256,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
       <div className="le-toolbar" role="region" aria-label="화면 편집 막대" data-testid="le-toolbar">
         <div className="le-toolbar-row">
           <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`}><ArrowLeft size={16} aria-hidden="true" />목록</Link>
+          {backHref && <a className="btn btn-ghost btn-sm" href={backHref} data-testid="live-edit-back">공개 화면으로</a>}
           <div className="le-title">
             <h1>{title}</h1>
             <p className="fine">

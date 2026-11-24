@@ -1,8 +1,10 @@
 'use client';
 
 /** Supabase Auth의 Google 로그인으로 보낸다. 돌아오는 주소는 지금 접속한 주소 기준. */
-export function GoogleButton({ supabaseUrl }: { supabaseUrl: string }) {
+export function GoogleButton({ supabaseUrl, next }: { supabaseUrl: string; next?: string | null }) {
   function go() {
+    // 48차: 돌아올 화면은 브라우저 탭 안에만 잠깐 둔다(돌아오는 주소 허용 목록을 바꾸지 않으려고)
+    try { if (next) sessionStorage.setItem('sp_next', next); else sessionStorage.removeItem('sp_next'); } catch { /* 저장 못 하면 첫 화면으로 */ }
     const redirectTo = `${window.location.origin}/auth/callback`;
     window.location.href = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
   }

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { LANG_LABEL, pick, type Lang, type SiteProfile } from '@/lib/site-shared';
 import type { PublicSite } from '@/lib/site';
-import { hostLink } from '@/lib/site-hosts';
+import { hostForSlug, hostLink, PLATFORM_ORIGIN } from '@/lib/site-hosts';
 
 const T = {
   home: { ko: '홈', en: 'Home', th: 'หน้าแรก' }, news: { ko: '소식', en: 'News', th: 'ข่าวสาร' },
@@ -30,6 +30,18 @@ export function siteLinker(site: PublicSite, lang: Lang) {
     const [path, hash] = p.split('#');
     return `${sitePath(site, path)}${q}${hash ? `#${hash}` : ''}`;
   };
+}
+/**
+ * 48차: '교직원 로그인' = 이 화면 편집. 로그인한 뒤 지금 보는 쪽의 화면 편집으로 바로 가고, 편집을 마치면 이 화면으로 돌아온다.
+ * 학교 주소(rungarunsuksa.vercel.app 등)에서는 로그인·편집을 플랫폼 주소에서 한다(로그인 쿠키는 주소마다 따로이므로).
+ */
+export function staffEditHref(site: PublicSite, path: string) {
+  const m = /^\/(p|news|stories)\/([a-z0-9][a-z0-9-]{0,59})$/.exec(path);
+  const [kind, key] = !path || path === '/' ? ['page', 'home'] : m ? [m[1] === 'p' ? 'page' : m[1] === 'news' ? 'news' : 'story', m[2]] : [path.startsWith('/stories') ? 'story' : 'news', ''];
+  const host = site.on_own_host ? hostForSlug(site.slug) : null;
+  const back = host ? `https://${host}${sitePath(site, path || '/')}` : sitePath(site, path || '/');
+  const q = new URLSearchParams({ slug: site.slug, kind, key, back });
+  return `${host ? PLATFORM_ORIGIN : ''}/site/open?${q}`;
 }
 /** 47차: 학교 자체 주소로 볼 때는 /about 처럼, 플랫폼 주소로 볼 때는 /s/<학교>/p/about 처럼 */
 export function sitePath(site: PublicSite, path: string) {
@@ -116,10 +128,10 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             </div>
             <div className="site-footer-note">
               <p>{t(profile?.footer) || `© ${title}`}</p>
-              <Link className="site-footer-staff" href="/login">{siteText('staff', lang)}</Link>
+              <a className="site-footer-staff" href={staffEditHref(site, path)} rel="nofollow" data-testid="staff-edit">{siteText('staff', lang)}</a>
             </div>
           </div>
-        ) : <div className="site-wrap">© {site.school}</div>}
+        ) : <div className="site-wrap">© {site.school} · <a className="site-footer-inline" href={staffEditHref(site, path)} rel="nofollow" data-testid="staff-edit">{siteText('staff', lang)}</a></div>}
       </footer>
     </div>
   );
