@@ -4,7 +4,8 @@ import { AwsClient } from 'aws4fetch';
  * 43차: 파일 저장소 (ADR 0018). Cloudflare R2(S3 호환)를 비공개 버킷으로 쓴다.
  * - 설정(Vercel 환경 변수): R2_ACCOUNT_ID · R2_ACCESS_KEY_ID · R2_SECRET_ACCESS_KEY · R2_BUCKET (선택: R2_ENDPOINT — 시험용)
  * - 설정이 없으면 null → 앱은 지금처럼 DB(bytea)에 저장한다.
- * - 키는 내용 주소 'sha256/<hex>' 하나뿐. 같은 내용은 한 번만 저장되고, 객체는 지우지 않는다(판 보존).
+ * - 키는 's/<school_id>/<sha256>'(ADR 0019 A1): 학교 안에서만 중복 제거, 학교를 떼어 낼 때 접두어로 다룬다. 객체는 지우지 않는다(판 보존).
+ *   예전 키 'sha256/<hex>'도 읽기는 그대로 된다.
  * - 읽기는 앱이 공개·소속을 판단한 뒤 짧은 서명 주소(기본 10분)로 넘긴다. 버킷을 공개하지 않는다.
  * - 비밀값은 기록·오류 메시지에 남기지 않는다.
  */
@@ -15,7 +16,7 @@ export type ObjectStore = {
   signedGet(key: string, opts: { mime: string; download?: string | null; seconds?: number }): Promise<string>;
 };
 
-export const objectKey = (sha256: string) => `sha256/${sha256}`;
+export const objectKey = (schoolId: string, sha256: string) => `s/${schoolId}/${sha256}`;
 
 let cached: ObjectStore | null | undefined;
 export function objectStore(): ObjectStore | null {

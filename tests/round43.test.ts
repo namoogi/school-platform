@@ -68,8 +68,8 @@ describe('R2 파일 저장소', () => {
     const b = png(2);
     const r = await asUser(A.userId, (db) => site.uploadAsset(db, A.schoolId, { name: 'b.png', type: 'image/png', bytes: b }));
     const [row] = await sql('select bytes is null as no_bytes, object_key from public.site_assets where id = $1', [r!.id]);
-    expect(row).toEqual({ no_bytes: true, object_key: `sha256/${sha(b)}` });
-    expect(objects.get(`/bkt/sha256/${sha(b)}`)?.body.equals(b)).toBe(true);
+    expect(row).toEqual({ no_bytes: true, object_key: `s/${A.schoolId}/${sha(b)}` });
+    expect(objects.get(`/bkt/s/${A.schoolId}/${sha(b)}`)?.body.equals(b)).toBe(true);
   });
 
   it('읽기: R2 파일은 짧은 서명 주소로 넘기고(302), DB 파일은 바로 보낸다', async () => {
@@ -97,7 +97,7 @@ describe('R2 파일 저장소', () => {
     const b = png(3);
     const r = await asAgent((db) => agent.agentUpload(db, tok, { name: 'c.png', type: 'image/png', bytes: b }));
     const [row] = await sql('select school_id, bytes is null as no_bytes, object_key from public.site_assets where id = $1', [r.id]);
-    expect(row).toEqual({ school_id: A.schoolId, no_bytes: true, object_key: `sha256/${sha(b)}` });
+    expect(row).toEqual({ school_id: A.schoolId, no_bytes: true, object_key: `s/${A.schoolId}/${sha(b)}` });
     const before = objects.size;
     await expect(asAgent((db) => agent.agentUpload(db, 'agt_' + '0'.repeat(64), { name: 'd.png', type: 'image/png', bytes: png(4) }))).rejects.toThrow();
     expect(objects.size).toBe(before);
@@ -124,7 +124,9 @@ describe('R2 파일 저장소', () => {
       .resolves.toMatchObject({ rowCount: 0 }); // RLS: 학교 관리자는 대상 행이 없다
     await expect(sql(`update public.site_assets set object_key = 'sha256/${'0'.repeat(64)}' where id = $1`, [r!.id])).rejects.toThrow();
     await expect(sql(`update public.site_assets set name = 'x' where id = $1`, [r!.id])).rejects.toThrow('고칠 수 없습니다');
-    await sql(`update public.site_assets set object_key = 'sha256/' || sha256 where id = $1`, [r!.id]);
+    // 다른 학교 접두어로는 적을 수 없다(ADR 0019 A1)
+    await expect(sql(`update public.site_assets set object_key = 's/' || $2 || '/' || sha256 where id = $1`, [r!.id, B.schoolId])).rejects.toThrow();
+    await sql(`update public.site_assets set object_key = 's/' || school_id::text || '/' || sha256 where id = $1`, [r!.id]);
     await expect(sql(`update public.site_assets set bytes = null, object_key = object_key where id = $1`, [r!.id])).rejects.toThrow('고칠 수 없습니다');
     await expect(sql(`delete from public.site_assets where id = $1`, [r!.id])).rejects.toThrow('지울 수 없습니다');
   });

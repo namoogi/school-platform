@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { objectStore, putVerified, StorageError } from './storage';
+import { objectKey, objectStore, putVerified, StorageError } from './storage';
 import { PRICES, type SchoolUsage } from './usage-shared';
 export * from './usage-shared';
 
@@ -52,12 +52,12 @@ export async function checkStorage() {
 export async function copyToStorage(db: Db, limit = 25) {
   const store = objectStore();
   if (!store) return { copied: 0, left: null as number | null, message: 'R2 설정이 없습니다.' };
-  const { rows } = await db.query<{ id: string; sha256: string; mime: string; bytes: Buffer }>(
-    `select id, sha256, mime, bytes from public.site_assets where object_key is null and bytes is not null order by created_at limit $1`, [limit]);
+  const { rows } = await db.query<{ id: string; school_id: string; sha256: string; mime: string; bytes: Buffer }>(
+    `select id, school_id, sha256, mime, bytes from public.site_assets where object_key is null and bytes is not null order by created_at limit $1`, [limit]);
   let copied = 0;
   for (const a of rows) {
-    await putVerified(store, `sha256/${a.sha256}`, a.bytes, a.mime);
-    await db.query(`update public.site_assets set object_key = 'sha256/' || sha256 where id = $1 and object_key is null`, [a.id]);
+    await putVerified(store, objectKey(a.school_id, a.sha256), a.bytes, a.mime);
+    await db.query(`update public.site_assets set object_key = 's/' || school_id::text || '/' || sha256 where id = $1 and object_key is null`, [a.id]);
     copied++;
   }
   const { rows: [l] } = await db.query<{ n: number }>('select count(*)::int as n from public.site_assets where object_key is null');
