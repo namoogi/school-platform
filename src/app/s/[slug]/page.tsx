@@ -22,7 +22,8 @@ export default async function SiteHome({ params, searchParams }: P) {
   // 52차: 맨 끝 안내 띠(cta)는 자동 목록(소식·동화) 뒤로 — 쪽은 늘 '다음 할 일'로 끝난다
   const blocks = home?.content.blocks ?? [];
   let cut = blocks.length;
-  while (cut > 0 && blocks[cut - 1].type === 'section' && (blocks[cut - 1] as { template?: string }).template === 'cta') cut--;
+  const trailing = (b: (typeof blocks)[number]) => b.hidden || (b.type === 'section' && (b as { template?: string }).template === 'cta');
+  while (cut > 0 && trailing(blocks[cut - 1])) cut--; // 숨긴 관리자 메모도 끝 쪽에 둔다
   const body = blocks.slice(0, cut), closing = blocks.slice(cut);
   return (
     <SiteFrame site={site} lang={lang} current="home" path="" profile={L.profile} assetUrl={asset}>
