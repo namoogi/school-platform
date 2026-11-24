@@ -389,11 +389,11 @@ export async function uploadAsset(db: Db, schoolId: string, file: { name: string
   if (same) return { id: same.id, reused: true };
   // 43차(ADR 0018): R2가 설정돼 있으면 바이트는 R2에만, DB에는 메타데이터와 위치만
   const store = objectStore();
-  if (store) await putVerified(store, objectKey(sha), file.bytes, mime);
+  if (store) await putVerified(store, objectKey(schoolId, sha), file.bytes, mime);
   try {
     const { rows: [a] } = await db.query<{ id: string }>(
       `insert into public.site_assets(school_id, name, mime, size_bytes, sha256, bytes, object_key) values ($1,$2,$3,$4,$5,$6,$7) returning id`,
-      [schoolId, file.name.slice(0, 200) || 'image', mime, file.bytes.length, sha, store ? null : file.bytes, store ? objectKey(sha) : null]);
+      [schoolId, file.name.slice(0, 200) || 'image', mime, file.bytes.length, sha, store ? null : file.bytes, store ? objectKey(schoolId, sha) : null]);
     return { id: a.id, reused: false };
   } catch (e) { dbError(e); }
 }
