@@ -864,7 +864,9 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .storybook-page { display: grid; gap: var(--space-3); background: var(--surface-default); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; }
 .storybook-page img { width: 100%; height: auto; display: block; }
 .storybook-blank { aspect-ratio: 16 / 9; background: var(--surface-subtle); }
-.storybook-text { padding: 0 var(--space-5) var(--space-5); font-size: var(--fs-body-lg); line-height: 1.8; white-space: pre-line; }
+.storybook-copy { padding: var(--space-4) var(--space-5) var(--space-5); }
+.storybook-copy h2 { margin: 0 0 var(--space-3); font-size: var(--fs-body); color: var(--text-link); }
+.storybook-text { margin: 0; font-size: var(--fs-body-lg); line-height: 1.8; white-space: pre-line; }
 .storybook-nav { display: flex; align-items: center; justify-content: center; gap: var(--space-4); }
 .storybook-nav button { width: 44px; height: 44px; display: grid; place-items: center; border-radius: var(--radius-full); border: 1px solid var(--border-default); background: var(--surface-default); color: var(--text-default); }
 .storybook-nav button:disabled { opacity: .4; }
@@ -1599,3 +1601,11 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
   .virtue-episodes a { gap: var(--space-2); }
   .virtue-episode-arrow { display: none; }
 }
+
+/* 기존 번역된 이야기 흐름을 원본 그림 바로 아래에서 읽는다. */
+.story-synopsis { max-width: 960px; padding: var(--space-5); background: var(--surface-subtle); border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); }
+.story-synopsis h2 { margin: 0 0 var(--space-3); color: var(--text-link); }
+.story-synopsis p { margin: var(--space-3) 0 0; line-height: 1.9; white-space: pre-line; }
+.story-synopsis strong { font-weight: 600; }
+.story-synopsis .story-synopsis-subtitle { font-size: var(--fs-body-sm); color: var(--text-muted); }
+.site-language-images > .asset-pick { margin-top: var(--space-3); }

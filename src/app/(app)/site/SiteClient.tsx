@@ -162,7 +162,7 @@ function LangFields({ value, onChange, langs, label, multiline }: { value: LText
   );
 }
 
-function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false }: { value?: string; onChange: (id: string) => void; assets: Asset[]; onUploaded: (a: Asset) => void; label: string; pdf?: boolean }) {
+function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false, languageImage = false }: { value?: string; onChange: (id: string) => void; assets: Asset[]; onUploaded: (a: Asset) => void; label: string; pdf?: boolean; languageImage?: boolean }) {
   async function upload([file]: File[], { signal, progress }: FileDropContext) {
     const form = new FormData(); form.append('file', file);
     const res = await uploadWithProgress('/api/site/assets', form, { signal, onProgress: progress });
@@ -172,7 +172,7 @@ function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false }: 
     return `‘${file.name}’을(를) 올리고 골랐습니다.`;
   }
   // 34차: PDF 칸에는 PDF만, 그림 칸에는 그림만 보인다
-  const choices = assets.filter((a) => (a.mime === 'application/pdf') === pdf);
+  const choices = assets.filter((a) => (a.mime === 'application/pdf') === pdf && (!languageImage || ['image/png', 'image/jpeg', 'image/webp'].includes(a.mime)));
   return (
     <div className="asset-pick">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -186,8 +186,8 @@ function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false }: 
         </label>
         <FileDrop
           compact label={pdf ? '새 PDF 올리기' : '새 그림 올리기'} onFiles={upload}
-          accept={pdf ? ['application/pdf', '.pdf'] : ['image/png', 'image/jpeg', 'image/webp', 'image/gif']}
-          typeLabel={pdf ? 'PDF' : 'PNG·JPG·WEBP·GIF'} maxSize={(pdf ? 4 : 5) * 1024 * 1024}
+          accept={pdf ? ['application/pdf', '.pdf'] : languageImage ? ['image/png', 'image/jpeg', 'image/webp'] : ['image/png', 'image/jpeg', 'image/webp', 'image/gif']}
+          typeLabel={pdf ? 'PDF' : languageImage ? 'PNG·JPG·WEBP' : 'PNG·JPG·WEBP·GIF'} maxSize={(pdf ? 4 : 5) * 1024 * 1024}
           hint={pdf ? '웹용으로 줄인 파일' : <span data-testid="photo-consent">{PHOTO_CONSENT}</span>}
         />
       </div>
@@ -275,6 +275,12 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
               </div>
             </div>
             {(b.type === 'heading' || b.type === 'notice') && <LangFields label="글" value={b.text} langs={langs} onChange={(text) => setBlock(i, { ...b, text })} />}
+            {(b.type === 'image' || b.type === 'story_page') && <details className="site-language-images">
+              <summary>언어별 그림 (선택 사항)</summary>
+              <p className="fine">번역 그림을 준비한 뒤 해당 언어에 등록하세요. 비워 두면 원본 그림을 사용합니다. 그림을 자동 생성하지 않습니다.</p>
+              {LANGS.map((lang) => <AssetPick key={lang} languageImage label={`${LANG_LABEL[lang]} 그림`} value={b.images?.[lang]?.asset} assets={assets} onUploaded={uploaded}
+                onChange={(asset) => { const images = { ...b.images }; if (asset) images[lang] = { asset }; else delete images[lang]; setBlock(i, { ...b, images }); }} />)}
+            </details>}
             {b.type === 'text' && <LangFields label="글" value={b.text} langs={langs} multiline onChange={(text) => setBlock(i, { ...b, text })} />}
             {b.type === 'image' && <>
               <AssetPick label="그림" value={b.asset} assets={assets} onUploaded={uploaded} onChange={(asset) => setBlock(i, { ...b, asset })} />

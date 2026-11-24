@@ -11,7 +11,7 @@ import { checkPdf, sniffMime } from './pdf-check';
  */
 import {
   LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type SectionVariant, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
-  type GalleryItem, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings,
+  type GalleryItem, type Lang, type LanguageImages, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings,
 } from './site-shared';
 export * from './site-shared';
 
@@ -34,6 +34,20 @@ function asset(v: unknown, field: string) {
   if (typeof v !== 'string' || !isUuid(v)) throw new ValidationError(`${field}의 그림을 다시 골라 주세요.`);
   return v;
 }
+/** UUID를 번역 글로 오인하지 않도록 { 언어: { asset } } 형태를 쓴다. */
+function languageImages(raw: unknown, field: string): LanguageImages | undefined {
+  if (raw == null) return undefined;
+  if (typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError(`${field}: 언어별 그림 형식이 올바르지 않습니다.`);
+  const out: LanguageImages = {};
+  for (const [lang, image] of Object.entries(raw)) {
+    if (!LANGS.includes(lang as Lang) || !image || typeof image !== 'object' || Array.isArray(image)) {
+      throw new ValidationError(`${field}: 언어별 그림 형식이 올바르지 않습니다.`);
+    }
+    out[lang as Lang] = { asset: asset((image as Record<string, unknown>).asset, field) };
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** 링크: 사이트 안 경로(/p/about, /news, /stories/x, 끝의 #구역 허용) 또는 https 주소 */
 function href(v: unknown, field: string): string {
   const s = String(v ?? '').trim();
@@ -120,7 +134,7 @@ function blockOf(x: Record<string, unknown>, at: string): Block {
     case 'heading': return { type: 'heading', text: text(x.text, at, 200) };
     case 'text': return { type: 'text', text: text(x.text, at) };
     case 'notice': return { type: 'notice', text: text(x.text, at, 1000) };
-    case 'image': return { type: 'image', asset: asset(x.asset, at), alt: text(x.alt, `${at} 대체 글`, 300), caption: text(x.caption, `${at} 설명`, 500) };
+    case 'image': return { type: 'image', asset: asset(x.asset, at), images: languageImages(x.images, at), alt: text(x.alt, `${at} 대체 글`, 300), caption: text(x.caption, `${at} 설명`, 500) };
     case 'gallery': return galleryBlock(x, at);
     case 'section': return sectionBlock(x, at);
     case 'news_list': {
@@ -140,7 +154,7 @@ function blockOf(x: Record<string, unknown>, at: string): Block {
     case 'download': return {
       type: 'download', asset: asset(x.asset, at), label: opt(text(x.label, `${at} 이름`, 120), noText), note: opt(text(x.note, `${at} 설명`, 300), noText),
     };
-    case 'story_page': return { type: 'story_page', asset: x.asset ? asset(x.asset, at) : undefined, text: text(x.text, at, 2000) };
+    case 'story_page': return { type: 'story_page', images: languageImages(x.images, at), asset: x.asset ? asset(x.asset, at) : undefined, text: text(x.text, at, 2000) };
     default: throw new ValidationError(`${at}: 알 수 없는 블록입니다.`);
   }
 }
@@ -176,6 +190,12 @@ export function validateContent(raw: unknown): Content {
  */
 export function fillDownloads(content: Content, assets: { id: string; name: string; mime: string; size_bytes: number }[]): Content {
   const by = new Map(assets.map((a) => [a.id, a]));
+  for (const id of languageImageIds(content)) {
+    const image = by.get(id);
+    if (!image || !['image/png', 'image/jpeg', 'image/webp'].includes(image.mime)) {
+      throw new ValidationError('언어별 그림에는 이 학교에 올린 PNG·JPG·WEBP를 골라 주세요.');
+    }
+  }
   return {
     ...content,
     blocks: content.blocks.map((b, i) => {
@@ -194,8 +214,11 @@ export function fillDownloads(content: Content, assets: { id: string; name: stri
     }),
   };
 }
+export function languageImageIds(content: Content): string[] {
+  return content.blocks.flatMap((b) => b.type === 'image' || b.type === 'story_page' ? Object.values(b.images ?? {}).map((image) => image.asset) : []);
+}
 async function withDownloads(db: Db, schoolId: string, content: Content) {
-  const ids = content.blocks.flatMap((b) => (b.type === 'download' ? [b.asset] : b.type === 'gallery' && b.download === 'png' ? b.assets : []));
+  const ids = [...languageImageIds(content), ...content.blocks.flatMap((b) => (b.type === 'download' ? [b.asset] : b.type === 'gallery' && b.download === 'png' ? b.assets : []))];
   if (!ids.length) return content;
   const { rows } = await db.query<{ id: string; name: string; mime: string; size_bytes: number }>(
     'select id, name, mime, size_bytes from public.site_assets where school_id = $1 and id = any($2::uuid[])', [schoolId, ids]);

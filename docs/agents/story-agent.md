@@ -124,3 +124,7 @@ curl -s -X POST -H "$H" $S/api/agent/entries/story/moon-promise/archive
 ```
 - 409(그 사이 새 판)가 나면 `GET /api/agent/entries/story/moon-promise`로 다시 읽고 연산을 다시 만든다.
 - 보관한 동화는 학교 관리자가 /site 성품 동화 목록 아래 '보관함'에서 되살린다. 판 기록은 모두 남는다.
+
+## 나중에 언어별 그림을 연결할 때
+
+`image`·`story_page`의 원본 `asset`을 유지하고 `images: { "th": { "asset": "<태국어 그림 id>" }, "en": { "asset": "<영어 그림 id>" } }`를 추가한다. 등록되지 않은 언어는 원본 그림으로 표시한다. 같은 학교의 PNG·JPG·WEBP만 연결하며, 기존 판 전체를 보존해 새 판으로 저장한다. 이미지 안 문구를 바꾸는 생성 작업은 사용자가 요청했을 때 별도로 진행한다. 현재 텍스트 번역 감시 작업은 이미지를 생성·교체하지 않는다.

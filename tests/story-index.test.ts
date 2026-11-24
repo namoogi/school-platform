@@ -69,3 +69,33 @@ describe('동화 언어', () => {
     expect(storyTerm('새로운 캐릭터', 'en')).toBe('새로운 캐릭터');
   });
 });
+
+import { isStoryOutline, storyImageAsset } from '@/lib/story-language';
+
+describe('그림 언어와 이미지 아래 줄거리', () => {
+  it('선택 언어 그림만 선택하고 미등록 언어는 원본으로 돌아간다', () => {
+    const image = { asset: 'original', images: { th: { asset: 'thai-image' }, en: { asset: 'english-image' } } };
+    expect(storyImageAsset(image, 'th')).toBe('thai-image');
+    expect(storyImageAsset(image, 'en')).toBe('english-image');
+    expect(storyImageAsset(image, 'ko')).toBe('original');
+    expect(storyImageAsset({ images: { en: { asset: 'english' } } }, 'th')).toBeUndefined();
+  });
+  it('언어별 그림이 없더라도 번역된 글이 있으면 해당 언어를 제공한다', () => {
+    const c: Content = { title: { ko: '제목', en: 'Title', th: 'ชื่อเรื่อง' }, blocks: [
+      { type: 'image', asset: 'original', images: { th: { asset: 'thai-only' } } },
+      { type: 'story_page', text: { ko: '내용', en: 'Story', th: 'เรื่องราว' } },
+    ] };
+    expect(storyLanguages(c)).toEqual(['ko', 'en', 'th']);
+  });
+  it('이미지 바로 뒤의 단순한 흐름만 줄거리로 바꾸며 숨긴 내용과 다른 구성은 보존한다', () => {
+    const blocks: Content['blocks'] = [{ type: 'image', asset: 'original' },
+      { type: 'section', template: 'steps', items: [{ title: { ko: '시작' }, body: { ko: '기존 줄거리', en: 'Existing outline', th: 'โครงเรื่องเดิม' } }] }];
+    const before = JSON.stringify(blocks);
+    expect(isStoryOutline(blocks, 1)).toBe(true); expect(isStoryOutline(blocks, 0)).toBe(false);
+    expect(JSON.stringify(blocks)).toBe(before);
+    blocks[0].hidden = true; expect(isStoryOutline(blocks, 1)).toBe(false);
+    blocks[0].hidden = false;
+    if (blocks[1].type === 'section') blocks[1].items![0].asset = 'extra-art';
+    expect(isStoryOutline(blocks, 1)).toBe(false);
+  });
+});

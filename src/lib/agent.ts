@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { objectKey, objectStore, putVerified } from './storage';
 import type { Db } from './db';
-import { checkUpload, fillDownloads, validateContent, type Content } from './site';
+import { checkUpload, fillDownloads, languageImageIds, validateContent, type Content } from './site';
 import { insertBlock, moveBlock, removeBlock, setAt, toggleHidden, type EditPath } from './site-edit';
 import type { Block } from './site-shared';
 import { isUuid, NotFoundError, ValidationError } from './services';
@@ -50,7 +50,7 @@ export async function agentSaveEntry(db: Db, token: string, kind: string, key: s
   const k = kindOf(kind);
   keyOf(key);
   let content = validateContent(input.content);
-  if (content.blocks.some((b) => b.type === 'download' || (b.type === 'gallery' && b.download === 'png'))) content = fillDownloads(content, await agentAssets(db, token));
+  if (languageImageIds(content).length || content.blocks.some((b) => b.type === 'download' || (b.type === 'gallery' && b.download === 'png'))) content = fillDownloads(content, await agentAssets(db, token));
   const note = typeof input.note === 'string' ? input.note.trim().slice(0, 240) : '';
   // base_version 이 없거나 틀리면 DB 함수가 범위를 먼저 확인한 뒤 거부한다(범위 밖이면 403이 먼저)
   const n = Number(input.base_version);
@@ -76,7 +76,7 @@ export async function agentCreateEntry(db: Db, token: string, kind: string, inpu
   const k = kindOf(kind);
   const key = keyOf(String(input.key ?? '').trim().toLowerCase());
   let content = validateContent(input.content ?? { title: input.title, blocks: [] });
-  if (content.blocks.some((b) => b.type === 'download' || (b.type === 'gallery' && b.download === 'png'))) content = fillDownloads(content, await agentAssets(db, token));
+  if (languageImageIds(content).length || content.blocks.some((b) => b.type === 'download' || (b.type === 'gallery' && b.download === 'png'))) content = fillDownloads(content, await agentAssets(db, token));
   const note = typeof input.note === 'string' ? input.note.trim().slice(0, 240) : '';
   const created = await one<{ key: string; version: number; published: boolean }>(db, 'select agent.create_entry($1, $2, $3, $4, $5, $6) as r',
     [token, k, key, JSON.stringify(content), JSON.stringify(input.meta && typeof input.meta === 'object' ? input.meta : {}), note]);

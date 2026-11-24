@@ -103,3 +103,22 @@ describe('장면 캐릭터 PNG', () => {
     expect(fillDownloads(ordinary, []).blocks).toEqual(ordinary.blocks);
   });
 });
+
+describe('언어별 그림 저장 검사', () => {
+  const original = '11111111-1111-4111-8111-111111111111';
+  const translated = '22222222-2222-4222-8222-222222222222';
+  const draft = (images: unknown) => ({ title: { ko: '합성 동화' }, blocks: [{ type: 'image', asset: original, images }, { type: 'story_page', asset: original, text: { ko: '글' }, images }] });
+  it('언어별 그림과 원본을 모두 보존한다', () => {
+    const c = validateContent(draft({ th: { asset: translated } }));
+    for (const block of c.blocks) expect(block).toMatchObject({ asset: original, images: { th: { asset: translated } } });
+    expect(fillDownloads(c, [{ id: translated, name: 'th.png', mime: 'image/png', size_bytes: 100 }])).toEqual(c);
+  });
+  it.each([{ fr: { asset: translated } }, { th: translated }, { th: { asset: 'bad-id' } }, [], 'bad'])('잘못된 언어·그림 형식을 거부한다: %j', (images) => {
+    expect(() => validateContent(draft(images))).toThrow();
+  });
+  it('다른 학교 자산·없는 자산·PDF를 언어별 그림으로 저장하지 않는다', () => {
+    const c = validateContent(draft({ en: { asset: translated } }));
+    expect(() => fillDownloads(c, [])).toThrow('이 학교');
+    expect(() => fillDownloads(c, [{ id: translated, name: 'book.pdf', mime: 'application/pdf', size_bytes: 100 }])).toThrow('PNG');
+  });
+});

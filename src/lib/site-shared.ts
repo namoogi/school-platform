@@ -2,6 +2,8 @@
 export const LANGS = ['ko', 'en', 'th'] as const;
 export type Lang = (typeof LANGS)[number];
 export type LText = Partial<Record<Lang, string>>;
+/** 언어별 그림은 선택 사항. 비어 있으면 기존 asset 원본을 사용한다. */
+export type LanguageImages = Partial<Record<Lang, { asset: string }>>;
 export const LANG_LABEL: Record<Lang, string> = { ko: '한국어', en: 'English', th: 'ไทย' };
 
 /**
@@ -37,10 +39,10 @@ export type Block = (
   | { type: 'heading'; text: LText }
   | { type: 'text'; text: LText }
   | { type: 'notice'; text: LText }
-  | { type: 'image'; asset: string; alt?: LText; caption?: LText }
+  | { type: 'image'; asset: string; images?: LanguageImages; alt?: LText; caption?: LText }
   | { type: 'gallery'; assets: string[]; caption?: LText; items?: GalleryItem[]; filters?: GalleryFilter[]; download?: 'png'; scene?: number }
   | { type: 'video'; url: LText }
-  | { type: 'story_page'; asset?: string; text: LText }
+  | { type: 'story_page'; asset?: string; images?: LanguageImages; text: LText }
   | { type: 'section'; template: SectionTemplate; variant?: SectionVariant; eyebrow?: LText; title?: LText; body?: LText; asset?: string; alt?: LText; caption?: LText; items?: SectionItem[]; button?: Button }
   | { type: 'news_list'; eyebrow?: LText; title?: LText; body?: LText; count: number; style: 'cards' | 'list' }
   /** 34차: 파일(PDF) 내려받기. 파일 이름·크기는 저장할 때 서버가 그 학교 자산에서 채운다(판 스냅샷에 남음) */
