@@ -4,6 +4,7 @@
 설계: [ADR 0012](../decisions/0012-agent-work-token.md)(토큰·명령 함수), [ADR 0013](../decisions/0013-school-ai-workspace.md)(학교별 AI 작업 공간·병행 규칙), [ADR 0014](../decisions/0014-agent-token-crud.md)(만들기·고치기·보관, 기한).
 
 - 시작 안내: [Claude Code](claude-code.md) · [Codex](codex.md)
+- 반복 작업: [현재 구독으로 콘텐츠 번역·시안 저장](subscription-translation.md)
 - 일 하나의 예: [성품 동화에 캐릭터 그림·PDF 붙이기](story-agent.md)
 
 ## 토큰 범위
