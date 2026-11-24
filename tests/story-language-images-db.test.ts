@@ -24,7 +24,7 @@ it('언어별 그림은 사람·작업 토큰 모두 같은 학교 파일만 저
   ] });
   for (const [X, own, other] of [[A, a, b], [B, b, a]] as const) {
     await expect(asUser(X.userId, (db) => site.createEntry(db, X.schoolId, { kind: 'story', key: 'foreign-art', content: content(own.id, other.id) }))).rejects.toThrow('이 학교');
-    const token = (await asUser(X.userId, (db) => agent.createAgentToken(db, X.schoolId, { kinds: ['story'], perms: ['read', 'create', 'edit'], days: 1 }))).token;
+    const token = (await asUser(X.userId, (db) => agent.createAgentToken(db, X.schoolId, { kinds: ['story'], perms: ['read', 'create', 'edit'], days: 7 }))).token;
     await expect(asAgent((db) => agent.agentCreateEntry(db, token, 'story', { key: 'foreign-art-agent', content: content(own.id, other.id) }))).rejects.toThrow('이 학교');
   }
   const entry = (await asUser(A.userId, (db) => site.createEntry(db, A.schoolId, { kind: 'story', key: 'local-art', content: content(a.id, a.id) })))!;
