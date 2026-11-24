@@ -1,3 +1,4 @@
+import { hostForSlug } from '@/lib/site-hosts';
 import Link from 'next/link';
 import { BookHeart, FileText, Megaphone, Settings2, type LucideIcon } from 'lucide-react';
 import { loadForPage } from '@/lib/page';
@@ -46,7 +47,9 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
   const selected = box === 'settings' ? undefined : (detail && detail.entry.kind === box ? detail : null);
   const href = (b: Box, id?: string) => `/site?box=${b}${id ? `&id=${id}` : ''}`;
   const lang = settings?.default_lang ?? 'ko';
-  const publicUrl = settings ? `/s/${settings.public_slug}` : null;
+  // 47차: 학교 자체 주소가 연결돼 있으면 그 주소를 보인다(예: https://rungarunsuksa.vercel.app)
+  const ownHost = settings ? hostForSlug(settings.public_slug) : null;
+  const publicUrl = settings ? (ownHost ? `https://${ownHost}` : `/s/${settings.public_slug}`) : null;
 
   return (
     <div className="triage" data-testid="site-admin">
@@ -56,7 +59,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
           <p className="fine">고칠 때마다 새 판으로 쌓이고, 방문자에게는 공개한 판만 보입니다. 공개·내림은 학교 관리자가 합니다.</p>
         </div>
         {publicUrl && (settings!.is_open
-          ? <Link className="btn btn-secondary btn-sm" href={publicUrl} target="_blank" data-testid="public-link">공개 홈페이지 열기</Link>
+          ? <Link className="btn btn-secondary btn-sm" href={publicUrl} target="_blank" data-testid="public-link">공개 홈페이지 열기{ownHost ? ` · ${ownHost}` : ""}</Link>
           : <StatusBadge tone="neutral">홈페이지 닫힘</StatusBadge>)}
       </header>
 

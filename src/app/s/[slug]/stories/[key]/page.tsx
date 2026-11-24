@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { publicEntry } from '@/lib/site';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
-import { SiteFrame, siteText } from '@/components/site/SiteFrame';
+import { SiteFrame, sitePath, siteText } from '@/components/site/SiteFrame';
 import { ReadingNav } from '@/components/site/ReadingNav';
 import { loadSite, newsFor, PageHead, robotsFor } from '@/components/site/load';
 import { storyLanguages, storyTerm } from '@/lib/story-language';
@@ -23,7 +23,7 @@ export default async function Item({ params, searchParams }: P) {
     <SiteFrame site={L.site} lang={L.lang} current="stories" path={`/stories/${key}`} profile={L.profile} assetUrl={L.asset}>
       <ReadingNav listHref={L.link('/stories')} listLabel={listLabel} />
       <h1 className="site-h1">{{ ko: '한국어 번역을 준비하고 있어요', en: 'This story is not available in English yet', th: 'กำลังเตรียมคำแปลภาษาไทยของนิทานเรื่องนี้' }[L.lang]}</h1>
-      <ul>{available.filter((l) => L.site.langs.includes(l)).map((l) => <li key={l}><Link href={`/s/${slug}/stories/${key}?lang=${l}`} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link></li>)}</ul>
+      <ul>{available.filter((l) => L.site.langs.includes(l)).map((l) => <li key={l}><Link href={`${sitePath(L.site, `/stories/${key}`)}?lang=${l}`} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link></li>)}</ul>
     </SiteFrame>
   );
   return (
