@@ -1,4 +1,4 @@
-/** 45차: 작업 토큰 자동 공개 (ADR 0020) — 저장하면 바로 공개, 공개 권한과 함께만, 범위·학교 경계 그대로 */
+/** 45차: 작업 토큰 자동 공개 (ADR 0021) — 저장하면 바로 공개, 공개 권한과 함께만, 범위·학교 경계 그대로 */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { lookupIds, resetTestDb, TEST_URL } from './helpers';
@@ -27,7 +27,7 @@ beforeAll(async () => {
   await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'school-a-site', langs: ['ko'], default_lang: 'ko', is_open: true }));
 });
 
-describe('자동 공개 권한 (ADR 0020)', () => {
+describe('자동 공개 권한 (ADR 0021)', () => {
   it('자동 공개는 공개 권한과 함께만 발급된다', async () => {
     await expect(issue(A.userId, A.schoolId, { kinds: ['story'], perms: ['read', 'create', 'autopublish'], days: 7 })).rejects.toThrow('공개 권한과 함께');
     await issue(A.userId, A.schoolId, { kinds: ['story'], perms: ['read'], days: 7 });

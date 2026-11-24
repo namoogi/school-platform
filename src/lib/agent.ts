@@ -61,7 +61,7 @@ export async function agentSaveEntry(db: Db, token: string, kind: string, key: s
 }
 
 /**
- * 45차(ADR 0020): '자동 공개' 권한이 있는 토큰은 저장한 그 판을 같은 트랜잭션 안에서 바로 공개한다.
+ * 45차(ADR 0021): '자동 공개' 권한이 있는 토큰은 저장한 그 판을 같은 트랜잭션 안에서 바로 공개한다.
  * 공개가 실패하면(보관한 항목 등) 저장도 함께 되돌린다 — 저장만 되고 공개가 빠지는 일이 없게.
  */
 async function autoPublish<T extends { version: number; published: boolean }>(db: Db, token: string, kind: string, key: string, saved: T): Promise<T> {
