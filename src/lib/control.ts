@@ -220,12 +220,6 @@ export async function chatBadge(db: Db, scope: ChatScope) {
 
 export const control = {
   inbox: (db: Db, t: string) => q(db, 'select control.inbox($1) as r', [t]),
-  /** 51차(ADR 0024): 학교 작업 토큰 발급 — 관제는 이 토큰으로 기존 AI 작업 API를 쓴다. 기한 1~30일 */
-  schoolToken: (db: Db, t: string, b: Record<string, unknown>) => {
-    const list = (v: unknown) => (Array.isArray(v) ? v.map((x) => String(x)) : []);
-    return q(db, 'select control.issue_school_token($1, $2, $3, $4, $5, $6) as r',
-      [t, String(b.slug ?? ''), list(b.kinds), list(b.perms), Number(b.days ?? 7), typeof b.label === 'string' ? b.label : '']);
-  },
   requests: (db: Db, t: string, status: string | null) => q(db, 'select control.requests($1, $2) as r', [t, status]),
   file: (db: Db, t: string, body: unknown) => q(db, 'select control.file_request($1, $2) as r', [t, JSON.stringify(body ?? {})]),
   post: (db: Db, t: string, id: string, body: unknown) => {

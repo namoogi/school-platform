@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { asUser } from '@/lib/db';
-import { currentUserId, isInspector, sessionCookieOptions } from '@/lib/auth';
+import { currentUserId, sessionCookieOptions } from '@/lib/auth';
 import { enterSchool } from '@/lib/admin';
 import { SCHOOL_COOKIE } from '@/lib/context';
 import { safeBack } from '@/lib/next-path';
@@ -27,8 +27,8 @@ export async function GET(req: Request) {
     const { rows: [s] } = await db.query<{ school_id: string; admin: boolean }>(
       'select school_id, app.is_school_admin(school_id) as admin from public.site_settings where public_slug = $1', [slug]);
     if (!s) return null;
-    // 전체 관리자가 다른 학교에 들어가면 입장 기록이 남는다(학교 전환과 같은 길). 점검 계정은 읽기 전용이라 기록하지 않는다
-    if (s.admin && !isInspector(userId)) await enterSchool(db, s.school_id);
+    // 전체 관리자가 다른 학교에 들어가면 입장 기록이 남는다(학교 전환과 같은 길)
+    if (s.admin) await enterSchool(db, s.school_id);
     const ok = ['page', 'news', 'story'].includes(kind) && /^[a-z0-9][a-z0-9-]{0,59}$/.test(key);
     const { rows: [e] } = ok
       ? await db.query<{ id: string }>('select id from public.site_entries where school_id = $1 and kind = $2 and key = $3 and archived_at is null', [s.school_id, kind, key])

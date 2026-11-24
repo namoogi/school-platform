@@ -28,7 +28,7 @@ export function InspectorPanel({ tokens, readOnly }: { tokens: InspectorToken[];
     <section className="card" data-testid="inspector-panel">
       <div className="card-header">
         <div><h2>Claude 점검 접근</h2>
-          <p>Claude 세션이 선생님 대신 로그인하지 않고 운영 화면을 읽기 전용으로 보고 점검합니다. 바꾸는 일은 DB가 막습니다.</p></div>
+          <p>관제 Claude 세션이 로그인 없이 전체 관리자로 일합니다(ADR 0024). 학교 입장·변경은 사람 전체 관리자와 같이 기록됩니다. 토큰은 이 화면에서만 발급·폐기합니다.</p></div>
         <span className="badge" data-tone={active.length ? 'success' : 'neutral'}>{active.length ? `사용 중 ${active.length}개` : '없음'}</span>
       </div>
       {!readOnly && (
