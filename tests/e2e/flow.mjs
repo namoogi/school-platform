@@ -783,7 +783,7 @@ try {
     await h.click('.triage-box:has-text("쪽")');
     await h.click('[data-testid=new-entry]');
     await h.fill('.site-new input >> nth=0', '학교 소개');
-    await h.fill('.site-new input >> nth=1', 'about');
+    await h.fill('.site-new input >> nth=1', 'hello'); // 50차: 가져오기 묶음에 없는 주소(사람이 만든 about 은 가져오기가 빈 칸만 채우므로)
     await h.click('text=시안 만들기');
     await h.waitForSelector('[data-testid=entry-editor]');
     await h.click('.block-add button:has-text("글")');
@@ -816,7 +816,7 @@ try {
     const v = await ctxV.newPage();
     await v.goto(`${BASE}/s/dreamy-a`);
     assert.match(await v.textContent('.site-nav'), /학교 소개/);
-    await v.goto(`${BASE}/s/dreamy-a/p/about`);
+    await v.goto(`${BASE}/s/dreamy-a/p/hello`);
     const body = await v.textContent('.site-main');
     assert.match(body, /합성 예시 학교/);
     assert.doesNotMatch(body, /2판 글/);
@@ -868,7 +868,7 @@ try {
     await h.click('[data-testid=import-run]');
     await h.waitForSelector('[data-testid=import-done]', { timeout: 60000 });
     assert.match(await h.textContent('[data-testid=import-done]'), /시안 11개/);
-    // 공개 전: 방문자에게 가져온 쪽이 없다 (27차에서 만든 about 은 새 판만 더해졌고 공개본은 그대로)
+    // 공개 전: 방문자에게 가져온 쪽이 없다 
     const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const v = await ctxV.newPage();
     assert.equal((await v.goto(`${BASE}/s/dreamy-a/p/gallery`)).status(), 404);
@@ -915,13 +915,28 @@ try {
     await h.waitForSelector('[data-testid=story-meta] [role=status]:has-text("저장했습니다")');
     await v.goto(`${BASE}/s/dreamy-a/stories?lang=ko`);
     assert.match(await v.textContent('[data-testid=site-list]'), /우정/);
-    // 42차: 같은 묶음을 다시 가져오면 쪽은 새 판(옛 고정 구역 모양)이 되고, 이미 있는 동화는 그대로 둔다
+    // 50차: 사람이 '교육과정' 쪽 제목을 고친다(가져온 판 뒤에 사람 판)
+    await h.goto(`${BASE}/site?box=page`);
+    await h.click('.triage-item:has(.triage-item-sub:text-is("/curriculum"))');
+    await h.waitForURL(/id=[0-9a-f-]{36}/);
+    const curId = new URL(h.url()).searchParams.get('id');
+    await h.evaluate(async (id) => {
+      const cur = await (await fetch(`/api/site/entries/${id}`)).json();
+      const content = { ...cur.content, title: { ...cur.content.title, ko: '사람이 고친 교육과정' } };
+      const r = await fetch(`/api/site/entries/${id}/versions`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content, note: '사람이 고침', base_version: cur.version }) });
+      if (!r.ok) throw new Error('사람 판 저장 실패');
+    }, curId);
+    // 42차·50차: 같은 묶음을 다시 가져오면 — 고치지 않은 쪽은 새 판(옛 고정 구역 모양)으로 바꾸고, 고친 쪽은 빈 칸만, 동화는 그대로
     await h.goto(`${BASE}/site?box=settings`);
     await h.setInputFiles('[data-testid=import-file]', { name: 'export.zip', mimeType: 'application/zip', buffer: makeExportZip() });
+    await h.waitForSelector('[data-testid=import-decisions]');
+    assert.equal(await h.getAttribute('[data-testid=import-decisions] li:has(b:text-is("about"))', 'data-action'), 'replace');
+    assert.match(await h.getAttribute('[data-testid=import-decisions] li:has(b:text-is("curriculum"))', 'data-action'), /^(merge|none)$/);
+    assert.equal(await h.getAttribute('[data-testid=import-decisions] li:has(b:text-is("dawn-story"))', 'data-action'), 'keep');
     await h.click('[data-testid=import-run]');
     await h.waitForSelector('[data-testid=import-done]', { timeout: 60000 });
     assert.match(await h.textContent('[data-testid=import-kept]'), /dawn-story/);
-    assert.match(await h.textContent('[data-testid=import-done]'), /시안 10개/);
+    assert.match(await h.textContent('[data-testid=import-done]'), /시안 \d+개/);
     await h.click('[data-testid=import-publish]');
     await h.waitForSelector('[data-testid=import-published]', { timeout: 60000 });
     await v.goto(`${BASE}/s/dreamy-a`);
@@ -929,6 +944,9 @@ try {
       '.sec[data-variant=index] .sec-index', '.sec[data-variant=moments] .sec-label', '.site-lang-menu', '.site-footer-staff']) {
       assert.ok(await v.locator(sel).count(), `새벽빛 첫 화면에 ${sel}`);
     }
+    // 사람이 고친 교육과정 제목은 다시 가져오기 뒤에도 그대로
+    const curAfter = await h.evaluate(async (id) => (await (await fetch(`/api/site/entries/${id}`)).json()).content.title.ko, curId);
+    assert.equal(curAfter, '사람이 고친 교육과정');
     await v.goto(`${BASE}/s/dreamy-a/p/about`);
     assert.match(await v.textContent('.site-crumb'), /หน้าแรก/);
     assert.ok(await v.locator('.sec[data-variant=overview] .sec-facts').count());
