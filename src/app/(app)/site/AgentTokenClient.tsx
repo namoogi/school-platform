@@ -20,7 +20,7 @@ type Entry = { kind: string; key: string; title: string };
 
 const AGENT: Record<string, string> = { codex: 'Codex', 'claude-code': 'Claude Code', other: '기타' };
 const KIND: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식' };
-const PERM: Record<string, string> = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기(내용·구조)', archive: '보관', publish: '공개(지시하면 바로)' };
+const PERM: Record<string, string> = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기(내용·구조)', archive: '보관', publish: '공개(지시하면 바로)', autopublish: '자동 공개(저장하면 바로)' };
 const DAYS: { v: string; label: string }[] = [{ v: '7', label: '7일' }, { v: '30', label: '30일' }, { v: '90', label: '90일' }, { v: '365', label: '365일' }, { v: 'none', label: '무기한' }];
 const ACT: Record<string, string> = { version: '판 시안', create: '새로 만듦', meta: '항목 정보 고침', archive: '보관', publish: '공개', unpublish: '공개 내림' };
 const did = (r: TokenRow['recent'][number]) => {
@@ -173,10 +173,16 @@ export function AgentTokenPanel({ tokens, entries, stories }: { tokens: TokenRow
           <legend>권한</legend>
           <div className="row-wrap">
             {Object.entries(PERM).map(([k, v]) => (
-              <label key={k} className="radio"><input type="checkbox" checked={perms.includes(k)} onChange={() => setPerms(toggle(perms, k))} />{v}</label>
+              <label key={k} className="radio"><input type="checkbox" checked={perms.includes(k)} onChange={() => setPerms(k === 'autopublish' && !perms.includes(k) ? [...new Set([...perms, 'publish', k])] : k === 'publish' && perms.includes(k) ? perms.filter((x) => x !== 'publish' && x !== 'autopublish') : toggle(perms, k))} />{v}</label>
             ))}
           </div>
-          {perms.includes('publish') && (
+          {perms.includes('autopublish') && (
+            <p className="fine" role="note" data-testid="agent-token-autopublish-note">
+              <b>자동 공개</b>: 에이전트가 만들거나 새 판을 저장하는 즉시 방문자에게 보입니다(시안 단계 없음). 공개 권한도 함께 켜집니다.
+              주소를 정해 두고 기한을 짧게 하기를 권합니다. 잘못 공개되면 여기서 이전 판으로 되돌리거나 공개를 내립니다.
+            </p>
+          )}
+          {perms.includes('publish') && !perms.includes('autopublish') && (
             <p className="fine" role="note" data-testid="agent-token-publish-note">
               '공개' 권한이 있으면 에이전트에게 공개를 지시했을 때 이 사이트에서 누르지 않아도 바로 방문자에게 보입니다. 만들기·고치기만으로는 공개되지 않습니다.
               공개 기록·활동 기록에 남고, 공개 내림은 언제든 여기서 할 수 있습니다.

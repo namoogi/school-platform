@@ -24,6 +24,7 @@
 | [0018](0018-r2-storage-usage.md) | 파일 저장소 Cloudflare R2 연결 + 학교별 사용량·요금 추정 | 채택 |
 | [0019](0019-scale-architecture.md) | 규모 설계: 학교 100곳·1,000곳까지 Vercel·Supabase·R2 | 제안(A1 채택) |
 | [0020](0020-content-auto-translation.md) | Codex 구독으로 콘텐츠 정기 번역·시안 저장 | 채택 |
+| [0021](0021-agent-autopublish.md) | 작업 토큰 '자동 공개' 권한: 저장하면 바로 공개 | 채택 |
 
 상태: 제안 → 검토 중 → 채택 / 기각 / 대체됨(대체한 번호 적기). 채택된 기록은 고치지 않고, 바꿀 때는 새 기록을 만들어 "대체됨"으로 연결한다.
 새 기록은 [TEMPLATE.md](TEMPLATE.md)를 복사해 쓴다. 번호는 만들기 직전에 `ls docs/decisions`로 다음 빈 번호를 확인하고, 겹치면 CI(`npm run check:repo`)가 막는다.

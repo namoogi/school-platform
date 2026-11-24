@@ -28,7 +28,7 @@ export const agentAssets = (db: Db, token: string) => one<AgentAsset[]>(db, 'sel
 export const ENTRY_KINDS = ['story', 'page', 'news'] as const;
 export type AgentEntryKind = (typeof ENTRY_KINDS)[number];
 /** 38차(ADR 0014): 만들기·고치기(내용·구조·항목 정보)·보관. 36차의 draft 는 edit 로 바뀌었다 */
-export const AGENT_PERMS = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기', archive: '보관', publish: '공개' } as const;
+export const AGENT_PERMS = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기', archive: '보관', publish: '공개', autopublish: '자동 공개' } as const;
 export type AgentPerm = keyof typeof AGENT_PERMS;
 const KEY_RE = /^[a-z0-9][a-z0-9-]{0,59}$/;
 function kindOf(v: string): AgentEntryKind {
@@ -45,7 +45,7 @@ export const agentEntries = (db: Db, token: string, kind: string) => one<unknown
 export const agentEntry = (db: Db, token: string, kind: string, key: string) =>
   one<AgentEntry>(db, 'select agent.entry($1, $2, $3) as r', [token, kindOf(kind), keyOf(key)]);
 
-/** 새 판(시안) 저장. 내용은 사람 편집과 같은 검사(validateContent)를 거치고, 내려받기 블록은 이 학교 PDF로 채운다. 공개는 하지 않는다 */
+/** 새 판 저장. 내용은 사람 편집과 같은 검사(validateContent)를 거치고, 내려받기 블록은 이 학교 PDF로 채운다. 공개는 '자동 공개' 토큰일 때만 */
 export async function agentSaveEntry(db: Db, token: string, kind: string, key: string, input: Record<string, unknown>) {
   const k = kindOf(kind);
   keyOf(key);
@@ -55,8 +55,20 @@ export async function agentSaveEntry(db: Db, token: string, kind: string, key: s
   // base_version 이 없거나 틀리면 DB 함수가 범위를 먼저 확인한 뒤 거부한다(범위 밖이면 403이 먼저)
   const n = Number(input.base_version);
   const base = Number.isInteger(n) && n >= 1 ? n : null;
-  return one<{ version_id: string; version: number; published: false }>(db, 'select agent.save_entry($1, $2, $3, $4, $5, $6) as r',
+  const saved = await one<{ version_id: string; version: number; published: boolean }>(db, 'select agent.save_entry($1, $2, $3, $4, $5, $6) as r',
     [token, k, key, JSON.stringify(content), note, base]);
+  return autoPublish(db, token, k, key, saved);
+}
+
+/**
+ * 45차(ADR 0021): '자동 공개' 권한이 있는 토큰은 저장한 그 판을 같은 트랜잭션 안에서 바로 공개한다.
+ * 공개가 실패하면(보관한 항목 등) 저장도 함께 되돌린다 — 저장만 되고 공개가 빠지는 일이 없게.
+ */
+async function autoPublish<T extends { version: number; published: boolean }>(db: Db, token: string, kind: string, key: string, saved: T): Promise<T> {
+  const me = await agentWhoami(db, token);
+  if (!(Array.isArray(me.perms) && me.perms.includes('autopublish'))) return saved;
+  const p = await one<{ version: number; published: true }>(db, 'select agent.publish_entry($1, $2, $3, $4) as r', [token, kind, key, saved.version]);
+  return { ...saved, published: true, published_version: p.version, auto_published: true };
 }
 
 /** 38차: 새 항목 + 첫 판(시안). create 권한, 주소 목록이 있는 토큰은 그 안에서만, 같은 주소가 있으면 409 */
@@ -66,8 +78,9 @@ export async function agentCreateEntry(db: Db, token: string, kind: string, inpu
   let content = validateContent(input.content ?? { title: input.title, blocks: [] });
   if (content.blocks.some((b) => b.type === 'download' || (b.type === 'gallery' && b.download === 'png'))) content = fillDownloads(content, await agentAssets(db, token));
   const note = typeof input.note === 'string' ? input.note.trim().slice(0, 240) : '';
-  return one<{ key: string; version: number; published: false }>(db, 'select agent.create_entry($1, $2, $3, $4, $5, $6) as r',
+  const created = await one<{ key: string; version: number; published: boolean }>(db, 'select agent.create_entry($1, $2, $3, $4, $5, $6) as r',
     [token, k, key, JSON.stringify(content), JSON.stringify(input.meta && typeof input.meta === 'object' ? input.meta : {}), note]);
+  return autoPublish(db, token, k, key, created);
 }
 
 /** 38차: 항목 정보(동화: virtue·character·text_in_image)·순서. edit 권한 */
