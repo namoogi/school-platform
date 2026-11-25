@@ -127,7 +127,7 @@ describe('수업일 달력', () => {
 });
 
 describe('코드 목록 (E1)', () => {
-  it('플랫폼 기본(한·미 출결 코드)은 모두에게, 학교 값은 그 학교에만 — 같은 코드면 학교 값이 이긴다', async () => {
+  it('학교 생성 때 기본판(한·미 출결 코드)이 학교마다 복제되고, 학교 값은 그 학교에만 (ADR 0027)', async () => {
     const base = await asUser(B.userId, (db) => f.codes(db, B.schoolId, 'attendance_kind'));
     expect(base.map((c) => c.code)).toEqual(['absent', 'tardy', 'early_leave', 'class_absent']);
     expect(base[0].maps_to).toMatchObject({ kr_record: '결석', us_nces: 'absence' });
@@ -149,8 +149,8 @@ describe('코드 목록 (E1)', () => {
     expect(after.find((c) => c.code === 'aunt')).toMatchObject({ id: next, prior_code_id: old });
     await expect(asUser(A.userId, (db) => f.addCode(db, A.schoolId, { listKey: 'relation', code: 'aunt', label: { ko: 'x' }, priorCodeId: old, effectiveFrom: '2026-08-01' })))
       .rejects.toThrow('닫힌');
-    // 플랫폼 기본값은 학교가 고칠 수 없다(직접 UPDATE 권한 없음)
-    await expect(asUser(A.userId, (db) => db.query(`update public.code_lists set effective_to = current_date where school_id is null`))).rejects.toThrow();
+    // 코드 표기는 직접 고칠 수 없다(요청 역할 UPDATE 권한 없음, 새 행 + 이전 코드로만)
+    await expect(asUser(A.userId, (db) => db.query(`update public.code_lists set label = '{"ko":"x"}' where school_id = $1`, [A.schoolId]))).rejects.toThrow();
   });
 });
 

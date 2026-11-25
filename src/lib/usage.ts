@@ -11,21 +11,29 @@ export * from './usage-shared';
  * - 외부 에이전트 작업: agent_token_uses 최근 30일(학교 구독이라 플랫폼 요금 아님).
  */
 export async function schoolUsage(db: Db, schoolId: string | null): Promise<SchoolUsage[]> {
-  const { rows } = await db.query<SchoolUsage>(
-    `select s.id, s.name,
-            (select count(*)::int from public.site_assets a where a.school_id = s.id) as files,
-            (select coalesce(sum(octet_length(a.bytes)), 0)::bigint from public.site_assets a where a.school_id = s.id) as db_site_bytes,
-            (select coalesce(sum(octet_length(f.original)), 0)::bigint from public.source_files f where f.school_id = s.id) as db_source_bytes,
-            (select coalesce(sum(x.size_bytes), 0)::bigint from (select distinct on (a.sha256) a.size_bytes from public.site_assets a
-               where a.school_id = s.id and a.object_key is not null) x) as r2_bytes,
-            (select count(*)::int from public.site_assets a where a.school_id = s.id and a.object_key is null) as db_only_files,
-            (select count(*)::int from public.agent_token_uses u where u.school_id = s.id and u.created_at > now() - interval '30 days') as agent_actions_30d,
-            (select count(*)::int from public.usage_events e where e.school_id = s.id and e.kind = 'ai' and e.created_at > now() - interval '30 days') as ai_calls_30d,
-            (select coalesce(sum(e.input_tokens + e.output_tokens), 0)::bigint from public.usage_events e where e.school_id = s.id and e.kind = 'ai' and e.created_at > now() - interval '30 days') as ai_tokens_30d,
-            (select coalesce(sum(e.cost_usd), 0)::float from public.usage_events e where e.school_id = s.id and e.kind = 'ai' and e.created_at > now() - interval '30 days') as ai_cost_30d
-       from public.schools s where ($1::uuid is null or s.id = $1) order by s.name`, [schoolId]);
-  return rows.map((r) => ({ ...r, db_site_bytes: Number(r.db_site_bytes), db_source_bytes: Number(r.db_source_bytes), r2_bytes: Number(r.r2_bytes), ai_tokens_30d: Number(r.ai_tokens_30d) }));
+  // 58차(ADR 0027): 관제는 학교 내부 표를 직접 읽지 않고 보고 계약(app.school_report_v1)으로만 모은다
+  const { rows } = await db.query<{ r: SchoolReport }>(
+    `select app.school_report_v1(s.id) as r from public.schools s where ($1::uuid is null or s.id = $1) order by s.name`, [schoolId]);
+  return rows.map(({ r }) => ({
+    id: r.school.id, name: r.school.name, files: Number(r.storage.files), db_site_bytes: Number(r.storage.db_site_bytes),
+    db_source_bytes: Number(r.storage.db_source_bytes), r2_bytes: Number(r.storage.r2_bytes), db_only_files: Number(r.storage.db_only_files),
+    agent_actions_30d: Number(r.activity_30d.agent_actions), ai_calls_30d: Number(r.activity_30d.ai_calls),
+    ai_tokens_30d: Number(r.activity_30d.ai_tokens), ai_cost_30d: Number(r.activity_30d.ai_cost_usd),
+  }));
 }
+
+/** 보고 계약 1판의 모양(관제가 학교에 기대하는 것). 학교 내부 구조가 바뀌어도 이 모양은 유지한다 */
+export type SchoolReport = {
+  contract: 'school-report/1';
+  school: { id: string; slug: string; name: string; locale: string; status: string };
+  profile: { country: string | null; sector: string | null; accreditation: string | null } | null;
+  baseline_version: number | null;
+  modules: string[] | null;
+  counts: Record<'members' | 'people' | 'students_enrolled' | 'staff_active' | 'offerings' | 'closures' | 'site_entries', number>;
+  storage: Record<'files' | 'db_site_bytes' | 'db_source_bytes' | 'r2_bytes' | 'db_only_files', number>;
+  activity_30d: Record<'agent_actions' | 'ai_calls' | 'ai_tokens' | 'ai_cost_usd', number>;
+  reported_at: string;
+};
 
 export function storageStatus() {
   const store = objectStore();
