@@ -8,6 +8,8 @@ import { ArrowRight, ChevronDown } from 'lucide-react';
 import { LANG_LABEL, pick, type Lang, type SiteProfile } from '@/lib/site-shared';
 import type { PublicSite } from '@/lib/site';
 import { hostForSlug, hostLink, PLATFORM_ORIGIN } from '@/lib/site-hosts';
+import { Suspense } from 'react';
+import { AutoCloseDetails } from './AutoCloseDetails';
 
 const T = {
   home: { ko: '홈', en: 'Home', th: 'หน้าแรก' }, news: { ko: '소식', en: 'News', th: 'ข่าวสาร' },
@@ -99,10 +101,13 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
           {dawn && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>}
           {langList.length > 1 && (dawn
             ? (
-              <details className="site-lang-menu">
-                <summary><span className="sr-only">{siteText('lang', lang)}: </span><span lang={lang}>{LANG_LABEL[lang]}</span><ChevronDown size={14} aria-hidden="true" /></summary>
-                <nav aria-label={siteText('lang', lang)}>{langLinks}</nav>
-              </details>
+              <Suspense fallback={<details className="site-lang-menu"><summary><span lang={lang}>{LANG_LABEL[lang]}</span></summary></details>}>
+                {/* 언어를 바꾸거나 다른 곳을 누르면 저절로 닫힌다 */}
+                <AutoCloseDetails className="site-lang-menu"
+                  summary={<><span className="sr-only">{siteText('lang', lang)}: </span><span lang={lang}>{LANG_LABEL[lang]}</span><ChevronDown size={14} aria-hidden="true" /></>}>
+                  <nav aria-label={siteText('lang', lang)}>{langLinks}</nav>
+                </AutoCloseDetails>
+              </Suspense>
             )
             : <nav className="site-langs" aria-label={siteText('lang', lang)}>{langLinks}</nav>)}
           {visit && <Link className="site-button site-visit" href={visit.href.startsWith('/') ? link(visit.href) : visit.href}>{t(visit.label)}</Link>}
@@ -110,10 +115,11 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
         {nav.length > 0 && <>
           {!dawn && <nav className="site-wrap site-nav" aria-label={title}>{navList}</nav>}
           {dawn && (
-            <details className="site-wrap site-menu">
-              <summary>{siteText('menu', lang)}</summary>
-              <nav aria-label={`${title} ${siteText('menu', lang)}`}>{navList}</nav>
-            </details>
+            <Suspense fallback={<details className="site-wrap site-menu"><summary>{siteText('menu', lang)}</summary></details>}>
+              <AutoCloseDetails className="site-wrap site-menu" summary={siteText('menu', lang)}>
+                <nav aria-label={`${title} ${siteText('menu', lang)}`}>{navList}</nav>
+              </AutoCloseDetails>
+            </Suspense>
           )}
         </>}
       </header>
