@@ -1295,6 +1295,28 @@ try {
     await ctxB.close();
   });
 
+  await step('53차: 관리 화면 안에서 화면 편집 — 줄마다 화면 단추 · 고치는 방식 전환 · 화면 편집 안 쪽 고르기', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=page`);
+    // 줄의 '화면' 단추 → 그 쪽 화면 편집
+    await h.click('.site-entry-card:has(.triage-item-sub:text-is("/curriculum")) [data-testid=row-live-edit]');
+    await h.waitForURL(/\/site\/edit\/[0-9a-f-]{36}$/);
+    await h.waitForSelector('[data-testid=live-editor] .site h1 .le-text');
+    // 화면 편집 안에서 다른 쪽으로 바로
+    const aboutId = await h.locator('[data-testid=le-switch] option', { hasText: '/about' }).first().getAttribute('value');
+    await h.selectOption('[data-testid=le-switch]', aboutId);
+    await h.waitForURL(new RegExp(`/site/edit/${aboutId}$`));
+    assert.equal(await h.inputValue('[data-testid=le-switch]'), aboutId);
+    // 목록 · 항목별로 고치기 → 편집 칸 위 전환에서 다시 화면으로
+    await h.click('[data-testid=le-to-form]');
+    await h.waitForSelector('[data-testid=view-switch] [aria-current=page]:has-text("항목별로 고치기")');
+    await h.click('[data-testid=view-switch] [data-testid=live-edit-link]');
+    await h.waitForURL(new RegExp(`/site/edit/${aboutId}$`));
+    await ctx.close();
+  });
+
   await step('49차: 공개 화면 관리 막대(관리자에게만) · 소식 쓰기 · 개선 요청 · 편집 화면 바로가기', async () => {
     const anon = await (await browser.newContext()).newPage();
     await anon.goto(`${BASE}/s/dreamy-a/p/about`);

@@ -2,7 +2,7 @@ import { safeBack } from '@/lib/next-path';
 import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
 import { NotFoundError } from '@/lib/services';
-import { getEntry, getSettings, listAssets, listEntries, type Lang, type PublicSite } from '@/lib/site';
+import { getEntry, getSettings, listAssets, listEntries, pick, type Lang, type PublicSite } from '@/lib/site';
 import type { NewsItem } from '@/components/site/SiteRenderer';
 import { LiveEditor } from './LiveEditor';
 
@@ -45,6 +45,7 @@ export default async function SiteEditPage({ params, searchParams }: { params: P
       canPublish={school.isAdmin} assets={plain(assets.filter((a) => a.mime.startsWith('image/')).map((a) => ({ id: a.id, name: a.name })))} news={plain(news)}
       profile={plain((detail.entry.key === 'home' && detail.entry.kind === 'page' ? detail.versions[0]?.content.site : homeContent?.site) ?? null)}
       siteOpen={settings.is_open} backHref={back}
+      pages={plain(entries.filter((e) => !e.archived_at).map((e) => ({ id: e.id, kind: e.kind, key: e.key, title: pick(e.latest_title, settings.default_lang, settings.default_lang) || e.key })))}
     />
   );
 }

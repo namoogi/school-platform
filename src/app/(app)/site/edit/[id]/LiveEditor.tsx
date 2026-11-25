@@ -47,8 +47,9 @@ const HAS_ITEMS: SectionTemplate[] = ['cards', 'photos', 'facts', 'steps'];
  * - 바뀐 내용은 기존 판 저장 API로 새 판(시안)이 된다. 공개는 학교 관리자만(서버 RLS가 다시 막는다).
  * - 편집 모드를 끄면 방문자에게 보일 모습(숨긴 구역 빠짐)을 같은 그리기로 본다.
  */
-export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, assets: initialAssets, news, profile, siteOpen, backHref }: {
+export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, assets: initialAssets, news, profile, siteOpen, backHref, pages = [] }: {
   /** 48차: 공개 화면에서 왔으면 돌아갈 주소 */ backHref?: string | null;
+  /** 53차: 관리 화면 안에서 다른 쪽으로 바로 옮겨 고친다 */ pages?: { id: string; kind: EntryKind; key: string; title: string }[];
   detail: Detail; frame: PublicSite; langs: Lang[]; defaultLang: Lang; canPublish: boolean; assets: Asset[]; news: NewsItem[];
   profile: SiteProfile | null; siteOpen: boolean;
 }) {
@@ -255,7 +256,22 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
     <div className="le" data-testid="live-editor">
       <div className="le-toolbar" role="region" aria-label="화면 편집 막대" data-testid="le-toolbar">
         <div className="le-toolbar-row">
-          <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`}><ArrowLeft size={16} aria-hidden="true" />목록</Link>
+          <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`} data-testid="le-to-form"><ArrowLeft size={16} aria-hidden="true" />목록 · 항목별로 고치기</Link>
+          {pages.length > 1 && (
+            <label className="le-switch">
+              <span className="sr-only">고칠 쪽 고르기</span>
+              <select value={entry.id} data-testid="le-switch" onChange={(ev) => {
+                const to = ev.target.value;
+                if (dirty && !window.confirm('저장하지 않은 변경이 있습니다. 저장하지 않고 다른 쪽으로 옮길까요?')) { ev.target.value = entry.id; return; }
+                router.push(`/site/edit/${to}`);
+              }}>
+                {(['page', 'news', 'story'] as EntryKind[]).map((k) => pages.some((x) => x.kind === k) && (
+                  <optgroup key={k} label={KIND_LABEL[k]}>
+                    {pages.filter((x) => x.kind === k).map((x) => <option key={x.id} value={x.id}>{x.title} · /{x.key}</option>)}
+                  </optgroup>))}
+              </select>
+            </label>
+          )}
           {backHref && <a className="btn btn-ghost btn-sm" href={backHref} data-testid="live-edit-back">공개 화면으로</a>}
           <Link className="btn btn-ghost btn-sm" href="/site?box=news&new=1" data-testid="live-edit-news">소식 쓰기</Link>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('chatdock:open'))} data-testid="live-edit-chat">개선 요청</button>

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
-import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, PencilLine, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, Plus, Trash2 } from 'lucide-react';
 import { BLOCK_LABEL, KIND_LABEL, PHOTO_CONSENT, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
 
 async function send(url: string, method: string, body?: unknown) {
@@ -246,7 +246,6 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
             </div>
           </div>
           <div className="actions">
-            <Link className="btn btn-secondary btn-sm" href={`/site/edit/${detail.entry.id}`} data-testid="live-edit-link"><PencilLine size={16} aria-hidden="true" />화면에서 편집</Link>
             <Link className="btn btn-ghost btn-sm" href={`/site/preview/${detail.entry.id}`} target="_blank"><Eye size={16} aria-hidden="true" />시안 미리보기</Link>
             {publicHref && live && <Link className="btn btn-ghost btn-sm" href={publicHref} target="_blank">공개본 보기</Link>}
           </div>
