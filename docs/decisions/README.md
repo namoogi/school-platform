@@ -27,6 +27,13 @@
 | [0021](0021-agent-autopublish.md) | 작업 토큰 '자동 공개' 권한: 저장하면 바로 공개 | 채택 |
 | [0022](0022-agent-connect-text.md) | AI 연결 글: 지시문과 토큰을 한 덩어리로 붙여 넣기 | 채택 |
 | [0023](0023-school-own-host.md) | 학교 자체 주소로 공개 홈페이지 열기 | 채택 |
+| [0024](0024-control-school-work.md) | 관제 세션 = 전체 관리자(점검 토큰으로 모든 학교 일) | 채택 |
+| [0025](0025-academic-foundation.md) | 학사 토대: 한국+미국 기준, 원장·마감 판·출력 프로필·확장 사다리 | 채택 |
+| [0026](0026-portal-exchange.md) | 드리미포털과 구조·규칙·문서 교환 | 채택 |
+| [0027](0027-baseline-and-report-contract.md) | 관제 기본판 · 학교 복제 · 보고 계약 | 채택 |
+| [0028](0028-retention-and-redaction.md) | 보존 기간과 파기: 추가만 하는 원장과 함께 쓰는 가림 판 | 채택 |
+| [0029](0029-student-guardian-accounts.md) | 학생·보호자 열람 계정: 구성원과 분리, 13세 미만은 보호자 경유 | 채택 |
+| [0030](0030-access-amendment-default.md) | 열람·수정 요청·이의 의견서를 모든 학교 기본값으로 | 채택 |
 
 상태: 제안 → 검토 중 → 채택 / 기각 / 대체됨(대체한 번호 적기). 채택된 기록은 고치지 않고, 바꿀 때는 새 기록을 만들어 "대체됨"으로 연결한다.
 새 기록은 [TEMPLATE.md](TEMPLATE.md)를 복사해 쓴다. 번호는 만들기 직전에 `ls docs/decisions`로 다음 빈 번호를 확인하고, 겹치면 CI(`npm run check:repo`)가 막는다.
