@@ -941,6 +941,20 @@ try {
       '.sec[data-variant=index] .sec-index', '.sec[data-variant=moments] .sec-label', '.site-lang-menu', '.site-footer-staff']) {
       assert.ok(await v.locator(sel).count(), `새벽빛 첫 화면에 ${sel}`);
     }
+    // 언어 목록은 언어를 고르거나, 다른 곳을 누르거나, Esc를 누르면 저절로 닫힌다
+    const langOpen = () => v.evaluate(() => document.querySelector('.site-lang-menu')?.hasAttribute('open'));
+    await v.click('.site-lang-menu summary');
+    assert.equal(await langOpen(), true);
+    await v.click('.site-lang-menu nav a[hreflang=en]');
+    await v.waitForURL(/lang=en/);
+    await v.waitForFunction(() => !document.querySelector('.site-lang-menu')?.hasAttribute('open'));
+    await v.click('.site-lang-menu summary');
+    assert.equal(await langOpen(), true);
+    await v.mouse.click(5, 600);
+    assert.equal(await langOpen(), false);
+    await v.click('.site-lang-menu summary');
+    await v.keyboard.press('Escape');
+    assert.equal(await langOpen(), false);
     // 55차: 안내 띠의 그림은 장식(대체 글 없음·읽기 도구에서 숨김) — 사진 자리가 아니다
     await h.evaluate(async () => {
       const list = await (await fetch('/api/site/entries')).json();
