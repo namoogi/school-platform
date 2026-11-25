@@ -223,6 +223,14 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             {show(b.caption) && <figcaption>{T(at('caption'), b.caption, '사진 설명')}</figcaption>}
           </figure>
         ) : null;
+        // 55차: 안내 띠(cta)의 그림은 사진이 아니라 장식이다 — 대체 글 없이 띠 오른쪽에 번지듯 깐다(선생님 지시: 변형 그림은 디자인 요소로만)
+        // eslint-disable-next-line @next/next/no-img-element
+        const decorImg = b.asset ? <img src={assetUrl(b.asset)} alt="" loading="lazy" /> : null;
+        const decor = b.template === 'cta' && (b.asset || ed) ? (
+          <div className="sec-decor" aria-hidden={ed ? undefined : true}>
+            {ed ? ed.image(at('asset'), b.asset, { label: '장식 그림(사진 아님)', optional: true }, decorImg) : decorImg}
+          </div>
+        ) : null;
         // 42차: 구역 모양(variant)별 항목 그리기 — 정보 줄(facts·overview), 접는 질문(faq), 번호 상자(index), 사진 셋(moments), 사진–글 줄(rows)
         const asFacts = b.template === 'facts' || v === 'overview';
         const itemList = items.length === 0 ? null
@@ -260,7 +268,8 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         /** 항목 뒤에 링크를 두는 모양: 개요, 문의 사무실(전화 아래 Facebook), 한눈에 보기(facts 기본) */
         const btnAfter = v === 'overview' || (v === 'half' && items.length > 0) || (b.template === 'facts' && !v && items.length > 0); // 52차: 한눈에 보기도 항목 뒤에
         return (
-          <section className="sec" data-template={b.template} data-variant={v}>
+          <section className="sec" data-template={b.template} data-variant={v} data-decor={decor && b.asset ? '' : undefined}>
+            {decor}
             {b.template === 'banner' && figure}
             <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
             {(b.template === 'media-left' || b.template === 'media-right') && figure}

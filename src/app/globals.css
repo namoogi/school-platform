@@ -1098,6 +1098,13 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .site[data-theme="dawn"] .sec[data-template="cta"]:not(:has(.sec-copy > :not(.site-button))) { padding: 0; }
 .site[data-theme="dawn"] .sec[data-template="cta"] .sec-copy > .site-button:only-child { grid-column: 1; grid-row: auto; margin: 0; }
 
+/* 55차: 안내 띠의 장식 그림(생성·변형 그림은 사진 자리가 아니라 여기서만). 왼쪽으로 종이색에 번져 글을 가리지 않는다 */
+.site[data-theme="dawn"] .sec[data-template="cta"][data-decor] { position: relative; isolation: isolate; padding-left: 0; overflow: hidden; }
+.site[data-theme="dawn"] .sec-decor { position: absolute; top: 0; right: 0; bottom: 0; width: min(48%, 600px); z-index: -1; pointer-events: none; }
+.site[data-theme="dawn"] .sec-decor img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: .6;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 60%); mask-image: linear-gradient(to right, transparent, #000 60%); }
+.site[data-theme="dawn"] .sec[data-template="cta"][data-decor] .sec-copy > p { max-width: 520px; }
+
 /* ── 구역 모양(data-variant): 옛 사이트의 고정 구역 ── */
 /* split(이름 소개): 위 선, 머리말·세리프 제목 | 글·링크 */
 .site[data-theme="dawn"] .sec[data-variant="split"] { border-top: 1px solid var(--dawn-line); padding-top: 30px; }
@@ -1345,6 +1352,8 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 }
 @media (max-width: 800px) {
   .site[data-theme="dawn"] .site-wrap, .site[data-theme="dawn"] .site-header-row, .site[data-theme="dawn"] .site-footer .site-wrap { width: calc(100% - 48px); }
+  .site[data-theme="dawn"] .sec-decor { width: 100%; }
+  .site[data-theme="dawn"] .sec-decor img { opacity: .18; -webkit-mask-image: none; mask-image: none; }
   .site[data-theme="dawn"] .site-nav-inline { display: none; }
   .site[data-theme="dawn"] .site-header { position: relative; }
   .site[data-theme="dawn"] .site-header-row { padding: 18px 0; gap: 9px; padding-right: 54px; }
@@ -1548,7 +1557,7 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 }
 
 /* 42차: 새벽빛 전용 장식·부품은 다른 테마에서 숨긴다 */
-.site:not([data-theme="dawn"]) :is(.link-arrow, .rainbow-arc, .rainbow-signature, .card-more, .sec-label, .gallery-tile-caption, .site-crumb) { display: none; }
+.site:not([data-theme="dawn"]) :is(.link-arrow, .rainbow-arc, .rainbow-signature, .card-more, .sec-label, .gallery-tile-caption, .site-crumb, .sec-decor) { display: none; }
 .sec-faq details { border-bottom: 1px solid var(--border-subtle); padding: var(--space-2) 0; }
 .sec-faq summary { display: flex; justify-content: space-between; gap: var(--space-2); cursor: pointer; }
 

@@ -941,6 +941,20 @@ try {
       '.sec[data-variant=index] .sec-index', '.sec[data-variant=moments] .sec-label', '.site-lang-menu', '.site-footer-staff']) {
       assert.ok(await v.locator(sel).count(), `새벽빛 첫 화면에 ${sel}`);
     }
+    // 55차: 안내 띠의 그림은 장식(대체 글 없음·읽기 도구에서 숨김) — 사진 자리가 아니다
+    await h.evaluate(async () => {
+      const list = await (await fetch('/api/site/entries')).json();
+      const home = (Array.isArray(list) ? list : list.entries).find((e) => e.kind === 'page' && e.key === 'home');
+      const cur = await (await fetch(`/api/site/entries/${home.id}`)).json();
+      const assets = await (await fetch('/api/site/assets')).json();
+      const decor = (Array.isArray(assets) ? assets : assets.assets).find((a) => a.mime.startsWith('image/')).id;
+      const blocks = cur.content.blocks.map((b) => (b.type === 'section' && b.template === 'cta' ? { ...b, asset: decor } : b));
+      const send = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      await send(`/api/site/entries/${home.id}/versions`, { content: { ...cur.content, blocks }, note: '장식 그림', base_version: cur.version });
+      await send(`/api/site/entries/${home.id}/publish`, {});
+    });
+    await v.goto(`${BASE}/s/dreamy-a`);
+    assert.ok(await v.locator('.sec[data-template=cta][data-decor] .sec-decor[aria-hidden=true] img[alt=""]').count(), '안내 띠 장식 그림');
     // 사람이 고친 교육과정 제목은 다시 가져오기 뒤에도 그대로
     const curAfter = await h.evaluate(async (id) => (await (await fetch(`/api/site/entries/${id}`)).json()).content.title.ko, curId);
     assert.equal(curAfter, '사람이 고친 교육과정');
