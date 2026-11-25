@@ -257,8 +257,8 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                         </>;
                     return <li key={k}>{it.href ? <A to={it.href}>{inner}</A> : inner}</li>;
                   })}</ul>;
-        /** 항목 뒤에 링크를 두는 모양: 개요, 문의 사무실(전화 아래 Facebook) */
-        const btnAfter = v === 'overview' || (v === 'half' && items.length > 0);
+        /** 항목 뒤에 링크를 두는 모양: 개요, 문의 사무실(전화 아래 Facebook), 한눈에 보기(facts 기본) */
+        const btnAfter = v === 'overview' || (v === 'half' && items.length > 0) || (b.template === 'facts' && !v && items.length > 0); // 52차: 한눈에 보기도 항목 뒤에
         return (
           <section className="sec" data-template={b.template} data-variant={v}>
             {b.template === 'banner' && figure}
