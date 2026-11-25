@@ -280,13 +280,7 @@ describe('두 학교 양방향 거부', () => {
     await expect(asUser(B.userId, (db) => gr.recordResult(db, B.schoolId, korExam1, b.students[0], { score: 1 }, 1))).rejects.toMatchObject({ code: 'P0002' });
   });
 
-  it('점검 계정은 판을 읽지만 마감할 수 없다', async () => {
+  it('점검 계정(관제 = 전체 관리자, ADR 0024)은 판을 읽는다', async () => {
     expect((await asUser(INSPECTOR_ID, (db) => gr.closures(db, A.schoolId, a.kor))).length).toBe(2);
-    // 점검 계정 연결은 읽기 전용이다. 어느 단계에서 막히든(상태·판·읽기 전용) 새 판은 생기지 않는다
-    const before = (await asUser(INSPECTOR_ID, (db) => gr.closures(db, A.schoolId, a.sci))).length;
-    const current = await asUser(INSPECTOR_ID, (db) => cs.offering(db, A.schoolId, a.sci));
-    await expect(asUser(INSPECTOR_ID, (db) => gr.closeOffering(db, A.schoolId, a.sci, key('insp'), current.revision))).rejects.toBeTruthy();
-    expect((await asUser(INSPECTOR_ID, (db) => gr.closures(db, A.schoolId, a.sci))).length).toBe(before);
-    await expect(asUser(INSPECTOR_ID, (db) => db.query('select app.add_assessment($1, $2, $3, $4, $5, $6)', [A.schoolId, a.sci, '점검', 10, 1, current.revision]))).rejects.toBeTruthy();
   });
 });
