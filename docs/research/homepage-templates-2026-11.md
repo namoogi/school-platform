@@ -42,8 +42,18 @@
 - 업체 안내도 **자기 사이트나 허락받은 사이트만** 가져오라고 한다.
 - 이 절의 출처는 대부분 업체 홍보 글이다. 품질을 독립적으로 시험한 자료는 찾지 못했다.
 
-### 2.4 한국 학교 홈페이지 [확인 필요]
-- 시·도교육청 통합 학교 홈페이지가 레이아웃을 어떻게 고르게 하는지 공개 자료를 찾지 못했다. 교육청 운영 안내를 직접 봐야 한다. 국내 학교 요구(공지·가정통신문·급식·학사일정 같은 표준 메뉴)를 쪽 묶음에 넣을지 정할 때 필요하다.
+### 2.4 템플릿 시장 (Envato ThemeForest 등)
+- 교육 테마는 한 상품 안에 데모를 여러 벌 넣어 판다. 판매 1위로 표시된 Eduma는 데모 39벌 이상을 한 번에 가져오게 하고, 강의 장터·어학원·대학·유치원처럼 **학교 유형별로** 나눈다. 다른 상품도 유치원·초중고·대학 단위로 홈 화면을 여러 벌(예: 홈 15벌, 구역 30여 개) 둔다.
+- 자주 나오는 기능은 교사 소개, 반·과정 쪽, 시간표·학사일정이다. 강의 판매(LMS) 쪽으로 기운 상품이 많다(Masterstudy·Edubin). 이 플랫폼은 강의 판매가 목적이 아니므로 그 부분은 참고하지 않는다.
+- 판매 수·가격은 캐시된 목록 기준이라 대략값이다.
+- **라이선스 주의:** ThemeForest 상품의 디자인·코드를 플랫폼 템플릿으로 옮겨 여러 학교에 나눠 주는 것은 일반 라이선스 범위를 넘는다고 보는 편이 안전하다 [확인 필요: Envato 라이선스 조항]. 그래서 시장 자료는 **유형 분류와 구역 구성만** 참고하고, 디자인은 이 플랫폼의 토큰으로 새로 만든다.
+
+### 2.5 학교 홈페이지 실무 조언 (업체 블로그)
+- 첫 화면이 답해야 할 것: 어떤 학교인가, 몇 학년·누구를 받는가, 무엇을 배우나, 어떻게 입학하나, 어디로 연락하나. 학년·대상이 안 보이면 방문자가 떠난다는 지적이 있다.
+- 모든 쪽에 **문의·방문·지원** 단추를 고정해 두라는 조언이 반복된다. 지원이 주 단추, 방문(견학)이 보조 단추다. '지원하기' 하나만 두면 전환을 잃는다는 지적도 있다. 후원 단추도 잘 쓰인다.
+- 입학 쪽에는 단계별 절차·주요 날짜·지원 방법을 한곳에 둔다. 문의 양식은 3~6칸.
+- 첫 화면에 소식·다가오는 일정·연락처·입학 안내 길을 둔다.
+- 출처가 모두 업체라, 숫자(칸 수·단추 묶음)는 시험해 볼 출발점으로 본다.
 
 ## 3. 설계 초안 [제안]
 
@@ -62,10 +72,7 @@
 - 쪽 묶음 형식 `site-template/1`(가칭): `{ id, name, theme, audience, langs, pages: [{ key, title, menu, sort, blocks: [...] }], sample: true }`. 블록은 지금 `Content` 형식을 그대로 쓴다. 새 형식을 만들지 않는다.
 - `validateContent`로 템플릿 데이터도 검사한다. 단위 시험에서 모든 템플릿이 통과해야 한다.
 - 표본 글은 방문자 문장으로 쓰되 `[학교 이름]` 같은 자리 표시를 둔다. 공개 전 검사로 자리 표시가 남은 쪽은 공개하지 못하게 할지 정해야 한다(4절 결정 3).
-- 처음 템플릿 후보(방문자 과업 기준, DAWN-SYSTEM 1행):
-  1. 기숙·대안학교형(새벽빛): 소개 → 배움 → 생활 → 입학 → 소식 → 연락
-  2. 일반 학교형(campus): 공지·가정통신문·학사일정·급식·연락. 국내 표준 메뉴는 [확인 필요]
-  3. 국제·영어권형: 다국어 머리글, 입학 절차 중심
+- 처음 템플릿 후보는 3.7절 유형 분류에서 고른다.
 
 ### 3.3 둘러보기·선택
 - 관리 화면 '홈페이지 → 템플릿'에 템플릿 카드를 둔다. 각 카드는 합성 학교 자료로 그린 **실제 렌더링 미리보기**를 보여 준다(그림 파일이 아니라 `SiteRenderer`로 그린다). Finalsite 평에서 지적된 "예시와 실제가 다름"을 피하려면, 미리보기는 고르면 받는 것과 같은 데이터로만 그린다.
@@ -94,10 +101,35 @@
   - 개인정보: 옛 사이트의 교직원·학생 사진·이름은 시안으로만 들어오고, 공개 전 학교가 확인한다. 실제 학교 자료는 git에 넣지 않는다(AGENTS 독립 인프라).
 - 쪽 대응: 대학 사례처럼 두 방식을 고르게 한다. (1) 옛 쪽을 가장 가까운 템플릿 쪽에 자동 배치(AI 자동 배치와 결합) (2) 빈 템플릿에 옛 글을 '참고 자료'로만 붙여 사람이 옮김.
 
+### 3.7 유형 분류와 템플릿 제안
+특정 나라 제도 대신 **방문자가 누구이고 무엇을 하러 오는가**로 나눈다. 시장 데모(2.4)의 학교 유형 분류와 업체 조언(2.5)의 방문자 과업을 합쳤다. 구역은 지금 있는 `section.template`·블록만 쓴다(새 블록 없음).
+
+| # | 템플릿(가칭) | 맞는 학교 | 첫 방문자의 할 일 | 테마 | 쪽 묶음 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | **새벽 이야기** | 작은 기숙·대안·선교 학교 | 학교의 결을 느끼고 입학·후원을 묻는다 | dawn | 소개·배움·생활·입학·소식·후원(숨은 쪽)·연락 |
+| 2 | **입학 안내** | 사립·국제·신설 학교 | 대상·학비·절차를 보고 문의·견학·지원 | campus | 소개·과정·입학(절차·날짜·학비)·견학·자주 묻는 질문·연락 |
+| 3 | **학교 소식판** | 지역 공립형·큰 학교 | 재학생 가정이 소식·일정·안내문을 찾는다 | campus | 소식·학사일정·안내문(내려받기)·교직원·연락 |
+| 4 | **어린이 학교** | 유치원·초등 | 보호자가 하루 생활·안전·사진을 본다 | campus(밝은 색 세트) | 소개·하루 생활·반 소개·사진첩·입학·연락 |
+| 5 | **배움 과정** | 방과후·어학·직업 과정, 홈스쿨 모임 | 과정을 비교하고 신청한다 | campus | 과정 목록(cards)·과정 쪽·교사 소개·신청·연락 |
+| 6 | **한 쪽 학교** | 막 시작한 학교, 행사·캠프 | 한 화면에서 소개와 연락을 끝낸다 | dawn 또는 campus | 첫 화면 하나(구역 6~8개) |
+
+첫 화면 구역 순서(제안, 지금 블록 이름으로)
+- **공통 머리:** 학교 이름·대상(학년·학생 구분) 한 줄 → 주 단추(지원 또는 문의)·보조 단추(견학)를 모든 쪽 머리에 둔다. 단추는 `content.site`의 방문 단추를 넓혀 '문의·견학·지원' 세 개까지로 하자는 제안이다.
+- 1 새벽 이야기: banner(대표 사진·한 줄) → facts(한눈에 보기) → media-left/right 교차(배움·생활) → quote(학생·보호자 목소리) → news_list(cards 3) → cta(입학·후원)
+- 2 입학 안내: banner → facts(대상·학년·정원·학비 범위) → cards(과정 3) → steps(입학 절차) → quote → cta(문의·견학·지원)
+- 3 학교 소식판: notice(긴급 알림) → news_list(list 6) → cards(바로가기: 일정·안내문·급식·연락) → download(이번 달 안내문) → facts(연락처)
+- 4 어린이 학교: banner → steps(하루 생활) → photos → cards(반 소개) → cta(입학 상담)
+- 5 배움 과정: banner → cards(과정 목록) → steps(신청 방법) → quote → cta(신청)
+- 6 한 쪽 학교: banner → text → facts → photos → steps → cta → (연락)
+
+첫 묶음 추천: **1 새벽 이야기 + 2 입학 안내 + 3 학교 소식판.** 1은 룽아룬숙사 판에서 바로 뽑을 수 있고, 2·3은 campus 테마로 서로 다른 방문자를 덮는다. 4~6은 같은 형식으로 데이터만 더하면 된다.
+
+밖에서 가져오지 않는 것: 상용 테마의 디자인·그림·글(라이선스). 강의 판매·결제(이 플랫폼 범위 밖, 결제는 사람 승인 필요).
+
 ### 3.6 단계 제안
 | 단계 | 내용 | DB 변경 | 비용 |
 | --- | --- | --- | --- |
-| T1 | 형식 정리: 쪽 묶음 형식, 모양 공통 이름, 템플릿 2개(새벽빛·campus), 검사 시험 | 없음 | 없음 |
+| T1 | 형식 정리: 쪽 묶음 형식, 모양 공통 이름, 템플릿 3개(3.7의 1·2·3), 머리 단추 세 개, 검사 시험 | 없음 | 없음 |
 | T2 | 둘러보기·선택 화면, 시안 복사, E2E | 없음 | 없음 |
 | T3 | AI 자동 배치 A(외부 에이전트 지시문) | 없음 | 없음 |
 | T4 | 크롤링 이전: 묶음 형식 일반화(`site-export/1`), 학교 쪽 크롤러 스크립트, 소유 확인 | 소유 확인 기록이 필요하면 있음 | 없음 |
@@ -105,7 +137,7 @@
 
 ## 4. 결정이 필요한 것 (관제에 올릴 후보)
 1. **템플릿 저장 위치:** 코드 안 데이터(추천, T1~T3 마이그레이션 없음) / DB 표(학교 고유 템플릿·공유가 필요할 때).
-2. **첫 템플릿 구성:** 새벽빛 기숙·대안학교형 + campus 일반 학교형 2개(추천) / 3개 모두.
+2. **첫 템플릿 구성:** 3.7의 1·2·3(추천) / 6개 모두 / 1만 먼저.
 3. **표본 글 자리 표시가 남은 쪽의 공개:** 막음(추천) / 경고만.
 4. **크롤러 위치:** 학교 쪽 도구(추천) / 플랫폼 서버.
 5. **AI 자동 배치 순서:** 외부 에이전트 경로 먼저(추천, 무료) / 플랫폼 안 버튼 먼저(유료, D-5).
@@ -114,11 +146,14 @@
 - **템플릿을 늘리면 테마마다 모양 그리기가 늘어난다.** 모양 이름 공통화는 테마 수 × 모양 수만큼 CSS·시험이 든다. 테마는 2개로 묶어 두고 템플릿(쪽 묶음)만 늘리는 편이 싸다.
 - **업체들은 이전을 사람이 돕는다.** 자동 크롤링만으로 끝나는 이전은 업체 사례에서도 드물다. 자동 결과는 시안이고, 사람의 확인 단계가 본체라고 보는 편이 맞다.
 - **AI 배치의 사실 오류.** 업체 스스로 경고한다(2.3). 사실 칸 비우기와 공개 전 확인 규칙이 없으면 잘못된 학비·연락처가 공개될 수 있다.
-- **국내 표준 메뉴 미확인.** 한국 학교형 템플릿은 교육청 운영 안내를 확인하기 전까지 가정으로 둔다.
+- **시장 데모를 닮게 만들 위험.** 유형·구역 구성만 참고하고 디자인·글·그림은 새로 만든다. 라이선스 조항은 따로 확인한다.
+- **유형 분류는 이 문서의 판단이다.** 실제 학교 몇 곳에 맞춰 보며 고친다.
 
 ## 출처
 - Finalsite: [template design portfolio](https://www.finalsite.com/school-websites/template-design-portfolio) · [how flexible can a school website template be](https://www.finalsite.com/blog/p/~board/b/post/how-flexible-can-a-school-website-template-be) · [template or custom](https://www.finalsite.com/blog/p/~board/b/post/template-or-custom-school-website-design-how-to-decide) · [steps for successful content migration](https://www.finalsite.com/blog/p/~board/b/post/steps-successful-website-content-migration) · [G2 reviews](https://www.g2.com/products/finalsite/reviews)
 - Apptegy: [school websites](https://apptegy.com/solutions/school-websites) · [reviews](https://apptegy.com/reviews)
+- 템플릿 시장: [Eduma (ThemeForest)](https://themeforest.net/item/eduma-education-wordpress-theme/14058034) · [ThemeForest education category](https://themeforest.net/category/wordpress/education?term=demo) · [ThemeForest school search](https://themeforest.net/search/school%20site) · [Envato Elements school theme](https://elements.envato.com/school-wordpress-theme-MRCLP6L)
+- 실무 조언(업체 블로그): [Finalsite: 5 questions](https://www.finalsite.com/blog/p/~board/b/post/does-your-homepage-answer-these-5-questions) · [Finalsite: 5 ingredients](https://www.finalsite.com/blog/p/~board/b/post/the-5-main-ingredients-of-a-successful-school-homepage) · [Cube Creative: admissions](https://cubecreative.design/blog/private-school-marketing/k12-website-admissions-success) · [Schudio: 5 important pages](https://www.schudio.com/?p=26428) · [ISM: first impressions](https://isminc.com/advisory/publications/the-source/website-first-impressions-much-job-interviewsyou-only-get-one)
 - 대학 이전 사례: [University of Wyoming migration options](https://www.uwyo.edu/web/design-upgrade/migration.html)
 - WordPress: [theme.json](https://developer.wordpress.org/themes/global-settings-and-styles/introduction-to-theme-json/) · [patterns](https://developer.wordpress.org/themes/global-settings-and-styles/patterns/) · [WP VIP: design system with theme.json](https://wpvip.com/blog/using-a-design-system-with-the-wordpress-block-editor-pt-1-theme-json/)
 - Shopify: [JSON templates](https://shopify.dev/docs/storefronts/themes/architecture/templates/json-templates) · [templates, sections, blocks](https://shopify.dev/docs/themes/best-practices/templates-sections-blocks)
