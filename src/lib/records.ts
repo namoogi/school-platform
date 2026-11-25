@@ -194,6 +194,11 @@ export async function publishRecordDocument(db: Db, schoolId: string, input: { f
     closureIds = closures.map((c) => c.id);
     const snaps = closures.map((c) => c.snapshot);
     out = input.format === 'us_transcript' ? renderUsTranscript(snaps, prof.settings) : renderKrAltRecord(snaps, prof.settings);
+    // 63차 ADR 0030: 거부된 수정 요청에 붙은 이의 의견서는 원 기록을 바꾸지 않고 발행본에 함께 싣는다
+    const { rows: notes } = await db.query(
+      `select a.body, a.written_at, q.body as request from public.record_annotations a join public.record_requests q on q.id = a.request_id
+        where a.school_id = $1 and a.person_id = $2 order by a.written_at`, [schoolId, input.personId]);
+    if (notes.length) out.content.annotations = notes.map((n) => ({ statement: n.body, about: n.request, written_at: n.written_at }));
     const st = snaps[0].student;
     secrets = [st?.name ?? '', st?.name_latin ?? '', snaps[0].school.name, ...Object.values(snaps[0].school.codes ?? {})];
   }

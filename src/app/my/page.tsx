@@ -2,7 +2,8 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 import { asUser } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
-import { portalPeople, portalRecord } from '@/lib/portal';
+import { portalPeople, portalRecord, portalRequests, REQUEST_STATUS } from '@/lib/portal';
+import { AnnotateForm, RequestForm } from './MyClient';
 import { PageHeader, StatusBadge } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +16,11 @@ const day = (d: string) => new Date(d).toLocaleDateString('ko-KR', { timeZone: '
 export default async function MyRecordPage({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
   const userId = await requireUser();
   const sp = await searchParams;
-  const { people, record } = await asUser(userId, async (db) => {
+  const { people, record, requests, chosenId } = await asUser(userId, async (db) => {
     const people = await portalPeople(db);
     const chosen = people.find((x) => x.person_id === sp.p) ?? people[0];
-    return { people, record: chosen ? await portalRecord(db, chosen.person_id) : null };
+    return { people, chosenId: chosen?.person_id ?? null, record: chosen ? await portalRecord(db, chosen.person_id) : null,
+      requests: chosen ? await portalRequests(db, chosen.person_id) : [] };
   });
   return (
     <div className="portal">
@@ -32,7 +34,7 @@ export default async function MyRecordPage({ searchParams }: { searchParams: Pro
         ) : (
           <>
             <PageHeader title={`${record.student?.name ?? ''} ${record.relation === 'child' ? '(자녀)' : ''}`.trim()} crumbs={[{ label: record.school }, { label: '내 기록' }]}
-              description="학교가 확정한 기록과 발행본입니다. 바로잡을 것이 있으면 학교에 수정 요청을 할 수 있습니다(곧 열림)." />
+              description="학교가 확정한 기록과 발행본입니다. 바로잡을 것이 있으면 아래에서 학교에 수정 요청을 할 수 있습니다." />
             {people.length > 1 && (
               <nav className="row-wrap" aria-label="볼 사람">
                 {people.map((x) => <Link key={`${x.school_id}:${x.person_id}`} className="btn btn-sm" aria-current={x.person_id === (sp.p ?? people[0].person_id) ? 'page' : undefined}
@@ -77,6 +79,20 @@ export default async function MyRecordPage({ searchParams }: { searchParams: Pro
                 <ul className="issue-list">{record.documents.map((d) => (
                   <li key={d.id}><Link href={`/my/documents/${d.id}`}>{FORMAT[d.format] ?? d.format}</Link> <small className="muted">{day(d.published_at)}</small></li>
                 ))}</ul>)}
+            </section>
+            <section className="card" data-testid="my-requests">
+              <h2>요청</h2>
+              {requests.length > 0 && (
+                <ul className="issue-list">{requests.map((r) => (
+                  <li key={r.id} className="stack">
+                    <span><StatusBadge tone={r.status === 'denied' ? 'warning' : ['granted', 'amended', 'closed', 'not_applicable'].includes(r.status) ? 'neutral' : 'info'}>{REQUEST_STATUS[r.status]}</StatusBadge>{' '}
+                      <strong>{r.kind === 'amend' ? '수정 요청' : '열람 요청'}</strong> {r.body} <small className="muted">· 답 기한 {r.due_on}</small></span>
+                    {r.events.filter((e) => e.note).map((e, i) => <small key={i} className="muted">{REQUEST_STATUS[e.status]}: {e.note}</small>)}
+                    {r.annotation ? <small>내 의견서: {r.annotation.body}</small> : r.kind === 'amend' && r.events.some((e) => e.status === 'denied') && <AnnotateForm requestId={r.id} />}
+                  </li>
+                ))}</ul>
+              )}
+              {chosenId && <RequestForm personId={chosenId} />}
             </section>
           </>
         )}

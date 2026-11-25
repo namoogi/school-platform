@@ -60,3 +60,70 @@ export async function portalDocument(db: Db, id: unknown) {
   return (await db.query('select app.portal_document_v1($1) as v', [uuid(id, '발행본')])).rows[0].v as
     { id: string; format: string; lang: string; content: Record<string, unknown>; published_at: string; sha256: string };
 }
+
+// ── 63차 ADR 0030: 열람·수정 요청 · 이의 의견서 ─────────────
+export type RequestKind = 'inspect' | 'amend';
+export type RequestStatus = 'received' | 'in_review' | 'granted' | 'amended' | 'denied' | 'not_applicable' | 'hearing_offered' | 'closed';
+export const REQUEST_STATUS: Record<RequestStatus, string> = {
+  received: '접수', in_review: '검토 중', granted: '열람 허락', amended: '수정함', denied: '거부', not_applicable: '대상 아님(성적·평가 판단 등)',
+  hearing_offered: '청문 제안', closed: '끝남',
+};
+export const REQUEST_DONE: RequestStatus[] = ['granted', 'amended', 'not_applicable', 'closed'];
+export type PortalRequest = { id: string; kind: RequestKind; target_kind: string; body: string; due_on: string; created_at: string; status: RequestStatus;
+  events: { status: RequestStatus; note: string | null; at: string }[]; annotation: { body: string; at: string } | null };
+
+export async function portalRequest(db: Db, i: { personId: unknown; kind: unknown; targetKind?: unknown; targetId?: unknown; body: unknown }) {
+  if (i.kind !== 'inspect' && i.kind !== 'amend') throw new ValidationError('요청 종류는 열람·수정입니다.');
+  const { rows: [r] } = await db.query('select app.portal_request($1) as v', [JSON.stringify({
+    person_id: uuid(i.personId, '학생'), kind: i.kind, target_kind: typeof i.targetKind === 'string' ? i.targetKind : 'other',
+    target_id: typeof i.targetId === 'string' && isUuid(i.targetId) ? i.targetId : null, body: typeof i.body === 'string' ? i.body.slice(0, 2000) : '',
+  })]);
+  return r.v as string;
+}
+export async function portalAnnotate(db: Db, requestId: unknown, body: unknown) {
+  const { rows: [r] } = await db.query('select app.portal_annotate($1) as v', [JSON.stringify({ request_id: uuid(requestId, '요청'), body: typeof body === 'string' ? body.slice(0, 2000) : '' })]);
+  return r.v as string;
+}
+export async function portalRequests(db: Db, personId: unknown): Promise<PortalRequest[]> {
+  return (await db.query('select app.portal_requests_v1($1) as v', [uuid(personId, '학생')])).rows[0].v as PortalRequest[];
+}
+
+// 학교(관리자)
+export type SchoolRequest = PortalRequest & { person_id: string; name: string | null; requester_relation: 'self' | 'child' };
+export async function listRecordRequests(db: Db, schoolId: string): Promise<SchoolRequest[]> {
+  return (await db.query<SchoolRequest>(
+    `select q.id, q.kind, q.target_kind, q.body, q.due_on::text, q.created_at, q.person_id, q.requester_relation,
+            (select n.name from public.person_names n where n.person_id = q.person_id order by n.version desc limit 1) as name,
+            (select e.status from public.record_request_events e where e.request_id = q.id order by e.decided_at desc, e.id desc limit 1) as status,
+            (select jsonb_agg(jsonb_build_object('status', e.status, 'note', e.note, 'at', e.decided_at) order by e.decided_at, e.id) from public.record_request_events e where e.request_id = q.id) as events,
+            (select jsonb_build_object('body', a.body, 'at', a.written_at) from public.record_annotations a where a.request_id = q.id) as annotation
+       from public.record_requests q where q.school_id = $1 order by q.created_at desc`, [schoolId])).rows;
+}
+export async function decideRecordRequest(db: Db, schoolId: string, i: { requestId: unknown; status: unknown; note?: unknown; fromStatus?: unknown; correctionRef?: unknown }) {
+  const { rows: [r] } = await db.query('select app.decide_record_request($1, $2) as v', [schoolId, JSON.stringify({
+    request_id: uuid(i.requestId, '요청'), status: i.status, note: typeof i.note === 'string' ? i.note.slice(0, 2000) : null,
+    from_status: typeof i.fromStatus === 'string' ? i.fromStatus : null,
+    correction_ref: typeof i.correctionRef === 'string' && isUuid(i.correctionRef) ? i.correctionRef : null,
+  })]);
+  return r.v as RequestStatus;
+}
+
+// ── 63차 ADR 0028: 보존 규칙 판 · 파기(가림 판) ─────────────
+export async function saveRetentionRule(db: Db, schoolId: string, i: { yearsAfterExit: number | null; why?: string; base_version: number }) {
+  const { rows: [r] } = await db.query('select app.save_retention_rule($1, $2) as v', [schoolId, JSON.stringify({ years_after_exit: i.yearsAfterExit, why: i.why ?? null, base_version: i.base_version })]);
+  return r.v as number;
+}
+export async function retentionRule(db: Db, schoolId: string) {
+  return (await db.query<{ version: number; years_after_exit: number | null; why: string | null }>(
+    'select version, years_after_exit, why from public.retention_rules where school_id = $1 order by version desc limit 1', [schoolId])).rows[0] ?? null;
+}
+export type RedactionPreview = { ok: boolean; why: string | null; rule_version: number | null; exit_on: string | null; counts: Record<string, number>; kept: string[] };
+export async function redactionPreview(db: Db, schoolId: string, personId: unknown): Promise<RedactionPreview> {
+  return (await db.query('select app.redaction_preview($1, $2) as v', [schoolId, uuid(personId, '사람')])).rows[0].v as RedactionPreview;
+}
+export async function redactPerson(db: Db, schoolId: string, i: { personId: unknown; reason: unknown; expectedCounts?: Record<string, number> }) {
+  const { rows: [r] } = await db.query('select app.redact_person($1, $2) as v', [schoolId, JSON.stringify({
+    person_id: uuid(i.personId, '사람'), reason: typeof i.reason === 'string' ? i.reason.slice(0, 500) : '', ...(i.expectedCounts ? { expected_counts: i.expectedCounts } : {}),
+  })]);
+  return r.v as { event: string; counts: Record<string, number> };
+}
