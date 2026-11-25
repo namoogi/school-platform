@@ -106,17 +106,17 @@ export async function instructionalDays(db: Db, schoolId: string, from: unknown,
 }
 
 // ── 코드 목록 (E1) ───────────────────────────────────────
-/** 학교 값 + 플랫폼 기본값. 같은 코드면 학교 값이 이긴다. 기준일에 유효한 것만 */
+/** 학교가 가진 코드(학교 생성 때 기본판에서 복제한 사본 + 학교가 더한 값). 기준일에 유효한 것만 — ADR 0027 */
 export async function codes(db: Db, schoolId: string, listKey: string, on?: string): Promise<Code[]> {
   if (!/^[a-z][a-z0-9_]{1,40}$/.test(listKey)) throw new ValidationError('목록 열쇠가 올바르지 않습니다.');
   const at = on ? day(on, '기준일') : null;
   return (await db.query<Code>(
     `select distinct on (code) id, school_id, list_key, code, label, sort_order, attrs, maps_to, effective_from::text, effective_to::text, prior_code_id, why
        from public.code_lists
-      where list_key = $2 and (school_id is null or school_id = $1)
+      where list_key = $2 and school_id = $1
         and (effective_from is null or effective_from <= coalesce($3::date, current_date))
         and (effective_to is null or effective_to > coalesce($3::date, current_date))
-      order by code, school_id nulls last`, [schoolId, listKey, at])).rows
+      order by code, effective_from desc nulls last`, [schoolId, listKey, at])).rows
     .sort((a, b) => a.sort_order - b.sort_order || a.code.localeCompare(b.code));
 }
 export function addCode(db: Db, schoolId: string, input: Record<string, unknown>) {

@@ -57,16 +57,18 @@ beforeAll(async () => {
     await su.query(`insert into public.offering_enrollments(school_id, offering_id, person_id, status, source, created_by, updated_by)
                     values ($1, $2, $3, $4, 'staff', $5, $5)`, [A.schoolId, offering, p, i === 4 ? 'withdrawn' : 'enrolled', A.userId]);
   }
-  ({ id: krScale } = await asUser(A.userId, (db) => g.saveScalePreset(db, A.schoolId, 'kr_achievement')));
-  ({ id: usScale } = await asUser(A.userId, (db) => g.saveScalePreset(db, A.schoolId, 'us_letter')));
+  // 58차(ADR 0027): 학교 생성 때 기본판에서 한·미 척도와 기본 성적 정책(1판)이 복제돼 있다
+  const { rows: sc } = await su.query(`select code, id from public.scales where school_id = $1`, [A.schoolId]);
+  krScale = sc.find((r) => r.code === 'kr_achievement').id;
+  usScale = sc.find((r) => r.code === 'us_letter').id;
 });
 afterAll(async () => { await su.end(); await getPool().end(); });
 
 describe('척도·정책 판', () => {
   it('정책은 판으로 쌓고 낡은 판은 409, 척도 띠의 경계값(이상 포함)', async () => {
     await asUser(A.userId, (db) => g.saveGradingPolicy(db, A.schoolId, { score_digits: 2, final_digits: 0, stats: { sd: 'population', digits: 1 }, narrative_limits: { subject_detail: 20 } },
-      { why: '원점수 소수 2자리, 학생부는 반올림 정수, 모표준편차(포털 0348 교훈)', base_version: 0 }));
-    await expect(asUser(A.userId, (db) => g.saveGradingPolicy(db, A.schoolId, {}, { base_version: 0 }))).rejects.toThrow('새 판');
+      { why: '원점수 소수 2자리, 학생부는 반올림 정수, 모표준편차(포털 0348 교훈)', base_version: 1 }));
+    await expect(asUser(A.userId, (db) => g.saveGradingPolicy(db, A.schoolId, {}, { base_version: 1 }))).rejects.toThrow('새 판');
     const { rows } = await su.query(`select app.band_for(bands, 90) ->> 'code' as a, app.band_for(bands, 89.99) ->> 'code' as b, app.band_for(bands, 39.99) ->> 'code' as i
                                      from public.scale_versions where scale_id = $1`, [krScale]);
     expect(rows[0]).toEqual({ a: 'A', b: 'B', i: 'I' });
@@ -120,7 +122,7 @@ describe('수업 마감 판', () => {
     expect(by[students[4]]).toMatchObject({ attempt_status: 'withdrawn', credits_attempted: 0, in_stats: false });
     // 통계: 90, 80, 40 → 평균 70.0, 모표준편차 21.6
     expect(closure!.stats).toEqual({ n: 3, mean: 70, sd: 21.6 });
-    expect(closure!.policy_version).toBe(1);
+    expect(closure!.policy_version).toBe(2);
   });
 
   it('같은 요청 키는 같은 판, 낡은 base_version은 409, 자식 행·판은 고치거나 더할 수 없다', async () => {
