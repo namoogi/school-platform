@@ -941,6 +941,20 @@ try {
       '.sec[data-variant=index] .sec-index', '.sec[data-variant=moments] .sec-label', '.site-lang-menu', '.site-footer-staff']) {
       assert.ok(await v.locator(sel).count(), `새벽빛 첫 화면에 ${sel}`);
     }
+    // 언어 목록은 언어를 고르거나, 다른 곳을 누르거나, Esc를 누르면 저절로 닫힌다
+    const langOpen = () => v.evaluate(() => document.querySelector('.site-lang-menu')?.hasAttribute('open'));
+    await v.click('.site-lang-menu summary');
+    assert.equal(await langOpen(), true);
+    await v.click('.site-lang-menu nav a[hreflang=en]');
+    await v.waitForURL(/lang=en/);
+    await v.waitForFunction(() => !document.querySelector('.site-lang-menu')?.hasAttribute('open'));
+    await v.click('.site-lang-menu summary');
+    assert.equal(await langOpen(), true);
+    await v.mouse.click(5, 600);
+    assert.equal(await langOpen(), false);
+    await v.click('.site-lang-menu summary');
+    await v.keyboard.press('Escape');
+    assert.equal(await langOpen(), false);
     // 사람이 고친 교육과정 제목은 다시 가져오기 뒤에도 그대로
     const curAfter = await h.evaluate(async (id) => (await (await fetch(`/api/site/entries/${id}`)).json()).content.title.ko, curId);
     assert.equal(curAfter, '사람이 고친 교육과정');
