@@ -99,3 +99,69 @@ export function MembersPanel({ members, invitations, seats, used }: { members: M
     </>
   );
 }
+
+/** 62차(ADR 0029): 학생·보호자 열람 계정 — 구성원(좌석)과 따로. 첫 로그인(같은 이메일) 때 연결된다 */
+type PortalRow = { id: string; kind: 'student' | 'guardian'; name: string | null; email: string; claimed: boolean; under_consent_age: boolean; consent_basis: string | null; ends_on: string | null };
+export function PortalAccountsPanel({ accounts, people }: { accounts: PortalRow[]; people: { id: string; name: string }[] }) {
+  const router = useRouter();
+  const [kind, setKind] = useState<'student' | 'guardian'>('student');
+  const [personId, setPersonId] = useState('');
+  const [email, setEmail] = useState('');
+  const [under, setUnder] = useState(false);
+  const [basis, setBasis] = useState('guardian_consent');
+  const [note, setNote] = useState('');
+  const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      await post('/api/settings/portal-accounts', { kind, personId, email, underConsentAge: kind === 'student' && under, consentBasis: kind === 'student' && under ? basis : null, consentNote: note });
+      setMsg({ text: '열람 계정을 만들었습니다. 이 이메일로 로그인하면 연결됩니다.' }); setEmail(''); setNote(''); router.refresh();
+    } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
+  }
+  async function end(id: string) {
+    try { await post('/api/settings/portal-accounts/end', { id }); setMsg({ text: '열람 계정을 끝냈습니다.' }); router.refresh(); }
+    catch (x) { setMsg({ text: (x as Error).message, error: true }); }
+  }
+  const open = accounts.filter((a) => !a.ends_on);
+  return (
+    <>
+      <h2>학생·보호자 열람 계정</h2>
+      <p className="fine">학생과 보호자가 확정된 기록·출결·발행본을 봅니다. 교직원 좌석을 쓰지 않습니다. 보호자는 가족·보호자 연결이 있는 자녀만 봅니다.</p>
+      <form className="stack" onSubmit={add} data-testid="portal-account-form">
+        <fieldset><legend>종류</legend><div className="row-wrap">
+          <label className="radio"><input type="radio" name="portal-kind" checked={kind === 'student'} onChange={() => setKind('student')} />학생 본인</label>
+          <label className="radio"><input type="radio" name="portal-kind" checked={kind === 'guardian'} onChange={() => setKind('guardian')} />보호자</label>
+        </div></fieldset>
+        <label>{kind === 'student' ? '학생' : '보호자(사람)'}
+          <select value={personId} onChange={(e) => setPersonId(e.target.value)} required aria-label="사람">
+            <option value="">고르세요</option>
+            {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </label>
+        <label>로그인 이메일<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="family@example.org" /></label>
+        {kind === 'student' && (
+          <>
+            <label className="radio"><input type="checkbox" checked={under} onChange={(e) => setUnder(e.target.checked)} />동의 연령 미만(한국 만 14세·미국 13세 미만)</label>
+            {under && (
+              <label>동의 근거
+                <select value={basis} onChange={(e) => setBasis(e.target.value)}>
+                  <option value="guardian_consent">보호자 동의</option>
+                  <option value="school_authorization">학교 승인(교육 목적)</option>
+                </select>
+              </label>
+            )}
+          </>
+        )}
+        <label>메모 (선택)<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 보호자 동의서 2026-03" /></label>
+        <button type="submit" className="btn btn-primary" disabled={!personId || !email}>열람 계정 만들기</button>
+      </form>
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}</p>}
+      {open.length === 0 ? <p className="muted">열린 열람 계정이 없습니다.</p> : (
+        <ul className="members" data-testid="portal-account-list">{open.map((a) => (
+          <li key={a.id}><span><strong>{a.name ?? '—'}</strong> <span className="tag">{a.kind === 'student' ? '학생' : '보호자'}</span>{' '}
+            <small className="muted">{a.email} · {a.claimed ? '연결됨' : '첫 로그인 대기'}{a.under_consent_age ? ` · 동의 근거 ${a.consent_basis === 'guardian_consent' ? '보호자 동의' : '학교 승인'}` : ''}</small></span>
+            <button type="button" className="link-button" onClick={() => end(a.id)}>끝내기</button></li>
+        ))}</ul>)}
+    </>
+  );
+}

@@ -5,6 +5,7 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import pg from 'pg';
@@ -1464,6 +1465,51 @@ try {
     await h.waitForSelector('[data-testid=pkg-off-e2e_pack]');
     assert.match(await h.textContent('[data-testid=pkg-e2e_pack]'), /켜짐 · 1판/);
     await ctx.close();
+  });
+  await step('62차 F6: 학생 열람 계정 — 관리자가 설정에서 만들기 → 학생 로그인은 /my(내 기록)로, 교직원 화면은 못 봄 → 관리자가 끝내기', async () => {
+    // 합성 학생 1명과 그 학생의 로그인 계정(비밀번호 로그인은 시험용 시드 방식과 같다)
+    const db = new pg.Client({ connectionString: DB_URL });
+    await db.connect();
+    const { rows: [sch] } = await db.query(`select id from public.schools where slug = 'school-a'`);
+    const { rows: [person] } = await db.query(`insert into public.people(school_id, created_by) select $1, id from private.app_users where email = 'admin-a@school-a.test' returning id`, [sch.id]);
+    await db.query(`insert into public.person_names(school_id, person_id, version, name, recorded_by) select $1, $2, 1, 'E2E 열람 학생', id from private.app_users where email = 'admin-a@school-a.test'`, [sch.id, person.id]);
+    const salt = crypto.randomBytes(16);
+    const hash = `scrypt$16384$${salt.toString('base64')}$${crypto.scryptSync('demo-pass-s', salt, 32, { N: 16384, r: 8, p: 1 }).toString('base64')}`;
+    await db.query(`insert into private.app_users(email, password_hash, display_name) values ('e2e-student@family.test', $1, 'E2E 학생')`, [hash]);
+    await db.end();
+
+    const ctxA = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const a = await ctxA.newPage();
+    await login(a, 'admin-a@school-a.test', 'demo-pass-a');
+    await a.goto(`${BASE}/settings`);
+    const form = a.locator('[data-testid=portal-account-form]');
+    await form.locator('select[aria-label="사람"]').selectOption({ label: 'E2E 열람 학생' });
+    await form.locator('input[type=email]').fill('e2e-student@family.test');
+    await form.locator('label:has-text("동의 연령 미만") input').check();
+    await form.locator('button[type=submit]').click();
+    await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 열람 학생' }).waitFor();
+    assert.match(await a.textContent('[data-testid=portal-account-list]'), /연결됨 · 동의 근거 보호자 동의/);
+
+    const ctxS = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const s = await ctxS.newPage();
+    await s.goto(`${BASE}/login`);
+    await s.fill('input[name=email]', 'e2e-student@family.test');
+    await s.fill('input[name=password]', 'demo-pass-s');
+    await s.click('button[type=submit]');
+    await s.waitForURL(/\/my$/);
+    assert.match(await s.textContent('h1'), /E2E 열람 학생/);
+    await s.locator('[data-testid=my-records]').waitFor();
+    await shot(s, '62-my-record.png');
+    await s.goto(`${BASE}/settings`);
+    await s.waitForURL(/\/my$/); // 교직원 화면은 열람 계정에게 열리지 않는다
+    const api = await ctxS.request.get(`${BASE}/api/settings/members`);
+    assert.ok(api.status() >= 400);
+
+    await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 열람 학생' }).locator('button:text-is("끝내기")').click();
+    await a.locator('[role=status]', { hasText: '열람 계정을 끝냈습니다' }).waitFor();
+    await s.goto(`${BASE}/my`);
+    await s.locator('h1:has-text("볼 수 있는 기록이 없습니다")').waitFor();
+    await ctxA.close(); await ctxS.close();
   });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;

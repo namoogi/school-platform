@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { asUser, type Db } from './db';
 import { requireUser } from './auth';
 import { preferredSchoolId } from './context';
-import { currentSchool, hasModule, me, NoSchoolError, type Me, type ModuleKey, type School } from './services';
+import { currentSchool, hasModule, me, NoSchoolError, NotFoundError, type Me, type ModuleKey, type School } from './services';
 
 type Opts = { module?: ModuleKey; admin?: boolean };
 
@@ -19,6 +19,8 @@ export async function loadForPage<T>(fn: (ctx: { db: Db; school: School; userId:
     });
   } catch (e) {
     if (e instanceof NoSchoolError) redirect('/admin');
+    // 62차: 소속 학교가 없는 계정(학생·보호자 열람 계정)은 내 기록 화면으로
+    if (e instanceof NotFoundError && e.message === '소속 학교가 없습니다.') redirect('/my');
     throw e;
   }
 }

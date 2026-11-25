@@ -1,7 +1,9 @@
 import { loadForPage } from '@/lib/page';
 import { accessLog, licenseInfo, members, statements } from '@/lib/admin';
 import { LINK_KINDS, listLinks } from '@/lib/devlinks';
-import { LicenseForm, MembersPanel } from './SettingsClient';
+import { LicenseForm, MembersPanel, PortalAccountsPanel } from './SettingsClient';
+import { listPortalAccounts } from '@/lib/portal';
+import { listPeople } from '@/lib/people';
 import { PageHeader, StatusBadge } from '@/components/ui';
 import { DataTable } from '@/components/DataTable';
 import { estimate, fmtBytes, schoolUsage, usd } from '@/lib/usage';
@@ -10,17 +12,20 @@ const ACTION: Record<string, string> = {
   'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
   'member.remove': '구성원 제외', 'member.invite_revoke': '초대 취소', 'school.create': '학교 생성', 'school.status': '학교 상태 변경',
   'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경', 'devlink.add': '개발 연동 추가', 'devlink.update': '개발 연동 변경',
+  'portal.account_add': '열람 계정 만들기', 'portal.account_end': '열람 계정 끝내기', 'portal.claim': '열람 계정 연결(로그인)',
 };
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
 export default async function SettingsPage() {
-  const { school, license, team, log, bills, links, usage } = await loadForPage(async ({ db, school }) => ({
+  const { school, license, team, log, bills, links, usage, portal, people } = await loadForPage(async ({ db, school }) => ({
     license: await licenseInfo(db, school.id),
     team: await members(db, school.id),
     log: await accessLog(db, school.id, 30),
     bills: await statements(db, school.id),
     links: await listLinks(db, school.id),
     usage: (await schoolUsage(db, school.id))[0],
+    portal: await listPortalAccounts(db, school.id),
+    people: (await listPeople(db, school.id)).map((p) => ({ id: p.id, name: p.name })),
   }), { admin: true });
   const fmt = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
   return (
@@ -47,6 +52,9 @@ export default async function SettingsPage() {
         <section className="card" data-testid="members">
           <MembersPanel members={JSON.parse(JSON.stringify(team.members))} invitations={JSON.parse(JSON.stringify(team.invitations))}
             seats={license.current?.seats ?? 0} used={license.seatsUsed} />
+        </section>
+        <section className="card" data-testid="portal-accounts">
+          <PortalAccountsPanel accounts={JSON.parse(JSON.stringify(portal))} people={people} />
         </section>
         <section className="card" data-testid="school-dev-links">
           <h2>개발 연동</h2>
