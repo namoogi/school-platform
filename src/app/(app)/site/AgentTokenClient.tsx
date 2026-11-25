@@ -20,7 +20,7 @@ export type TokenRow = {
 type Entry = { kind: string; key: string; title: string };
 
 const AGENT: Record<string, string> = AI_LABEL;
-const KIND: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식' };
+const KIND: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식', package: '학사 꾸러미' };
 const PERM: Record<string, string> = { read: '읽기', upload: '파일 올리기', create: '만들기', edit: '고치기(내용·구조)', archive: '보관', publish: '공개(지시하면 바로)', autopublish: '자동 공개(저장하면 바로)' };
 const DAYS: { v: string; label: string }[] = [{ v: '7', label: '7일' }, { v: '30', label: '30일' }, { v: '90', label: '90일' }, { v: '365', label: '365일' }, { v: 'none', label: '무기한' }];
 const ACT: Record<string, string> = { version: '판 시안', create: '새로 만듦', meta: '항목 정보 고침', archive: '보관', publish: '공개', unpublish: '공개 내림' };
@@ -160,9 +160,10 @@ function InstructionCopy({ t, school }: { t: TokenRow; school: School }) {
   );
 }
 
-export function AgentTokenPanel({ tokens, entries, stories, school }: { tokens: TokenRow[]; entries: Entry[]; stories: boolean; school: School }) {
+export function AgentTokenPanel({ tokens, entries, stories, records = false, school }: { tokens: TokenRow[]; entries: Entry[]; stories: boolean; records?: boolean; school: School }) {
   const router = useRouter();
-  const kindChoices = stories ? ['story', 'page', 'news'] : ['page', 'news'];
+  // 61차 F5: 학사 꾸러미(정의 만들기·새 판) — 학사 문서실 라이선스가 있을 때. 켜기는 관리자가 /packages 에서 한다
+  const kindChoices = [...(stories ? ['story', 'page', 'news'] : ['page', 'news']), ...(records ? ['package'] : [])];
   const [label, setLabel] = useState('동화 그림·PDF 작업');
   const [agent, setAgent] = useState('codex');
   const [days, setDays] = useState('7');
@@ -178,7 +179,7 @@ export function AgentTokenPanel({ tokens, entries, stories, school }: { tokens: 
   async function issue(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setErr(null); setIssued(null);
-    const pickedKeys = keys.filter((k) => shown.some((s) => s.key === k));
+    const pickedKeys = kinds.some((k) => k !== 'package') ? keys.filter((k) => shown.some((s) => s.key === k)) : [];
     const n = days === 'none' ? null : Number(days);
     try {
       const { token } = await send('/api/site/agent-tokens', { label, days: n, kinds, keys: pickedKeys, perms, agent_kind: agent });

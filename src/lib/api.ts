@@ -82,6 +82,8 @@ export function errorResponse(e: unknown) {
   if (code === '23505') return NextResponse.json({ error: '이미 있는 값입니다. (중복)' }, { status: 409 });
   if (code === '42501') return NextResponse.json({ error: hangul.test(msg) ? msg : '이 학교의 기록에 접근할 권한이 없습니다.' }, { status: 403 });
   if (code === 'P0001') return NextResponse.json({ error: (e as Error).message }, { status: 409 });
+  // ADR 0013 판(base_version) 충돌: 그 사이 새 판이 생겼다 → 다시 읽어 고친다
+  if (code === 'P0409') return NextResponse.json({ error: msg }, { status: 409 });
   console.error(e);
   return NextResponse.json({ error: '처리 중 오류가 발생했습니다.' }, { status: 500 });
 }

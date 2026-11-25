@@ -11,8 +11,8 @@
 ## 토큰 범위
 | 범위 | 값 |
 | --- | --- |
-| 항목 종류 | `story`(성품 동화) · `page`(쪽) · `news`(소식) 가운데 발급 때 고른 것 |
-| 주소 | 발급 때 고른 항목(key)만. 고르지 않았으면 고른 종류 모두 |
+| 항목 종류 | `story`(성품 동화) · `page`(쪽) · `news`(소식) · `package`(학사 꾸러미 정의, 61차) 가운데 발급 때 고른 것 |
+| 주소 | 발급 때 고른 항목(key)만. 고르지 않았으면 고른 종류 모두. 학사 꾸러미는 학교 단위라 주소가 없다 |
 | 권한 | `read`(읽기) · `upload`(그림·PDF 올리기) · `create`(새 항목 + 첫 판) · `edit`(새 판: 내용·구조, 항목 정보·순서) · `archive`(보관) · `publish`(공개·공개 내림) · `autopublish`(자동 공개: 저장하면 바로 공개, `publish`와 함께만) 가운데 고른 것 |
 | 기한 | 7·30·90·365일 또는 무기한. 학교 관리자가 연장하거나 폐기한다(폐기하면 바로 멈춤) |
 
@@ -72,6 +72,32 @@ curl -s -H "$H" -H 'content-type: application/json' -d @new.json $S/api/agent/en
 2. 블록 배열을 보고 연산을 만든다. 많이 바꾸면 전체 내용을 고쳐 `…/versions`로 보내도 된다.
 3. `base_version`(읽은 판)과 함께 저장한다. 결과는 사람 편집과 같은 검사를 거친다.
 4. **409**면 그 사이 누가 새 판을 만든 것이다. 다시 읽고, 바뀐 점을 살려 연산을 다시 만든다. 덮어쓰지 않는다.
+
+## 학사 꾸러미 정의 (61차, ADR 0025 F5)
+`package` 종류 토큰은 학교가 원하는 기록(봉사 시간·독서·상담·동아리 등)을 **정의**로 만든다. 표나 코드를 올리지 않는다(에이전트 DDL 없음).
+
+| 요청 | 권한 | 하는 일 |
+| --- | --- | --- |
+| `GET /api/agent/packages` | read | 정의(최신 판·검사 결과)와 꾸러미(최신 판·켜짐 상태) |
+| `POST /api/agent/definitions` `{ kind, code, spec, why, base_version }` | create(새 코드) · edit(새 판) | 정의 새 판. 응답 `{ version, valid, issues }` |
+| `POST /api/agent/packages` `{ code, title, members: [{ kind, code, version? }], why, base_version }` | create · edit | 꾸러미 새 판(판을 안 적으면 그 정의의 최신 판). 응답 `{ version, valid, issues, members }` |
+| `GET /api/agent/packages/<code>/preview?lang=ko` | read | 합성 자료(예시 학생 1·2·3)로 그린 양식·목록·출력 |
+
+정의 종류와 `spec` 모양:
+- `record_type`: `{ title: {ko,en}, subject: person|offering|person_offering, flow?: <flow code>, fields: [{ key, type, label: {ko,en}, privacy, required?, max_length?, options?: [{code,label}] }] }`
+  - `type`: text·longtext·number·integer·date·boolean·choice·multi_choice·hours·url
+  - `privacy`(칸마다 필수): directory·internal·sensitive·restricted
+- `form`: `{ record_type, sections: [{ title?, fields: [key…] }] }` · `view`: `{ record_type, columns: [key… | person | state | recorded_at] }`
+- `output`: `{ record_type, blocks: [{type: heading|text, text} | {type: field, key} | {type: fields|table, keys}] }`
+- `flow`: `{ states: [{key,label}], initial, final: [key…], transitions: [{ from, to, roles: [admin|teacher|author] }] }`
+
+검사기가 오류로 막는 것:
+- **숨은 참조**: 학생·수업은 정해진 열로만 잇는다. `*_id`·`*_email`·`*_name`, `student_…`, `name`·`email` 같은 칸은 둘 수 없다.
+- 개인정보 등급이 없는 칸, 플랫폼 핵심 기록 이름(attendance·grades 등)
+- 끝 상태에서 나가는 전환(끝난 기록의 정정은 사유와 함께 새 기록으로 한다), 끝 상태에 닿지 않는 흐름
+- 꾸러미 안에서 풀리지 않는 이름(없는 기록 유형·칸·흐름)
+
+오류가 있는 판도 저장은 되지만(`valid: false`) 그 판은 켤 수 없다. **켜기·끄기와 실제 기록 쓰기는 사람(학교 관리자·교직원)이 한다.** 검사를 통과하고 미리보기를 확인했으면 사람에게 `/packages`에서 켜 달라고 말한다.
 
 ## 오류
 | 상태 | 뜻 · 할 일 |

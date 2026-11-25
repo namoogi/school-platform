@@ -1422,6 +1422,49 @@ try {
     assert.ok(await h.getByRole('combobox', { name: /ไทย 그림/ }).first().isVisible());
     await visitor.close(); await ctx.close();
   });
+  await step('61차 F5: 학사 꾸러미 — 관리자 발급(학사 꾸러미) → 학교 AI가 정의·꾸러미 저장 → 검사·미리보기 → 관리자가 /packages 에서 켜기', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    for (const k of ['성품 동화', '쪽', '소식']) {
+      const box = h.locator(`[data-testid=agent-token-kinds] label:text-is("${k}") input`);
+      if (await box.count() && await box.isChecked()) await box.uncheck();
+    }
+    await h.check('[data-testid=agent-token-kinds] label:has-text("학사 꾸러미") input');
+    for (const perm of ['만들기', '고치기']) {
+      const box = h.locator(`[data-testid=agent-token-perms] label:has-text("${perm}") input`).first();
+      if (await box.count() && !(await box.isChecked())) await box.check();
+    }
+    await h.click('[data-testid=agent-token-issue]');
+    const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
+    assert.match(await h.inputValue('[data-testid=agent-connect-text]'), /POST \/api\/agent\/definitions/);
+    const call = async (p, body) => {
+      const r = await fetch(`${BASE}${p}`, { method: body ? 'POST' : 'GET', headers: { 'x-agent-token': token, 'content-type': 'application/json' }, body: body && JSON.stringify(body) });
+      return { status: r.status, json: await r.json() };
+    };
+    const bad = await call('/api/agent/definitions', { kind: 'record_type', code: 'e2e_service', base_version: 0, spec: { title: { ko: '봉사' }, subject: 'person',
+      fields: [{ key: 'student_name', type: 'text', label: { ko: '이름' }, privacy: 'internal' }] } });
+    assert.equal(bad.status, 200);
+    assert.equal(bad.json.valid, false);
+    const ok = await call('/api/agent/definitions', { kind: 'record_type', code: 'e2e_service', base_version: 1, spec: { title: { ko: 'E2E 봉사 시간' }, subject: 'person',
+      fields: [{ key: 'activity', type: 'text', label: { ko: '활동' }, privacy: 'internal', required: true }, { key: 'hours', type: 'hours', label: { ko: '시간' }, privacy: 'internal' }] } });
+    assert.equal(ok.json.valid, true);
+    assert.equal((await call('/api/agent/definitions', { kind: 'view', code: 'e2e_list', base_version: 0, spec: { record_type: 'e2e_service', columns: ['person', 'activity', 'hours'] } })).json.valid, true);
+    const pack = await call('/api/agent/packages', { code: 'e2e_pack', title: { ko: 'E2E 봉사 꾸러미' }, base_version: 0, members: [{ kind: 'record_type', code: 'e2e_service' }, { kind: 'view', code: 'e2e_list' }] });
+    assert.equal(pack.json.valid, true);
+    assert.equal((await call('/api/agent/definitions', { kind: 'view', code: 'e2e_list', base_version: 0, spec: {} })).status, 409);
+    const pv = await call('/api/agent/packages/e2e_pack/preview');
+    assert.deepEqual(pv.json.preview[0].list.rows[0], ['예시 학생 1', '활동 예시 1', '2']);
+    assert.equal((await fetch(`${BASE}/api/agent/packages/e2e_pack/state`, { method: 'POST', headers: { 'x-agent-token': token } })).status, 404); // 켜기 경로는 토큰에 없다
+    await h.goto(`${BASE}/packages`);
+    await h.click('[data-testid=pkg-e2e_pack] details summary');
+    await shot(h, '61-packages.png');
+    await h.click('[data-testid=pkg-on-e2e_pack]');
+    await h.waitForSelector('[data-testid=pkg-off-e2e_pack]');
+    assert.match(await h.textContent('[data-testid=pkg-e2e_pack]'), /켜짐 · 1판/);
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

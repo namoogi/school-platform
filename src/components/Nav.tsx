@@ -1,11 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Gauge, Building2, ClipboardCheck, MessagesSquare, FileText, FlaskConical, Globe, House, Link2, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
+import { Gauge, Building2, ClipboardCheck, MessagesSquare, FileText, FlaskConical, Globe, House, Link2, Package, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
 
 // 레일 아이콘 (lucide, ISC 라이선스). 장식용이라 화면낭독기에는 숨기고 이름 글자를 함께 보인다.
 const ICONS: Record<string, LucideIcon> = {
-  '/home': House, '/intake': Upload, '/site': Globe, '/review': ClipboardCheck, '/documents': FileText, '/settings': Settings,
+  '/home': House, '/intake': Upload, '/site': Globe, '/review': ClipboardCheck, '/documents': FileText, '/packages': Package, '/settings': Settings,
   '/admin': Building2, '/admin/integrations': Link2, '/admin/control': MessagesSquare, '/admin/usage': Gauge, '/admin/lab': FlaskConical, '/admin/design': Palette,
 };
 
