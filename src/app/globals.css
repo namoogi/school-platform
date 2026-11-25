@@ -1709,3 +1709,9 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .site-admin-bar span { opacity: .85; margin-right: var(--space-2); font-weight: 500; }
 .site-admin-bar a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .site-admin-bar a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* 61차 F5: 학사 꾸러미 검사 결과 목록 */
+.issue-list { list-style: none; padding: 0; margin: var(--space-3) 0; display: grid; gap: var(--space-2); }
+.issue-list li { display: flex; gap: var(--space-2); align-items: baseline; }
+.preview { margin-top: var(--space-3); }
+.preview[open] { display: grid; gap: var(--space-3); }

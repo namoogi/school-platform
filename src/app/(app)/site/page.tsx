@@ -122,7 +122,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                     <SiteSettingsForm key={settings?.updated_at ?? 'new'} initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
                     {settings && <ImportPanel settings={JSON.parse(JSON.stringify(settings))} existing={entries.map((e) => ({ id: e.id, kind: e.kind, key: e.key }))} />}
                     {tokens && <AgentTokenPanel tokens={JSON.parse(JSON.stringify(tokens))}
-                      stories={school.modules.includes('stories')}
+                      stories={school.modules.includes('stories')} records={school.modules.includes('records')}
                       school={{ name: school.name, slug: settings?.public_slug ?? null }}
                       entries={entries.map((e) => ({ kind: e.kind, key: e.key, title: pick(e.latest_title, lang, lang) || e.key }))} />}
                   </>

@@ -8,7 +8,7 @@ export type AiKind = 'codex' | 'claude-code' | 'other';
 export const AI_LABEL: Record<AiKind, string> = { codex: 'Codex', 'claude-code': 'Claude Code', other: '기타 AI' };
 export const GUIDE_URL = 'https://github.com/namoogi/school-platform/blob/main/docs/agents/README.md';
 
-const KIND_KO: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식' };
+const KIND_KO: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식', package: '학사 꾸러미' };
 /** 공개 주소에서 종류별 경로 (SiteRenderer 경로와 같은 모양) */
 const pathOf = (kind: string, key: string) =>
   kind === 'page' ? (key === 'home' ? '' : `/p/${key}`) : kind === 'news' ? `/news/${key}` : `/stories/${key}`;
@@ -54,7 +54,9 @@ export function buildConnectText(i: ConnectInput): string {
   const auto = i.perms.includes('autopublish');
   const L: string[] = [];
 
-  L.push(`너는 지금부터 "${i.schoolName}" 홈페이지 작업을 돕는다. 아래 규칙을 지켜라.`);
+  const site_ = i.kinds.some((k) => k !== 'package');
+  const job = site_ && i.kinds.includes('package') ? '홈페이지·학사 꾸러미' : site_ ? '홈페이지' : '학사 꾸러미';
+  L.push(`너는 지금부터 "${i.schoolName}" ${job} 작업을 돕는다. 아래 규칙을 지켜라.`);
   L.push('');
   L.push('## 맡은 범위');
   L.push(`- 학교: ${i.schoolName}${site ? ` (공개 홈페이지 ${site})` : ''}`);
@@ -79,6 +81,16 @@ export function buildConnectText(i: ConnectInput): string {
     L.push('  - 잘못 올렸으면 이전 판으로 다시 공개(POST …/publish { version })하거나 공개를 내린다.');
   }
   L.push('');
+  if (i.kinds.includes('package')) {
+    L.push('## 학사 꾸러미 (정의 만들기)');
+    L.push('- 학교가 원하는 기록(예: 봉사 시간·독서·상담)을 기록 유형·양식·목록·출력·흐름 정의로 쓴다. 정의마다 새 판을 저장하면 서버 검사기가 오류·확인 목록(issues)을 돌려준다.');
+    L.push('  - 정의 저장: POST /api/agent/definitions { kind: record_type|form|view|output|flow, code, spec, why, base_version }');
+    L.push('  - 꾸러미 저장: POST /api/agent/packages { code, title, members: [{ kind, code }], why, base_version }');
+    L.push('  - 읽기: GET /api/agent/packages · 미리보기(합성 자료): GET /api/agent/packages/<code>/preview');
+    L.push('- 칸에는 개인정보 등급(directory·internal·sensitive·restricted)을 꼭 적는다. 학생·수업은 정해진 열로만 잇고, 자료 칸에 이름·메일·식별자를 두지 않는다.');
+    L.push('- 꾸러미를 켜는 것은 학교 관리자다(/packages). 검사를 통과하고 미리보기를 확인한 뒤 나에게 켜 달라고 말한다. 실제 기록을 쓰지 않는다.');
+    L.push('');
+  }
   L.push('## 할 수 없는 일 (서버가 거부한다)');
   const missing = Object.keys(CANNOT).filter((p) => !i.perms.includes(p)).map((p) => CANNOT[p]);
   if (missing.length) L.push(`- 이 토큰에 없는 권한: ${missing.join(', ')}`);
