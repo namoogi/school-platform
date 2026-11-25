@@ -1,6 +1,6 @@
 import { hostForSlug } from '@/lib/site-hosts';
 import Link from 'next/link';
-import { BookHeart, FileText, Megaphone, Settings2, type LucideIcon } from 'lucide-react';
+import { BookHeart, FileText, Megaphone, MonitorSmartphone, Settings2, type LucideIcon } from 'lucide-react';
 import { loadForPage } from '@/lib/page';
 import { getEntry, getSettings, KIND_LABEL, listAssets, listEntries, pick, type EntryKind, type EntryStatus } from '@/lib/site';
 import { EmptyState, StatusBadge } from '@/components/ui';
@@ -92,6 +92,8 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                       <span className="triage-item-title">{pick(e.latest_title, lang, lang) || e.key}</span>
                       <span className="triage-item-sub">/{e.key}{e.visibility === 'unlisted' ? ' · 숨은 주소' : ''}{typeof e.meta.virtue === 'string' && e.meta.virtue ? ` · ${e.meta.virtue}` : ''}</span>
                     </Link>
+                    <Link href={`/site/edit/${e.id}`} className="site-row-live" data-testid="row-live-edit">
+                      <MonitorSmartphone size={16} aria-hidden="true" />화면<span className="sr-only">에서 고치기: {pick(e.latest_title, lang, lang) || e.key}</span></Link>
                     {school.isAdmin && box === 'story' && <EntryPublishControl id={e.id}
                       title={pick(e.latest_title, lang, lang) || e.key} latestVersion={e.latest_version} liveVersion={e.live_version} />}
                   </li>
@@ -126,7 +128,12 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                   </>
                 : <EmptyState title="설정은 학교 관리자가 합니다">시안 만들기와 고치기는 교사도 할 수 있습니다.</EmptyState>)
             : selected
-              ? <>{school.isAdmin && <ArchiveControl id={selected.entry.id} archived={!!selected.entry.archived_at} live={!!selected.liveVersionId} />}
+              ? <>
+                <nav className="site-view-switch" aria-label="고치는 방식" data-testid="view-switch">
+                  <span aria-current="page">항목별로 고치기</span>
+                  <Link href={`/site/edit/${selected.entry.id}`} data-testid="live-edit-link"><MonitorSmartphone size={16} aria-hidden="true" />화면에서 고치기</Link>
+                </nav>
+                {school.isAdmin && <ArchiveControl id={selected.entry.id} archived={!!selected.entry.archived_at} live={!!selected.liveVersionId} />}
                 <EntryEditor key={selected.entry.id} detail={JSON.parse(JSON.stringify(selected))}
                   langs={settings?.langs ?? ['ko']} canPublish={school.isAdmin} assets={JSON.parse(JSON.stringify(assets))}
                   publicHref={settings?.is_open ? `${publicUrl}${box === 'page' ? (selected.entry.key === 'home' ? '' : `/p/${selected.entry.key}`) : box === 'news' ? `/news/${selected.entry.key}` : `/stories/${selected.entry.key}`}` : null} /></>
