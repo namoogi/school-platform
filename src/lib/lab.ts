@@ -108,3 +108,38 @@ export async function itemHistory(db: Db, id: string) {
     'select changed_at, before from public.platform_item_history where item_id = $1 order by id desc limit 50', [id]);
   return rows as { changed_at: string; before: Partial<Item> }[];
 }
+
+// ── 81차: 항목 상세 · 지침(관제 센터 요청 lab_item_id 연결) ──
+export async function getItem(db: Db, id: string): Promise<Item> {
+  if (!isUuid(id)) throw new NotFoundError('항목을 찾을 수 없습니다.');
+  const all = await listItems(db, true);
+  const it = all.find((x) => x.id === id);
+  if (!it) throw new NotFoundError('항목을 찾을 수 없습니다.');
+  return it;
+}
+export type Directive = {
+  id: string; no: number; title: string; status: string; created_at: string; updated_at: string; assignee_session: string | null;
+  messages: { id: number; author: string; author_session: string | null; kind: string; body: string; created_at: string; delivered_at: string | null }[];
+};
+/** 이 항목에 남긴 지침과 진행(세션 보고)을 시간순으로. 지침은 관제 센터 '지시'와 같은 길로 간다(새 쓰기 경로 없음) */
+export async function directivesOf(db: Db, itemId: string): Promise<Directive[]> {
+  if (!isUuid(itemId)) return [];
+  return (await db.query<Directive>(
+    `select r.id, r.no, r.title, r.status, r.created_at, r.updated_at, r.assignee_session,
+            coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'author', m.author, 'author_session', m.author_session, 'kind', m.kind,
+                      'body', coalesce(m.body, ''), 'created_at', m.created_at, 'delivered_at', m.delivered_at) order by m.id)
+                      from public.control_messages m where m.request_id = r.id and m.kind <> 'status'), '[]') as messages
+       from public.control_requests r where r.lab_item_id = $1 order by r.no`, [itemId])).rows;
+}
+/** 지침 진행 요약(카드용): 항목별 지침 수·끝난 수·결과 확인 필요 수 */
+export async function directiveCounts(db: Db) {
+  const { rows } = await db.query<{ item: string; total: number; done: number; review: number }>(
+    `select lab_item_id as item, count(*)::int as total, count(*) filter (where status in ('done', 'dropped'))::int as done,
+            count(*) filter (where status = 'review')::int as review
+       from public.control_requests where lab_item_id is not null group by lab_item_id`);
+  return Object.fromEntries(rows.map((r) => [r.item, r]));
+}
+export async function activeSessions(db: Db) {
+  return (await db.query<{ id: string; name: string; role: string }>(
+    'select id, name, role from public.control_sessions where active order by created_at')).rows;
+}

@@ -100,7 +100,7 @@ function RequestCard({ r, names, sessions, run }: { r: Request; names: Record<st
   const send = () => run(() => call(`/api/admin/control/requests/${r.id}/messages`, 'POST', { choice: choice || null, body, ...target(to) }))
     .then((ok) => { if (ok) { setChoice(''); setBody(''); } });
   return (
-    <li className="control-item card" data-testid={`control-${r.no}`} data-status={r.status}>
+    <li className="control-item card" id={`r-${r.no}`} data-testid={`control-${r.no}`} data-status={r.status}>
       <div className="control-head">
         <button type="button" className="item-title" aria-expanded={open} onClick={() => setOpen(!open)}>
           <span className="control-no num">D-{r.no}</span> {r.title}
