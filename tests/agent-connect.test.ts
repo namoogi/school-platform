@@ -84,6 +84,7 @@ describe('AI 연결 글 (ADR 0022)', () => {
 
   it('66차: 쪽 토큰은 템플릿 빈 칸 안내를 담고, 동화만 맡긴 토큰에는 없다', () => {
     expect(buildConnectText({ ...base, kinds: ['page'], keys: null })).toContain('GET /api/agent/templates');
+    expect(buildConnectText({ ...base, kinds: ['page'], keys: null })).toMatch(/옛 홈페이지는 공개된 쪽만/);
     expect(buildConnectText(base)).not.toContain('/api/agent/templates');
   });
 });
