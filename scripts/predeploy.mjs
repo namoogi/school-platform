@@ -37,8 +37,14 @@ console.log(`[predeploy] ${process.env.VERCEL_ENV ?? 'unknown'} 빌드 · DB 호
 // 운영 DB에 적용하지 않도록, DB를 바꾸는 일은 Production 빌드(main 병합)에서만 한다. (사용자 결정 2026-11-22)
 // 미리보기 전용 DB로 분리하면 PREVIEW_APPLY_MIGRATIONS=1 로 다시 켤 수 있다.
 const applyHere = process.env.VERCEL_ENV === 'production' || process.env.PREVIEW_APPLY_MIGRATIONS === '1';
+// 77차(ADR 0019 A4, 관제 센터 #17): MIGRATIONS_BY_ACTIONS=1 이면 운영 DB 변경은 GitHub Actions(migrate-production.yml)가 먼저 하고,
+// 운영 빌드는 적용하지 않고 '대기 중인 파일이 없는지'만 확인한다. 남아 있으면 빌드를 멈춘다(앱이 아직 없는 표를 쓰지 않게).
+const byActions = process.env.MIGRATIONS_BY_ACTIONS === '1';
 try {
-  if (applyHere) {
+  if (applyHere && byActions && process.env.VERCEL_ENV === 'production') {
+    console.log('[predeploy] 운영 빌드: 마이그레이션은 GitHub Actions가 적용합니다. 대기 중인 파일이 없는지만 확인합니다.');
+    execFileSync('node', ['scripts/migrate.mjs', '--check', '--strict'], { stdio: 'inherit' });
+  } else if (applyHere) {
     execFileSync('node', ['scripts/migrate.mjs'], { stdio: 'inherit' });
     execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
     // 실제 학교 준비는 운영 빌드에서만 (미리보기용 DB 분리 여부와 무관하게)
@@ -49,6 +55,8 @@ try {
   }
 } catch {
   // 원인은 위 [db] 또는 마이그레이션 출력에 있다. 여기서는 중복 스택을 남기지 않는다.
-  console.error('[predeploy] DB 준비에 실패해 빌드를 중단합니다.');
+  console.error(byActions && process.env.VERCEL_ENV === 'production'
+    ? '[predeploy] 운영 DB에 아직 적용하지 않은 마이그레이션이 있어 빌드를 멈춥니다. GitHub Actions의 "운영 DB 마이그레이션" 실행 결과를 확인하세요. (docs/SETUP-MIGRATIONS-CI.md)'
+    : '[predeploy] DB 준비에 실패해 빌드를 중단합니다.');
   process.exit(1);
 }

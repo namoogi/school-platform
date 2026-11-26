@@ -2,6 +2,7 @@
 // 사용: DATABASE_URL=... node scripts/migrate.mjs [--reset | --check]
 // --reset 은 로컬 DB(localhost/127.0.0.1)에서만 허용한다.
 // --check 는 아무것도 적용하지 않고 적용 대기 중인 파일만 알린다(Vercel 미리보기 빌드용).
+// --check --strict 는 대기 중인 파일이 있으면 실패(종료 코드 2)한다(77차: 마이그레이션을 GitHub Actions가 맡을 때 운영 빌드용).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,6 +17,7 @@ if (!url) {
 }
 const reset = process.argv.includes('--reset');
 const check = process.argv.includes('--check');
+const strict = process.argv.includes('--strict');
 if (reset && check) {
   console.error('--reset 과 --check 는 함께 쓸 수 없습니다.');
   process.exit(1);
@@ -55,6 +57,7 @@ try {
       console.log(`적용 대기 중인 마이그레이션 ${pending.length}개 (이 빌드에서는 적용하지 않음):`);
       for (const f of pending) console.log('  대기:', f);
     } else console.log('적용 대기 중인 마이그레이션 없음');
+    if (pending.length && strict) process.exitCode = 2;
   } else {
   // Preview·Production 빌드가 동시에 돌 수 있으므로 파일마다 트랜잭션 잠금 안에서 적용 여부를 확인한다.
   // (Supabase transaction pooler에서는 세션 잠금이 안전하지 않아 xact 잠금을 쓴다)
