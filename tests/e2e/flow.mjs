@@ -1626,6 +1626,22 @@ try {
     await shot(h, '67-migrate.png');
     await ctx.close();
   });
+  await step('68차: 홍보 페이지 — 로그인 없이 열림, 한국어·English, 로그인 화면에서 들어오고 시작 단추는 템플릿으로', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.click('[data-testid=login-intro-link]');
+    await p.waitForURL(/\/intro$/);
+    assert.match(await p.textContent('h1'), /AI와 함께 만드는 우리 학교만의 홈페이지와 학교 시스템/);
+    await shot(p, '68-intro.png');
+    await p.click('a[hreflang=en]');
+    await p.waitForURL(/lang=en/);
+    assert.match(await p.textContent('h1'), /built with AI/);
+    await shot(p, '68-intro-en.png');
+    await p.click('[data-testid=intro-start]');
+    await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates|\/login\?next=\/site\/templates/);
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

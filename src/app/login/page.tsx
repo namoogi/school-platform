@@ -27,6 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <label>비밀번호<input name="password" type="password" autoComplete="current-password" required /></label>
           <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>로그인</button>
         </form>
+        <p className="fine">처음 오셨나요? <a href="/intro" data-testid="login-intro-link">이 플랫폼 소개 보기</a></p>
         <details className="hint">
           <summary>예시 계정 (합성 자료)</summary>
           <p>예시 A · admin-a@school-a.test<br />예시 B · admin-b@school-b.test</p>
