@@ -1,12 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Gauge, Building2, CalendarRange, Users, BookOpen, ClipboardCheck, GraduationCap, CalendarCheck, ScrollText, MessagesSquare, FileText, FlaskConical, Globe, House, Link2, MessageSquareWarning, Package, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
+import { Gauge, Building2, CalendarRange, Users, BookOpen, ClipboardCheck, GraduationCap, CalendarCheck, ScrollText, Layers, MessagesSquare, FileText, FlaskConical, Globe, House, Link2, MessageSquareWarning, Package, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
 
 // 레일 아이콘 (lucide, ISC 라이선스). 장식용이라 화면낭독기에는 숨기고 이름 글자를 함께 보인다.
 const ICONS: Record<string, LucideIcon> = {
   '/home': House, '/intake': Upload, '/site': Globe, '/review': ClipboardCheck, '/academics': CalendarRange, '/people': Users, '/courses': BookOpen, '/grades': GraduationCap, '/attendance': CalendarCheck, '/records': ScrollText, '/documents': FileText, '/packages': Package, '/requests': MessageSquareWarning, '/settings': Settings,
-  '/admin': Building2, '/admin/integrations': Link2, '/admin/control': MessagesSquare, '/admin/usage': Gauge, '/admin/lab': FlaskConical, '/admin/design': Palette,
+  '/admin': Building2, '/admin/integrations': Link2, '/admin/control': MessagesSquare, '/admin/usage': Gauge, '/admin/baseline': Layers, '/admin/lab': FlaskConical, '/admin/design': Palette,
 };
 
 /** label: 레일에 보이는 짧은 이름, title: 화면 이름(도움말·화면낭독기) */
