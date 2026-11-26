@@ -30,3 +30,9 @@ export default async function List({ params, searchParams }: P) {
     </SiteFrame>
   );
 }
+
+/** 69차: 목록 쪽 탭 제목에 학교 이름(전에는 플랫폼 기본 제목이 나갔다) */
+export async function generateMetadata({ params }: P) {
+  const L = await loadSite((await params).slug);
+  return L ? { title: `소식 · ${pick(L.site.title, L.site.default_lang, L.site.default_lang) || L.site.school}` } : { title: '없는 홈페이지' };
+}
