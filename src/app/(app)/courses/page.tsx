@@ -68,7 +68,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
       {sel && (
         <section className="card stack" data-testid="offering-detail">
           <h2>{sel.subject_name}{sel.section ? ` ${sel.section}반` : ''} <StatusBadge tone="neutral">{STATUS[sel.status]}</StatusBadge></h2>
-          <p className="fine">{sel.course_type_name} · {TRIGGER[sel.creation_trigger]} · 갈래 규칙 {sel.rule_version}판 · 학점 {sel.credits}</p>
+          <p className="fine">{sel.course_type_name} · {TRIGGER[sel.creation_trigger]} · 갈래 규칙 {sel.rule_version}판 · 학점 {sel.credits} · <Link href={`/grades?o=${sel.id}`} data-testid="to-grades">성적 입력·마감</Link></p>
           {admin && sel.status === 'planned' && sel.creation_trigger === 'approval' && <ActionForm url="/api/courses" action="approve" extra={{ offeringId: sel.id, revision: sel.revision }} fields={[]} submitLabel="승인" successText="승인했습니다." />}
           {admin && sel.status === 'open' && sel.creation_trigger === 'application_close' && <ActionForm url="/api/courses" action="close-applications" extra={{ offeringId: sel.id, revision: sel.revision }} fields={[]} submitLabel="신청 마감·확정" successText="신청을 마감했습니다." />}
           <h3>담당</h3>
