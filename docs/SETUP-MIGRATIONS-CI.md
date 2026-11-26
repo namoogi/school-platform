@@ -1,4 +1,6 @@
-# 운영 DB 마이그레이션을 GitHub Actions로 옮기기 (77차, ADR 0019 A4 · 관제 센터 #17)
+# 운영 DB 마이그레이션을 GitHub Actions로 옮기기 (77~79차, ADR 0019 A4 · 관제 센터 #17)
+
+> **상태(2026-11-26, 79차): 전환 완료.** GitHub 환경 `production` Secrets(`DATABASE_URL`·`DATABASE_PASSWORD`·`VERCEL_DEPLOY_HOOK_URL`), Vercel 운영 변수 `MIGRATIONS_BY_ACTIONS=1`, `vercel.json` main 자동 배포 끔. 운영 배포는 'main CI 통과 → 운영 DB 마이그레이션 → 배포 훅(after-migrate)'으로만 일어난다. 미리보기 DB(4번)는 아직.
 
 선생님이 고른 안: **GitHub Actions + 무료 미리보기 Supabase 프로젝트**(`actions_free`, 2026-11-25).
 
