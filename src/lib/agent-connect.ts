@@ -84,6 +84,7 @@ export function buildConnectText(i: ConnectInput): string {
   if (i.kinds.includes('page')) {
     L.push('## 템플릿 빈 칸 (쪽)');
     L.push('- 템플릿으로 시작한 쪽은 meta.template 이 있다. GET /api/agent/templates 로 빈 칸 경로·안내를 읽고, 안내 자리 [ … ]가 남은 칸만 학교 자료로 채워 새 판(시안)으로 저장한다.');
+    L.push('- 내가 학교 자료(소개서·안내문)나 옛 홈페이지 주소를 주면 그것을 읽어 채운다. 옛 홈페이지는 공개된 쪽만 읽는다.');
     L.push('- 자료에 없는 사실(연도·숫자·이름·연락처)은 지어내지 말고 안내 자리를 그대로 둔다.');
     L.push('');
   }

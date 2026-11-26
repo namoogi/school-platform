@@ -30,7 +30,7 @@ export function Shell({ account, current, schools, groups, roleLabel, inSchoolAs
     <div className="app" data-ui={ui.choice.ui} data-mode={ui.choice.mode} data-scope={ui.scope}>
       <a className="skip-link" href="#content">본문으로 건너뛰기</a>
       <aside className="sidebar" aria-label="메뉴">
-        <Link className="brand" href="/" aria-label="학교 운영 플랫폼 홈"><span className="brand-mark" aria-hidden="true">學</span></Link>
+        <Link className="brand" href="/" aria-label="onschools 홈"><span className="brand-mark" aria-hidden="true">學</span></Link>
         <Nav groups={groups} />
       </aside>
       <header className="topbar top">

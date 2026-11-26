@@ -1632,11 +1632,11 @@ try {
     await p.goto(`${BASE}/login`);
     await p.click('[data-testid=login-intro-link]');
     await p.waitForURL(/\/intro$/);
-    assert.match(await p.textContent('h1'), /AI와 함께 만드는 우리 학교만의 홈페이지와 학교 시스템/);
+    assert.match(await p.textContent('h1'), /AI로 직접 만드는 우리학교 홈페이지, 우리학교 시스템/);
     await shot(p, '68-intro.png');
     await p.click('a[hreflang=en]');
     await p.waitForURL(/lang=en/);
-    assert.match(await p.textContent('h1'), /built with AI/);
+    assert.match(await p.textContent('h1'), /with AI/);
     await shot(p, '68-intro-en.png');
     await p.click('[data-testid=intro-start]');
     await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates|\/login\?next=\/site\/templates/);

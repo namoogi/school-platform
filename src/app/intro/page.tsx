@@ -6,14 +6,14 @@ import type { Metadata } from 'next';
  * 한국어 기본, ?lang=en 영어. DB를 읽지 않는다.
  */
 export const metadata: Metadata = {
-  title: 'AI와 함께 만드는 우리 학교 홈페이지와 학교 시스템',
-  description: '학교 자료로 채우는 홈페이지 템플릿, 한국·미국 기준 학사 기록, 학교가 쓰는 AI와 함께 일하는 학교 운영 플랫폼.',
+  title: 'onschools — AI로 직접 만드는 우리학교 홈페이지, 우리학교 시스템',
+  description: '학교 자료로 채우는 홈페이지 템플릿, 한국·미국 기준 학사 기록, 학교가 쓰는 AI와 함께 일하는 onschools.',
 };
 
 const COPY = {
   ko: {
-    eyebrow: 'AI로 만드는 우리 학교 홈페이지 · 학교 시스템',
-    title: 'AI와 함께 만드는 우리 학교만의 홈페이지와 학교 시스템',
+    eyebrow: 'onschools',
+    title: 'AI로 직접 만드는 우리학교 홈페이지, 우리학교 시스템',
     sub: '학교 소개서를 올리거나 지금 쓰는 홈페이지 주소를 적으면, 고른 템플릿에 맞춰 내용이 채워집니다. 출결·평가·학생부·성적증명서는 한국과 미국 기준으로 쌓입니다. 학교가 쓰는 AI가 함께 일하고, 공개와 확정은 언제나 사람이 합니다.',
     start: '로그인하고 시작하기', more: '무엇을 할 수 있나요',
     pillarsTitle: '세 가지를 한곳에서',
@@ -42,8 +42,8 @@ const COPY = {
     lang: 'English',
   },
   en: {
-    eyebrow: 'Your school website and school system, made with AI',
-    title: "Your school's own website and school system, built with AI",
+    eyebrow: 'onschools',
+    title: 'Build your own school website and school system, with AI',
     sub: 'Upload your school brochure or enter your current website, and the template you choose fills in. Attendance, grades, records and transcripts follow Korean and US standards. Your own AI helps, and people always decide what is published and finalized.',
     start: 'Sign in to start', more: 'What you can do',
     pillarsTitle: 'Three things in one place',
@@ -79,7 +79,7 @@ export default async function IntroPage({ searchParams }: { searchParams: Promis
   return (
     <div className="intro" lang={lang}>
       <header className="intro-top">
-        <span className="intro-brand"><span className="brand-mark" aria-hidden="true">學</span>학교 운영 플랫폼</span>
+        <span className="intro-brand"><span className="brand-mark" aria-hidden="true">學</span>onschools</span>
         <nav className="row-wrap" aria-label="페이지">
           <Link href={lang === 'en' ? '/intro' : '/intro?lang=en'} hrefLang={lang === 'en' ? 'ko' : 'en'}>{c.lang}</Link>
           <Link className="btn btn-sm" href="/login">{lang === 'en' ? 'Sign in' : '로그인'}</Link>

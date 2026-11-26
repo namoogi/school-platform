@@ -4,7 +4,7 @@ import '@fontsource/jetbrains-mono/500.css';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: '학교 운영 플랫폼',
+  title: 'onschools',
   description: '학교 자료를 읽고 관리자 확인을 거쳐 학사 문서를 발행합니다. (14차)',
 };
 
