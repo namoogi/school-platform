@@ -10,25 +10,26 @@
 1. PR 병합 → `CI`(테스트·빌드·e2e)가 main에서 통과한다.
 2. `운영 DB 마이그레이션`(`.github/workflows/migrate-production.yml`)이 이어서 돈다.
    1. 대기 목록 확인
-   2. 마이그레이션·예시 시드·학교 준비 적용
+   2. 마이그레이션 적용
    3. 대기 0 확인
 3. 성공하면 Vercel 배포 훅을 불러 운영 배포를 만든다.
-4. 운영 빌드(`MIGRATIONS_BY_ACTIONS=1`)는 DB를 바꾸지 않는다. 대기 중인 파일이 남아 있으면 빌드를 멈춘다(`migrate.mjs --check --strict`). 그래서 앱이 아직 없는 표를 쓰는 일이 생기지 않는다.
+4. 운영 빌드(`MIGRATIONS_BY_ACTIONS=1`)는 마이그레이션을 적용하지 않는다. 대기 중인 파일이 남아 있으면 빌드를 멈추고(`migrate.mjs --check --strict`), 없으면 예시 시드·학교 준비만 한다. 그래서 앱이 아직 없는 표를 쓰는 일이 생기지 않는다.
 
 비밀값이 없으면 워크플로는 건너뛰고, 지금 방식(운영 빌드가 적용)이 그대로 돈다. **선생님이 1~3을 마치기 전에는 아무것도 바뀌지 않는다.**
 
 ## 선생님이 할 일 (비밀값은 채팅에 붙여 넣지 말고 각 화면에 직접 넣기)
 
-### 1. GitHub 환경 `production`과 비밀값
+### 1. GitHub 환경 `production`과 비밀값 (78차: 두 개만)
 GitHub 저장소 → Settings → Environments → New environment → 이름 `production`.
 
-그 환경의 Environment secrets에 아래 값을 넣는다. 값은 Vercel 환경 변수에 있는 것과 같다.
+그 환경의 Environment secrets에 아래 두 값을 넣는다. Vercel처럼 주소와 비밀번호를 나눠 넣는다. 비밀번호에 특수기호가 있어도 스크립트가 변환해 넣는다(`scripts/pg-options.mjs`).
 
-| 이름 | 값 |
-|---|---|
-| `PRODUCTION_DATABASE_URL` | Vercel의 `DATABASE_URL`과 같은 값(Supabase → Connect → Transaction pooler 주소) |
-| `SEED_PASSWORD_A`, `SEED_PASSWORD_B` | Vercel의 같은 이름 값 |
-| `PLATFORM_ADMIN_EMAILS` | Vercel의 같은 이름 값 |
+| 이름 | 값 | 어디서 |
+|---|---|---|
+| `PRODUCTION_DATABASE_URL` | Transaction pooler 주소. `[YOUR-PASSWORD]`는 그대로 둔다 | Supabase → 위쪽 **Connect** → Direct(Connection string) → **Transaction pooler**(포트 6543) |
+| `DATABASE_PASSWORD` | DB 비밀번호 원문 | 선생님이 정한 값. Supabase도 Vercel(Sensitive)도 다시 보여 주지 않으니 비밀번호 관리자에 보관. 모르면 Supabase에서 재설정하고 Vercel `DATABASE_PASSWORD`도 같은 값으로 바꾼 뒤 재배포 |
+
+예시 시드 비밀번호·관리자 이메일은 GitHub에 넣지 않는다. 시드·학교 준비는 계속 Vercel 운영 빌드가 한다.
 
 원하면 같은 화면의 'Required reviewers'에 선생님을 넣는다. 그러면 운영 DB 적용 전에 승인 단추가 생긴다.
 

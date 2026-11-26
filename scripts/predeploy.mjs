@@ -42,8 +42,11 @@ const applyHere = process.env.VERCEL_ENV === 'production' || process.env.PREVIEW
 const byActions = process.env.MIGRATIONS_BY_ACTIONS === '1';
 try {
   if (applyHere && byActions && process.env.VERCEL_ENV === 'production') {
-    console.log('[predeploy] 운영 빌드: 마이그레이션은 GitHub Actions가 적용합니다. 대기 중인 파일이 없는지만 확인합니다.');
+    console.log('[predeploy] 운영 빌드: 마이그레이션은 GitHub Actions가 적용합니다. 대기 중인 파일이 없는지 확인한 뒤 시드·학교 준비만 합니다.');
     execFileSync('node', ['scripts/migrate.mjs', '--check', '--strict'], { stdio: 'inherit' });
+    // 78차: 예시 시드·학교 준비는 계속 운영 빌드가 한다(GitHub에 시드 비밀번호·관리자 이메일을 두지 않음)
+    execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
+    execFileSync('node', ['scripts/provision.mjs'], { stdio: 'inherit' });
   } else if (applyHere) {
     execFileSync('node', ['scripts/migrate.mjs'], { stdio: 'inherit' });
     execFileSync('node', ['scripts/seed.mjs'], { stdio: 'inherit' });
