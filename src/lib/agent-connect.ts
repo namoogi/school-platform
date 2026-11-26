@@ -28,6 +28,9 @@ const CANNOT: Record<string, string> = {
 
 export type ConnectInput = {
   ai: AiKind;
+  /** 83차: 작업하는 사람(이름이나 이메일)·세션 이름. 사용 기록에 남는다(자기 신고) */
+  operator?: string | null;
+  session?: string | null;
   schoolName: string;
   /** 예: https://onschools.vercel.app (끝 / 없이) */
   baseUrl: string;
@@ -115,7 +118,13 @@ export function buildConnectText(i: ConnectInput): string {
   } else {
     L.push('- 토큰은 환경 변수 SCHOOL_AGENT_TOKEN 에 있다(학교 관리자가 넣어 둔다). 없으면 나에게 넣어 달라고 한다.');
   }
-  L.push(`- 확인: curl -s -H "x-agent-token: $SCHOOL_AGENT_TOKEN" ${base}/api/agent/me`);
+  // 83차: 누가·어느 세션이 했는지 사용 기록에 남긴다
+  L.push('- 모든 요청에 머리 x-agent-session(이 작업 세션 이름)과 x-agent-operator(작업하는 사람 이름 또는 이메일)도 붙인다. 학교 관리자가 사용 기록에서 누가 무엇을 했는지 본다.');
+  L.push('  한글·공백이 있으면 URL 인코딩(encodeURIComponent)해서 보낸다. 세션을 새로 열면 세션 이름을 바꾼다.');
+  L.push(`  export SCHOOL_AGENT_SESSION='${(i.session ?? '').replace(/'/g, '') || '세션 이름(예: 동화-수정-1)'}'`);
+  L.push(`  export SCHOOL_AGENT_OPERATOR='${(i.operator ?? '').replace(/'/g, '') || '작업자 이름 또는 이메일'}'`);
+  L.push('- 같은 토큰을 여러 세션에서 함께 쓰지 않는다. 다른 세션이 필요하면 학교 관리자에게 토큰을 하나 더 받는다.');
+  L.push(`- 확인: curl -s -H "x-agent-token: $SCHOOL_AGENT_TOKEN" -H "x-agent-session: <인코딩한 세션 이름>" -H "x-agent-operator: <인코딩한 작업자>" ${base}/api/agent/me  (응답의 you 에 그대로 보이면 된다)`);
   if (i.ai === 'codex') L.push(`- Codex 클라우드라면 환경의 인터넷 허용 목록에 ${new URL(base).host} 를 넣어야 한다.`);
   if (i.ai === 'claude-code') L.push(`- Claude Code 클라우드 세션이라면 환경의 네트워크 허용 목록에 ${new URL(base).host} 가 있어야 한다.`);
   if (i.ai === 'other') L.push('- 인터넷 요청(curl 등)을 보낼 수 있는 AI여야 한다. 못 하면 그렇다고 나에게 말한다.');

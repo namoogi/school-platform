@@ -15,7 +15,9 @@ import { AI_LABEL, buildConnectText, type AiKind } from '@/lib/agent-connect';
 export type TokenRow = {
   id: string; label: string; kinds: string[]; keys: string[] | null; perms: string[]; agent_kind: string; created_at: string; expires_at: string | null;
   revoked_at: string | null; last_used_at: string | null; uses: number;
-  recent: { action: string; created_at: string; detail: Record<string, unknown> }[];
+  recent: { action: string; created_at: string; detail: Record<string, unknown>; session_label?: string | null; operator?: string | null }[];
+  /** 83차: 이 토큰을 쓴 세션·작업자(자기 신고)별 횟수 */
+  sessions: { session_label: string | null; operator: string | null; n: number; last: string }[];
 };
 type Entry = { kind: string; key: string; title: string };
 
@@ -99,15 +101,17 @@ async function copyText(text: string) {
 type School = { name: string; slug: string | null };
 type Scope = { kinds: string[]; keys: string[] | null; perms: string[]; expiresAt: string | null };
 const aiOf = (k: string): AiKind => (k === 'codex' || k === 'claude-code' ? k : 'other');
-const connectText = (ai: AiKind, school: School, scope: Scope, token: string | null) => buildConnectText({
-  ai, schoolName: school.name, publicSlug: school.slug, baseUrl: window.location.origin, token, ...scope,
+const connectText = (ai: AiKind, school: School, scope: Scope, token: string | null, who: { operator?: string; session?: string } = {}) => buildConnectText({
+  ai, schoolName: school.name, publicSlug: school.slug, baseUrl: window.location.origin, token, ...scope, ...who,
 });
 
 /** 46차 'AI 연결'(ADR 0022): 발급 직후 — AI 종류를 고르면 지시문 + 토큰이 든 붙여넣기 글 하나 */
 function ConnectBox({ token, agent, scope, school }: { token: string; agent: string; scope: Scope; school: School }) {
   const [ai, setAi] = useState<AiKind>(aiOf(agent));
   const [copied, setCopied] = useState<'all' | 'token' | 'fail' | null>(null);
-  const text = connectText(ai, school, scope, token);
+  const [operator, setOperator] = useState('');
+  const [session, setSession] = useState('');
+  const text = connectText(ai, school, scope, token, { operator, session });
   const copy = async (what: 'all' | 'token') => setCopied((await copyText(what === 'all' ? text : token)) ? what : 'fail');
   return (
     <div className="banner" data-tone="warning" role="region" aria-label="AI 연결" data-testid="agent-connect">
@@ -121,6 +125,14 @@ function ConnectBox({ token, agent, scope, school }: { token: string; agent: str
           ))}
         </div>
       </fieldset>
+      <div className="row-wrap">
+        <Field label="작업자(선택)" hint="이 AI로 일할 사람 이름이나 이메일. 사용 기록에 남습니다">
+          <input value={operator} maxLength={120} onChange={(e) => setOperator(e.target.value)} placeholder="예: 홍길동 / teacher@school.kr" data-testid="agent-connect-operator" />
+        </Field>
+        <Field label="세션 이름(선택)" hint="어느 대화(세션)에서 했는지 알아보는 이름">
+          <input value={session} maxLength={80} onChange={(e) => setSession(e.target.value)} placeholder="예: 동화-수정-1" data-testid="agent-connect-session" />
+        </Field>
+      </div>
       <Field label="붙여 넣을 글" hint="학교·맡긴 범위·권한·지킬 규칙과 토큰이 들어 있습니다.">
         <textarea readOnly rows={10} value={text} data-testid="agent-connect-text" onFocus={(e) => e.currentTarget.select()} />
       </Field>
@@ -258,6 +270,7 @@ export function AgentTokenPanel({ tokens, entries, stories, records = false, sch
             <p className="fine" role="note" data-testid="agent-token-autopublish-note">
               <b>자동 공개</b>: 에이전트가 만들거나 새 판을 저장하는 즉시 방문자에게 보입니다(시안 단계 없음). 공개 권한도 함께 켜집니다.
               주소를 정해 두고 기한을 짧게 하기를 권합니다. 잘못 공개되면 여기서 이전 판으로 되돌리거나 공개를 내립니다.
+              <br /><b>한 세션에서만 쓰세요.</b> 여러 세션이 함께 쓰면 한 세션이 작업 중인 상태가 그대로 공개될 수 있습니다.
             </p>
           )}
           {perms.includes('publish') && !perms.includes('autopublish') && (
@@ -267,6 +280,10 @@ export function AgentTokenPanel({ tokens, entries, stories, records = false, sch
             </p>
           )}
         </fieldset>
+        <p className="fine" role="note" data-testid="agent-token-session-guide">
+          <b>세션마다 따로 발급하세요.</b> 토큰 하나를 여러 AI 대화(세션)가 함께 쓰면 누가 무엇을 했는지 가려내기 어렵고, 폐기하면 모두 한꺼번에 멈춥니다.
+          연결 글에 작업자·세션 이름을 넣으면 아래 '한 일'에 남습니다(AI가 알려 준 값이라 확인된 신원은 아닙니다).
+        </p>
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={busy || !kinds.length || !perms.length} data-testid="agent-token-issue"><KeyRound size={16} aria-hidden="true" />토큰 발급</button>
         </div>
@@ -282,7 +299,7 @@ export function AgentTokenPanel({ tokens, entries, stories, records = false, sch
       )}
       {tokens.length > 0 && (
         <div className="table-wrap"><table className="grid-table" data-testid="agent-token-list">
-          <thead><tr><th scope="col">이름</th><th scope="col">범위</th><th scope="col">상태</th><th scope="col">기한</th><th scope="col">에이전트</th><th scope="col">마지막 사용</th><th scope="col">한 일</th><th scope="col"><span className="sr-only">지시문·연장·폐기</span></th></tr></thead>
+          <thead><tr><th scope="col">이름</th><th scope="col">범위</th><th scope="col">상태</th><th scope="col">기한</th><th scope="col">에이전트</th><th scope="col">마지막 사용</th><th scope="col">세션·작업자</th><th scope="col">한 일</th><th scope="col"><span className="sr-only">지시문·연장·폐기</span></th></tr></thead>
           <tbody>
             {tokens.map((t) => {
               const st = state(t);
@@ -294,7 +311,13 @@ export function AgentTokenPanel({ tokens, entries, stories, records = false, sch
                   <td>{t.expires_at ? day(t.expires_at) : '무기한'}</td>
                   <td>{AGENT[t.agent_kind] ?? t.agent_kind}</td>
                   <td>{day(t.last_used_at)}</td>
-                  <td>{t.uses}건{t.recent.length > 0 && <ul className="fine">{t.recent.map((r, k) => <li key={k}>{did(r)} · {day(r.created_at)}</li>)}</ul>}</td>
+                  <td data-testid="agent-token-sessions">
+                    {t.sessions.length === 0 ? <span className="fine">기록 없음</span> : (
+                      <ul className="fine">{t.sessions.map((x, k) => <li key={k}>{x.session_label ?? '세션 이름 없음'} · {x.operator ?? '작업자 없음'} <span className="muted">({x.n}건)</span></li>)}</ul>)}
+                    {t.sessions.length >= 2 && !t.revoked_at && (
+                      <StatusBadge tone={t.perms.includes('autopublish') ? 'danger' : 'warning'}>{t.perms.includes('autopublish') ? '⚠ 자동 공개 토큰을 여러 세션이 씀' : '⚠ 여러 세션이 함께 씀 — 세션마다 발급 권장'}</StatusBadge>)}
+                  </td>
+                  <td>{t.uses}건{t.recent.length > 0 && <ul className="fine">{t.recent.map((r, k) => <li key={k}>{did(r)} · {day(r.created_at)}{r.session_label || r.operator ? ` · ${[r.session_label, r.operator].filter(Boolean).join(' / ')}` : ''}</li>)}</ul>}</td>
                   <td>{!t.revoked_at && <span className="row-wrap">
                     <InstructionCopy t={t} school={school} />
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => extend(t.id)} aria-label={`${t.label} 기한 연장`}>연장</button>
