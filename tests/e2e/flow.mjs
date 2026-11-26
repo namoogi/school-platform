@@ -1613,6 +1613,19 @@ try {
     await h.locator('text=자료로 빈 칸 채움').first().waitFor();
     await ctx.close();
   });
+  await step('67차: 기존 홈페이지에서 옮기기 — 패널이 보이고, 내부·사설 주소는 서버가 거부해 화면에 알린다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site/templates/story`);
+    const panel = h.locator('[data-testid=migrate-panel]');
+    await panel.waitFor();
+    await panel.locator('[data-testid=migrate-url]').fill(`${BASE}/`);
+    await panel.locator('[data-testid=migrate-read]').click();
+    await panel.locator('[role=status]', { hasText: /공개 인터넷|포트|내부/ }).waitFor();
+    await shot(h, '67-migrate.png');
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

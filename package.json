@@ -13,7 +13,7 @@
     "db:reset": "node scripts/migrate.mjs --reset && node scripts/seed.mjs",
     "test": "vitest run",
     "test:e2e": "node tests/e2e/flow.mjs",
-    "test:unit": "vitest run tests/csv.test.ts tests/readers.test.ts tests/table-sort.test.ts tests/site-import.test.ts tests/pdf-check.test.ts tests/site-edit.test.ts tests/file-check.test.ts tests/story-index.test.ts tests/site-bulk-publish.test.ts tests/agent-connect.test.ts tests/site-templates.test.ts tests/site-autofill.test.ts && npm run test:agent-translation",
+    "test:unit": "vitest run tests/csv.test.ts tests/readers.test.ts tests/table-sort.test.ts tests/site-import.test.ts tests/pdf-check.test.ts tests/site-edit.test.ts tests/file-check.test.ts tests/story-index.test.ts tests/site-bulk-publish.test.ts tests/agent-connect.test.ts tests/site-templates.test.ts tests/site-autofill.test.ts tests/site-crawl.test.ts && npm run test:agent-translation",
     "check:repo": "node scripts/check-repo.mjs",
     "test:agent-translation": "python3 -m unittest discover -s tests -p 'agent_translation_test.py'"
   },

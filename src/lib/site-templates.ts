@@ -1,8 +1,9 @@
 import type { Db } from './db';
-import { createEntry, getEntry, listAssets, listEntries, saveVersion, validateContent, type Block, type Content, type LText } from './site';
+import { checkUpload, createEntry, getEntry, listAssets, listEntries, saveVersion, uploadAsset, validateContent, type Block, type Content, type LText } from './site';
 import { NotFoundError, ValidationError } from './services';
 import { proposeFills, putProposal, type Proposal } from './site-autofill';
 import { readPlainText } from './readers';
+import { crawlSite, fetchImage } from './site-crawl';
 
 /**
  * 65차 ADR 0031 — 학교 홈페이지 템플릿 7종.
@@ -345,4 +346,38 @@ export async function autofillApply(db: Db, schoolId: string, key: string, fills
   }
   await db.query(`select app.log_access($1, 'site.template_autofill', $2)`, [schoolId, JSON.stringify({ template: t.key, pages: result.map((r) => ({ page: r.page, version: r.version, filled: r.filled.length })) })]);
   return { template: t.key, result };
+}
+
+// ── 67차: 기존 사이트에서 옮기기 ──────────────────────────
+/** 주소를 받아 같은 사이트 쪽 몇 개를 읽고(공개 주소만·robots.txt 따름) 빈 칸 제안을 만든다. 읽은 글은 저장하지 않는다 */
+export async function migratePropose(db: Db, schoolId: string, key: string, url: string, schoolName: string, crawler: typeof crawlSite = crawlSite) {
+  const t = templateByKey(key);
+  if (typeof url !== 'string' || !url.trim()) throw new ValidationError('옮겨 올 홈페이지 주소를 적어 주세요.');
+  const crawl = await crawler(url.trim(), { maxPages: 8, timeoutMs: 6000, budgetMs: 35000 });
+  if (!crawl.pages.length) throw new ValidationError(`쪽을 읽지 못했습니다${crawl.skipped[0] ? `: ${crawl.skipped[0].why}` : ''}.`);
+  const docs = crawl.pages.map((p) => ({ name: new URL(p.url).pathname || '/', text: `${p.title}\n${p.text}` }));
+  const images = (await listAssets(db, schoolId)).filter((a) => a.mime.startsWith('image/')).map((a) => ({ id: a.id, name: a.name }));
+  const proposals = proposeFills(t, docs, { schoolName, images });
+  const seen = new Set<string>();
+  const found = crawl.pages.flatMap((p) => p.images).filter((i) => !seen.has(i.src) && seen.add(i.src)).slice(0, 40);
+  return { template: t.key, start: crawl.start, pages: crawl.pages.map((p) => ({ url: p.url, title: p.title })), skipped: crawl.skipped, proposals, images: found,
+    unfilled: t.slots.filter((s) => !proposals.some((p) => p.slotId === s.id)).map((s) => ({ id: s.id, label: s.label, hint: s.hint })),
+    imageSlots: t.slots.filter((s) => s.kind === 'image').map((s) => ({ slotId: s.id, page: s.page, label: s.label })) };
+}
+
+/** 옛 사이트 그림 가져오기(고른 것만, 10장까지): 같은 안전 검사로 받아 형식을 확인한 뒤 학교 홈페이지 그림으로 올린다 */
+export async function migrateImages(db: Db, schoolId: string, urls: string[], fetcher: typeof fetchImage = fetchImage) {
+  if (!Array.isArray(urls) || !urls.length) throw new ValidationError('가져올 그림을 고르세요.');
+  if (urls.length > 10) throw new ValidationError('그림은 한 번에 10장까지 가져옵니다.');
+  const done: { url: string; id: string; name: string }[] = []; const failed: { url: string; why: string }[] = [];
+  for (const u of urls) {
+    try {
+      const img = await fetcher(String(u));
+      const type = checkUpload({ type: img.type === 'image/jpg' ? 'image/jpeg' : img.type, bytes: img.bytes }, ['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
+      const a = await uploadAsset(db, schoolId, { name: img.name, type, bytes: img.bytes });
+      done.push({ url: u, id: (a as { id: string }).id, name: img.name });
+    } catch (e) { failed.push({ url: u, why: (e as Error).message || '가져오지 못함' }); }
+  }
+  await db.query(`select app.log_access($1, 'site.migrate_images', $2)`, [schoolId, JSON.stringify({ imported: done.length, failed: failed.length })]);
+  return { imported: done, failed };
 }

@@ -6,7 +6,7 @@ import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { PageHead } from '@/components/site/load';
 import { PageHeader } from '@/components/ui';
-import { ApplyTemplate, AutofillPanel } from '../TemplatesClient';
+import { ApplyTemplate, AutofillPanel, MigratePanel } from '../TemplatesClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +49,7 @@ export default async function TemplatePreview({ params, searchParams }: { params
           </main>
         </div>
       </div>
-      {school.isAdmin && t.pages.some((p) => pages.includes(p.key)) && <div className="card"><AutofillPanel templateKey={t.key} /></div>}
+      {school.isAdmin && t.pages.some((p) => pages.includes(p.key)) && <div className="settings-grid"><div className="card"><AutofillPanel templateKey={t.key} /></div><div className="card"><MigratePanel templateKey={t.key} /></div></div>}
     </>
   );
 }
