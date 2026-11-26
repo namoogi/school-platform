@@ -106,6 +106,7 @@ export function LabBoard({ items, kinds, priorities, counts }: { items: Item[]; 
               <div className="lab-card-foot">
                 {sh.tables > 0 && <span>표 {sh.tables}</span>}
                 {sh.visuals > 0 && <span>도식 {sh.visuals}</span>}
+                {sh.terms > 0 && <span>용어 {sh.terms}</span>}
                 {dc && <span>지침 {dc.done}/{dc.total}</span>}
                 {i.due_date && <span>기한 {i.due_date}</span>}
                 {i.tags.slice(0, 3).map((t) => <span key={t} className="tag">#{t}</span>)}
