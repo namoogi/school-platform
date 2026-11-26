@@ -1,0 +1,72 @@
+name: 운영 DB 마이그레이션
+
+# 77차(ADR 0019 A4, 관제 센터 #17 사용자 선택 actions_free):
+# main 의 CI가 통과하면 운영 DB에 마이그레이션·예시 시드·학교 준비를 적용하고, 성공하면 Vercel 배포를 부른다.
+# 비밀값(PRODUCTION_DATABASE_URL)이 없으면 아무것도 하지 않고 끝난다 — 그동안은 지금처럼 Vercel 운영 빌드가 적용한다.
+# 전환 순서와 선생님이 할 일: docs/SETUP-MIGRATIONS-CI.md
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: migrate-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      HAS_DB: ${{ secrets.PRODUCTION_DATABASE_URL != '' }}
+      HAS_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL != '' }}
+    steps:
+      - name: 비밀값 확인
+        run: |
+          if [ "$HAS_DB" != "true" ]; then
+            echo "PRODUCTION_DATABASE_URL 이 없어 건너뜁니다(지금은 Vercel 운영 빌드가 마이그레이션을 적용)."
+          fi
+      - uses: actions/checkout@v4
+        if: env.HAS_DB == 'true'
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        if: env.HAS_DB == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        if: env.HAS_DB == 'true'
+      - name: 적용 대기 목록(읽기만)
+        if: env.HAS_DB == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: node scripts/migrate.mjs --check
+      - name: 마이그레이션·예시 시드·학교 준비 적용
+        if: env.HAS_DB == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          SEED_PASSWORD_A: ${{ secrets.SEED_PASSWORD_A }}
+          SEED_PASSWORD_B: ${{ secrets.SEED_PASSWORD_B }}
+          PLATFORM_ADMIN_EMAILS: ${{ secrets.PLATFORM_ADMIN_EMAILS }}
+        run: |
+          for k in SEED_PASSWORD_A SEED_PASSWORD_B; do
+            v="${!k}"
+            if [ ${#v} -lt 10 ]; then echo "$k 비밀값이 비었거나 10자 미만입니다(Vercel 환경 변수와 같은 값)."; exit 1; fi
+          done
+          node scripts/migrate.mjs
+          node scripts/seed.mjs
+          node scripts/provision.mjs
+          node scripts/migrate.mjs --check --strict
+      - name: Vercel 운영 배포 부르기
+        if: env.HAS_DB == 'true' && env.HAS_HOOK == 'true'
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "$HOOK" > /dev/null && echo "배포를 불렀습니다."
