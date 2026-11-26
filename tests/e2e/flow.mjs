@@ -532,13 +532,16 @@ try {
     // 개발·연구소 항목 → 세션에 지시 (세부 내용이 채워진 새 지시)
     await p.click('aside a[href="/admin/lab"]');
     await p.waitForURL(/\/admin\/lab$/);
-    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a:has-text("세션에 지시")').click();
-    await p.waitForURL(/\/admin\/control\?from=/);
-    const form = p.locator('[data-testid=control-compose]');
-    assert.equal(await form.locator('input').first().inputValue(), 'AI 분석 프롬프트 설계와 학교당 월 비용 추정');
-    await form.locator('textarea').nth(1).fill('E2E: 무료 범위에서 추정만');
+    // 81차: 카드 → 상세 → 맨 아래 지침(관제 센터 '지시'와 같은 길, 연구소 항목 연결)
+    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a.item-title').click();
+    await p.waitForURL(/\/admin\/lab\/[0-9a-f-]{36}$/);
+    const form = p.locator('[data-testid=directive-form]');
+    await form.locator('textarea').fill('E2E: 무료 범위에서 추정만');
     await form.locator('select').selectOption('new');
-    await form.locator('button:text-is("지시 보내기")').click();
+    await form.locator('button[type=submit]').click();
+    await p.locator('[data-testid=lab-directives] .lab-msg', { hasText: 'E2E: 무료 범위에서 추정만' }).waitFor();
+    await p.goto(`${BASE}/admin/control`);
+    await p.click('[role=tab]:has-text("전달·진행")');
     await p.locator('[data-testid=control-list] li', { hasText: 'AI 분석 프롬프트 설계' }).waitFor();
     await ctxC.close();
   });
@@ -1836,6 +1839,34 @@ try {
     await box.locator('form button[type=submit]').first().click();
     await box.locator('form').waitFor({ state: 'detached' });
     assert.match(await box.textContent(), /지금 사본: 2판/);
+    await ctx.close();
+  });
+  await step('81차: 연구소 — 카드로 한눈에 → 상세에서 본문을 표·지표·흐름도로 고치고 미리 보기 → 저장하면 그대로 보인다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.goto(`${BASE}/admin/lab`);
+    await p.locator('[data-testid=lab-items] li.lab-card').first().waitFor();
+    await shot(p, '81-lab-cards.png');
+    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a.item-title').click();
+    await p.waitForURL(/\/admin\/lab\/[0-9a-f-]{36}$/);
+    await p.locator('[data-testid=lab-controls] button:text-is("내용 고치기")').click();
+    const ed = p.locator('[data-testid=lab-editor]');
+    await ed.locator('textarea').fill('## 비용 요약\n\n```kpi\n월 원가 | $260 | 100곳\n```\n\n| 등급 | 원가 |\n|---|---|\n| 공용형 | $1 |\n\n```steps\n신청 | 승인\n생성\n```\n\n> **결정** 등급 이름');
+    await ed.locator('button[role=tab]:text-is("미리 보기")').click();
+    await ed.locator('.rd-kpi', { hasText: '$260' }).waitFor();
+    await ed.locator('button:text-is("저장")').click();
+    const body = p.locator('[data-testid=lab-body]');
+    await body.locator('.rd-kpi-value', { hasText: '$260' }).waitFor();
+    assert.equal(await body.locator('table tbody tr').count(), 1);
+    assert.equal(await body.locator('.rd-step').count(), 2);
+    await body.locator('.rd-decide').waitFor();
+    await p.locator('.lab-toc a', { hasText: '비용 요약' }).waitFor();
+    await shot(p, '81-lab-detail.png');
     await ctx.close();
   });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
