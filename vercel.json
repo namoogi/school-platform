@@ -1,11 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "regions": ["hnd1"],
+  "regions": [
+    "hnd1"
+  ],
   "git": {
     "deploymentEnabled": {
       "claude/**": false,
-      "codex/**": false
+      "codex/**": false,
+      "main": false
     }
   }
 }
