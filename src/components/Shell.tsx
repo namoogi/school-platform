@@ -68,7 +68,7 @@ export function schoolNav(school: { modules: string[]; isAdmin: boolean; isPlatf
   if (school.modules.includes('intake')) {
     work.push({ href: '/intake', label: '자료', title: '자료 첨부' }, { href: '/review', label: '확인', title: '관리자 확인', count: counts.openQuestions });
   }
-  if (school.modules.includes('records')) work.push({ href: '/academics', label: '구조', title: '학교 구조' }, { href: '/people', label: '사람', title: '사람·학적' }, { href: '/courses', label: '수업', title: '수업' }, { href: '/documents', label: '문서', title: '학사 문서실' }, { href: '/packages', label: '꾸러미', title: '학사 꾸러미' });
+  if (school.modules.includes('records')) work.push({ href: '/academics', label: '구조', title: '학교 구조' }, { href: '/people', label: '사람', title: '사람·학적' }, { href: '/courses', label: '수업', title: '수업' }, { href: '/grades', label: '성적', title: '성적' }, { href: '/documents', label: '문서', title: '학사 문서실' }, { href: '/packages', label: '꾸러미', title: '학사 꾸러미' });
   if (school.modules.includes('records') && school.isAdmin) work.push({ href: '/requests', label: '요청', title: '기록 요청' });
   if (school.modules.includes('homepage')) work.push({ href: '/site', label: '홈페이지', title: '학교 홈페이지' });
   const groups: NavGroup[] = [{ label: '학사', items: work }];

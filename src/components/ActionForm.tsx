@@ -10,10 +10,12 @@ export type FieldSpec = {
   name: string; label: string; type?: 'text' | 'date' | 'number' | 'select' | 'textarea' | 'email';
   options?: { value: string; label: string }[]; required?: boolean; placeholder?: string; defaultValue?: string; width?: 'narrow' | 'wide';
 };
-export function ActionForm({ url, action, fields, extra = {}, submitLabel, successText, testId, inline = false, confirmText }: {
+export function ActionForm({ url, action, fields, extra = {}, submitLabel, successText, testId, inline = false, confirmText, keep = false }: {
   url: string; action?: string; fields: FieldSpec[]; extra?: Record<string, unknown>; submitLabel: string; successText?: string; testId?: string; inline?: boolean;
   /** 되돌리기 어려운 일이면 확인 창 문구 */
   confirmText?: string;
+  /** 성공 뒤에도 넣은 값을 그대로 둔다(고쳐 쓰는 글 칸) */
+  keep?: boolean;
 }) {
   const router = useRouter();
   const init = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? (f.type === 'select' ? f.options?.[0]?.value ?? '' : '')]));
@@ -31,7 +33,7 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
     setBusy(false);
     if (!res.ok) return setMsg({ text: data.error ?? '처리하지 못했습니다.', error: true });
     setMsg({ text: successText ?? '저장했습니다.' });
-    setV(init);
+    if (!keep) setV(init);
     router.refresh();
   }
   return (
