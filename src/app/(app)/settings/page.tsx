@@ -7,6 +7,8 @@ import { listPeople } from '@/lib/people';
 import { PageHeader, StatusBadge } from '@/components/ui';
 import { DataTable } from '@/components/DataTable';
 import { estimate, fmtBytes, schoolUsage, usd } from '@/lib/usage';
+import { baselineOffers, schoolBaseline } from '@/lib/baseline';
+import { ActionForm } from '@/components/ActionForm';
 
 const ACTION: Record<string, string> = {
   'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
@@ -17,7 +19,7 @@ const ACTION: Record<string, string> = {
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
 export default async function SettingsPage() {
-  const { school, license, team, log, bills, links, usage, portal, people } = await loadForPage(async ({ db, school }) => ({
+  const { school, license, team, log, bills, links, usage, portal, people, baseline, offers } = await loadForPage(async ({ db, school }) => ({
     license: await licenseInfo(db, school.id),
     team: await members(db, school.id),
     log: await accessLog(db, school.id, 30),
@@ -26,6 +28,8 @@ export default async function SettingsPage() {
     usage: (await schoolUsage(db, school.id))[0],
     portal: await listPortalAccounts(db, school.id),
     people: (await listPeople(db, school.id)).map((p) => ({ id: p.id, name: p.name })),
+    baseline: await schoolBaseline(db, school.id),
+    offers: await baselineOffers(db, school.id),
   }), { admin: true });
   const fmt = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
   return (
@@ -63,6 +67,25 @@ export default async function SettingsPage() {
             <ul className="sources">{links.map((l) => (
               <li key={l.id}><div><strong>{l.label}</strong><small>{LINK_KINDS[l.kind].label} · <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a></small></div></li>
             ))}</ul>)}
+        </section>
+        <section className="card stack" data-testid="baseline-offers">
+          <h2>기본판 갱신 제안</h2>
+          <p className="fine">관제가 기본판(코드 목록·척도·성적 정책)을 새로 내면 여기로 제안이 옵니다. 수락하면 이 학교에 없는 것만 더하고, 학교가 고친 값과 다르면 학교 값을 그대로 둡니다(ADR 0027). 지금 사본: {baseline ? `${baseline.version}판` : '없음'}</p>
+          {offers.length === 0 ? <p className="muted">받은 제안이 없습니다.</p> : (
+            <ul className="issue-list">{offers.map((o) => {
+              const add = o.items.add as { kind: string; item: { code?: string; list_key?: string } }[];
+              const conflicts = o.items.conflicts as { kind: string; item: { code?: string; list_key?: string } }[];
+              const name = (x: { kind: string; item: { code?: string; list_key?: string } }) => x.kind === 'grading_policy' ? '성적 정책' : `${x.kind === 'scale' ? '척도' : x.item.list_key} ${x.item.code ?? ''}`;
+              return (
+                <li key={o.id} className="stack">
+                  <span><strong>{o.from_version}판 → {o.to_version}판</strong> <StatusBadge tone={o.status === 'accepted' ? 'success' : o.status === 'offered' ? 'info' : 'neutral'}>{({ offered: '제안 중', accepted: '수락', declined: '거절', held: '보류' } as Record<string, string>)[o.status] ?? o.status}</StatusBadge>
+                    <small className="muted"> 더할 것 {add.length}{add.length ? `(${add.slice(0, 6).map(name).join(', ')}${add.length > 6 ? ' …' : ''})` : ''} · 학교 값 유지 {conflicts.length}{conflicts.length ? `(${conflicts.slice(0, 4).map(name).join(', ')}${conflicts.length > 4 ? ' …' : ''})` : ''}{o.note ? ` · ${o.note}` : ''}</small></span>
+                  {(o.status === 'offered' || o.status === 'held') && (
+                    <ActionForm url="/api/baseline" extra={{ offerId: o.id }} inline submitLabel="결정" successText="결정을 남겼습니다." testId={`offer-${o.to_version}`}
+                      fields={[{ name: 'decision', label: '결정', type: 'select', options: [{ value: 'accepted', label: '수락' }, { value: 'held', label: '보류' }, { value: 'declined', label: '거절' }] },
+                        { name: 'note', label: '메모(선택)' }]} />)}
+                </li>);
+            })}</ul>)}
         </section>
         <section className="card">
           <h2>청구 기록</h2>

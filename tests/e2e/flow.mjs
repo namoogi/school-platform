@@ -1804,6 +1804,40 @@ try {
     await h.locator('[data-testid=count-reports] li', { hasText: '1판' }).waitFor();
     await ctx.close();
   });
+  await step('76차: 기본판·보고 — 관제가 보고 모으기 → 새 기본판(코드 하나 더함) → 학교 설정에서 제안 수락 → 사본 판이 오름', async () => {
+    const ctxP = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctxP.newPage();
+    p.on('dialog', (d) => d.accept());
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.goto(`${BASE}/admin/baseline`);
+    await p.locator('[data-testid=collect-reports] button[type=submit]').click();
+    await p.locator('[data-testid=reports] tbody th', { hasText: '드리미 예시학교' }).waitFor();
+    await p.locator('[data-testid=baseline] summary').click();
+    const bf = p.locator('[data-testid=baseline-form]');
+    const m = JSON.parse(await bf.locator('textarea').inputValue());
+    m.code_lists = [...(m.code_lists ?? []), { list_key: 'attendance_reason', code: 'e2e_event', label: { ko: 'E2E 행사', en: 'E2E event' }, attrs: { excused: true }, why: 'e2e' }];
+    await bf.locator('textarea').fill(JSON.stringify(m));
+    await bf.locator('label:has-text("왜") input').fill('E2E: 행사 사유 추가');
+    await bf.locator('button[type=submit]').click();
+    await bf.locator('[role=status]', { hasText: '새 기본판' }).waitFor();
+    await shot(p, '76-baseline.png');
+    await ctxP.close();
+
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/settings`);
+    const box = h.locator('[data-testid=baseline-offers]');
+    await box.locator('li', { hasText: 'attendance_reason e2e_event' }).waitFor();
+    await box.locator('form button[type=submit]').first().click();
+    await box.locator('form').waitFor({ state: 'detached' });
+    assert.match(await box.textContent(), /지금 사본: 2판/);
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

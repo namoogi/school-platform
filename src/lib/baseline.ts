@@ -49,3 +49,14 @@ export async function collectSchoolReports(db: Db) {
   const { rows: [r] } = await db.query('select app.collect_school_reports() as v');
   return r.v as number;
 }
+/** 76차: 학교마다 가장 최근에 모은 보고(계약 school-report/1 등). 관제 화면용 — 학교 내부 표가 아니라 보고 스냅샷만 읽는다 */
+export async function latestReports(db: Db) {
+  return (await db.query<{ school_id: string; contract: string; collected_at: string; data: SchoolReport }>(
+    `select distinct on (school_id) school_id, contract, collected_at::text, data from public.school_reports order by school_id, collected_at desc`)).rows
+    .sort((a, b) => a.data.school.name.localeCompare(b.data.school.name));
+}
+/** 76차: 기본판 판별 제안 상태 수 */
+export async function offerCounts(db: Db) {
+  return (await db.query<{ to_version: number; status: string; n: number }>(
+    `select to_version, status, count(*)::int as n from public.baseline_offers group by to_version, status order by to_version desc, status`)).rows;
+}
