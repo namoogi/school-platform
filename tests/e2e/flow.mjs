@@ -1752,6 +1752,27 @@ try {
     await shot(h, '73-grades.png');
     await ctx.close();
   });
+  await step('74차: 출결 — 학교급 출결부에서 결석·사유 저장 → 다시 열면 남아 있고, 요약 표가 보인다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/attendance`);
+    const pick = h.locator('[data-testid=attendance-day] form.row-wrap');
+    await pick.locator('select[name=level]').selectOption({ label: 'E2E 중등' });
+    await pick.locator('button[type=submit]').click();
+    await h.locator('[data-testid=attendance-day] h2', { hasText: 'E2E 중등' }).waitFor();
+    const reg = h.locator('[data-testid=register]');
+    await reg.locator('select[aria-label="E2E 학생 하나 출결"]').selectOption('absent');
+    await reg.locator('select[aria-label="E2E 학생 하나 사유"]').selectOption('illness');
+    await reg.locator('input[aria-label="E2E 학생 하나 메모"]').fill('E2E 감기');
+    await reg.locator('button[type=submit]').click();
+    await reg.locator('[role=status]', { hasText: '1명' }).waitFor();
+    await h.reload();
+    assert.equal(await h.locator('[data-testid=register] select[aria-label="E2E 학생 하나 출결"]').inputValue(), 'absent');
+    await h.locator('[data-testid=attendance-summary]').waitFor();
+    await shot(h, '74-attendance.png');
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

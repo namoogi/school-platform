@@ -48,7 +48,7 @@ export function SiteSettingsForm({ initial, schoolName }: { initial: SiteSetting
   const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    try { await send('/api/site/settings', 'POST', s); setMsg({ tone: 'success', text: '저장했습니다.' }); router.refresh(); }
+    try { await send('/api/site/settings', 'POST', s); setMsg({ tone: 'success', text: '저장했습니다.' }); router.replace('/site?box=settings', { scroll: false }); router.refresh(); }
     catch (err) { setMsg({ tone: 'danger', text: (err as Error).message }); }
   }
   const toggleLang = (l: Lang) => setS((x) => {
