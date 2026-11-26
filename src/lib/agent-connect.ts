@@ -81,6 +81,12 @@ export function buildConnectText(i: ConnectInput): string {
     L.push('  - 잘못 올렸으면 이전 판으로 다시 공개(POST …/publish { version })하거나 공개를 내린다.');
   }
   L.push('');
+  if (i.kinds.includes('page')) {
+    L.push('## 템플릿 빈 칸 (쪽)');
+    L.push('- 템플릿으로 시작한 쪽은 meta.template 이 있다. GET /api/agent/templates 로 빈 칸 경로·안내를 읽고, 안내 자리 [ … ]가 남은 칸만 학교 자료로 채워 새 판(시안)으로 저장한다.');
+    L.push('- 자료에 없는 사실(연도·숫자·이름·연락처)은 지어내지 말고 안내 자리를 그대로 둔다.');
+    L.push('');
+  }
   if (i.kinds.includes('package')) {
     L.push('## 학사 꾸러미 (정의 만들기)');
     L.push('- 학교가 원하는 기록(예: 봉사 시간·독서·상담)을 기록 유형·양식·목록·출력·흐름 정의로 쓴다. 정의마다 새 판을 저장하면 서버 검사기가 오류·확인 목록(issues)을 돌려준다.');
