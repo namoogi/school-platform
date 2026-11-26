@@ -141,6 +141,8 @@ export async function crawlSite(start: string, opts: Opts = {}): Promise<CrawlRe
     let r;
     try { r = await get(url, o, 'text/html'); } catch (e) { skipped.push({ url, why: (e as Error).message || '읽지 못함' }); continue; }
     if (r.status !== 200) { skipped.push({ url, why: `응답 ${r.status}` }); continue; }
+    const fu = new URL(r.url);
+    if (fu.origin !== origin || (prefix !== '/' && fu.pathname !== prefix && !fu.pathname.startsWith(`${prefix}/`))) { skipped.push({ url, why: '사이트 밖으로 넘어감' }); continue; }
     if (!/text\/html|application\/xhtml/i.test(r.type)) { skipped.push({ url, why: 'HTML 쪽이 아님' }); continue; }
     const { title, text, images, links } = await htmlToText(r.bytes.toString('utf8'), r.url);
     pages.push({ url: r.url, title, text, images });

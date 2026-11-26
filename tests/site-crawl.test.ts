@@ -10,13 +10,15 @@ const PAGES: Record<string, string> = {
         <h1>예시꿈학교</h1><p>스스로 질문하는 배움터입니다.</p><img src="/img/campus.jpg" alt="학교 전경"></body></html>`,
   '/about': `<html><body><h2>인사말</h2><p>환영합니다. 작은 학교입니다.</p><h2>교육 목표</h2><ul><li>스스로 배우는 사람: 질문한다</li><li>함께 사는 사람: 섬긴다</li></ul>
         <footer><address>경기도 예시시 꿈마을로 12</address><p>전화 031-123-4567</p></footer><a href="/about/more">더</a></body></html>`,
-  '/about/more': '<html><body><p>더 보기</p></body></html>',
+  '/about/more': '<html><body><p>더 보기</p><a href="/about/login">로그인</a></body></html>',
   '/secret/x': '<html><body><p>비밀 쪽</p></body></html>',
   '/robots.txt': 'User-agent: *\nDisallow: /secret\n',
 };
 
 beforeAll(async () => {
   server = http.createServer((req, res) => {
+    if (req.url === '/about/login') { res.writeHead(302, { location: '/login' }); return res.end(); }
+    if (req.url === '/login') { res.writeHead(200, { 'content-type': 'text/html' }); return res.end('<html><body><p>플랫폼 로그인</p></body></html>'); }
     const body = PAGES[req.url ?? ''];
     if (!body) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'content-type': req.url === '/robots.txt' ? 'text/plain' : 'text/html; charset=utf-8' });
@@ -75,6 +77,7 @@ describe('읽기', () => {
   it('69차: 시작 주소가 하위 경로면 그 경로 아래만 읽는다', async () => {
     const r = await crawlSite(`${base}/about`, { allowPrivate: true, maxPages: 5 });
     expect(r.pages.map((p) => new URL(p.url).pathname)).toEqual(['/about', '/about/more']);
+    expect(r.skipped).toEqual(expect.arrayContaining([expect.objectContaining({ why: '사이트 밖으로 넘어감' })]));
   });
 });
 

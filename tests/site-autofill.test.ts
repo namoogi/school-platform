@@ -91,6 +91,8 @@ describe('69차 운영 시험 반영', () => {
     const t = templateByKey('single');
     const ps = proposeFills(t, [{ name: 'x.txt', text: '연락처\n우편 626837 045-9532 사무실 02-123-4567' }]);
     expect(ps.find((p) => p.slotId === 'footer')!.value).toBe('02-123-4567');
+    const th2 = proposeFills(t, [{ name: 'x.txt', text: 'ติดต่อเรา\nโทร 045-953270 มือถือ 062-0626837' }], { schoolName: 'R' });
+    expect(th2.find((p) => p.slotId === 'footer')!.value).toBe('R · 045-953270');
   });
 });
 
