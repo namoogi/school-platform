@@ -46,3 +46,48 @@ export async function enrolledToday(db: Db, schoolId: string): Promise<Record<st
       where e.school_id = $1 and e.status = 'enrolled' and e.starts_on <= current_date`, [schoolId]);
   return Object.fromEntries(rows.map((r) => [r.person_id, r.level_name]));
 }
+
+// ── 72차: 수업 화면 읽기 ──────────────────────────────────
+export type SubjectRow = { id: string; code: string; name: string; level_name: string | null };
+export async function listSubjects(db: Db, schoolId: string): Promise<SubjectRow[]> {
+  return (await db.query<SubjectRow>(
+    `select s.id, s.code, s.name, l.name as level_name from public.subjects s left join public.school_levels l on l.id = s.school_level_id
+      where s.school_id = $1 order by s.name, s.code`, [schoolId])).rows;
+}
+export type CourseTypeRow = { id: string; code: string; name: string; rule_version: number | null; creation_trigger: string | null; pass_fail_allowed: boolean | null; publishable: boolean | null };
+export async function listCourseTypes(db: Db, schoolId: string): Promise<CourseTypeRow[]> {
+  return (await db.query<CourseTypeRow>(
+    `select t.id, t.code, t.name, r.version as rule_version, r.creation_trigger, r.pass_fail_allowed, r.publishable
+       from public.course_types t left join lateral (select * from public.course_type_rules x where x.course_type_id = t.id order by x.version desc limit 1) r on true
+      where t.school_id = $1 order by t.name`, [schoolId])).rows;
+}
+export type TermOption = { id: string; label: string; year: string; starts_on: string | null };
+export async function allTerms(db: Db, schoolId: string): Promise<TermOption[]> {
+  return (await db.query<TermOption>(
+    `select t.id, t.label, y.label as year, to_char(t.starts_on, 'YYYY-MM-DD') as starts_on
+       from public.terms t join public.academic_years y on y.id = t.academic_year_id
+      where t.school_id = $1 and t.parent_id is null order by y.starts_on desc, t.sequence`, [schoolId])).rows;
+}
+export async function offeringStaff(db: Db, schoolId: string, offeringId: string) {
+  if (!isUuid(offeringId)) return [];
+  return (await db.query<{ person_id: string; name: string; role: string }>(
+    `select s.person_id, n.name, s.role from public.offering_staff s join public.person_current_names n on n.person_id = s.person_id and n.school_id = s.school_id
+      where s.school_id = $1 and s.offering_id = $2 order by s.role, n.name`, [schoolId, offeringId])).rows;
+}
+/** 그 학교급에 학기 시작일 기준 재적 중인 학생(수강 추가 후보) */
+export async function levelStudentsOn(db: Db, schoolId: string, levelId: string, on: string | null) {
+  if (!isUuid(levelId)) return [];
+  return (await db.query<{ id: string; name: string }>(
+    `select distinct p.id, n.name from public.enrollments_school e join public.people p on p.id = e.person_id
+       join public.person_current_names n on n.person_id = p.id and n.school_id = p.school_id
+      where e.school_id = $1 and e.school_level_id = $2 and daterange(e.starts_on, e.ends_on, '[)') @> coalesce($3::date, current_date) order by n.name`,
+    [schoolId, levelId, on])).rows;
+}
+/** 과목별 용도별 최신 표기 판(학생부 record·성적증명서 transcript·전체 all 등) */
+export async function subjectLabels(db: Db, schoolId: string) {
+  const { rows } = await db.query<{ subject_id: string; purpose: string; version: number; label: Record<string, string> }>(
+    `select distinct on (subject_id, purpose) subject_id, purpose, version, label from public.subject_labels where school_id = $1 order by subject_id, purpose, version desc`, [schoolId]);
+  const out: Record<string, Record<string, { version: number; label: Record<string, string> }>> = {};
+  for (const r of rows) (out[r.subject_id] ??= {})[r.purpose] = { version: r.version, label: r.label };
+  return out;
+}
