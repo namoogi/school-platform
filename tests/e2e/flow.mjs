@@ -1642,6 +1642,43 @@ try {
     await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates|\/login\?next=\/site\/templates/);
     await ctx.close();
   });
+  await step('71차: 학교 구조(학교급·학기 구조·학년도·학기 날짜) → 사람 추가·학적 등록·이름 새 판', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/academics`);
+    const lv = h.locator('[data-testid=level-form]');
+    await lv.locator('label:has-text("이름") input').fill('E2E 중등');
+    await lv.locator('label:has-text("코드") input').fill('e2e_mid');
+    await lv.locator('button[type=submit]').click();
+    await h.locator('[data-testid=levels] li', { hasText: 'E2E 중등' }).waitFor();
+    const rf = h.locator('[data-testid=rule-form]');
+    await rf.locator('textarea').fill('t1 1텀\nt2 2텀\nt3 3텀');
+    await rf.locator('input').fill('E2E 학사 규정(3텀제)');
+    await rf.locator('button[type=submit]').click();
+    await h.locator('[data-testid=period-rule] p.fine', { hasText: '1텀 · 2텀 · 3텀' }).waitFor();
+    const yf = h.locator('[data-testid=year-form]');
+    await yf.locator('label:has-text("이름") input').fill('E2E2030');
+    await yf.locator('input[type=date]').nth(0).fill('2030-01-10');
+    await yf.locator('input[type=date]').nth(1).fill('2031-01-10');
+    await yf.locator('button[type=submit]').click();
+    await h.locator('[data-testid=terms-E2E2030] button').click();
+    await h.locator('[data-testid=years] dt', { hasText: '3텀' }).waitFor();
+    await shot(h, '71-academics.png');
+
+    await h.goto(`${BASE}/people`);
+    const add = h.locator('[data-testid=person-add]');
+    await add.locator('label:has-text("이름") input').first().fill('E2E 학생 하나');
+    await add.locator('button[type=submit]').click();
+    await h.locator('[data-testid=people-list] a', { hasText: 'E2E 학생 하나' }).click();
+    await h.waitForURL(/\/people\?id=/);
+    const ef = h.locator('[data-testid=enroll-form]');
+    await ef.locator('select').selectOption({ label: 'E2E 중등' });
+    await ef.locator('button[type=submit]').click();
+    await h.locator('[data-testid=person-detail] li', { hasText: '재학' }).waitFor();
+    await shot(h, '71-people.png');
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));
