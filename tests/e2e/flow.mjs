@@ -1773,6 +1773,37 @@ try {
     await shot(h, '74-attendance.png');
     await ctx.close();
   });
+  await step('75차: 기록 — 학년도 기록 마감 판 → 학생부 발행 → 발행본(스냅샷·해시 확인) → 공개 기록, 지정일 보고', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    h.on('dialog', (d) => d.accept());
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/records`);
+    await h.locator('.people-list select[name=p]').selectOption({ label: 'E2E 학생 하나' });
+    await h.locator('.people-list button[type=submit]').click();
+    await h.waitForURL(/\/records\?p=/);
+    const cy = h.locator('[data-testid=close-year-form]');
+    await cy.locator('select').selectOption({ label: 'E2E2030' });
+    await cy.locator('button[type=submit]').click();
+    await h.locator('[data-testid=record-years] li', { hasText: '1판' }).waitFor();
+    const pf = h.locator('[data-testid=publish-form]');
+    await pf.locator('label:has-text("형식") select').selectOption('kr_alt_record');
+    await pf.locator('button[type=submit]').click();
+    await h.locator('[data-testid=record-docs] li a').first().click();
+    await h.waitForURL(/\/records\/doc\//);
+    await h.locator('[data-testid=record-doc]', { hasText: 'E2E 수학' }).waitFor();
+    assert.match(await h.textContent('[data-testid=record-doc]'), /92/);
+    await h.locator('.page-header', { hasText: '내용 확인됨' }).waitFor();
+    const df = h.locator('[data-testid=disclose-form]');
+    await df.locator('label:has-text("받는 곳") input').fill('E2E 입학처');
+    await df.locator('button[type=submit]').click();
+    await h.locator('[data-testid=disclosures] li', { hasText: 'E2E 입학처' }).waitFor();
+    await shot(h, '75-record-doc.png');
+    await h.goto(`${BASE}/records`);
+    await h.locator('[data-testid=count-report-form] button[type=submit]').click();
+    await h.locator('[data-testid=count-reports] li', { hasText: '1판' }).waitFor();
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));
