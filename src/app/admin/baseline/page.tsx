@@ -31,7 +31,7 @@ export default async function BaselinePage() {
         <div className="card-header"><h2>학교 보고</h2>
           <ActionForm url="/api/admin/baseline" action="collect" fields={[]} submitLabel="지금 모으기" successText="보고를 모았습니다." testId="collect-reports" /></div>
         {reports.length === 0 ? <p className="muted">모은 보고가 없습니다.</p> : (
-          <div className="table-wrap"><table className="grid-table">
+          <div className="table-wrap" tabIndex={0} role="region" aria-label="학교 보고 표(옆으로 넘겨 보기)"><table className="grid-table">
             <thead><tr><th scope="col">학교</th><th scope="col">상태</th><th scope="col">기본판</th><th scope="col">재학</th><th scope="col">교직원</th><th scope="col">개설</th><th scope="col">마감</th><th scope="col">홈페이지 항목</th><th scope="col">모은 때</th></tr></thead>
             <tbody>{reports.map((r) => (
               <tr key={r.school_id}><th scope="row">{r.data.school.name}</th><td>{r.data.school.status}</td>
