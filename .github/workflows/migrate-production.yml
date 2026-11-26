@@ -3,9 +3,10 @@ name: 운영 DB 마이그레이션
 # 77·78차(ADR 0019 A4, 관제 센터 #17 사용자 선택 actions_free):
 # main 의 CI가 통과하면 운영 DB에 마이그레이션만 적용하고, 성공하면 Vercel 배포를 부른다.
 # 예시 시드·학교 준비는 지금처럼 Vercel 운영 빌드가 한다(비밀값을 GitHub에 더 두지 않기 위해, 78차).
-# 비밀값: PRODUCTION_DATABASE_URL(주소, 비밀번호 자리는 [YOUR-PASSWORD] 그대로 둬도 됨) + DATABASE_PASSWORD(비밀번호 원문).
+# 비밀값(GitHub 환경 production 의 Environment secrets): DATABASE_URL(주소, 비밀번호 자리는 [YOUR-PASSWORD] 그대로 둬도 됨) + DATABASE_PASSWORD(비밀번호 원문).
+# Vercel 과 같은 이름. 예전 이름 PRODUCTION_DATABASE_URL 도 받는다.
 # 비밀번호는 scripts/pg-options.mjs 가 특수기호를 변환해 주소에 넣는다(Vercel 과 같은 방식).
-# PRODUCTION_DATABASE_URL 이 없으면 아무것도 하지 않는다. 안내: docs/SETUP-MIGRATIONS-CI.md
+# DATABASE_URL 이 없으면 아무것도 하지 않는다. 안내: docs/SETUP-MIGRATIONS-CI.md
 on:
   workflow_run:
     workflows: [CI]
@@ -27,15 +28,15 @@ jobs:
     timeout-minutes: 15
     environment: production
     env:
-      HAS_DB: ${{ secrets.PRODUCTION_DATABASE_URL != '' }}
+      HAS_DB: ${{ (secrets.DATABASE_URL || secrets.PRODUCTION_DATABASE_URL) != '' }}
       HAS_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL != '' }}
-      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL || secrets.PRODUCTION_DATABASE_URL }}
       DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
     steps:
       - name: 비밀값 확인
         run: |
           if [ "$HAS_DB" != "true" ]; then
-            echo "PRODUCTION_DATABASE_URL 이 없어 건너뜁니다(지금은 Vercel 운영 빌드가 마이그레이션을 적용)."
+            echo "DATABASE_URL 비밀값이 없어 건너뜁니다(지금은 Vercel 운영 빌드가 마이그레이션을 적용)."
           fi
       - uses: actions/checkout@v4
         if: env.HAS_DB == 'true'

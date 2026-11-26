@@ -22,11 +22,11 @@
 ### 1. GitHub 환경 `production`과 비밀값 (78차: 두 개만)
 GitHub 저장소 → Settings → Environments → New environment → 이름 `production`.
 
-그 환경의 Environment secrets에 아래 두 값을 넣는다. Vercel처럼 주소와 비밀번호를 나눠 넣는다. 비밀번호에 특수기호가 있어도 스크립트가 변환해 넣는다(`scripts/pg-options.mjs`).
+그 환경의 **Environment secrets**(Variables 아님 — Secrets는 로그에서 가려진다)에 아래 두 값을 넣는다. 이름은 Vercel과 같다. Vercel처럼 주소와 비밀번호를 나눠 넣는다. 비밀번호에 특수기호가 있어도 스크립트가 변환해 넣는다(`scripts/pg-options.mjs`).
 
 | 이름 | 값 | 어디서 |
 |---|---|---|
-| `PRODUCTION_DATABASE_URL` | Transaction pooler 주소. `[YOUR-PASSWORD]`는 그대로 둔다 | Supabase → 위쪽 **Connect** → Direct(Connection string) → **Transaction pooler**(포트 6543) |
+| `DATABASE_URL` | Transaction pooler 주소. `[YOUR-PASSWORD]`는 그대로 둔다 | Supabase → 위쪽 **Connect** → Direct(Connection string) → **Transaction pooler**(포트 6543) |
 | `DATABASE_PASSWORD` | DB 비밀번호 원문 | 선생님이 정한 값. Supabase도 Vercel(Sensitive)도 다시 보여 주지 않으니 비밀번호 관리자에 보관. 모르면 Supabase에서 재설정하고 Vercel `DATABASE_PASSWORD`도 같은 값으로 바꾼 뒤 재배포 |
 
 예시 시드 비밀번호·관리자 이메일은 GitHub에 넣지 않는다. 시드·학교 준비는 계속 Vercel 운영 빌드가 한다.
