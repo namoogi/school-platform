@@ -192,3 +192,42 @@ async function readPdf(bytes: Buffer): Promise<ReadResult> {
       : `PDF ${pdf.numPages}쪽에서 표 모양의 줄을 찾지 못했습니다.`,
   };
 }
+
+/**
+ * 66차: 문단 글 그대로 읽기(홈페이지 자동 배치용). 표 판독(readFile)과 따로 둔다.
+ * TXT·MD는 UTF-8, DOCX는 본문 글(mammoth), PDF는 쪽마다 글자를 줄로 묶어 이어 붙인다. 스캔 PDF는 빈 글을 돌려준다.
+ */
+export async function readPlainText(name: string, bytes: Buffer): Promise<{ ok: boolean; text: string; note: string }> {
+  const lower = name.toLowerCase();
+  if (/\.(txt|md)$/.test(lower)) return { ok: true, text: bytes.toString('utf8'), note: '글 파일' };
+  if (lower.endsWith('.docx')) {
+    try {
+      const mammoth = (await import('mammoth')).default;
+      return { ok: true, text: (await mammoth.extractRawText({ buffer: bytes })).value, note: '워드 문서' };
+    } catch { return { ok: false, text: '', note: '워드 파일을 열 수 없습니다.' }; }
+  }
+  if (lower.endsWith('.pdf')) {
+    try {
+      const { getDocumentProxy } = await import('unpdf');
+      const pdf = await getDocumentProxy(new Uint8Array(bytes));
+      const out: string[] = [];
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const rows: { y: number; parts: { x: number; s: string }[] }[] = [];
+        for (const it of content.items as { str?: string; transform?: number[] }[]) {
+          if (!it.str || !it.transform) continue;
+          const y = it.transform[5]; const x = it.transform[4];
+          const row = rows.find((r) => Math.abs(r.y - y) <= 2);
+          if (row) row.parts.push({ x, s: it.str }); else rows.push({ y, parts: [{ x, s: it.str }] });
+        }
+        rows.sort((a, b) => b.y - a.y);
+        for (const r of rows) out.push(r.parts.sort((a, b) => a.x - b.x).map((p) => p.s).join(' ').replace(/\s+/g, ' ').trim());
+        out.push('');
+      }
+      const text = out.join('\n');
+      return text.trim() ? { ok: true, text, note: 'PDF' } : { ok: false, text: '', note: '글자 정보가 없는 PDF(스캔)입니다.' };
+    } catch { return { ok: false, text: '', note: 'PDF를 열 수 없습니다.' }; }
+  }
+  return { ok: false, text: '', note: '읽을 수 있는 형식은 PDF·DOCX·TXT입니다.' };
+}

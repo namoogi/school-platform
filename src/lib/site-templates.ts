@@ -1,6 +1,8 @@
 import type { Db } from './db';
-import { createEntry, listEntries, validateContent, type Block, type Content, type LText } from './site';
-import { NotFoundError } from './services';
+import { createEntry, getEntry, listAssets, listEntries, saveVersion, validateContent, type Block, type Content, type LText } from './site';
+import { NotFoundError, ValidationError } from './services';
+import { proposeFills, putProposal, type Proposal } from './site-autofill';
+import { readPlainText } from './readers';
 
 /**
  * 65차 ADR 0031 — 학교 홈페이지 템플릿 7종.
@@ -283,7 +285,64 @@ export async function applyTemplate(db: Db, schoolId: string, key: string) {
     if (existing.has(p.key)) { skipped.push(p.key); continue; }
     const { id } = (await createEntry(db, schoolId, { kind: 'page', key: p.key, sort: p.sort, content: validateContent(p.content), note: `템플릿 ${t.name} v${t.version}` }))!;
     created.push({ key: p.key, id });
+    // 66차: 어느 템플릿에서 왔는지 남긴다(자동 배치가 빈 칸 목록을 찾는 데 씀)
+    await db.query(`update public.site_entries set meta = meta || $3 where id = $1 and school_id = $2`, [id, schoolId, JSON.stringify({ template: `${t.key}@${t.version}` })]);
   }
   await db.query(`select app.log_access($1, 'site.template_apply', $2)`, [schoolId, JSON.stringify({ template: t.key, version: t.version, created: created.map((c) => c.key), skipped })]);
   return { template: t.key, version: t.version, theme: t.theme, created, skipped };
+}
+
+// ── 66차: 학교 자료로 빈 칸 채우기 ─────────────────────────
+const MAX_FILES = 5;
+const MAX_BYTES = 8 * 1024 * 1024;
+/** 올린 자료(PDF·DOCX·TXT)를 읽어 이 템플릿 빈 칸 제안을 만든다. 파일은 저장하지 않는다. 사진 칸은 학교 홈페이지 그림 중 최근 것부터 제안 */
+export async function autofillPropose(db: Db, schoolId: string, key: string, files: { name: string; bytes: Buffer }[], schoolName: string) {
+  const t = templateByKey(key);
+  if (!files.length) throw new ValidationError('학교 자료 파일을 하나 이상 올려 주세요.');
+  if (files.length > MAX_FILES) throw new ValidationError(`자료는 ${MAX_FILES}개까지 한 번에 읽습니다.`);
+  const docs: { name: string; text: string }[] = [];
+  const notes: { file: string; ok: boolean; note: string }[] = [];
+  for (const f of files) {
+    if (f.bytes.length > MAX_BYTES) { notes.push({ file: f.name, ok: false, note: '8MB보다 큰 파일은 읽지 않습니다.' }); continue; }
+    const r = await readPlainText(f.name, f.bytes);
+    notes.push({ file: f.name, ok: r.ok, note: r.note });
+    if (r.ok) docs.push({ name: f.name, text: r.text });
+  }
+  const images = (await listAssets(db, schoolId)).filter((a) => a.mime.startsWith('image/')).map((a) => ({ id: a.id, name: a.name }));
+  const proposals = proposeFills(t, docs, { schoolName, images });
+  const pages = (await listEntries(db, schoolId)).filter((e) => e.kind === 'page' && !e.archived_at).map((e) => e.key);
+  return { template: t.key, notes, proposals, missingPages: [...new Set(t.slots.map((s) => s.page))].filter((p) => !pages.includes(p)),
+    unfilled: t.slots.filter((s) => !proposals.some((p) => p.slotId === s.id)).map((s) => ({ id: s.id, label: s.label, hint: s.hint })) };
+}
+
+/** 사람이 고른 제안을 넣는다: 쪽마다 새 시안 판 하나(안내 자리·빈 칸만 채움, 학교가 쓴 칸은 그대로). 공개하지 않는다 */
+export async function autofillApply(db: Db, schoolId: string, key: string, fills: { slotId: string; value: Proposal['value'] }[]) {
+  const t = templateByKey(key);
+  if (!Array.isArray(fills) || !fills.length) throw new ValidationError('넣을 제안을 고르세요.');
+  const entries = (await listEntries(db, schoolId)).filter((e) => e.kind === 'page' && !e.archived_at);
+  const imageIds = new Set((await listAssets(db, schoolId)).filter((a) => a.mime.startsWith('image/')).map((a) => a.id));
+  const byPage = new Map<string, { slotId: string; value: Proposal['value'] }[]>();
+  for (const f of fills) {
+    const slot = t.slots.find((s) => s.id === f.slotId);
+    if (!slot) throw new ValidationError('템플릿에 없는 칸입니다.');
+    const okValue = typeof f.value === 'string' ? f.value.trim().length > 0 && f.value.length <= 3000
+      : Array.isArray(f.value) && f.value.length > 0 && f.value.length <= 12 && f.value.every((i) => i && typeof i.title === 'string' && typeof i.body === 'string' && i.title.length <= 200 && i.body.length <= 3000);
+    if (!okValue) throw new ValidationError(`${slot.label}: 넣을 값 형식이 올바르지 않습니다.`);
+    if (slot.kind === 'image' && !imageIds.has(String(f.value))) throw new ValidationError(`${slot.label}: 이 학교 홈페이지 그림이 아닙니다.`);
+    byPage.set(slot.page, [...(byPage.get(slot.page) ?? []), f]);
+  }
+  const result: { page: string; version: number | null; filled: string[]; kept: string[] }[] = [];
+  for (const [pageKey, list] of byPage) {
+    const entry = entries.find((e) => e.key === pageKey);
+    if (!entry) { result.push({ page: pageKey, version: null, filled: [], kept: list.map((x) => x.slotId) }); continue; }
+    const { versions } = await getEntry(db, schoolId, entry.id);
+    const content = structuredClone(versions[0].content) as Content;
+    const filled: string[] = []; const kept: string[] = [];
+    for (const f of list) (putProposal(content, t.slots.find((s) => s.id === f.slotId)!, f.value) ? filled : kept).push(f.slotId);
+    if (!filled.length) { result.push({ page: pageKey, version: null, filled, kept }); continue; }
+    const v = await saveVersion(db, schoolId, entry.id, { content: validateContent(content), base_version: versions[0].version, note: `자료로 빈 칸 채움: ${filled.join(', ')}` });
+    result.push({ page: pageKey, version: v!.version, filled, kept });
+  }
+  await db.query(`select app.log_access($1, 'site.template_autofill', $2)`, [schoolId, JSON.stringify({ template: t.key, pages: result.map((r) => ({ page: r.page, version: r.version, filled: r.filled.length })) })]);
+  return { template: t.key, result };
 }

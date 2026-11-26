@@ -57,3 +57,36 @@ describe('템플릿 적용', () => {
     expect(rows.map((x) => x.detail.template)).toEqual(['notice', 'notice', 'story']);
   });
 });
+
+describe('66차 학교 자료로 빈 칸 채우기', () => {
+  const brochure = Buffer.from(['교육 목표', '- 스스로 배우는 사람: 질문을 세운다', '- 함께 사는 사람: 이웃을 섬긴다', '', '학사일정', '3월: 입학식', '7월: 발표회', '',
+    '급식', '텃밭 채소로 점심을 준비합니다.', '', '오시는 길', '경기도 예시시 꿈마을로 12', '전화 031-123-4567 · hello@example-school.test'].join('\n'));
+  it('제안은 파일을 저장하지 않고 돌려주며, 넣으면 안내 자리만 채운 새 시안 판(학교가 쓴 쪽은 그대로)', async () => {
+    const pv = await asUser(A.userId, (db) => tpl.autofillPropose(db, A.schoolId, 'notice', [{ name: '소개서.txt', bytes: brochure }], '드리미 예시학교'));
+    const ids = pv.proposals.map((p) => p.slotId);
+    expect(ids).toEqual(expect.arrayContaining(['goals', 'calendar', 'meals', 'address', 'footer']));
+    expect(pv.notes).toEqual([{ file: '소개서.txt', ok: true, note: '글 파일' }]);
+    const r = await asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'notice', pv.proposals.map((p) => ({ slotId: p.slotId, value: p.value }))));
+    const by = Object.fromEntries(r.result.map((x) => [x.page, x]));
+    expect(by.home).toMatchObject({ version: 2, filled: expect.arrayContaining(['address', 'footer']) });
+    expect(by['school-life']).toMatchObject({ version: 2, filled: expect.arrayContaining(['calendar', 'meals']) });
+    expect(by.about).toMatchObject({ version: null, kept: ['goals'] }); // 학교가 먼저 쓴 소개 쪽(템플릿 블록 없음)은 그대로
+    const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
+    const home = entries.find((e) => e.key === 'home')!;
+    expect(home).toMatchObject({ live_version: null, meta: { template: 'notice@1' } });
+    const v = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, home.id));
+    expect(v.versions[0].content.site?.address).toEqual({ ko: '경기도 예시시 꿈마을로 12' });
+    expect(v.versions[0].note).toContain('자료로 빈 칸 채움');
+    // 다시 넣으면 이미 채운 칸이라 판이 늘지 않는다
+    const again = await asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'notice', [{ slotId: 'address', value: '다른 주소' }]));
+    expect(again.result[0]).toMatchObject({ version: null, kept: ['address'] });
+  });
+
+  it('형식이 틀린 값·없는 칸·다른 학교 그림은 거부', async () => {
+    await expect(asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'notice', [{ slotId: 'nope', value: 'x' }]))).rejects.toThrow('없는 칸');
+    await expect(asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'notice', [{ slotId: 'meals', value: '' }]))).rejects.toThrow('형식');
+    await expect(asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'story', [{ slotId: 'hero-photo', value: '00000000-0000-4000-8000-000000000000' }]))).rejects.toThrow('그림이 아닙니다');
+    await expect(asUser(A.userId, (db) => tpl.autofillPropose(db, A.schoolId, 'notice', [], 'x'))).rejects.toThrow('하나 이상');
+  });
+});
+

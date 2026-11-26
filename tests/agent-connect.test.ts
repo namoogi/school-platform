@@ -81,4 +81,9 @@ describe('AI 연결 글 (ADR 0022)', () => {
     expect(t).toMatch(/켜는 것은 학교 관리자/);
     expect(buildConnectText(base)).not.toContain('/api/agent/definitions');
   });
+
+  it('66차: 쪽 토큰은 템플릿 빈 칸 안내를 담고, 동화만 맡긴 토큰에는 없다', () => {
+    expect(buildConnectText({ ...base, kinds: ['page'], keys: null })).toContain('GET /api/agent/templates');
+    expect(buildConnectText(base)).not.toContain('/api/agent/templates');
+  });
 });

@@ -1593,6 +1593,26 @@ try {
     assert.match(list, /공동체/);
     await ctx.close();
   });
+  await step('66차: 학교 자료로 빈 칸 채우기 — 이야기형 미리보기에서 소개서 올리기 → 제안 확인 → 넣기 → 교육철학 쪽 새 시안 판', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site/templates/story?page=philosophy`);
+    const panel = h.locator('[data-testid=autofill-panel]');
+    await panel.waitFor();
+    const text = ['우리가 소중히 여기는 가치', '- 질문: 스스로 묻고 탐구한다', '- 공동체: 서로 돌본다', '- 나눔: 배운 것을 마을과 나눈다', '',
+      '하루 일과', '아침 산책으로 하루를 열고 오전에는 탐구 수업, 오후에는 프로젝트를 합니다.'].join('\n');
+    await panel.locator('[data-testid=autofill-files]').setInputFiles({ name: 'E2E-소개서.txt', mimeType: 'text/plain', buffer: Buffer.from(text) });
+    await panel.locator('[data-testid=autofill-read]').click();
+    await panel.locator('[data-testid=autofill-proposals] li', { hasText: '소중히 여기는 것' }).waitFor();
+    await shot(h, '66-autofill.png');
+    await panel.locator('[data-testid=autofill-apply]').click();
+    await panel.locator('[role=status]', { hasText: '칸을 채워 새 시안 판' }).waitFor();
+    await h.goto(`${BASE}/site?box=page`);
+    await h.click('.triage-list a:has-text("교육철학")');
+    await h.locator('text=자료로 빈 칸 채움').first().waitFor();
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

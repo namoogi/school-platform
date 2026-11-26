@@ -6,7 +6,7 @@ import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { PageHead } from '@/components/site/load';
 import { PageHeader } from '@/components/ui';
-import { ApplyTemplate } from '../TemplatesClient';
+import { ApplyTemplate, AutofillPanel } from '../TemplatesClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +40,7 @@ export default async function TemplatePreview({ params, searchParams }: { params
           <ul className="issue-list">{t.mustHave.map((m) => <li key={m}>{m}</li>)}</ul>
           {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={t.name} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} />
             : <p className="muted">템플릿 적용은 학교 관리자가 합니다.</p>}
+
         </aside>
         <div className="site site-preview template-preview" data-theme={t.theme} lang={lang} data-testid="template-preview">
           <main className="site-wrap site-main">
@@ -48,6 +49,7 @@ export default async function TemplatePreview({ params, searchParams }: { params
           </main>
         </div>
       </div>
+      {school.isAdmin && t.pages.some((p) => pages.includes(p.key)) && <div className="card"><AutofillPanel templateKey={t.key} /></div>}
     </>
   );
 }
