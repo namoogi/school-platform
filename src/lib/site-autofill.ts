@@ -91,9 +91,31 @@ export function listItems(lines: string[], max = 8): { title: string; body: stri
   return items.map((i) => ({ title: clip(i.title, 80), body: clip(i.body, 400) }));
 }
 
-const PHONE = /(?:\+?\d{1,3}[- ]?)?0?\d{1,3}[-. )]\d{3,4}[-. ]\d{4}/;
+// 69차: 앞뒤가 숫자가 아닌 전화번호만(한국 02-123-4567·031-123-4567, 태국 045-953-2xxx·081-234-5678, +국가 번호)
+const PHONE = /(?<!\d)(?:\+\d{1,3}[- ]?)?0\d{1,2}[-. ]\d{3,4}[-. ]\d{3,4}(?!\d)/;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
 const ADDRESS = /(?:[가-힣]+(?:특별시|광역시|특별자치시|특별자치도|도)\s)?[가-힣]+(?:시|군|구)\s[^\n]{0,30}?[가-힣0-9]+(?:로|길)\s?\d+(?:-\d+)?[^\n,]{0,25}/;
+// 69차: 태국 주소(ตำบล·อำเภอ·จังหวัด + 우편번호 5자리)
+const ADDRESS_TH = /[^\n]{0,60}?(?:ต\.|ตำบล)\s?[^\n]{1,40}?(?:อ\.|อำเภอ)\s?[^\n]{1,40}?(?:จ\.|จังหวัด)\s?[^\n]{1,30}?\d{5}/;
+
+/**
+ * 69차: 단서 낱말 넓히기 — 템플릿 단서(한·영)에 태국어 같은 뜻 낱말을 더한다(태국 학교 사이트·자료 실제 시험에서 제안이 거의 없던 문제).
+ * 낱말 표는 다른 언어로 넓힐 수 있다.
+ */
+const SYNONYMS: Record<string, string[]> = {
+  '사명': ['พันธกิจ'], mission: ['พันธกิจ'], '비전': ['วิสัยทัศน์'], vision: ['วิสัยทัศน์'], '교육철학': ['ปรัชญา'], philosophy: ['ปรัชญา'],
+  '연혁': ['ประวัติ'], history: ['ประวัติ'], '인사말': ['สารจากผู้บริหาร', 'ผู้อำนวยการ'], principal: ['ผู้อำนวยการ'],
+  '입학': ['รับสมัคร', 'สมัครเรียน'], admission: ['รับสมัคร', 'สมัครเรียน'], apply: ['สมัคร'], '학비': ['ค่าเล่าเรียน', 'ค่าธรรมเนียม'], tuition: ['ค่าเล่าเรียน'], fee: ['ค่าธรรมเนียม'],
+  '연락처': ['ติดต่อ'], contact: ['ติดต่อ'], '주소': ['ที่อยู่'], address: ['ที่อยู่'], '학사일정': ['ปฏิทิน'], calendar: ['ปฏิทิน'], '급식': ['อาหารกลางวัน'],
+  '하루': ['กิจวัตร'], daily: ['กิจวัตร'], '가치': ['ค่านิยม'], values: ['ค่านิยม'], '교육과정': ['หลักสูตร'], curriculum: ['หลักสูตร'], '배움': ['การเรียนรู้'], learning: ['การเรียนรู้'],
+  '활동': ['กิจกรรม'], activities: ['กิจกรรม'], '후원': ['บริจาค', 'สนับสนุน'], donate: ['บริจาค'], give: ['บริจาค'], '소개': ['รู้จัก', 'เกี่ยวกับ'], about: ['เกี่ยวกับ', 'รู้จัก'],
+  '프로젝트': ['โครงงาน'], project: ['โครงงาน'], '교육목표': ['เป้าหมาย', 'เป้าประสงค์'], goals: ['เป้าหมาย'], '슬로건': ['คำขวัญ'], motto: ['คำขวัญ'],
+};
+export function widenClues(clues: string[]): string[] {
+  const out = new Set(clues);
+  for (const c of clues) for (const w of SYNONYMS[c] ?? SYNONYMS[c.toLowerCase()] ?? []) out.add(w);
+  return [...out];
+}
 
 /** 템플릿 빈 칸마다 자료에서 찾은 제안. 못 찾은 칸은 빼고 돌려준다 */
 export function proposeFills(t: SiteTemplate, docs: Doc[], opts: { schoolName?: string; images?: { id: string; name: string }[] } = {}): Proposal[] {
@@ -105,7 +127,7 @@ export function proposeFills(t: SiteTemplate, docs: Doc[], opts: { schoolName?: 
     const base = { slotId: slot.id, page: slot.page, label: slot.label, kind: slot.kind };
     if (slot.kind === 'contact') {
       if (slot.id === 'address') {
-        const m = all.match(ADDRESS);
+        const m = all.match(ADDRESS) ?? all.match(ADDRESS_TH);
         if (m) out.push({ ...base, value: m[0].trim(), source: { file: docs.find((d) => d.text.includes(m[0]))?.name ?? '', heading: null, excerpt: m[0].trim() }, confidence: 'high' });
       } else {
         const phone = all.match(PHONE)?.[0]; const email = all.match(EMAIL)?.[0];
@@ -121,7 +143,7 @@ export function proposeFills(t: SiteTemplate, docs: Doc[], opts: { schoolName?: 
       if (img) out.push({ ...base, value: img.id, source: { file: img.name, heading: null, excerpt: img.name }, confidence: 'low' });
       continue;
     }
-    const hit = best(secs, slot);
+    const hit = best(secs, { ...slot, clues: widenClues(slot.clues) });
     if (!hit) continue;
     const body = hit.sec.lines.join('\n');
     const source = { file: hit.sec.file, heading: hit.sec.heading, excerpt: clip(hit.sec.lines.join(' '), 160) };
