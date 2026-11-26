@@ -11,6 +11,8 @@
  *   - steps  : `단계 | 설명(선택)` 한 줄에 단계 하나 → 화살표 흐름도
  *   - bars   : `라벨 | 숫자 | 표시 글(선택)` → 가로 막대(가장 큰 값 기준)
  *   - tiers  : `이름 | 설명 | 꼬리표(선택)` → 아래에서 위로 쌓이는 계단(등급·단계)
+ *   - terms  : `용어 | 쉬운 설명 | 예시(선택)` → 용어 풀이(주석) 카드. 전문 용어는 여기서 풀어 준다(82차)
+ *   - 강조 상자 첫 낱말: **요약**·**핵심** → 핵심 요약, **왜** → 왜 필요한가, **결정**, **주의**
  *   - 그 밖  : 코드 상자
  */
 export type Inline = { t: 'text' | 'b' | 'code'; v: string } | { t: 'a'; v: string; href: string };
@@ -18,7 +20,8 @@ export type Block =
   | { k: 'h'; level: number; text: Inline[]; id: string }
   | { k: 'p'; text: Inline[] }
   | { k: 'ul' | 'ol'; items: Inline[][] }
-  | { k: 'quote'; tone: 'decide' | 'warn' | 'note'; lines: Inline[][] }
+  | { k: 'quote'; tone: 'summary' | 'why' | 'decide' | 'warn' | 'note'; lines: Inline[][] }
+  | { k: 'terms'; items: { term: string; plain: Inline[]; example: Inline[] }[] }
   | { k: 'hr' }
   | { k: 'table'; head: Inline[][]; rows: Inline[][][] }
   | { k: 'kpi'; items: { label: string; value: string; hint: string }[] }
@@ -60,6 +63,7 @@ export function parseRich(md: string): Block[] {
       if (lang === 'kpi') out.push({ k: 'kpi', items: rows.map(([label = '', value = '', hint = '']) => ({ label, value, hint })) });
       else if (lang === 'steps') out.push({ k: 'steps', items: rows.map(([title = '', hint = '']) => ({ title, hint })) });
       else if (lang === 'bars') out.push({ k: 'bars', items: rows.map(([label = '', value = '0', text = '']) => ({ label, value: Number(String(value).replace(/[^\d.-]/g, '')) || 0, text: text || value })) });
+      else if (lang === 'terms') out.push({ k: 'terms', items: rows.map(([term = '', plain = '', example = '']) => ({ term, plain: inline(plain), example: inline(example) })) });
       else if (lang === 'tiers') out.push({ k: 'tiers', items: rows.map(([name = '', hint = '', tag = '']) => ({ name, hint, tag })) });
       else out.push({ k: 'code', lang, text: body.join('\n') });
       continue;
@@ -77,7 +81,8 @@ export function parseRich(md: string): Block[] {
       const qs: string[] = [];
       while (i < lines.length && /^\s*>/.test(lines[i])) qs.push(lines[i++].replace(/^\s*>\s?/, ''));
       const first = qs[0] ?? '';
-      const tone = /^\*\*(결정|선택)/.test(first) ? 'decide' : /^\*\*(주의|위험|경고)/.test(first) ? 'warn' : 'note';
+      const tone = /^\*\*(요약|핵심)/.test(first) ? 'summary' : /^\*\*(왜|필요)/.test(first) ? 'why'
+        : /^\*\*(결정|선택)/.test(first) ? 'decide' : /^\*\*(주의|위험|경고)/.test(first) ? 'warn' : 'note';
       // 첫 줄 맨 앞의 **결정**·**주의** 낱말은 꼬리표로 보이므로 본문에서 뺀다(같은 말 두 번 방지)
       if (tone !== 'note') qs[0] = first.replace(/^\*\*[^*]+\*\*\s*/, '');
       out.push({ k: 'quote', tone, lines: qs.filter((l, n) => n > 0 || l.trim()).map(inline) }); continue;
@@ -98,8 +103,11 @@ export function parseRich(md: string): Block[] {
 const plain = (xs: Inline[]) => xs.map((x) => x.v).join('');
 /** 카드에 보일 요약: 첫 문단(없으면 첫 목록)에서 140자 */
 export function summarize(md: string, max = 140) {
-  const b = parseRich(md).find((x) => x.k === 'p' || x.k === 'ul' || x.k === 'ol');
-  const s = !b ? '' : b.k === 'p' ? plain(b.text) : b.k === 'ul' || b.k === 'ol' ? b.items.map(plain).join(' · ') : '';
+  const bs = parseRich(md);
+  // 82차: '핵심 요약' 상자가 있으면 그것을 카드 요약으로
+  const sum = bs.find((x) => x.k === 'quote' && x.tone === 'summary');
+  const b = sum ?? bs.find((x) => x.k === 'p' || x.k === 'ul' || x.k === 'ol');
+  const s = !b ? '' : b.k === 'quote' ? b.lines.map(plain).join(' ') : b.k === 'p' ? plain(b.text) : b.k === 'ul' || b.k === 'ol' ? b.items.map(plain).join(' · ') : '';
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
 /** 목차: ##·### 제목 */
@@ -109,5 +117,5 @@ export function outline(md: string) {
 /** 카드 꼬리: 본문에 든 표·도식 수 */
 export function shapes(md: string) {
   const bs = parseRich(md);
-  return { tables: bs.filter((b) => b.k === 'table').length, visuals: bs.filter((b) => ['kpi', 'steps', 'bars', 'tiers'].includes(b.k)).length };
+  return { tables: bs.filter((b) => b.k === 'table').length, visuals: bs.filter((b) => ['kpi', 'steps', 'bars', 'tiers'].includes(b.k)).length, terms: bs.filter((b) => b.k === 'terms').reduce((n, b) => n + (b.k === 'terms' ? b.items.length : 0), 0) };
 }

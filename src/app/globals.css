@@ -1876,3 +1876,16 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .rd-tier-no { flex: none; width: 26px; height: 26px; border-radius: var(--radius-full); display: grid; place-items: center; font-weight: 700; font-size: var(--fs-caption); border: 1px solid var(--border-default); }
 @media (max-width: 640px) { .rd-tier { margin-inline: 0 !important; } .rd-step + .rd-step::before { content: none; } .rd-bar { grid-template-columns: 1fr; } }
 .prewrap { white-space: pre-wrap; }
+
+/* 82차: 핵심 요약·왜 필요한가 상자, 용어 풀이(주석) 카드 */
+.rd-summary { border-color: var(--border-focus); background: var(--surface-selected); }
+.rd-summary .rd-callout-tag { color: var(--text-link); }
+.rd-why { border-color: var(--border-default); background: var(--surface-subtle); }
+.rd-why .rd-callout-tag { color: var(--text-subtle); }
+.rd-terms { border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); background: var(--surface-subtle); }
+.rd-terms-title { margin: 0 0 var(--space-2); font-size: var(--fs-body-sm); color: var(--text-muted); }
+.rd-terms dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-2) var(--space-4); }
+.rd-term { border-left: 3px solid var(--border-focus); padding-left: var(--space-3); }
+.rd-term dt { font-weight: 700; }
+.rd-term dd { margin: 0; font-size: var(--fs-body-sm); color: var(--text-subtle); line-height: 1.6; }
+.rd-term-ex { display: block; color: var(--text-muted); font-size: var(--fs-caption); margin-top: var(--space-1); }

@@ -76,6 +76,25 @@ describe('parseRich', () => {
 describe('요약·목차·도식 수', () => {
   it('summarize: 첫 문단', () => expect(summarize(DOC)).toBe('요약 문단 굵게 와 코드 그리고 링크.'));
   it('outline: ##·### 만', () => expect(outline(DOC).map((x) => [x.level, x.text])).toEqual([[2, '등급'], [3, '세부']]));
-  it('shapes', () => expect(shapes(DOC)).toEqual({ tables: 1, visuals: 4 }));
+  it('shapes', () => expect(shapes(DOC)).toEqual({ tables: 1, visuals: 4, terms: 0 }));
   it('빈 본문', () => { expect(parseRich('')).toEqual([]); expect(summarize('')).toBe(''); });
+});
+
+describe('82차: 핵심 요약·왜 필요한가·용어 풀이', () => {
+  const md = `> **요약** 학교마다 격리 등급을 고른다\n\n> **왜** 학교 AI가 자기 기능을 만들려면\n\n\`\`\`terms\nRLS | 표의 줄마다 누가 볼 수 있는지 DB가 검사하는 규칙 | A학교 교사는 B학교 성적 줄을 못 봄\n스키마 | 한 DB 안의 칸(폴더)\n\`\`\``;
+  const b = parseRich(md);
+  it('요약·왜 상자, 첫 낱말은 꼬리표로', () => {
+    expect(b[0]).toMatchObject({ k: 'quote', tone: 'summary', lines: [[{ t: 'text', v: '학교마다 격리 등급을 고른다' }]] });
+    expect(b[1]).toMatchObject({ k: 'quote', tone: 'why' });
+  });
+  it('용어 풀이 블록', () => {
+    expect(b[2]).toMatchObject({ k: 'terms', items: [
+      { term: 'RLS', plain: [{ t: 'text', v: '표의 줄마다 누가 볼 수 있는지 DB가 검사하는 규칙' }], example: [{ t: 'text', v: 'A학교 교사는 B학교 성적 줄을 못 봄' }] },
+      { term: '스키마', example: [] }] });
+    expect(shapes(md)).toMatchObject({ terms: 2 });
+  });
+});
+
+it('82차: 요약 상자가 있으면 카드 요약으로 쓴다', () => {
+  expect(summarize('첫 문단\n\n> **요약** 핵심은 이것')).toBe('핵심은 이것');
 });

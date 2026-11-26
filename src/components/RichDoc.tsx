@@ -5,7 +5,7 @@ function Ins({ xs }: { xs: Inline[] }) {
   return <>{xs.map((x, i) => x.t === 'b' ? <strong key={i}>{x.v}</strong> : x.t === 'code' ? <code key={i}>{x.v}</code>
     : x.t === 'a' ? <a key={i} href={x.href} target="_blank" rel="noopener noreferrer">{x.v}</a> : <span key={i}>{x.v}</span>)}</>;
 }
-const QUOTE = { decide: '결정', warn: '주의', note: '메모' } as const;
+const QUOTE = { summary: '핵심 요약', why: '왜 필요한가', decide: '결정', warn: '주의', note: '메모' } as const;
 
 function B({ b }: { b: Block }) {
   switch (b.k) {
@@ -48,6 +48,12 @@ function B({ b }: { b: Block }) {
         <li key={i} className="rd-tier" data-level={arr.length - i}>
           <span className="rd-tier-no">{arr.length - i}</span><div><strong>{x.name}</strong>{x.tag && <span className="tag">{x.tag}</span>}{x.hint && <p>{x.hint}</p>}</div>
         </li>))}</ol>);
+    case 'terms': return (
+      <section className="rd-terms" aria-label="용어 풀이">
+        <h4 className="rd-terms-title">용어 풀이</h4>
+        <dl>{b.items.map((x, i) => (
+          <div key={i} className="rd-term"><dt>{x.term}</dt><dd><Ins xs={x.plain} />{x.example.length > 0 && <span className="rd-term-ex">예) <Ins xs={x.example} /></span>}</dd></div>))}</dl>
+      </section>);
     case 'code': return <pre className="copy-box"><code>{b.text}</code></pre>;
   }
 }

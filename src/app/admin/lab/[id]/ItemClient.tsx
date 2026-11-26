@@ -12,7 +12,14 @@ async function call(url: string, method: string, body?: unknown) {
   return data;
 }
 
-const HELP = `## 제목
+const HELP = `> **요약** 세 줄 이내 핵심 요약(카드에도 이 글이 보임)
+> **왜** 이 기능이 왜 필요한가
+
+\`\`\`terms
+RLS | 줄마다 누가 볼 수 있는지 DB가 검사하는 규칙 | A학교 교사는 B학교 성적을 못 봄
+\`\`\`
+
+## 제목
 문단은 그냥 적습니다. **굵게**, \`코드\`, [링크](https://…)
 
 | 칸 | 칸 |
