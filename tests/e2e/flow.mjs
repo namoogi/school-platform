@@ -1569,6 +1569,30 @@ try {
     await shot(a, '63-requests.png');
     await ctxA.close(); await ctxS.close();
   });
+  await step('65차: 홈페이지 템플릿 — 둘러보기 7종 → 이야기형 미리보기(쪽 이동) → 적용하면 없는 쪽만 시안 → 쪽 목록에 보임(공개 안 됨)', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site`);
+    await h.click('[data-testid=site-templates-link]');
+    await h.waitForURL(/\/site\/templates$/);
+    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 7);
+    await shot(h, '65-templates.png');
+    await h.click('[data-testid=template-open-story]');
+    await h.locator('[data-testid=template-preview]').waitFor();
+    assert.match(await h.textContent('[data-testid=template-preview]'), /학교의 하루/);
+    await h.click('nav[aria-label="템플릿 쪽"] a:has-text("교육철학")');
+    await h.waitForURL(/page=philosophy/);
+    assert.match(await h.textContent('[data-testid=template-preview]'), /우리가 소중히 여기는 것/);
+    await shot(h, '65-template-preview.png');
+    await h.click('[data-testid=template-apply]');
+    await h.locator('[role=status]', { hasText: '시안 쪽' }).waitFor();
+    await h.goto(`${BASE}/site?box=page`);
+    const list = await h.textContent('.triage-list');
+    assert.match(list, /교육철학/);
+    assert.match(list, /공동체/);
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

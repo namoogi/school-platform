@@ -58,6 +58,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
           <h1>학교 홈페이지</h1>
           <p className="fine">고칠 때마다 새 판으로 쌓이고, 방문자에게는 공개한 판만 보입니다. 공개·내림은 학교 관리자가 합니다.</p>
         </div>
+        <Link className="btn btn-sm" href="/site/templates" data-testid="site-templates-link">템플릿 둘러보기</Link>
         {publicUrl && (settings!.is_open
           ? <Link className="btn btn-secondary btn-sm" href={publicUrl} target="_blank" data-testid="public-link">공개 홈페이지 열기{ownHost ? ` · ${ownHost}` : ""}</Link>
           : <StatusBadge tone="neutral">홈페이지 닫힘</StatusBadge>)}

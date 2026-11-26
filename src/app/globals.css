@@ -1721,3 +1721,9 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .portal-top { display: flex; justify-content: space-between; align-items: center; padding: var(--space-3) var(--space-5); background: var(--surface-default); border-bottom: 1px solid var(--border-default); }
 .portal-main { padding: var(--space-6) var(--space-4) var(--space-12); }
 .doc-json { white-space: pre-wrap; word-break: break-word; font-size: var(--fs-body-sm, 14px); max-height: 70vh; overflow: auto; }
+
+/* 65차: 홈페이지 템플릿 둘러보기·미리보기 */
+.template-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.template-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(240px, 320px) 1fr; align-items: start; }
+.template-preview { border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+@media (max-width: 860px) { .template-layout { grid-template-columns: 1fr; } }
