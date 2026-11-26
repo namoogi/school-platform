@@ -99,3 +99,100 @@ export function AutofillPanel({ templateKey }: { templateKey: string }) {
     </section>
   );
 }
+
+type MigrateResult = { start: string; pages: { url: string; title: string }[]; skipped: { url: string; why: string }[]; proposals: Proposal[];
+  images: { src: string; alt: string }[]; unfilled: { id: string; label: string }[]; imageSlots: { slotId: string; page: string; label: string }[] };
+
+/** 67차(ADR 0031): 기존 홈페이지에서 옮기기 — 주소 → 같은 사이트 쪽 읽기 → 빈 칸 제안(고치기·고르기) → 넣기. 그림은 고른 것만 가져온다 */
+export function MigratePanel({ templateKey }: { templateKey: string }) {
+  const router = useRouter();
+  const [url, setUrl] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<MigrateResult | null>(null);
+  const [pick, setPick] = useState<Record<string, boolean>>({});
+  const [edit, setEdit] = useState<Record<string, string>>({});
+  const [imgPick, setImgPick] = useState<Record<string, boolean>>({});
+  const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  const post = async (path: string, body: unknown) => {
+    const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error ?? '처리하지 못했습니다.');
+    return data;
+  };
+  async function read(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true); setMsg(null); setRes(null);
+    try {
+      const data: MigrateResult = await post('/api/site/templates/migrate', { key: templateKey, url });
+      setRes(data);
+      setPick(Object.fromEntries(data.proposals.filter((p) => p.kind !== 'image').map((p) => [p.slotId, p.confidence === 'high'])));
+      setEdit(Object.fromEntries(data.proposals.filter((p) => typeof p.value === 'string' && p.kind !== 'image').map((p) => [p.slotId, p.value as string])));
+    } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
+    finally { setBusy(false); }
+  }
+  async function importImages() {
+    if (!res) return;
+    const urls = res.images.filter((i) => imgPick[i.src]).map((i) => i.src).slice(0, 10);
+    setBusy(true);
+    try {
+      const data: { imported: { url: string; id: string; name: string }[]; failed: { url: string; why: string }[] } = await post('/api/site/templates/migrate/images', { urls });
+      // 가져온 그림을 사진 칸 제안으로 차례대로 놓는다(고르기는 사람이)
+      const imgs = [...data.imported];
+      const others = res.proposals.filter((p) => p.kind !== 'image');
+      const imageProps: Proposal[] = res.imageSlots.flatMap((s) => { const i = imgs.shift(); return i ? [{ slotId: s.slotId, page: s.page, label: s.label, kind: 'image', value: i.id, source: { file: i.name, heading: null, excerpt: i.name }, confidence: 'low' as const }] : []; });
+      setRes({ ...res, proposals: [...others, ...imageProps] });
+      setPick({ ...pick, ...Object.fromEntries(imageProps.map((p) => [p.slotId, true])) });
+      setMsg({ text: `그림 ${data.imported.length}장을 홈페이지 그림으로 가져왔습니다${data.failed.length ? ` (${data.failed.length}장 실패)` : ''}.` });
+    } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
+    finally { setBusy(false); }
+  }
+  async function apply() {
+    if (!res) return;
+    const fills = res.proposals.filter((p) => pick[p.slotId]).map((p) => ({ slotId: p.slotId, value: typeof p.value === 'string' && p.kind !== 'image' ? (edit[p.slotId] ?? p.value) : p.value }));
+    setBusy(true);
+    try {
+      const body = await post('/api/site/templates/autofill/apply', { key: templateKey, fills });
+      const n = (body.result as { filled: string[] }[]).reduce((a, x) => a + x.filled.length, 0);
+      setMsg({ text: `옛 사이트 내용으로 ${n}칸을 채워 새 시안 판을 만들었습니다. 공개 전에 쪽 목록에서 확인해 주세요.` });
+      setRes(null); router.refresh();
+    } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
+    finally { setBusy(false); }
+  }
+  return (
+    <section className="stack" data-testid="migrate-panel" aria-label="기존 홈페이지에서 옮기기">
+      <h2>기존 홈페이지에서 옮기기</h2>
+      <p className="fine">지금 쓰는 학교 홈페이지 주소를 적으면 같은 사이트 안의 쪽을 8개까지 읽어 칸마다 제안합니다. 공개된 쪽만 읽고, 사이트의 robots.txt를 따릅니다. 확인한 것만 새 시안 판으로 넣고, 그림은 고른 것만 가져옵니다.</p>
+      <form className="row-wrap" onSubmit={read}>
+        <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://our-school.example" aria-label="기존 홈페이지 주소" required data-testid="migrate-url" />
+        <button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-read">{busy ? '읽는 중…' : '읽기'}</button>
+      </form>
+      {res && (
+        <div className="stack">
+          <p className="fine">읽은 쪽 {res.pages.length}개: {res.pages.map((p) => p.title || new URL(p.url).pathname).join(' · ')}{res.skipped.length ? ` · 건너뜀 ${res.skipped.length}개` : ''}</p>
+          {res.proposals.length === 0 ? <p className="muted">맞는 부분을 찾지 못했습니다.</p> : (
+            <ul className="issue-list" data-testid="migrate-proposals">{res.proposals.map((p) => (
+              <li key={p.slotId} className="autofill-item">
+                <label className="radio"><input type="checkbox" checked={!!pick[p.slotId]} onChange={(e) => setPick({ ...pick, [p.slotId]: e.target.checked })} /><strong>{p.label}</strong></label>
+                <small className="muted">{p.page} · {p.confidence === 'high' ? '제목으로 찾음' : '확인 필요'}{p.source?.file ? ` · ${p.source.file}${p.source.heading ? ` › ${p.source.heading}` : ''}` : ''}</small>
+                {Array.isArray(p.value) ? <ul className="fine">{p.value.map((i, k) => <li key={k}>{i.title}{i.body ? ` — ${i.body}` : ''}</li>)}</ul>
+                  : p.kind === 'image' ? <small className="muted">그림: {p.source?.excerpt}</small>
+                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={`${p.label} 내용`} />}
+              </li>
+            ))}</ul>
+          )}
+          {res.images.length > 0 && res.imageSlots.length > 0 && (
+            <details><summary>옛 사이트 그림 {res.images.length}장에서 고르기</summary>
+              <ul className="issue-list">{res.images.map((i) => (
+                <li key={i.src}><label className="radio"><input type="checkbox" checked={!!imgPick[i.src]} onChange={(e) => setImgPick({ ...imgPick, [i.src]: e.target.checked })} />{i.alt || new URL(i.src).pathname.split('/').pop()}</label></li>
+              ))}</ul>
+              <p className="fine">학생이 나오는 사진은 학생·보호자 공개 허가를 받은 것만 가져옵니다.</p>
+              <div className="form-actions"><button type="button" className="btn" disabled={busy || !Object.values(imgPick).some(Boolean)} onClick={importImages}>고른 그림 가져오기(10장까지)</button></div>
+            </details>
+          )}
+          {res.proposals.length > 0 && <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy || !Object.values(pick).some(Boolean)} onClick={apply} data-testid="migrate-apply">고른 것 넣기</button></div>}
+        </div>
+      )}
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && !res && <> <a href="/site?box=page">쪽 목록으로</a></>}</p>}
+    </section>
+  );
+}

@@ -90,3 +90,27 @@ describe('66차 학교 자료로 빈 칸 채우기', () => {
   });
 });
 
+
+describe('67차 기존 사이트에서 옮기기', () => {
+  it('읽은 쪽으로 제안을 만들고, 고른 그림만 형식 검사 뒤 학교 그림으로 가져온다(가짜 크롤러·시험 전용)', async () => {
+    const { crawlSite } = await import('@/lib/site-crawl');
+    const fakeCrawl = (async () => ({ start: 'https://old.example/', skipped: [], pages: [
+      { url: 'https://old.example/about', title: '학교 소개', text: '교육 철학\n스스로 묻고 함께 답을 찾는 배움터입니다.\n\n하루 일과\n아침 산책으로 시작합니다.', images: [{ src: 'https://old.example/a.png', alt: '전경' }] },
+    ] })) as unknown as typeof crawlSite;
+    const pv = await asUser(A.userId, (db) => tpl.migratePropose(db, A.schoolId, 'story', 'https://old.example/', '드리미 예시학교', fakeCrawl));
+    expect(pv.pages).toEqual([{ url: 'https://old.example/about', title: '학교 소개' }]);
+    expect(pv.proposals.map((p) => p.slotId)).toEqual(expect.arrayContaining(['belief', 'day']));
+    expect(pv.images).toEqual([{ src: 'https://old.example/a.png', alt: '전경' }]);
+    expect(pv.imageSlots.map((s) => s.slotId)).toEqual(['hero-photo']);
+    const PNG = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082', 'hex');
+    const fakeImg = (async (u: string) => u.endsWith('a.png') ? { bytes: PNG, type: 'image/png', name: 'a.png' } : { bytes: Buffer.from('<html>'), type: 'text/html', name: 'x' }) as never;
+    const r = await asUser(A.userId, (db) => tpl.migrateImages(db, A.schoolId, ['https://old.example/a.png', 'https://old.example/not-image'], fakeImg));
+    expect(r.imported.map((i) => i.name)).toEqual(['a.png']);
+    expect(r.failed).toHaveLength(1);
+    const assets = await asUser(A.userId, (db) => site.listAssets(db, A.schoolId));
+    expect(assets.some((a) => a.id === r.imported[0].id && a.mime === 'image/png')).toBe(true);
+    await expect(asUser(A.userId, (db) => tpl.migrateImages(db, A.schoolId, Array(11).fill('https://old.example/a.png'), fakeImg))).rejects.toThrow('10장');
+    // 실제 크롤러는 사설 주소를 거부한다
+    await expect(asUser(A.userId, (db) => tpl.migratePropose(db, A.schoolId, 'story', 'http://127.0.0.1/', 'x'))).rejects.toThrow(/공개 인터넷/);
+  });
+});
