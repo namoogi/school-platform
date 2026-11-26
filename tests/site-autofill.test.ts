@@ -75,3 +75,22 @@ describe('알림 중심형 빈 칸 제안', () => {
     expect(none).toEqual([]);
   });
 });
+
+describe('69차 운영 시험 반영', () => {
+  it('태국어 자료: 단서 낱말을 넓혀 사명·연혁·입학·연락처를 찾고, 태국 주소·전화를 꺼낸다', () => {
+    const th = ['พันธกิจ', 'ส่งเสริมให้ผู้เรียนเป็นคนดีและใฝ่เรียนรู้', '', 'ติดต่อเรา', 'โรงเรียนตัวอย่าง 99 หมู่ 1 ตำบลในเมือง อำเภอเมือง จังหวัดอุบลราชธานี 34000',
+      'โทร 045-953-2000'].join('\n');
+    const t = templateByKey('mission');
+    const by = Object.fromEntries(proposeFills(t, [{ name: 'th.txt', text: th }], { schoolName: 'Example School' }).map((p) => [p.slotId, p]));
+    expect(String(by.mission.value)).toContain('ส่งเสริม');
+    expect(String(by.address.value)).toContain('34000');
+    expect(by.footer.value).toBe('Example School · 045-953-2000');
+  });
+
+  it('전화번호는 앞뒤가 숫자인 긴 숫자열에서 잘라 내지 않는다', () => {
+    const t = templateByKey('single');
+    const ps = proposeFills(t, [{ name: 'x.txt', text: '연락처\n우편 626837 045-9532 사무실 02-123-4567' }]);
+    expect(ps.find((p) => p.slotId === 'footer')!.value).toBe('02-123-4567');
+  });
+});
+

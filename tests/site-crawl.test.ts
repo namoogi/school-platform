@@ -71,4 +71,10 @@ describe('읽기', () => {
     const { text } = await htmlToText('<div><li><p>한 번만</p></li></div>', 'https://x.example/');
     expect(text.match(/한 번만/g)).toHaveLength(1);
   });
+
+  it('69차: 시작 주소가 하위 경로면 그 경로 아래만 읽는다', async () => {
+    const r = await crawlSite(`${base}/about`, { allowPrivate: true, maxPages: 5 });
+    expect(r.pages.map((p) => new URL(p.url).pathname)).toEqual(['/about', '/about/more']);
+  });
 });
+

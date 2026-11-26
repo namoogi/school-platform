@@ -122,6 +122,8 @@ export async function crawlSite(start: string, opts: Opts = {}): Promise<CrawlRe
   const deadline = Date.now() + o.budgetMs;
   const first = await assertPublicUrl(start, o.allowPrivate);
   const origin = first.origin;
+  // 69차: 시작 주소가 하위 경로(예: /s/학교)면 그 경로 아래만 읽는다(같은 호스트의 다른 사이트·로그인 쪽 제외)
+  const prefix = first.pathname === '/' ? '/' : first.pathname.replace(/\/[^/]*\.[a-z0-9]+$/i, '').replace(/\/$/, '');
   let disallow: string[] = [];
   try {
     const r = await get(`${origin}/robots.txt`, o, 'text/plain');
@@ -144,7 +146,7 @@ export async function crawlSite(start: string, opts: Opts = {}): Promise<CrawlRe
     pages.push({ url: r.url, title, text, images });
     for (const l of links) {
       const lu = new URL(l);
-      if (lu.origin !== origin || seen.has(l) || /\.(pdf|jpe?g|png|gif|webp|zip|hwp|docx?|xlsx?|pptx?|mp4|mp3)$/i.test(lu.pathname)) continue;
+      if (lu.origin !== origin || (prefix !== '/' && lu.pathname !== prefix && !lu.pathname.startsWith(`${prefix}/`)) || seen.has(l) || /\.(pdf|jpe?g|png|gif|webp|zip|hwp|docx?|xlsx?|pptx?|mp4|mp3)$/i.test(lu.pathname)) continue;
       if (lu.search.length > 60) continue;
       seen.add(l); queue.push(l);
     }
