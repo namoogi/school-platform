@@ -1511,6 +1511,64 @@ try {
     await s.locator('h1:has-text("볼 수 있는 기록이 없습니다")').waitFor();
     await ctxA.close(); await ctxS.close();
   });
+  await step('63차 F6: 수정 요청 → 관리자 거부(이유) → 학생 이의 의견서 → 관리자 화면에 보임, 보존 규칙·파기 미리보기(재학 중이면 불가)', async () => {
+    const db = new pg.Client({ connectionString: DB_URL });
+    await db.connect();
+    const { rows: [sch] } = await db.query(`select id from public.schools where slug = 'school-a'`);
+    const { rows: [person] } = await db.query(`insert into public.people(school_id, created_by) select $1, id from private.app_users where email = 'admin-a@school-a.test' returning id`, [sch.id]);
+    await db.query(`insert into public.person_names(school_id, person_id, version, name, recorded_by) select $1, $2, 1, 'E2E 요청 학생', id from private.app_users where email = 'admin-a@school-a.test'`, [sch.id, person.id]);
+    const salt = crypto.randomBytes(16);
+    const hash = `scrypt$16384$${salt.toString('base64')}$${crypto.scryptSync('demo-pass-r', salt, 32, { N: 16384, r: 8, p: 1 }).toString('base64')}`;
+    await db.query(`insert into private.app_users(email, password_hash, display_name) values ('e2e-request@family.test', $1, 'E2E 요청')`, [hash]);
+    await db.end();
+
+    const ctxA = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const a = await ctxA.newPage();
+    await login(a, 'admin-a@school-a.test', 'demo-pass-a');
+    await a.goto(`${BASE}/settings`);
+    const form = a.locator('[data-testid=portal-account-form]');
+    await form.locator('select[aria-label="사람"]').selectOption({ label: 'E2E 요청 학생' });
+    await form.locator('input[type=email]').fill('e2e-request@family.test');
+    await form.locator('button[type=submit]').click();
+    await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 요청 학생' }).waitFor();
+
+    const ctxS = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const s = await ctxS.newPage();
+    await s.goto(`${BASE}/login`);
+    await s.fill('input[name=email]', 'e2e-request@family.test');
+    await s.fill('input[name=password]', 'demo-pass-r');
+    await s.click('button[type=submit]');
+    await s.waitForURL(/\/my$/);
+    const rf = s.locator('[data-testid=my-request-form]');
+    await rf.locator('textarea').fill('E2E 행동 특성 서술이 사실과 다릅니다.');
+    await rf.locator('button[type=submit]').click();
+    await s.locator('[data-testid=my-requests] li', { hasText: 'E2E 행동 특성 서술' }).waitFor();
+    assert.match(await s.textContent('[data-testid=my-requests]'), /접수/);
+
+    await a.goto(`${BASE}/requests`);
+    const item = a.locator('[data-testid=request-list] li', { hasText: 'E2E 행동 특성 서술' });
+    await item.locator('select[aria-label="결정"]').selectOption('denied');
+    await item.locator('input[aria-label="이유"]').fill('E2E 담임 확인 결과 기록이 정확합니다.');
+    await item.locator('button:text-is("결정")').click();
+    await a.locator('[data-testid=request-list] li', { hasText: 'E2E 담임 확인 결과' }).waitFor();
+
+    await s.goto(`${BASE}/my`);
+    const mine = s.locator('[data-testid=my-requests] li', { hasText: 'E2E 행동 특성 서술' });
+    await mine.locator('textarea').fill('E2E 저는 그 기간 봉사 활동 중이었습니다.');
+    await mine.locator('button:text-is("의견서 붙이기")').click();
+    await s.locator('[data-testid=my-requests]', { hasText: '내 의견서: E2E 저는 그 기간' }).waitFor();
+    await shot(s, '63-my-requests.png');
+
+    await a.goto(`${BASE}/requests`);
+    assert.match(await a.textContent('[data-testid=request-list]'), /이의 의견서: E2E 저는 그 기간/);
+    await a.locator('[data-testid=retention-form] input[type=number]').fill('5');
+    await a.locator('[data-testid=retention-form] button[type=submit]').click();
+    await a.locator('p.fine', { hasText: '1판 · 재적이 끝난 뒤 5년' }).waitFor();
+    await a.locator('[data-testid=redact-panel] select').selectOption({ label: 'E2E 요청 학생' });
+    await a.locator('[data-testid=redact-panel] p', { hasText: '파기할 수 없습니다' }).waitFor();
+    await shot(a, '63-requests.png');
+    await ctxA.close(); await ctxS.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));
