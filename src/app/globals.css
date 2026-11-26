@@ -1763,3 +1763,14 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .people-list a[aria-current=page] { background: var(--surface-subtle); font-weight: 650; }
 @media (max-width: 860px) { .people-layout { grid-template-columns: 1fr; } }
 .grid-table input.cell-changed { border-color: var(--border-focus); background: var(--surface-selected); }
+
+/* 75차: 기록 발행본(인쇄용) */
+.record-doc h2 { font-size: var(--fs-h2, 1.25rem); margin: 0; }
+.record-doc h3 { margin: var(--space-4) 0 var(--space-2); border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-1); }
+.record-doc h4 { margin: var(--space-2) 0 var(--space-1); font-size: var(--fs-body-sm); color: var(--text-muted); }
+.record-doc .meta-list { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); margin: 0; }
+.record-doc .meta-list > div { display: contents; }
+.record-doc .meta-list dt { color: var(--text-muted); font-size: var(--fs-body-sm); }
+.record-doc .meta-list dd { margin: 0; }
+.record-doc .prewrap { white-space: pre-wrap; }
+@media print { .record-doc .grid-table { font-size: 10pt; } .record-year { break-inside: avoid-page; } }
