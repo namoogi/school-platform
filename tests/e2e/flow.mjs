@@ -1852,7 +1852,10 @@ try {
     await p.goto(`${BASE}/admin/lab`);
     await p.locator('[data-testid=lab-items] li.lab-card').first().waitFor();
     await shot(p, '81-lab-cards.png');
-    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a.item-title').click();
+    // 제목 글자가 아니라 카드 빈 곳(아래쪽 꼬리)을 눌러도 상세로 간다
+    const card = p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' });
+    const box = await card.boundingBox();
+    await card.click({ position: { x: box.width / 2, y: box.height - 8 } });
     await p.waitForURL(/\/admin\/lab\/[0-9a-f-]{36}$/);
     await p.locator('[data-testid=lab-controls] button:text-is("내용 고치기")').click();
     const ed = p.locator('[data-testid=lab-editor]');

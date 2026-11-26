@@ -1781,7 +1781,7 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 /* ── 81차: 연구소 카드 · 상세 · 본문 서식(표·지표·흐름도·막대·계단) ── */
 .lab-cards { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); }
 .lab-cards > .empty { grid-column: 1 / -1; }
-.lab-card { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--surface-default); border: 1px solid var(--border-default); border-top: 3px solid var(--border-default); border-radius: var(--radius-lg); min-height: 168px; }
+.lab-card { position: relative; cursor: pointer; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--surface-default); border: 1px solid var(--border-default); border-top: 3px solid var(--border-default); border-radius: var(--radius-lg); min-height: 168px; }
 .lab-card[data-kind="lab"] { border-top-color: var(--info-fg); }
 .lab-card[data-kind="plan"] { border-top-color: var(--brand-500); }
 .lab-card[data-kind="tool"], .lab-card[data-kind="method"] { border-top-color: var(--warning-fg); }
@@ -1795,6 +1795,12 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .lab-card-title { display: flex; align-items: flex-start; gap: var(--space-2); }
 .lab-card-title .item-title { font-size: var(--fs-body); line-height: 1.4; text-decoration: none; }
 .lab-card-title .item-title:hover { text-decoration: underline; }
+/* 카드 어디를 눌러도 상세로(제목 링크를 카드 전체로 늘림). 체크 상자는 위에 올려 따로 눌린다 */
+.lab-card-title .item-title::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.lab-card-title .item-title:focus-visible { outline: none; }
+.lab-card:has(.item-title:focus-visible) { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.lab-card-title input[type="checkbox"] { position: relative; z-index: 1; cursor: pointer; }
+.lab-card:hover { box-shadow: var(--shadow-input); }
 .lab-card-sum { margin: 0; color: var(--text-subtle); font-size: var(--fs-body-sm); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .lab-progress { display: flex; align-items: center; gap: var(--space-2); }
 .lab-progress-track { flex: 1; height: 6px; background: var(--surface-subtle); border-radius: var(--radius-full); overflow: hidden; border: 1px solid var(--border-subtle); }
