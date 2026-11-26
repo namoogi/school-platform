@@ -991,6 +991,16 @@ try {
     assert.match(connect, /after-rain → .*\/s\/dreamy-a\/stories\/after-rain/);
     assert.match(connect, /Claude Code 클라우드/);
     assert.match(connect, /base_version/);
+    // 83차: 세션마다 발급 안내가 보이고, 작업자·세션 이름을 넣으면 연결 글에 들어간다(사용 기록에 남김)
+    await h.locator('[data-testid=agent-token-session-guide]').waitFor();
+    assert.match(connect, /x-agent-session/);
+    await h.fill('[data-testid=agent-connect-operator]', '예시 교사');
+    await h.fill('[data-testid=agent-connect-session]', '동화-수정-1');
+    const connect2 = await h.inputValue('[data-testid=agent-connect-text]');
+    assert.match(connect2, /SCHOOL_AGENT_OPERATOR='예시 교사'/);
+    assert.match(connect2, /SCHOOL_AGENT_SESSION='동화-수정-1'/);
+    await h.fill('[data-testid=agent-connect-operator]', '');
+    await h.fill('[data-testid=agent-connect-session]', '');
     await ctxH.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
     await h.click('[data-testid=agent-connect-copy]');
     await h.waitForSelector('[data-testid=agent-connect] [role=status]:has-text("연결 글을 복사했습니다")');

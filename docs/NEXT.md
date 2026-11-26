@@ -1,6 +1,6 @@
-# 다음 세션 인계 (2026-11-26, 82차 끝)
+# 다음 세션 인계 (2026-11-26, 83차 끝)
 
-새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-82.md` → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
+새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-83.md` → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
 
 ## 설명 방식 (82차, 꼭 지킬 것)
@@ -18,7 +18,7 @@
 - 학교 화면: 학사 업무형(ADR 0006). 전체 관리: 분석 대시보드형 다크 + 화이트 반전(ADR 0007). 사용자별 화면 선택은 DB에 저장된다.
 - 학교 홈페이지·성품 동화 모듈(ADR 0008): `/site` 관리, `/s/<주소>` 공개.
 - 룽아룬숙사: 운영 홈페이지가 새벽빛 테마로 열려 있다(`/s/rungarunsuksa`, 쪽 7·후원자 숨은 쪽 6·소식 4·동화 1). 옛 주소 호환 경로가 있다(31차).
-- AI 작업 공간(ADR 0012·0013·0014·0016, 34·36·38·40차): 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive·publish, 기한 7~365일·무기한·연장)을 발급한다. 학교의 Claude Code·Codex가 새 항목·새 판(구조 포함)·항목 정보·보관을 하고, 이것들은 저절로 공개되지 않는다. `publish` 권한이 있으면 사람이 공개를 지시했을 때 바로 공개·공개 내림. 되살리기·설정은 사람. 안내 `docs/agents/README.md`, 스크립트 `scripts/agent-story-upload.mjs --create --publish`. 46차(ADR 0022): 발급 직후 **AI 연결** 글(지시문 + 토큰)을 '한 번에 복사'해 AI 대화창에 붙여 넣으면 연결된다. 이미 발급한 토큰은 목록의 '지시문만 복사'.
+- AI 작업 공간(ADR 0012·0013·0014·0016, 34·36·38·40·83차): 83차부터 사용 기록에 세션 이름·작업자(자기 신고, 머리 x-agent-session·x-agent-operator)가 남고, 한 토큰을 여러 세션이 쓰면 경고. 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive·publish, 기한 7~365일·무기한·연장)을 발급한다. 학교의 Claude Code·Codex가 새 항목·새 판(구조 포함)·항목 정보·보관을 하고, 이것들은 저절로 공개되지 않는다. `publish` 권한이 있으면 사람이 공개를 지시했을 때 바로 공개·공개 내림. 되살리기·설정은 사람. 안내 `docs/agents/README.md`, 스크립트 `scripts/agent-story-upload.mjs --create --publish`. 46차(ADR 0022): 발급 직후 **AI 연결** 글(지시문 + 토큰)을 '한 번에 복사'해 AI 대화창에 붙여 넣으면 연결된다. 이미 발급한 토큰은 목록의 '지시문만 복사'.
 - Claude 점검 접근(ADR 0010)
   - 작업 환경(Default)의 Network secret `onschools.vercel.app`(머리 `x-inspector-token`)이 들어 있다.
   - 클라우드 세션은 로그인 없이 **전체 관리자(관제 세션)**로 운영 화면·API를 쓴다(ADR 0024, 51차).

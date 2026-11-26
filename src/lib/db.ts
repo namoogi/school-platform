@@ -68,12 +68,14 @@ export async function asPublic<T>(fn: (db: Db) => Promise<T>): Promise<T> {
  * 이 역할은 agent 스키마의 명령 함수만 부를 수 있고, 함수가 토큰(해시)을 확인해 학교·동화 범위를 정한다.
  * 로그인 쿠키·asSystem 은 쓰지 않는다.
  */
-export async function asAgent<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+/** 83차: ctx(세션 이름·작업자)는 에이전트가 스스로 알린 값. 트랜잭션 안에서만 쓰이고 토큰 사용 기록에 붙는다 */
+export async function asAgent<T>(fn: (db: Db) => Promise<T>, ctx: { session?: string | null; operator?: string | null } = {}): Promise<T> {
   const client = await getPool().connect();
   try {
     await client.query('begin');
     await client.query('set local role agent_request');
     await client.query("select set_config('request.jwt.claims', '{}', true)");
+    await client.query("select set_config('app.agent_session', $1, true), set_config('app.agent_operator', $2, true)", [ctx.session ?? '', ctx.operator ?? '']);
     const result = await fn(client);
     await client.query('commit');
     return result;
