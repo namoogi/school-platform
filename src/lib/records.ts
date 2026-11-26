@@ -7,7 +7,7 @@ import { isUuid, NotFoundError, ValidationError } from './services';
  * 렌더러는 마감 판 스냅샷만 읽는다(현재 원장을 다시 읽지 않음, 지침 5). 변환에서 빠지거나 바뀌는 것은 issues 로 남긴다(지침 6).
  * 기준 서식: kr_alt_record(한국 대안학교 자체 학생부), us_transcript(미국 성적증명서 + 설명표), us_school_profile(학교 소개서).
  */
-export type Format = 'kr_alt_record' | 'us_transcript' | 'us_school_profile';
+export type Format = 'kr_alt_record' | 'us_transcript' | 'us_school_profile' | 'th_por_por_1' | 'en_record';
 type LText = Record<string, string>;
 export type Snapshot = {
   student: { person_id: string; name: string; name_latin: string | null } | null;
@@ -22,6 +22,9 @@ export type Snapshot = {
   narratives: { kind: string; author_role: string; offering_id: string | null; body: string }[];
   attendance: { enrolled_days: number; absent_days: number; counts: Record<string, number>; absent_by_reason: Record<string, number>; attendance_rate: number | null };
   evidence: { title: string; link: string | null }[];
+  /** 64차: 외부 결과·자격(그 학년도 안). 63차 이전 판에는 없다 */
+  external_results?: { issuer: string; exam: string; title: LText; sat_on: string; result: { grade?: string; score?: number; components?: Record<string, unknown> } }[];
+  qualifications?: { kind: string; title: LText; awarded_on: string; issuer: string }[];
 };
 export type Issue = { level: 'info' | 'question'; where: string; message: string };
 export type RecordClosure = { id: string; version: number; previous_id: string | null; reason: string | null; academic_year_id: string; snapshot: Snapshot; closed_at: string };
@@ -158,6 +161,69 @@ export function renderUsSchoolProfile(input: { school: Snapshot['school']; stude
   };
 }
 
+/** 64차 응용 출력 — 태국 ปพ.1(ระเบียนแสดงผลการเรียน) 학교 사본: 0–4 8단계, 학습 영역·과목·หน่วยกิต, GPAX.
+ * ปพ.1은 교육부 지정 인쇄 양식이라 이것은 학교 내부 사본·인쇄용 자료다. 점수 → 등급 띠는 학교마다 조금씩 달라 출력 프로필 판(settings.bands)으로 정한다 */
+export const TH_BANDS_DEFAULT = [{ min: 80, grade: 4 }, { min: 75, grade: 3.5 }, { min: 70, grade: 3 }, { min: 65, grade: 2.5 }, { min: 60, grade: 2 }, { min: 55, grade: 1.5 }, { min: 50, grade: 1 }, { min: 0, grade: 0 }];
+export function renderThPorPor1(snaps: Snapshot[], settings: Record<string, unknown> = {}) {
+  const issues: Issue[] = [];
+  const bands = (Array.isArray(settings.bands) ? settings.bands : TH_BANDS_DEFAULT) as { min: number; grade: number }[];
+  if (!Array.isArray(settings.bands)) issues.push({ level: 'info', where: 'bands', message: '학교 평가 규정(ระเบียบการวัดและประเมินผล)의 점수 띠를 출력 프로필에 넣지 않아 흔한 기본 띠(80/75/70/65/60/55/50)를 썼습니다. 학교 규정과 같은지 확인해 주세요.' });
+  let pts = 0; let cr = 0;
+  const years = snaps.map((s) => ({
+    year: s.year.label,
+    courses: s.courses.map((c) => {
+      const name = pick(c.labels.record, 'th') ?? pick(c.labels.all, 'th');
+      if (!name) issues.push({ level: 'question', where: `${s.year.label} ${c.subject_code}`, message: '태국어 과목명(th 표기)이 없어 과목 코드를 씁니다.' });
+      const r = c.result;
+      let grade: string;
+      if (r.attempt_status === 'incomplete') { grade = 'ร'; issues.push({ level: 'question', where: `${s.year.label} ${c.subject_code}`, message: 'ร(판정 보류)로 남아 있습니다.' }); }
+      else if (r.attempt_status === 'withdrawn') grade = '-';
+      else if (c.pass_fail) grade = r.attempt_status === 'completed' ? 'ผ' : 'มผ';
+      else if (r.final_score == null) { grade = '-'; issues.push({ level: 'question', where: `${s.year.label} ${c.subject_code}`, message: '최종 점수가 없어 태국 등급으로 바꾸지 못했습니다.' }); }
+      else {
+        const g = bands.find((b) => Number(r.final_score) >= b.min)?.grade ?? 0;
+        grade = g.toFixed(1).replace(/\.0$/, '');
+        if (r.attempt_status === 'completed' || r.attempt_status === 'failed') { pts += g * Number(c.credits); cr += Number(c.credits); }
+      }
+      return { code: c.subject_code, subject: name ?? c.subject_code, term: c.term, credits: Number(c.credits), grade };
+    }),
+  }));
+  const first = snaps[0];
+  return {
+    content: { format: 'th_por_por_1', title: 'ระเบียนแสดงผลการเรียน (สำเนาของโรงเรียน)', school: first?.school.name ?? null,
+      student: first?.student ? (first.student.name_latin ? `${first.student.name} (${first.student.name_latin})` : first.student.name) : null,
+      years, gpax: cr ? Math.floor((pts / cr) * 100) / 100 : null, credits: cr,
+      note: (settings.note as string) ?? '학교 내부 사본·인쇄용 자료입니다. 공식 ปพ.1은 교육부 지정 양식으로 발급합니다.' },
+    issues,
+  };
+}
+
+/** 64차 응용 출력 — 영어권 학업 기록(Academic Record): 학년도별 과목·백분율·등급·학점, 외부 시험 결과(GCSE·A level·IB·AP 등, 기관 발급), 자격. GPA 없음(설정 gpa: true면 표시) */
+export function renderEnRecord(snaps: Snapshot[], settings: Record<string, unknown> = {}) {
+  const issues: Issue[] = [];
+  const years = snaps.map((s) => ({
+    year: s.year.label,
+    courses: s.courses.map((c) => {
+      const title = pick(c.labels.transcript, 'en') ?? pick(c.labels.all, 'en');
+      if (!title) issues.push({ level: 'question', where: `${s.year.label} ${c.subject_code}`, message: 'No English course title. The internal subject name is used.' });
+      const r = c.result;
+      return { course: title ?? c.subject_name, term: c.term, percent: c.pass_fail || r.final_score == null ? null : Number(r.final_score),
+        grade: r.attempt_status === 'withdrawn' ? 'W' : r.attempt_status === 'incomplete' ? 'I' : c.pass_fail ? (r.attempt_status === 'completed' ? 'P' : 'F') : r.level_code,
+        credits: Number(r.credits_earned) };
+    }),
+    external: (s.external_results ?? []).map((x) => ({ awarding_body: x.issuer, exam: x.exam, title: pick(x.title, 'en') ?? x.exam, date: x.sat_on,
+      result: x.result.grade ?? (x.result.score != null ? String(x.result.score) : null) })),
+    qualifications: (s.qualifications ?? []).map((q) => ({ title: pick(q.title, 'en') ?? q.kind, awarded_on: q.awarded_on, issuer: q.issuer })),
+  }));
+  if (snaps.some((s) => s.external_results === undefined)) issues.push({ level: 'info', where: 'external', message: 'Some record years were closed before external results were recorded (round 64). Re-close the year to include them.' });
+  const first = snaps[0];
+  return {
+    content: { format: 'en_record', title: 'Academic Record', school: first?.school.name ?? null, student: first?.student ? first.student.name_latin ?? first.student.name : null,
+      years, note: (settings.note as string) ?? 'External examination results are issued by the awarding bodies and recorded here as reported. This record is issued by the school.' },
+    issues,
+  };
+}
+
 /** 블라인드: 학생 이름·학교 이름·학교 코드를 내용 전체에서 가린다(서술 안의 이름까지). 가린 곳은 issues 에 남긴다 */
 export function blind(content: Record<string, unknown>, secrets: string[], issues: Issue[]) {
   let text = JSON.stringify(content);
@@ -193,7 +259,10 @@ export async function publishRecordDocument(db: Db, schoolId: string, input: { f
     if (!closures.length) throw new ValidationError('학년도 기록 마감 판이 없습니다. 먼저 마감해 주세요.');
     closureIds = closures.map((c) => c.id);
     const snaps = closures.map((c) => c.snapshot);
-    out = input.format === 'us_transcript' ? renderUsTranscript(snaps, prof.settings) : renderKrAltRecord(snaps, prof.settings);
+    out = input.format === 'us_transcript' ? renderUsTranscript(snaps, prof.settings)
+      : input.format === 'th_por_por_1' ? renderThPorPor1(snaps, prof.settings)
+      : input.format === 'en_record' ? renderEnRecord(snaps, prof.settings)
+      : renderKrAltRecord(snaps, prof.settings);
     // 63차 ADR 0030: 거부된 수정 요청에 붙은 이의 의견서는 원 기록을 바꾸지 않고 발행본에 함께 싣는다
     const { rows: notes } = await db.query(
       `select a.body, a.written_at, q.body as request from public.record_annotations a join public.record_requests q on q.id = a.request_id
@@ -204,7 +273,7 @@ export async function publishRecordDocument(db: Db, schoolId: string, input: { f
   }
   if (input.blind) out.content = blind(out.content, secrets, out.issues);
   const { rows: [r] } = await db.query('select app.publish_record_document($1, $2) as v', [schoolId, JSON.stringify({
-    format: input.format, person_id: input.personId ?? null, closure_ids: closureIds, lang: input.lang ?? (input.format === 'kr_alt_record' ? 'ko' : 'en'),
+    format: input.format, person_id: input.personId ?? null, closure_ids: closureIds, lang: input.lang ?? (input.format === 'kr_alt_record' ? 'ko' : input.format === 'th_por_por_1' ? 'th' : 'en'),
     blind: input.blind === true, content: out.content, issues: out.issues, profile_id: prof.id, profile_version: prof.version,
   })]);
   return { id: r.v as string, issues: out.issues, content: out.content };
