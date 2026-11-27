@@ -6,17 +6,23 @@ import { PageHeader, StatusBadge } from '@/components/ui';
 import { ActionForm } from '@/components/ActionForm';
 import { RuleForm } from './RuleForm';
 import { getI18n, userLang } from '@/lib/i18n/server';
+import { presetLevels, schemeView, gradeLabel, type GradeScheme } from '@/lib/grade-schemes';
+import { GradeSchemeForm, type PresetRow } from './GradeSchemeForm';
+import type { MsgKey } from '@/lib/i18n/catalog';
 
 /** 71차: 학교 구조 — 학교급·학년도·학기 구조(확정 규칙 판)·학년도별 학기와 날짜 */
 export default async function AcademicsPage() {
-  const { levels, years, rule, terms, school, uiLang } = await loadForPage(async ({ db, school }) => {
+  const { levels, years, rule, terms, school, uiLang, view } = await loadForPage(async ({ db, school }) => {
     const years = await listAcademicYears(db, school.id);
     const terms: Record<string, Awaited<ReturnType<typeof listTerms>>> = {};
     for (const y of years) terms[y.id] = await listTerms(db, school.id, y.id);
-    return { levels: await listSchoolLevels(db, school.id), years, rule: await latestPeriodRule(db, school.id), terms, uiLang: await userLang(db) };
+    const uiLang = await userLang(db);
+    return { levels: await listSchoolLevels(db, school.id), years, rule: await latestPeriodRule(db, school.id), terms, uiLang, view: await schemeView(db, school.id, uiLang ?? school.locale) };
   }, { module: 'records' });
   const admin = school.isAdmin;
-  const { t } = await getI18n(uiLang, school.locale);
+  const { t, lang } = await getI18n(uiLang, school.locale);
+  const presets = Object.fromEntries((['kr', 'us', 'custom'] as GradeScheme[]).map((s) => [s, presetLevels(s).map((l): PresetRow => ({
+    level: l.key, grades: l.grades.map((g) => ({ code: g.code, label: gradeLabel(g, s === 'custom' ? 'kr' : s, lang) })) }))])) as Record<GradeScheme, PresetRow[]>;
   return (
     <>
       <PageHeader title={t('nav.academics.title')} crumbs={[{ label: t('intake.crumb') }, { label: t('nav.academics.title') }]}
@@ -24,11 +30,13 @@ export default async function AcademicsPage() {
         meta={<><span>{t('academics.metaLevels', { n: levels.length })}</span><span>{t('academics.metaYears', { n: years.length })}</span>{rule && <span>{t('academics.metaRule', { v: rule.version })}</span>}</>} />
       <div className="settings-grid">
         <section className="card" data-testid="levels">
-          <h2>{t('academics.levels')}</h2>
+          <h2>{t('academics.levels')} {view.scheme && <StatusBadge tone="neutral">{t(`scheme.${view.scheme}` as MsgKey)}</StatusBadge>}</h2>
           {levels.length === 0 ? <p className="muted">{t('academics.levelsEmpty')}</p>
-            : <ul className="issue-list">{levels.map((l) => <li key={l.id}><strong>{l.name}</strong> <small className="muted">{l.code}</small></li>)}</ul>}
-          {admin && <ActionForm url="/api/academics" action="level" inline submitLabel={t('academics.addLevel')} successText={t('academics.levelAdded')} testId="level-form"
-            fields={[{ name: 'name', label: t('common.name'), required: true, placeholder: t('academics.levelPlaceholder') }, { name: 'code', label: t('academics.codeLabel'), required: true, placeholder: 'middle' }]} />}
+            : <ul className="issue-list">{view.levels.map((l) => <li key={l.id}><strong>{l.name}</strong> <small className="muted">{l.code}</small>
+              {l.grades.length > 0 && <ul className="grade-chips" aria-label={t('scheme.gradesOf', { level: l.name })}>{l.grades.map((g) => <li key={g.id}><StatusBadge tone="neutral">{g.label}</StatusBadge></li>)}</ul>}</li>)}</ul>}
+          {admin && <GradeSchemeForm current={view.scheme} baseVersion={view.profileVersion} presets={presets} />}
+          {admin && <details><summary>{t('scheme.addOther')}</summary><ActionForm url="/api/academics" action="level" inline submitLabel={t('academics.addLevel')} successText={t('academics.levelAdded')} testId="level-form"
+            fields={[{ name: 'name', label: t('common.name'), required: true, placeholder: t('academics.levelPlaceholder') }, { name: 'code', label: t('academics.codeLabel'), required: true, placeholder: 'middle' }]} /></details>}
         </section>
         <section className="card" data-testid="period-rule">
           <h2>{t('academics.termStructure')} {rule && <StatusBadge tone="neutral">{t('common.version', { v: rule.version })}</StatusBadge>}</h2>

@@ -5,7 +5,7 @@ import { BarChart, HBars } from '@/components/Charts';
 import { EnterSchoolButton } from '@/components/SchoolSwitcher';
 import { DataTable } from '@/components/DataTable';
 import { Kpi, PageHeader, StatusBadge, withLink } from '@/components/ui';
-import { CreateSchoolForm, PriceForm, SchoolActions } from './AdminClient';
+import { CreateSchoolForm, DemoSchoolButton, PriceForm, SchoolActions } from './AdminClient';
 import { getI18n, userLang } from '@/lib/i18n/server';
 import { CATALOG, type MsgKey } from '@/lib/i18n/catalog';
 
@@ -82,6 +82,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </section>
       <div className="grid-2">
         <section className="card"><CreateSchoolForm modules={JSON.parse(JSON.stringify(modules))} /></section>
+        <section className="card"><DemoSchoolButton /></section>
         <section className="card"><PriceForm modules={JSON.parse(JSON.stringify(modules))} /></section>
         <section className="card">
           <h2>{t('admin.bills')}</h2>

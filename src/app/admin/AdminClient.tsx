@@ -90,6 +90,31 @@ export function CreateSchoolForm({ modules }: { modules: Module[] }) {
   );
 }
 
+/** 109차 ADR 0043: 시연용 가상 학교(합성 자료). 이미 있으면 다시 만들지 않는다. */
+export function DemoSchoolButton() {
+  const router = useRouter();
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  async function build() {
+    setBusy(true);
+    try {
+      const r = await post('/api/admin/demo-school', {}, t('common.failed')) as { created: boolean; students: number; offerings: number };
+      setMsg({ text: r.created ? t('demo.built', { students: r.students, offerings: r.offerings }) : t('demo.exists') });
+      router.refresh();
+    } catch (e) { setMsg({ text: (e as Error).message, error: true }); }
+    setBusy(false);
+  }
+  return (
+    <div className="stack" data-testid="demo-school">
+      <h2>{t('demo.title')}</h2>
+      <p className="fine">{t('demo.lead')}</p>
+      <button type="button" className="secondary" onClick={build} disabled={busy}>{busy ? t('demo.building') : t('demo.build')}</button>
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}</p>}
+    </div>
+  );
+}
+
 export function PriceForm({ modules }: { modules: Module[] }) {
   const router = useRouter();
   const { t } = useI18n();

@@ -75,6 +75,12 @@ export function addHomeroom(db: Db, schoolId: string, input: { yearId?: unknown;
     [schoolId, id(input.yearId, '학년도'), id(input.levelId, '학교급'), grade(input.grade), text(input.name)]);
 }
 
+/** 109차: 학년 행으로 반을 만든다(학교급·학교급 안 순번은 DB가 학년 행에서 정함) */
+export function addGradeHomeroom(db: Db, schoolId: string, input: { yearId?: unknown; gradeLevelId?: unknown; name?: unknown }) {
+  return call<string>(db, 'select app.add_grade_homeroom($1, $2, $3, $4) as v',
+    [schoolId, id(input.yearId, '학년도'), id(input.gradeLevelId, '학년'), text(input.name)]);
+}
+
 export async function listSchoolLevels(db: Db, schoolId: string): Promise<SchoolLevel[]> {
   const { rows } = await db.query<SchoolLevel>(
     'select id, code, name, sort_order from public.school_levels where school_id = $1 order by sort_order, code', [schoolId]);
