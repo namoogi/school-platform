@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { checkUpload, createEntry, getEntry, listAssets, listEntries, saveVersion, uploadAsset, validateContent, type Block, type Content, type LText } from './site';
+import { checkUpload, createEntry, getEntry, listAssets, listEntries, saveVersion, uploadAsset, validateContent, type Block, type Content, type LText, type SiteTheme } from './site';
 import { NotFoundError, ValidationError } from './services';
 import { proposeFills, putProposal, type Proposal } from './site-autofill';
 import { readPlainText } from './readers';
@@ -19,7 +19,7 @@ export type Slot = {
 export type TemplatePage = { kind: 'page'; key: string; sort: number; content: Content };
 export type SiteTemplate = {
   key: string; version: number; name: string; summary: string; fits: string[]; firstScreen: string;
-  theme: 'campus' | 'dawn'; langs: ('ko' | 'en' | 'th')[]; pages: TemplatePage[]; slots: Slot[]; mustHave: string[];
+  theme: SiteTheme; langs: ('ko' | 'en' | 'th')[]; pages: TemplatePage[]; slots: Slot[]; mustHave: string[];
 };
 
 // ── 블록 짓기 도우미 (안내 문구는 '[ … ]'로 감싼다: 자동 배치·사람이 바꿀 자리) ──
@@ -43,12 +43,14 @@ const commonSlots = (): Slot[] => [
 
 export const SITE_TEMPLATES: SiteTemplate[] = [
   {
-    key: 'notice', version: 1, name: '알림 중심형', theme: 'campus', langs: ['ko'],
+    key: 'notice', version: 2, name: '알림 중심형', theme: 'clear', langs: ['ko'],
     summary: '재학생 가정이 매일 찾는 알림·소식·학사일정·급식을 첫 화면에 둡니다.',
     fits: ['공립·지역 학교', '재학생 가정이 주 방문자', '공지가 많은 학교'], firstScreen: '알림 · 최근 소식 · 학사일정 · 급식',
     mustHave: ['학교 소개(인사말·연혁·교육목표)', '학사일정', '오시는 길', '입학·전학 안내'],
     pages: [
       page('home', 0, ko('[학교 이름]'), [
+        // 89차: 완성 디자인(맑은 하늘)의 첫 화면 — 큰 사진 위 학교 한 줄(사진은 학교가 올림)
+        section({ template: 'banner', title: ko('[학교를 한 문장으로 — 예: 마을과 함께 자라는 학교]'), button: { label: ko('학교 소개'), href: '/p/about' } }),
         { type: 'notice', text: ko('[이번 주 가장 중요한 알림 한 줄 — 예: 다음 주 월요일 재량 휴업일]') },
         news(ko('알림·가정통신문'), 6, 'list'),
         section({ template: 'cards', title: ko('바로 가기'), items: [
@@ -112,7 +114,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'admissions', version: 1, name: '입학 모집형', theme: 'campus', langs: ['ko', 'en'],
+    key: 'admissions', version: 2, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
     summary: '예비 학부모가 차별점을 보고 문의·견학·지원으로 이어지게 합니다.',
     fits: ['신입생을 모집하는 사립·국제학교'], firstScreen: '차별점 3가지 · 입학 단추',
     mustHave: ['입학 절차', '학비·추가 비용', '자주 묻는 질문', '문의처'],
@@ -146,7 +148,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'project', version: 1, name: '프로젝트형', theme: 'dawn', langs: ['ko'],
+    key: 'project', version: 2, name: '프로젝트형', theme: 'studio', langs: ['ko'],
     summary: '학생 프로젝트와 작품을 사진 묶음으로 보여 주는 PBL 학교용입니다.',
     fits: ['PBL·프로젝트 중심 대안학교', '발표회·전시가 많은 학교'], firstScreen: '프로젝트 소개 · 발표회 소식',
     mustHave: ['배움의 방식(PBL 흐름)', '프로젝트 목록', '학생 작품 공개 허가'],
@@ -176,7 +178,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'mission', version: 1, name: '사명·후원형', theme: 'campus', langs: ['ko', 'en'],
+    key: 'mission', version: 2, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
     summary: '학교의 사명과 함께하는 방법(후원·봉사·기도)을 분명히 알립니다.',
     fits: ['기독교·선교 학교', '후원으로 운영되는 비영리 학교'], firstScreen: '사명 · 후원 단추 · 소식',
     mustHave: ['사명·신앙 고백', '후원 방법과 쓰임', '재정 보고(있으면)'],
@@ -205,7 +207,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'international', version: 1, name: '국제·다국어형', theme: 'campus', langs: ['en', 'ko', 'th'],
+    key: 'international', version: 2, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
     summary: '여러 언어로 교육과정 경로와 입학 여정을 안내합니다.',
     fits: ['국제학교', '외국 가정·현지 가정을 함께 받는 학교'], firstScreen: '다국어 소개 · 문의 단추',
     mustHave: ['교육과정 경로(학년·인가)', '입학 여정', '학생 생활(기숙·통학)', '언어별 연락처'],
@@ -238,7 +240,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'single', version: 1, name: '한 쪽 소개형', theme: 'campus', langs: ['ko'],
+    key: 'single', version: 2, name: '한 쪽 소개형', theme: 'seed', langs: ['ko'],
     summary: '막 시작한 작은 학교·모임이 한 쪽에 소개·연락·소식을 담습니다.',
     fits: ['막 시작한 작은 학교', '홈스쿨 연합·배움 모임'], firstScreen: '소개 · 하는 일 · 연락',
     mustHave: ['누구를 위한 모임인지', '연락 방법'],
@@ -277,7 +279,12 @@ export function slotTarget(t: SiteTemplate, s: Slot): { parent: unknown; field: 
 }
 
 /** 템플릿 적용: 쪽마다 시안(1판). 같은 주소의 쪽이 있으면(보관한 것 포함) 건너뛴다. 공개하지 않는다 */
-export async function applyTemplate(db: Db, schoolId: string, key: string) {
+/**
+ * 템플릿 적용: 없는 쪽만 시안(1판)으로 만든다. 89차(ADR 0034): design이면 화면 모양(테마)도 템플릿 디자인으로 바꾼다.
+ * 화면 모양은 홈페이지 설정이 있을 때만 바꾼다(설정이 없으면 주소부터 정해야 하므로 design: 'no-settings'로 알린다).
+ * 홈페이지가 열려 있으면 바뀐 모양이 방문자에게 바로 보인다 — 화면이 미리 알리고 사람이 고른다.
+ */
+export async function applyTemplate(db: Db, schoolId: string, key: string, opts: { design?: boolean } = {}) {
   const t = templateByKey(key);
   const existing = new Set((await listEntries(db, schoolId)).filter((e) => e.kind === 'page').map((e) => e.key));
   const created: { key: string; id: string }[] = [];
@@ -289,8 +296,13 @@ export async function applyTemplate(db: Db, schoolId: string, key: string) {
     // 66차: 어느 템플릿에서 왔는지 남긴다(자동 배치가 빈 칸 목록을 찾는 데 씀)
     await db.query(`update public.site_entries set meta = meta || $3 where id = $1 and school_id = $2`, [id, schoolId, JSON.stringify({ template: `${t.key}@${t.version}` })]);
   }
-  await db.query(`select app.log_access($1, 'site.template_apply', $2)`, [schoolId, JSON.stringify({ template: t.key, version: t.version, created: created.map((c) => c.key), skipped })]);
-  return { template: t.key, version: t.version, theme: t.theme, created, skipped };
+  let design: 'applied' | 'no-settings' | 'kept' = 'kept';
+  if (opts.design) {
+    const r = await db.query(`update public.site_settings set theme = $2, updated_at = now() where school_id = $1`, [schoolId, t.theme]);
+    design = r.rowCount ? 'applied' : 'no-settings';
+  }
+  await db.query(`select app.log_access($1, 'site.template_apply', $2)`, [schoolId, JSON.stringify({ template: t.key, version: t.version, created: created.map((c) => c.key), skipped, design })]);
+  return { template: t.key, version: t.version, theme: t.theme, created, skipped, design };
 }
 
 // ── 66차: 학교 자료로 빈 칸 채우기 ─────────────────────────

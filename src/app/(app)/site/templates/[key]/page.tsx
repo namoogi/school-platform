@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
-import { listEntries, LANG_LABEL, type Lang } from '@/lib/site';
+import { getSettings, listEntries, LANG_LABEL, type Lang } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
-import { samplePages, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
+import { samplePages, sampleAssetUrl, sampleNews, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
+import { SITE_THEMES } from '@/lib/site';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { PageHead } from '@/components/site/load';
 import { PageHeader } from '@/components/ui';
@@ -17,9 +18,12 @@ export default async function TemplatePreview({ params, searchParams }: { params
   const sp = await searchParams;
   const t = SITE_TEMPLATES.find((x) => x.key === key);
   if (!t) notFound();
-  const { school, pages } = await loadForPage(async ({ db, school }) => ({
+  const { school, pages, settings } = await loadForPage(async ({ db, school }) => ({
     pages: (await listEntries(db, school.id)).filter((e) => e.kind === 'page').map((e) => e.key),
+    settings: await getSettings(db, school.id),
   }), { module: 'homepage' });
+  const designName = SITE_THEMES.find((x) => x.key === t.theme)?.name ?? t.theme;
+  const siteState = { exists: !!settings, open: !!settings?.is_open, theme: settings?.theme ?? null, themeName: SITE_THEMES.find((x) => x.key === settings?.theme)?.name ?? null };
   const pg = t.pages.find((p) => p.key === sp.page) ?? t.pages[0];
   const lang = (t.langs as string[]).includes(sp.lang ?? '') ? (sp.lang as Lang) : (t.langs[0] as Lang);
   const slots = t.slots.filter((s) => s.page === pg.key);
@@ -31,7 +35,7 @@ export default async function TemplatePreview({ params, searchParams }: { params
   return (
     <>
       <PageHeader title={`템플릿: ${t.name}`} crumbs={[{ label: '학교 홈페이지', href: '/site' }, { label: '템플릿', href: '/site/templates' }, { label: t.name }]}
-        description={t.summary} />
+        description={`${t.summary} 디자인: ${SITE_THEMES.find((x) => x.key === t.theme)?.name ?? t.theme}`} />
       <div className="template-layout">
         <section className="template-stage" aria-label="미리보기">
           {/* 86차(사용자 지시): 미리보기에서 쪽마다 바로 넘겨 본다 — 쪽 탭을 미리보기 바로 위에 둔다 */}
@@ -44,14 +48,15 @@ export default async function TemplatePreview({ params, searchParams }: { params
               <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined} data-testid="template-view-sample">예시 내용</Link>
               <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined} data-testid="template-view-guide">안내 자리</Link>
             </nav>
+            <Link className="btn btn-sm" href={`/templates/${t.key}?page=${pg.key}&lang=${lang}${view === 'guide' ? '&view=guide' : ''}`} data-testid="template-live-link">전체 화면으로 보기</Link>
             <p className="fine muted" data-testid="template-view-note">{view === 'sample'
               ? `지어낸 가상 학교 '${TEMPLATE_SAMPLES[t.key].school}'로 채운 모습입니다. 시작하면 예시 글이 아니라 [ ] 안내 자리가 들어갑니다.`
               : '시작하면 학교 쪽에 이대로 들어갑니다. [ ] 자리를 학교 내용으로 바꿔 주세요.'}</p>
           </div>}
           <div className="site site-preview template-preview" data-theme={t.theme} lang={lang} data-testid="template-preview" data-view={view}>
             <main className="site-wrap site-main">
-              <PageHead content={shown} lang={lang} fallback={t.langs[0] as Lang} asset={() => ''} />
-              <SiteBlocks content={shown} lang={lang} fallback={t.langs[0] as Lang} assetUrl={() => ''} link={() => '#'} />
+              <PageHead content={shown} lang={lang} fallback={t.langs[0] as Lang} asset={view === 'sample' ? sampleAssetUrl : () => ''} />
+              <SiteBlocks content={shown} lang={lang} fallback={t.langs[0] as Lang} assetUrl={view === 'sample' ? sampleAssetUrl : () => ''} link={() => '#'} news={view === 'sample' ? sampleNews() : []} />
             </main>
           </div>
         </section>
@@ -62,7 +67,7 @@ export default async function TemplatePreview({ params, searchParams }: { params
           {slots.length === 0 ? <p className="muted">없음</p> : <ul className="issue-list">{slots.map((s) => <li key={s.id}><span><strong>{s.label}</strong> <small className="muted">{s.hint}</small></span></li>)}</ul>}
           <h2>꼭 알릴 정보</h2>
           <ul className="issue-list">{t.mustHave.map((m) => <li key={m}>{m}</li>)}</ul>
-          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={t.name} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} />
+          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={t.name} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} site={siteState} designName={designName} />
             : <p className="muted">템플릿 적용은 학교 관리자가 합니다.</p>}
 
         </aside>

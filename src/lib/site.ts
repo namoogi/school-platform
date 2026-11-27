@@ -11,7 +11,7 @@ import { checkPdf, sniffMime } from './pdf-check';
  */
 import {
   LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type SectionVariant, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
-  type GalleryItem, type Lang, type LanguageImages, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings,
+  type GalleryItem, type Lang, type LanguageImages, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, isSiteTheme,
 } from './site-shared';
 export * from './site-shared';
 
@@ -254,7 +254,7 @@ export async function saveSettings(db: Db, schoolId: string, input: Record<strin
   if (!langs.length) throw new ValidationError('언어를 하나 이상 골라 주세요.');
   const def = input.default_lang as Lang;
   if (!langs.includes(def)) throw new ValidationError('기본 언어는 고른 언어 가운데 하나여야 합니다.');
-  const theme = input.theme === 'dawn' ? 'dawn' : 'campus';
+  const theme = isSiteTheme(input.theme) ? input.theme : 'campus';
   const title = text(input.site_title, '사이트 이름', 120);
   const open = input.is_open === true;
   try {
@@ -436,7 +436,7 @@ export async function memberAsset(db: Db, schoolId: string, id: string) {
 
 // ── 방문자 (공개된 판만) ─────────────────────────────────
 export type PublicSite = {
-  slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: 'campus' | 'dawn'; title: LText;
+  slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme; title: LText;
   stories: boolean; has_news: boolean; nav: { key: string; title: LText }[];
   /** 47차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
   on_own_host?: boolean;

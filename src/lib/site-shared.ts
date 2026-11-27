@@ -63,8 +63,25 @@ export const BLOCK_LABEL: Record<Block['type'], string> = {
   section: '잡지형 구역', news_list: '최근 소식', download: 'PDF 내려받기',
 };
 
+/**
+ * 화면 모양(테마). campus·dawn은 처음부터 있던 것, 나머지는 89차(ADR 0034) 템플릿 완성 디자인.
+ * 색·글꼴·첫 화면 모양만 다르고 블록·쪽 구조는 같다 — 학교가 언제든 바꿀 수 있다.
+ */
+export const SITE_THEMES = [
+  { key: 'campus', name: '학사 기본', note: '차분한 기본 모양' },
+  { key: 'dawn', name: '새벽빛 매거진', note: '잡지처럼 넓은 여백과 명조 제목' },
+  { key: 'clear', name: '맑은 하늘', note: '파란 알림 띠와 카드, 공지가 많은 학교' },
+  { key: 'bold', name: '힘찬 시작', note: '사진 위 큰 제목과 붉은 단추, 모집 중심' },
+  { key: 'studio', name: '작업실', note: '노란 강조와 굵은 선, 프로젝트·작품 중심' },
+  { key: 'lamp', name: '등불', note: '따뜻한 갈색과 명조 제목, 사명·후원 중심' },
+  { key: 'horizon', name: '지평', note: '청록과 넓은 사진, 여러 언어 학교' },
+  { key: 'seed', name: '씨앗', note: '둥근 모서리와 연두, 작은 모임의 한 쪽 소개' },
+] as const;
+export type SiteTheme = (typeof SITE_THEMES)[number]['key'];
+export const isSiteTheme = (v: unknown): v is SiteTheme => SITE_THEMES.some((t) => t.key === v);
+
 export type SiteSettings = {
-  school_id: string; public_slug: string; default_lang: Lang; langs: Lang[]; theme: 'campus' | 'dawn';
+  school_id: string; public_slug: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme;
   site_title: LText; is_open: boolean; updated_at: string;
 };
 export type EntryStatus = 'draft' | 'live' | 'changed' | 'hidden';

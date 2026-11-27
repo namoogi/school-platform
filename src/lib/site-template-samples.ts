@@ -8,7 +8,11 @@ import type { SiteTemplate } from './site-templates';
  *
  * 값이 배열이면 같은 안내 자리가 여러 번 나올 때 차례대로 쓴다(쪽 순서 → 내용 칸 순서).
  */
-export type TemplateSample = { school: string; text: Record<string, string | string[]> };
+export type TemplateSample = {
+  school: string; text: Record<string, string | string[]>;
+  /** 89차: 예시 그림 — [쪽, ...칸 경로] 에 놓을 그림 이름(public/site-templates/img/<이름>). 그림 만들기 안내: docs/design/template-image-prompts.md */
+  images?: { at: (string | number)[]; name: string }[];
+};
 
 const contact = (name: string, phone: string, email: string, address: string, tagline: string) => ({
   '[학교 이름]': name, '[대표 전화]': phone, '[이메일]': email, '[학교 주소]': address, '[학교를 한 줄로 소개하는 말]': tagline,
@@ -17,8 +21,10 @@ const contact = (name: string, phone: string, email: string, address: string, ta
 export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   notice: {
     school: '물빛초등학교',
+    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'notice-hero' }, { at: ['home', 'blocks', 3, 'items', 0, 'asset'], name: 'notice-calendar' }, { at: ['home', 'blocks', 3, 'items', 1, 'asset'], name: 'notice-lunch' }, { at: ['home', 'blocks', 3, 'items', 2, 'asset'], name: 'notice-way' }],
     text: {
       ...contact('물빛초등학교', '000-000-0000', 'office@example.org', '가상시 물빛구 배움로 12', '서로 배우고 함께 자라는 마을 학교'),
+      '[학교를 한 문장으로 — 예: 마을과 함께 자라는 학교]': '마을과 함께 자라는 우리 동네 학교',
       '[이번 주 가장 중요한 알림 한 줄 — 예: 다음 주 월요일 재량 휴업일]': '다음 주 월요일(11일)은 재량 휴업일입니다. 돌봄교실은 평소처럼 운영합니다.',
       '[이번 달 주요 일정]': '11일 재량 휴업 · 20일 학부모 상담 주간 · 28일 학예회',
       '[이번 달 식단표는 학교 생활 쪽에]': '이번 달 식단표와 알레르기 표시를 확인하세요.',
@@ -39,6 +45,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   },
   story: {
     school: '숲속이야기학교',
+    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'story-hero' }, { at: ['home', 'blocks', 1, 'asset'], name: 'story-day' }, { at: ['learning', 'blocks', 0, 'asset'], name: 'story-learning' }],
     text: {
       ...contact('숲속이야기학교', '000-000-0000', 'hello@example.org', '가상시 숲길면 오솔길 7', '숲에서 묻고, 함께 답을 찾는 학교'),
       '[학교가 믿는 것을 한 문장으로]': '아이는 이미 배우는 사람입니다',
@@ -58,6 +65,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   },
   admissions: {
     school: '새솔아카데미',
+    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'admissions-hero' }, { at: ['home', 'blocks', 1, 'items', 0, 'asset'], name: 'admissions-class' }, { at: ['home', 'blocks', 1, 'items', 1, 'asset'], name: 'admissions-books' }, { at: ['home', 'blocks', 1, 'items', 2, 'asset'], name: 'admissions-mentor' }],
     text: {
       ...contact('새솔아카데미', '000-000-0000', 'admissions@example.org', '가상시 새솔구 미래로 30', '작은 학급, 깊은 배움'),
       '[School name]': 'Saesol Academy',
@@ -83,6 +91,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   },
   project: {
     school: '두레프로젝트학교',
+    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'project-hero' }, { at: ['projects', 'blocks', 0, 'items', 0, 'asset'], name: 'project-river' }, { at: ['projects', 'blocks', 0, 'items', 1, 'asset'], name: 'project-market' }],
     text: {
       ...contact('두레프로젝트학교', '000-000-0000', 'project@example.org', '가상시 두레읍 마당길 3', '질문에서 시작해 세상에 내놓는 배움'),
       '[문제를 찾고, 탐구하고, 만들어 나눕니다]': '우리 마을의 문제를 찾고, 탐구하고, 만들어 나눕니다',
@@ -101,6 +110,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   },
   mission: {
     school: '등불학교',
+    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'mission-hero' }, { at: ['home', 'blocks', 1, 'asset'], name: 'mission-village' }],
     text: {
       ...contact('등불학교', '000-000-0000', 'partner@example.org', '가상시 등불마을 언덕길 5', '배움으로 마을을 밝히는 학교'),
       '[School name]': 'Lamplight School',
@@ -121,6 +131,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   },
   international: {
     school: 'Mapleglen International School',
+    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'international-hero' }, { at: ['home', 'blocks', 1, 'items', 0, 'asset'], name: 'international-early' }, { at: ['home', 'blocks', 1, 'items', 1, 'asset'], name: 'international-primary' }, { at: ['home', 'blocks', 1, 'items', 2, 'asset'], name: 'international-secondary' }],
     text: {
       '[School name]': 'Mapleglen International School', '[학교 이름]': '메이플글렌 국제학교', '[ชื่อโรงเรียน]': 'โรงเรียนนานาชาติเมเปิลเกลน',
       '[One sentence about the school]': 'A small international school where every child is known by name',
@@ -142,6 +153,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   },
   single: {
     school: '작은씨앗 배움모임',
+    images: [{ at: ['home', 'blocks', 1, 'items', 0, 'asset'], name: 'single-study' }, { at: ['home', 'blocks', 1, 'items', 1, 'asset'], name: 'single-outing' }],
     text: {
       ...contact('작은씨앗 배움모임', '000-000-0000', 'seed@example.org', '가상시 씨앗동 공부방길 2', '여섯 가정이 함께 꾸리는 배움 모임'),
       '[학교·모임 이름]': '작은씨앗 배움모임',
@@ -155,6 +167,28 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
 };
 
 const TOKEN = /\[[^\]]+\]/g;
+
+/**
+ * 예시 그림 파일. 선생님 쪽 AI로 만든 사진풍 그림(.jpg)이 오기 전에는 같은 이름의 자리 그림(.svg)을 쓴다.
+ * 사진풍 그림을 넣으면 그 이름을 이 목록에 더한다(docs/design/template-image-prompts.md).
+ */
+export const SAMPLE_PHOTOS = new Set<string>([]);
+/** 그림 이름 → 블록 검사를 통과하는 고정 UUID(예시 전용, 학교 그림과 겹치지 않는 대역) */
+const sampleId = (name: string) => {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return `5a3e0000-0000-4000-8000-${h.toString(16).padStart(12, '0').slice(-12)}`;
+};
+const SAMPLE_FILES = new Map<string, string>();
+/** 미리보기가 쓰는 그림 주소: 예시 그림이면 정적 파일, 아니면 빈 값 */
+export function sampleAssetUrl(id: string) {
+  return SAMPLE_FILES.get(id) ?? '';
+}
+function sampleFile(name: string) {
+  const id = sampleId(name);
+  SAMPLE_FILES.set(id, `/site-templates/img/${name}.${SAMPLE_PHOTOS.has(name) ? 'jpg' : 'svg'}`);
+  return id;
+}
 
 /** 템플릿 쪽 전체를 쪽 순서대로 훑어 안내 자리를 예시 값으로 바꾼 사본을 돌려준다(원본 템플릿은 그대로) */
 export function samplePages(t: SiteTemplate): Record<string, Content> {
@@ -176,6 +210,12 @@ export function samplePages(t: SiteTemplate): Record<string, Content> {
   };
   const out: Record<string, Content> = {};
   for (const p of t.pages) out[p.key] = fill(p.content) as Content;
+  for (const img of sample?.images ?? []) {
+    const [pageKey, ...path] = img.at;
+    let node: unknown = out[String(pageKey)];
+    for (const k of path.slice(0, -1)) node = (node as Record<string | number, unknown> | undefined)?.[k];
+    if (node && typeof node === 'object') (node as Record<string | number, unknown>)[path[path.length - 1]] = sampleFile(img.name);
+  }
   return out;
 }
 
@@ -185,4 +225,16 @@ export function placeholders(v: unknown, out: string[] = []): string[] {
   else if (Array.isArray(v)) v.forEach((x) => placeholders(x, out));
   else if (v && typeof v === 'object') Object.values(v).forEach((x) => placeholders(x, out));
   return out;
+}
+
+/** 89차: 미리보기용 소식 3개(가상). 미리보기는 DB를 읽지 않으므로 소식 구역이 비지 않게 채운다 */
+export function sampleNews(): { key: string; title: Record<string, string>; summary: Record<string, string>; published_at: string }[] {
+  return [
+    { key: 'open-day', title: { ko: '새 학기 학부모 설명회 안내', en: 'Parent information evening', th: 'ประชุมผู้ปกครองภาคเรียนใหม่' },
+      summary: { ko: '학교 한 해 계획을 함께 나눕니다.', en: 'An overview of the year ahead.', th: 'แนะนำแผนการเรียนตลอดปี' }, published_at: '2026-03-04T09:00:00Z' },
+    { key: 'showcase', title: { ko: '학생 발표회가 열립니다', en: 'Student showcase this Friday', th: 'นิทรรศการผลงานนักเรียน' },
+      summary: { ko: '한 학기 동안 배운 것을 보여 드립니다.', en: 'Come and see what students made this term.', th: 'ชมผลงานของนักเรียนตลอดภาคเรียน' }, published_at: '2026-06-20T09:00:00Z' },
+    { key: 'library', title: { ko: '새 도서관 문을 열었습니다', en: 'Our new library is open', th: 'ห้องสมุดใหม่เปิดแล้ว' },
+      summary: { ko: '방과 후에도 책을 빌릴 수 있습니다.', en: 'Open after school every weekday.', th: 'เปิดให้ยืมหนังสือหลังเลิกเรียน' }, published_at: '2026-09-01T09:00:00Z' },
+  ];
 }
