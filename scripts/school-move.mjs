@@ -160,6 +160,12 @@ export async function sameMigrations(db, bundle) {
   return { onlySource, onlyTarget, same: !onlySource.length && !onlyTarget.length };
 }
 
+function sortKeys(v) {
+  if (Array.isArray(v)) return v.map(sortKeys);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.keys(v).sort().map((k) => [k, sortKeys(v[k])]));
+  return v;
+}
+
 /** 순번 번호 칸(식별 칸·nextval 기본값, 기본 키든 아니든)에서 대상에 이미 같은 번호가 있는지. 다른 학교가 사는 셀로 넣을 때 겹칠 수 있다 */
 async function identityCollisions(db, bundle) {
   const hits = [];
@@ -201,6 +207,18 @@ export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) 
   const { rowCount: exists } = await db.query('select 1 from public.schools where id = $1', [bundle.school_id]);
   if (exists) throw new Error('대상 DB에 이미 그 학교가 있습니다. 넣기는 빈 자리에만 합니다.');
   // 다른 학교가 사는 셀로 넣을 때: 순번 번호가 겹치면 넣지 않는다(번호 다시 매기기는 셀 합치기 단계에서, ADR 0035 남은 일)
+  // 기본판: 같은 판 번호인데 내용이 다르면 넣지 않는다(학교가 엉뚱한 기본판에 묶이지 않게)
+  for (const b of bundle.baselines) {
+    const { rows: [t] } = await db.query('select manifest from public.baselines where version = $1', [b.version]);
+    if (t && JSON.stringify(t.manifest) !== JSON.stringify(b.manifest) && JSON.stringify(sortKeys(t.manifest)) !== JSON.stringify(sortKeys(b.manifest))) {
+      throw new Error(`대상의 기본판 ${b.version}판이 원본과 내용이 다릅니다. 기본판을 맞춘 뒤 넣으세요.`);
+    }
+  }
+  // 계정: 같은 메일인데 다른 id 인 계정이 대상에 있으면 넣지 않는다(연결이 끊긴 채 되돌려지기 전에 이유를 알린다)
+  const { rows: [{ n: emailClash }] } = await db.query(
+    `select count(*)::int as n from private.app_users t join json_populate_recordset(null::private.app_users, $1::json) u
+        on lower(t.email) = lower(u.email) and t.id <> u.id`, [JSON.stringify(bundle.users)]);
+  if (emailClash) throw new Error(`대상에 같은 메일·다른 id 인 계정이 ${emailClash}개 있습니다. 계정을 합치는 기능은 아직 없어 넣지 않습니다.`);
   const collisions = await identityCollisions(db, bundle);
   if (collisions.length) throw new Error(`대상에 같은 순번 번호가 이미 있습니다(${collisions.join(', ')}). 지금은 빈 대상 또는 번호가 겹치지 않는 셀에만 넣습니다.`);
   await db.query('begin');
@@ -259,7 +277,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const url = process.env[name];
     if (!url) throw new Error(`${name} 이 필요합니다.`);
     const { pgOptions } = await import('./pg-options.mjs');
-    const c = new pg.Client(pgOptions(url));
+    // 원본·대상 비밀번호는 따로 받는다(SOURCE_DATABASE_PASSWORD · TARGET_DATABASE_PASSWORD, 78차 규약의 나눠 받기).
+    // pg-options 는 DATABASE_PASSWORD 하나만 읽으므로 연결마다 잠시 바꿔 넣는다
+    const saved = process.env.DATABASE_PASSWORD;
+    const own = process.env[name.replace('_URL', '_PASSWORD')];
+    if (own) process.env.DATABASE_PASSWORD = own; else delete process.env.DATABASE_PASSWORD;
+    let opts;
+    try { opts = pgOptions(url); } finally { if (saved === undefined) delete process.env.DATABASE_PASSWORD; else process.env.DATABASE_PASSWORD = saved; }
+    const c = new pg.Client(opts);
     await c.connect();
     return c;
   };

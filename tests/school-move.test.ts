@@ -176,6 +176,17 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     await expect(importSchool(dst, onlyNo)).rejects.toThrow(/control_requests\.no/);
   });
 
+  it('셀 충돌: 같은 판 번호의 다른 기본판, 같은 메일·다른 id 계정이면 넣지 않는다', async () => {
+    const bundle = await exportSchool(su, A.schoolId);
+    const otherId = '00000000-0000-4000-8000-0000000000dd';
+    const base = JSON.parse(JSON.stringify(bundle).split(A.schoolId).join(otherId));
+    base.tables = {};
+    const wrongBaseline = { ...base, baselines: base.baselines.map((b: { manifest: object }) => ({ ...b, manifest: { changed: true } })) };
+    await expect(importSchool(dst, wrongBaseline)).rejects.toThrow(/기본판/);
+    const clash = { ...base, users: base.users.map((u: object) => ({ ...u, id: '00000000-0000-4000-8000-0000000000ee' })) };
+    await expect(importSchool(dst, clash)).rejects.toThrow(/같은 메일/);
+  });
+
   it('같은 학교를 두 번 넣지 않는다', async () => {
     const bundle = await exportSchool(su, A.schoolId);
     await expect(importSchool(dst, bundle)).rejects.toThrow(/이미 그 학교/);

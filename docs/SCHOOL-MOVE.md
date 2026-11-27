@@ -17,6 +17,7 @@
 
 ## 2. 꺼내기 · 넣기 · 확인
 ```bash
+# 비밀번호는 주소와 따로: SOURCE_DATABASE_PASSWORD · TARGET_DATABASE_PASSWORD (78차 규약)
 mkdir -p .school-move
 SOURCE_DATABASE_URL=<원본> node scripts/school-move.mjs export <학교 주소 이름> .school-move/<학교>.json
 TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs import .school-move/<학교>.json --status active
@@ -25,7 +26,8 @@ SOURCE_DATABASE_URL=<원본> TARGET_DATABASE_URL=<대상> node scripts/school-mo
 - 넣기는 그 학교가 아직 없는 자리에만 한다.
   - 원본·대상의 마이그레이션 목록이 양쪽으로 똑같아야 넣는다. 대상에만 있는 마이그레이션도 거부한다.
   - 1-3에서 원본을 '이용 중지'로 두었으므로, 대상에서 열 상태를 `--status active`(또는 `trial`)로 정한다. 정하지 않으면 이용 중지 묶음은 넣지 않는다.
-  - 대상에 다른 학교가 이미 있으면(셀), 순번 번호 표(로그 등)의 번호가 겹치는지 먼저 본다. 겹치면 넣지 않는다. 번호 다시 매기기는 셀 합치기 단계의 남은 일이다.
+  - 대상에 다른 학교가 이미 있으면(셀) 세 가지를 먼저 본다: 같은 판 번호의 기본판 내용이 다른지, 같은 메일·다른 id 계정이 있는지, 순번 번호 칸이 겹치는지. 하나라도 있으면 넣지 않는다(계정 합치기·번호 다시 매기기는 셀 합치기 단계의 남은 일).
+  - (상세) 순번 번호 표(로그 등)의 번호가 겹치는지 먼저 본다. 겹치면 넣지 않는다. 번호 다시 매기기는 셀 합치기 단계의 남은 일이다.
   - 로그인 연결(`--auth`)
     - 기본 `reset`: 외부 로그인 연결을 비운다. 첫 로그인 때 확인된 메일로 다시 잇는다(초대와 같은 길).
     - 독립형처럼 로그인 서버가 바뀌면 반드시 `reset`이다. 옛 연결이 남으면 '다른 로그인 계정과 연결됨'으로 거부된다.
