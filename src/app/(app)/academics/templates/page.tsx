@@ -70,7 +70,7 @@ export default async function TemplatesPage() {
 
       <section className="card stack" data-testid="template-compare">
         <h2>{t('atpl.compare')}</h2>
-        <div className="table-wrap"><table className="grid-table nowrap-cells">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label={t('atpl.compare')}><table className="grid-table nowrap-cells">
           <thead><tr><th>{t('atpl.row.item')}</th>{templates.map((tp) => <th key={tp.key}>{pick(tp.title)}</th>)}</tr></thead>
           <tbody>{rows.map((r) => <tr key={r.label}><th scope="row">{r.label}</th>{templates.map((tp) => <td key={tp.key}>{r.value(tp)}</td>)}</tr>)}</tbody>
         </table></div>

@@ -23,6 +23,7 @@ export const PAGES = {
   documents: { login: 'admin-a', states: { default: '/documents' } },
   packages: { login: 'admin-a', states: { default: '/packages' } },
   academics: { login: 'admin-a', states: { default: '/academics' } },
+  'academic-templates': { login: 'admin-a', states: { default: '/academics/templates' } },
   people: { login: 'admin-a', states: { default: '/people' } },
   courses: { login: 'admin-a', states: { default: '/courses' } },
   grades: { login: 'admin-a', states: { empty: '/grades' } },

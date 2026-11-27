@@ -15,11 +15,12 @@ export function ApplyTemplate({ templateKey, title, baseVersion, current }: { te
     const ok = await ask({
       title: t('atpl.confirmTitle', { name: title }),
       description: (
-        <ul className="tpl-confirm">
-          <li><strong>{t('atpl.changes')}</strong> {t('atpl.changesBody')}</li>
-          <li><strong>{t('atpl.keeps')}</strong> {t('atpl.keepsBody')}</li>
-          <li><strong>{t('atpl.undo')}</strong> {t('atpl.undoBody')}</li>
-        </ul>
+        // 확인 창 설명은 <p> 안에 들어가므로 목록 대신 줄 단위 span(블록 표시)으로 쓴다
+        <span className="tpl-confirm">
+          <span><strong>{t('atpl.changes')}</strong> {t('atpl.changesBody')}</span>
+          <span><strong>{t('atpl.keeps')}</strong> {t('atpl.keepsBody')}</span>
+          <span><strong>{t('atpl.undo')}</strong> {t('atpl.undoBody')}</span>
+        </span>
       ),
       confirmLabel: t('atpl.apply'), tone: 'primary',
     });
