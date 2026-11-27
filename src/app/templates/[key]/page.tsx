@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { LANG_LABEL, SITE_THEMES, type Lang, type PublicSite } from '@/lib/site';
+import { LANG_LABEL, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
-import { samplePages, sampleAssetUrl, sampleNews, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
+import { samplePages, sampleAssetUrl, sampleNews, sampleNewsPage, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { SiteFrame } from '@/components/site/SiteFrame';
 import { PageHead, SiteBlocks, type NewsItem } from '@/components/site/SiteRenderer';
 
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
  * 내용은 가상 학교 예시(또는 안내 자리)이고 DB를 읽지 않는다. 로그인한 사람만 본다.
  */
 export default async function TemplateLive({ params, searchParams }: {
-  params: Promise<{ key: string }>; searchParams: Promise<{ page?: string; lang?: string; view?: string; thumb?: string }>;
+  params: Promise<{ key: string }>; searchParams: Promise<{ page?: string; lang?: string; view?: string; thumb?: string; news?: string }>;
 }) {
   await requireUser();
   const { key } = await params;
@@ -37,11 +37,14 @@ export default async function TemplateLive({ params, searchParams }: {
   };
   const link = (path: string) => {
     if (path === '/' || path === '') return href({ page: 'home' });
+    if (path === '/news') return `${href({})}&news=all`;
+    const article = /^\/news\/([a-z0-9-]+)$/.exec(path);
+    if (article && sampleNews().some((n) => n.key === article[1])) return `${href({})}&news=${article[1]}`;
     const m = /^\/p\/([a-z0-9-]+)/.exec(path);
-    return m && t.pages.some((p) => p.key === m[1]) ? href({ page: m[1] }) : '#';
+    return m && t.pages.some((p) => p.key === m[1]) ? href({ page: m[1] }) : href({ page: 'home' });
   };
   const news: NewsItem[] = view === 'sample' ? sampleNews() : [];
-  const content = pages[pg.key];
+  const content: Content = sampleNewsPage(sp.news) ?? pages[pg.key];
   const design = SITE_THEMES.find((x) => x.key === t.theme);
   return (
     <>

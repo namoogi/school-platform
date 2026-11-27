@@ -1675,6 +1675,33 @@ try {
     await h.waitForURL(/page=projects/);
     assert.match(await h.textContent('[data-testid=template-live]'), /마을 하천 지도/);
     await shot(h, '89-template-live.png');
+    // #143: client-side page navigation must clear the previous page's filter and hidden DOM state.
+    await h.click('.site-nav a:has-text("학생 작품")');
+    await h.locator('.sec-filter-bar button', { hasText: '예술' }).press('Enter');
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 2);
+    await h.click('.site-nav a:has-text("프로젝트")');
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 3);
+    assert.equal(await h.getAttribute('.sec-filter-bar button:first-child', 'aria-pressed'), 'true');
+    await h.locator('.sec-filter-bar button', { hasText: '3~4학년' }).click();
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
+    assert.match(await h.locator('.sec-filter li:visible').innerText(), /학교 텃밭 장터/);
+    await h.locator('.site-nav a', { hasText: /^홈$/ }).click();
+    await h.getByRole('link', { name: /새 학기 학부모 설명회 안내/ }).click();
+    await h.waitForURL(/news=open-day/);
+    assert.match(await h.locator('h1').innerText(), /새 학기 학부모 설명회 안내/);
+    await h.getByRole('link', { name: '소식 목록', exact: true }).click();
+    await h.waitForURL(/news=all/);
+    assert.equal(await h.locator('.lb-board li').count(), 3);
+    await h.goto(`${BASE}/templates/kinder?page=admission`);
+    await h.locator('[data-testid=site-inquiry] input[name=name]').fill('가상 방문자');
+    await h.locator('[data-testid=site-inquiry] input[name=contact]').fill('visitor@example.org');
+    await h.locator('[data-testid=site-inquiry] input[name=consent]').check();
+    const sent = [];
+    h.on('request', (request) => { if (request.url().endsWith('/api/site/inquiry')) sent.push(request.url()); });
+    await h.getByTestId('site-inquiry-send').click();
+    await h.getByRole('status').filter({ hasText: '실제로 보내지지 않습니다' }).waitFor();
+    assert.equal(sent.length, 0, '템플릿 미리보기는 개인정보를 서버로 보내지 않음');
+
     await h.goto(`${BASE}/site/templates`);
     await shot(h, '65-templates.png');
     await h.click('[data-testid=template-open-story]');
@@ -1695,6 +1722,24 @@ try {
     const list = await h.textContent('.triage-list');
     assert.match(list, /교육철학/);
     assert.match(list, /공동체/);
+    // #143: both new filter layouts must expose editable categories after template application.
+    await h.goto(`${BASE}/site/templates/project`);
+    await h.getByTestId('template-apply').click();
+    await h.locator('[role=status]', { hasText: '시안 쪽' }).waitFor();
+    for (const title of ['프로젝트', '학생 작품']) {
+      await h.goto(`${BASE}/site?box=page`);
+      await h.locator('.triage-list a').filter({ hasText: new RegExp(title) }).first().click();
+      const category = h.getByLabel('1. 분류(거르기 단추) 한국어', { exact: true });
+      await category.fill('학교 생태 탐구');
+      await h.getByRole('button', { name: '새 판으로 저장', exact: true }).click();
+      await h.getByRole('status').filter({ hasText: '새 판으로 저장했습니다' }).waitFor();
+      await h.reload();
+      assert.equal(await category.inputValue(), '학교 생태 탐구');
+      const previewHref = await h.getByRole('link', { name: '시안 미리보기', exact: true }).getAttribute('href');
+      await h.goto(`${BASE}${previewHref}`);
+      await h.locator('.sec-filter-bar button', { hasText: '학교 생태 탐구' }).click();
+      await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
+    }
     await ctx.close();
   });
   await step('66차: 학교 자료로 빈 칸 채우기 — 이야기형 미리보기에서 소개서 올리기 → 제안 확인 → 넣기 → 교육철학 쪽 새 시안 판', async () => {

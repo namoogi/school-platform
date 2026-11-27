@@ -46,6 +46,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   story: {
     school: '숲속이야기학교',
     images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'story-hero' }, { at: ['home', 'blocks', 1, 'asset'], name: 'story-day' }, { at: ['learning', 'blocks', 0, 'asset'], name: 'story-learning' },
+      { at: ['learning', 'blocks', 1, 'asset'], name: 'story-season-3' }, { at: ['philosophy', 'blocks', 2, 'asset'], name: 'story-hero' }, { at: ['community', 'blocks', 0, 'asset'], name: 'story-season-5' },
       ...[1, 2, 3, 4, 5].map((n) => ({ at: ['home', 'blocks', 2, 'items', n - 1, 'asset'], name: `story-season-${n}` }))],
     text: {
       ...contact('숲속이야기학교', '000-000-0000', 'hello@example.org', '가상시 숲길면 오솔길 7', '숲에서 묻고, 함께 답을 찾는 학교'),
@@ -62,10 +63,13 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
       '[설명]': ['정답보다 좋은 질문을 귀하게 여깁니다.', '학생·교사·가정이 서로 이름을 부르는 공동체를 만듭니다.', '자연과 이웃을 돌보는 일을 배움으로 삼습니다.'],
       '[배움의 방식]': '주제로 엮는 배움',
       '[수업이 어떻게 이루어지는지]': '한 학기에 하나의 큰 주제(예: 물, 씨앗, 마을)를 정하고, 읽기·셈하기·관찰·만들기를 그 주제 안에서 함께 배웁니다.',
-      '[학년·과정]': '1~3학년 · 4~6학년',
-      '[주요 배움]': '이야기와 놀이로 읽기·셈하기의 기초를 다집니다 · 탐구 보고서와 발표로 배운 것을 정리합니다',
+      '[학년·과정]': ['1–2학년 · 감각과 발견', '3–4학년 · 질문과 탐구', '5–6학년 · 연결과 실천'],
+      '[주요 배움]': ['이야기와 놀이로 읽기·셈하기의 기초를 다집니다.', '숲과 마을을 관찰하고, 작은 실험과 기록으로 질문을 키웁니다.', '탐구 보고서와 발표로 배운 것을 정리하고 마을에 나눕니다.'],
+      '[만들며 배우는 제목]': '생각은 손끝에서 자랍니다', '[만들며 배우는 설명]': '나무를 다듬고 씨앗을 심는 동안 길이와 시간을 배우고, 친구와 도구를 나누며 협력하는 법을 익힙니다.',
+      '[철학 사진 제목]': '교실의 문을 열면, 숲입니다', '[철학 사진 설명]': '날씨와 계절이 바뀔 때마다 교과서도 달라집니다. 어제와 다른 숲길에서 질문을 발견하고, 스스로 답을 찾아가는 시간을 지켜 줍니다.',
+      '[공동체 일정]': ['매달 둘째 토요일', '한 달에 한 번', '학기 마지막 주'], '[공동체 활동]': ['학교 여는 날 · 가족과 숲길을 걷고 교실을 둘러봅니다.', '학교 살림 모임 · 가정과 교사가 함께 다음 달을 준비합니다.', '배움 나눔 날 · 학생의 발견과 작품을 이웃에게 소개합니다.'],
       '[학부모·교사·학생이 함께하는 방식]': '한 달에 한 번 가정과 교사가 함께 학교 살림을 의논하고, 학기 끝에는 학생이 배운 것을 가족 앞에서 발표합니다.',
-      '[견학·상담 안내]': '매달 둘째 토요일 오전에 학교 둘러보기를 엽니다. 전화나 메일로 신청해 주세요.',
+      '[견학·상담 안내]': '매달 둘째 토요일 오전에 학교 둘러보기를 엽니다. 000-000-0000 · hello@example.org로 원하는 날짜와 방문 인원을 알려 주세요.',
     },
   },
   admissions: {
@@ -97,16 +101,19 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   },
   project: {
     school: '두레프로젝트학교',
-    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'project-hero' }, { at: ['projects', 'blocks', 0, 'items', 0, 'asset'], name: 'project-river' }, { at: ['projects', 'blocks', 0, 'items', 1, 'asset'], name: 'project-market' },
-      ...[1, 2, 3, 4, 5, 6].map((n) => ({ at: ['home', 'blocks', 1, 'items', n - 1, 'asset'], name: `project-work-${n}` }))],
+    images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'project-hero' }, { at: ['projects', 'blocks', 0, 'items', 0, 'asset'], name: 'project-river' }, { at: ['projects', 'blocks', 0, 'items', 1, 'asset'], name: 'project-market' }, { at: ['projects', 'blocks', 0, 'items', 2, 'asset'], name: 'project-work-6' },
+      ...[1, 2, 3, 4, 5, 6].map((n) => ({ at: ['home', 'blocks', 1, 'items', n - 1, 'asset'], name: `project-work-${n}` })),
+      ...[1, 2, 3, 4, 5, 6].map((n) => ({ at: ['works', 'blocks', 0, 'items', n - 1, 'asset'], name: `project-work-${n}` })),
+      { at: ['how-we-learn', 'blocks', 0, 'asset'], name: 'project-hero' },
+      ...['project-river', 'project-market', 'project-work-6'].flatMap((name, n) => [{ at: ['how-we-learn', 'blocks', 2, 'items', n, 'asset'], name }, { at: ['home', 'blocks', 3, 'items', n, 'asset'], name }])],
     text: {
       ...contact('두레프로젝트학교', '000-000-0000', 'project@example.org', '가상시 두레읍 마당길 3', '질문에서 시작해 세상에 내놓는 배움'),
       '[이번 학기 결과물]': '이번 학기, 학생들이 만든 것',
       '[학생·보호자 공개 허가를 받은 작품만 싣습니다]': '학생·보호자 공개 허가를 받은 작품만 싣습니다. 분야를 눌러 골라 보세요.',
       '[작품 이름 1]': '하천 수질 지도', '[작품 이름 2]': '마을 장터 가계부', '[작품 이름 3]': '골목 벽화 시안', '[작품 이름 4]': '빗물 저금통 시제품', '[작품 이름 5]': '어르신 인터뷰 영상', '[작품 이름 6]': '나무 의자 만들기',
       '[분야 1]': '과학', '[분야 2]': '사회', '[분야 3]': '예술',
-      '[이름 · 맡은 분야]': ['김가상 · 환경 과학', '이예시 · 지역 경제', '박샘플 · 목공과 디자인'],
-      '[한 줄 소개]': ['하천 조사를 20년 해 온 마을 연구자', '협동조합에서 장터를 꾸리는 멘토', '마을 공방을 운영하는 목수'],
+      '[이름 · 맡은 분야]': ['김가상 · 환경 과학', '이예시 · 지역 경제', '박샘플 · 목공과 디자인', '김가상 · 환경 과학', '이예시 · 지역 경제', '박샘플 · 목공과 디자인'],
+      '[한 줄 소개]': ['하천 조사를 20년 해 온 마을 연구자', '협동조합에서 장터를 꾸리는 멘토', '마을 공방을 운영하는 목수', '하천 조사를 20년 해 온 마을 연구자', '협동조합에서 장터를 꾸리는 멘토', '마을 공방을 운영하는 목수'],
       '[학년 1]': '5~6학년', '[학년 2]': '3~4학년',
       '[문제를 찾고, 탐구하고, 만들어 나눕니다]': '우리 마을의 문제를 찾고, 탐구하고, 만들어 나눕니다',
       '[학생이 질문을 찾는 방법]': '마을 걷기와 인터뷰로 풀고 싶은 질문을 고릅니다.',
@@ -114,12 +121,19 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
       '[만드는 것]': '지도·영상·제품·제안서처럼 쓸모 있는 결과물을 만듭니다.',
       '[발표·전시]': '학기 끝 발표회에서 마을 분들께 보여 드리고 의견을 듣습니다.',
       '[학교의 설명]': '배운 것을 실제 문제에 써 볼 때 지식은 오래 남습니다. 학생은 프로젝트를 고르고 계획하며, 스스로 정한 일에 책임지는 법을 배웁니다.',
-      '[주차]': '1~3주 · 4~10주 · 11~14주 · 15주',
-      '[활동]': '질문 찾기 → 탐구와 시제품 → 고쳐 만들기 → 발표회',
-      '[프로젝트 이름]': ['마을 하천 지도', '학교 텃밭 장터'],
+      '[주차]': ['01–03주 · 발견', '04–10주 · 탐구', '11–14주 · 제작', '15주 · 나눔'],
+      '[활동]': ['마을을 걸으며 질문을 찾고 함께 풀 문제를 정합니다.', '자료와 현장을 오가며 가설을 시험하고 작은 시제품을 만듭니다.', '멘토와 친구의 의견을 듣고 결과물을 고쳐 만듭니다.', '발표회에서 과정을 설명하고 다음 탐구의 질문을 남깁니다.'],
+      '[프로젝트 이름]': ['마을 하천 지도', '학교 텃밭 장터', '모두를 위한 나무 의자'],
+      '[프로젝트 확장 설명]': '누구나 편하게 앉으려면 어떤 모양이어야 할까? · 치수 조사와 의자 시제품 · 5~6학년',
       '[질문 · 결과물 · 참여 학년]': '우리 동네 하천은 왜 냄새가 날까? · 수질 지도와 구청 제안서 · 5~6학년',
       '[설명]': '텃밭 작물로 장터를 열고 수익과 비용을 직접 계산합니다 · 3~4학년',
-      '[학생·보호자 공개 허가를 받은 작품만 올립니다]': '학생·보호자 공개 허가를 받은 작품만 올립니다.',
+      '[학생·보호자 공개 허가를 받은 작품만 올립니다]': '지어낸 작품과 AI 예시 사진입니다. 실제 학생 작품은 학생·보호자의 공개 허가를 받은 뒤 올립니다.',
+      '[작품 설명 1]': '세 지점의 물을 관찰하고 색으로 정리한 하천 지도. 같은 장소를 다시 찾아 계절에 따른 차이를 기록했습니다.',
+      '[작품 설명 2]': '씨앗값부터 판매 금액까지, 텃밭 장터의 수입과 지출을 함께 정리했습니다.',
+      '[작품 설명 3]': '이웃의 이야기를 듣고 골목에 어울리는 색과 형태를 그려 본 벽화 시안입니다.',
+      '[작품 설명 4]': '버려진 통으로 만든 빗물 모으기 장치. 모은 물은 텃밭을 돌보는 데 씁니다.',
+      '[작품 설명 5]': '마을의 오랜 기억을 묻는 인터뷰 프로젝트. 촬영 전에 질문과 공개 범위를 함께 정했습니다.',
+      '[작품 설명 6]': '앉는 사람의 키와 자세를 살피고, 직접 치수를 재어 만든 첫 번째 나무 의자입니다.',
     },
   },
   mission: {
@@ -170,11 +184,12 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
     images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'kinder-hero' },
       ...[1, 2, 3].map((n) => ({ at: ['home', 'blocks', 1, 'items', n - 1, 'asset'], name: `kinder-class-${n}` })),
       ...[1, 2, 3].map((n) => ({ at: ['classes', 'blocks', 0, 'items', n - 1, 'asset'], name: `kinder-class-${n}` })),
-      { at: ['classes', 'blocks', 1, 'asset'], name: 'kinder-play' }],
+      { at: ['classes', 'blocks', 1, 'asset'], name: 'kinder-play' },
+      { at: ['daily', 'blocks', 1, 'asset'], name: 'story-season-5' }, { at: ['admission', 'blocks', 4, 'asset'], name: 'kinder-class-1' }],
     text: {
       ...contact('햇살숲 유치원', '000-000-0000', 'hello-kids@example.org', '가상시 햇살동 놀이터길 8', '놀이로 배우고 햇살 속에 자라요'),
       '[유치원 이름]': '햇살숲 유치원',
-      '[신청 안내 한 줄]': '방문 상담을 원하시면 남겨 주세요. 하루 안에 연락드립니다.',
+      '[신청 안내 한 줄]': '방문 상담 신청 양식의 예시입니다. 미리보기에서는 실제로 보내지지 않습니다.',
       '[아이들이 웃으며 자라는 곳]': '오늘도 마음껏 놀고, 쑥쑥 자라요',
       '[처음 오신 가정께 드리는 두 문장]': '햇살숲 유치원은 놀이가 곧 배움인 곳입니다. 아이 한 명 한 명의 속도에 맞춰 함께 자랍니다.',
       '[반 이름 · 나이 1]': '새싹반 · 만 3세', '[반 이름 · 나이 2]': '꽃잎반 · 만 4세', '[반 이름 · 나이 3]': '열매반 · 만 5세',
@@ -187,10 +202,11 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
       '[질문 2]': '알레르기가 있어도 괜찮나요?', '[답 2]': '입학 상담 때 알려 주시면 식단과 간식을 따로 준비합니다.',
       '[방문 상담 요일·연락처]': '화·목 오후 2시에 방문 상담을 엽니다. 000-000-0000',
       '[놀이로 배워요]': '놀이가 곧 배움이에요', '[놀이 중심 배움의 방식]': '아이들이 고른 놀이에서 셈·말·관계를 함께 배웁니다. 교사는 놀이를 넓혀 주는 사람입니다.',
-      '[급식·간식·알레르기·투약 안내]': '점심과 간식은 원 안에서 조리합니다. 알레르기·투약은 상담 때 알려 주세요.',
+      '[급식·간식·알레르기·투약 안내]': '오늘의 점심 · 잡곡밥, 채소 된장국, 두부구이, 제철 과일\n오후 간식 · 찐 고구마와 우유\n\n식단은 가상 예시입니다. 점심과 간식은 원 안에서 조리합니다. 알레르기는 상담 때 미리 확인하고 대체식을 안내합니다. 투약은 보호자의 요청서에 따라 확인합니다.',
       '[상담 방법]': '전화·메일로 상담 날짜를 정해요', '[둘러보기 일정]': '화·목 오후 2시 교실 둘러보기', '[서류]': '입학 신청서와 건강 기록', '[첫 주 적응 안내]': '보호자와 함께 짧게 시작해요',
-      '[교육비]': '월 교육비', '[금액·지원]': '예시 금액 · 정부 지원 안내(실제 금액은 자료대로)', '[기타 비용]': '급식·차량·특별활동', '[급식·차량·특별활동]': '항목별로 따로 안내합니다.',
-      '[연락처·상담 가능 시간]': '000-000-0000 · 평일 오전 9시~오후 5시',
+      '[교육비]': '월 교육비', '[금액·지원]': '월 280,000원 · 지원 자격과 지원액은 상담 때 안내합니다(가상 예시)' , '[기타 비용]': '급식·차량·특별활동', '[급식·차량·특별활동]': '항목별로 따로 안내합니다.',
+      '[연락처·상담 가능 시간]': '000-000-0000 · hello-kids@example.org · 평일 오전 9시~오후 5시',
+      '[입학 적응 이야기]': '첫날부터 모든 것을 잘할 필요는 없어요. 좋아하는 놀이를 함께 찾고, 보호자와 머무는 시간을 조금씩 줄여 갑니다. 아이의 작은 신호를 가정과 나누며 시작합니다.',
     },
   },
   single: {
@@ -214,7 +230,31 @@ const TOKEN = /\[[^\]]+\]/g;
  * 예시 그림 파일. 선생님 쪽 AI로 만든 사진풍 그림(.jpg)이 오기 전에는 같은 이름의 자리 그림(.svg)을 쓴다.
  * 사진풍 그림을 넣으면 그 이름을 이 목록에 더한다(docs/design/template-image-prompts.md).
  */
-export const SAMPLE_PHOTOS = new Set<string>([]);
+export const SAMPLE_PHOTOS = new Set<string>(["story-hero", "story-day", "story-learning", "story-season-1", "story-season-2", "story-season-3", "story-season-4", "story-season-5", "project-hero", "project-river", "project-market", "project-work-1", "project-work-2", "project-work-3", "project-work-4", "project-work-5", "project-work-6", "kinder-hero", "kinder-class-1", "kinder-class-2", "kinder-class-3", "kinder-play"]);
+const SAMPLE_PHOTO_ALT: Record<string, string> = {
+  "story-hero": "아침 햇살이 비치는 숲길과 작은 학교 건물",
+  "story-day": "숲길을 함께 걷는 아이들의 뒷모습",
+  "story-learning": "나뭇잎과 돋보기, 관찰 도구가 놓인 배움의 책상",
+  "story-season-1": "벚꽃이 핀 봄날의 숲길",
+  "story-season-2": "여름 텃밭의 채소와 물뿌리개",
+  "story-season-3": "가을빛이 드는 목공 작업실",
+  "story-season-4": "눈 내린 풍경이 보이는 겨울 도서실",
+  "story-season-5": "나누어 먹을 음식이 차려진 공동체 식탁",
+  "project-hero": "공작실에서 모형을 만드는 학생들의 손",
+  "project-river": "하천과 마을 모형 옆에 놓인 물 관찰 도구",
+  "project-market": "텃밭에서 기른 채소를 진열한 작은 장터",
+  "project-work-1": "색으로 표시한 하천 수질 지도와 실험 도구",
+  "project-work-2": "장터 수입과 지출을 기록할 공책과 계산기",
+  "project-work-3": "자연을 그린 학생 벽화 시안과 물감",
+  "project-work-4": "텃밭 옆에 설치한 빗물 모으기 시제품",
+  "project-work-5": "마을 인터뷰를 준비한 카메라와 빈 의자",
+  "project-work-6": "작업실에서 완성한 나무 의자",
+  "kinder-hero": "따뜻한 햇살 아래 놀이터에서 노는 아이들의 뒷모습",
+  "kinder-class-1": "쿠션과 그림책, 나무 블록이 놓인 새싹반 교실",
+  "kinder-class-2": "작은 나무 부엌과 장난감이 놓인 역할 놀이 공간",
+  "kinder-class-3": "크레용으로 그림을 그리는 아이들의 손",
+  "kinder-play": "텃밭에 작은 모종을 심는 아이들의 손"
+};
 /** 그림 이름 → 블록 검사를 통과하는 고정 UUID(예시 전용, 학교 그림과 겹치지 않는 대역) */
 const sampleId = (name: string) => {
   let h = 0;
@@ -256,7 +296,11 @@ export function samplePages(t: SiteTemplate): Record<string, Content> {
     const [pageKey, ...path] = img.at;
     let node: unknown = out[String(pageKey)];
     for (const k of path.slice(0, -1)) node = (node as Record<string | number, unknown> | undefined)?.[k];
-    if (node && typeof node === 'object') (node as Record<string | number, unknown>)[path[path.length - 1]] = sampleFile(img.name);
+    if (node && typeof node === 'object') {
+      const target = node as Record<string | number, unknown>;
+      target[path[path.length - 1]] = sampleFile(img.name);
+      if (path[path.length - 1] === 'asset' && SAMPLE_PHOTO_ALT[img.name]) target.alt = { ko: `${SAMPLE_PHOTO_ALT[img.name]} (AI 예시 사진)` };
+    }
   }
   return out;
 }
@@ -279,4 +323,15 @@ export function sampleNews(): { key: string; title: Record<string, string>; summ
     { key: 'library', title: { ko: '새 도서관 문을 열었습니다', en: 'Our new library is open', th: 'ห้องสมุดใหม่เปิดแล้ว' },
       summary: { ko: '방과 후에도 책을 빌릴 수 있습니다.', en: 'Open after school every weekday.', th: 'เปิดให้ยืมหนังสือหลังเลิกเรียน' }, published_at: '2026-09-01T09:00:00Z' },
   ];
+}
+
+/** 미리보기의 소식 링크도 읽을 수 있는 예시 상세로 연결한다. 운영 소식·DB와 무관하다. */
+export function sampleNewsPage(key?: string): Content | null {
+  const article = sampleNews().find((n) => n.key === key);
+  if (article) return { title: article.title, summary: article.summary, blocks: [{ type: 'text', text: {
+    ko: '가상 학교의 예시 소식입니다. 학생과 가정이 함께 배움의 과정을 나누는 날을 준비하고 있습니다. 자세한 일정과 참여 방법은 학교의 실제 소식으로 바꾸어 안내해 주세요.',
+    en: 'This is a fictional school announcement. Students and families are preparing to share their learning. Replace this sample with the school’s actual dates and participation details.',
+    th: 'นี่คือข่าวตัวอย่างของโรงเรียนสมมติ นักเรียนและครอบครัวกำลังเตรียมแบ่งปันการเรียนรู้ โปรดแทนที่ด้วยกำหนดการและรายละเอียดจริงของโรงเรียน',
+  } }], head: { link: { label: { ko: '소식 목록', en: 'All news', th: 'ข่าวทั้งหมด' }, href: '/news' } } };
+  return key === 'all' ? { title: { ko: '학교 소식', en: 'School news', th: 'ข่าวโรงเรียน' }, blocks: [{ type: 'news_list', count: 3, style: 'list' }] } : null;
 }
