@@ -78,7 +78,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
             <button className="btn btn-sm" type="submit">{t('attendance.summarize')}</button>
           </form>
           {summaries.length === 0 ? <p className="muted">{t(to > from ? 'attendance.noStudents' : 'attendance.endAfterStart')}</p> : (
-            <div className="table-wrap"><table className="grid-table">
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={t('attendance.summary')}><table className="grid-table">
               <thead><tr><th scope="col">{t('common.student')}</th><th scope="col">{t('attendance.col.enrolledDays')}</th><th scope="col">{t('attendance.col.absentDays')}</th><th scope="col">{t('attendance.col.rate')}</th><th scope="col">{t('attendance.col.byKind')}</th><th scope="col">{t('attendance.col.result')}</th></tr></thead>
               <tbody>{summaries.map(({ person_id, name, s }) => (
                 <tr key={person_id}><th scope="row">{name}</th><td>{s.enrolled_days}</td><td>{s.absent_days}</td>

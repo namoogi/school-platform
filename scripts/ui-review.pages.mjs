@@ -26,6 +26,13 @@ const follow = (start, selectors) => async ({ page, BASE }) => {
   return url;
 };
 
+/** 고르기 상자에서 글자가 맞는 첫 항목의 값을 찾아 주소에 붙인다(없으면 기본 주소). 시드한 학교급·학생을 고를 때 쓴다 */
+const pickOption = (start, select, text, build) => async ({ page, BASE }) => {
+  await page.goto(`${BASE}${start}`, { waitUntil: 'networkidle' });
+  const value = await page.locator(`${select} option`, { hasText: text }).first().getAttribute('value').catch(() => null);
+  return `${BASE}${value ? build(value) : start}`;
+};
+
 export const PAGES = {
   intro: { states: { default: '/intro' } },
   login: { states: { default: '/login' } },
@@ -39,8 +46,9 @@ export const PAGES = {
   // filled·offering: `npm run ui:seed` 뒤에만 채워진다(없으면 목록 그대로 찍힘)
   courses: { login: 'admin-a', states: { default: '/courses', offering: follow('/courses', ['table a[href*="o="]']) } },
   grades: { login: 'admin-a', states: { empty: '/grades', offering: follow('/courses', ['table a[href*="o="]', '[data-testid=to-grades]']) } },
-  attendance: { login: 'admin-a', states: { default: '/attendance' } },
-  records: { login: 'admin-a', states: { empty: '/records' } },
+  // seeded: ui:seed의 3월 출결(학교급 '중학교(점검)', 2026-03-03)
+  attendance: { login: 'admin-a', states: { default: '/attendance', seeded: pickOption('/attendance?day=2026-03-03', 'select[name=level]', '점검', (v) => `/attendance?day=2026-03-03&level=${v}&from=2026-03-02&to=2026-03-14`) } },
+  records: { login: 'admin-a', states: { empty: '/records', person: pickOption('/records', 'select[name=p]', '점검 학생 1', (v) => `/records?p=${v}`) } },
   site: { login: 'admin-a', states: { default: '/site', settings: '/site?box=settings' } },
   'site-inquiries': { login: 'admin-a', states: { empty: '/site/inquiries' } },
   'template-live': { login: 'admin-a', states: { play: '/templates/kinder', ivory: '/templates/story', 'play-inner': '/templates/kinder?page=daily', clear: '/templates/notice', bold: '/templates/admissions', studio: '/templates/project', lamp: '/templates/mission', horizon: '/templates/international', seed: '/templates/single', } },
