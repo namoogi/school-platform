@@ -1,6 +1,6 @@
-# 다음 세션 인계 (2026-11-26, 84차 끝)
+# 다음 세션 인계 (2026-11-27, 85차 끝)
 
-새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-84.md` → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
+새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-85.md` → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
 
 ## 설명 방식 (82차, 꼭 지킬 것)
@@ -8,6 +8,11 @@
 
 ## UI 점검 (84차, ADR 0033)
 UI를 바꾸면 `docs/UI_REVIEW.md`: 로컬 서버 → `npm run ui:review -- <페이지>`(캡처·기계 검사) → Codex 점검(선생님 Mac CLI 또는 GitHub 코드 리뷰) → 선별·수정. 색은 `npm run lint:colors`(CI).
+- **85차부터 매시간 자동 개발 세션이 `docs/automation/QUEUE.md` 맨 위 'UI 점검' 표를 한 페이지씩 처리한다.** 화면 판정은 **자체 점검**이고 `통과`가 아니다. 독립 화면 검토(Codex가 스크린샷을 보는 길)는 아직 없다.
+- Codex 상호 점검(`docs/COLLABORATION.md` 8절)
+  - `@codex review` 봇은 아직 반응하지 않는다. 저장소·개인 설정은 켰고, GitHub 앱의 권한 갱신 요청은 선생님 확인 대기다.
+  - 작동하는 길: 선생님 쪽 Codex 세션이 GitHub 커넥터로 검토 댓글을 직접 남긴다.
+  - 받은 지적은 수용·기각·보류 표로 PR에 답한다. 코드 지적은 AGENTS.md·코드·테스트로, 화면 지적은 화면 근거로 판정한다.
 
 ## 지금 상태 (운영 onschools.vercel.app 기준)
 - **학사 토대(ADR 0025)**: F1~F5 운영 반영(56·57·59·60·61차). 관제 기본판·학교 복제·보고 계약(ADR 0027, 58차).
