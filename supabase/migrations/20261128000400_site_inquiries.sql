@@ -46,6 +46,8 @@ begin
     raise exception 'inquiry_closed' using errcode = 'P0001';
   end if;
   if p_consent is not true then raise exception 'consent_required' using errcode = 'P0001'; end if;
+  -- 같은 학교의 제출을 한 줄로 세운다(동시에 들어와도 횟수 검사와 넣기가 함께 일어남)
+  perform pg_advisory_xact_lock(hashtextextended('site_inquiry:' || sid::text, 0));
   select count(*) into n from public.site_inquiries i
    where i.school_id = sid and lower(i.contact) = c and i.created_at > now() - interval '1 day';
   if n >= 3 then raise exception 'too_many' using errcode = 'P0001'; end if;

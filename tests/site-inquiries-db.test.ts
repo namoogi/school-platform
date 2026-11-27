@@ -55,6 +55,11 @@ describe('91차 방문·상담 신청', () => {
     for (let i = 0; i < 3; i++) await asVisitor((db) => inq.submitInquiry(db, 'inq-a', input('limit@example.org')));
     await expect(asVisitor((db) => inq.submitInquiry(db, 'inq-a', input('LIMIT@example.org ')))).rejects.toThrow('잠시');
   });
+  it('동시에 들어와도 같은 연락처 하루 3건을 넘지 않는다(학교별로 한 줄로 세움)', async () => {
+    const results = await Promise.allSettled(Array.from({ length: 6 }, () => asVisitor((db) => inq.submitInquiry(db, 'inq-a', input('burst@example.org')))));
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(3);
+    await su.query(`delete from public.site_inquiries where contact = 'burst@example.org'`); // 시험 정리(앱 역할은 지울 권한 없음)
+  });
   it('그 학교 관리자만 읽고, 교사·다른 학교 관리자는 못 본다(양방향)', async () => {
     const mine = await asUser(A.userId, (db) => inq.listInquiries(db, A.schoolId));
     expect(mine.length).toBe(4);

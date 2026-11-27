@@ -36,7 +36,8 @@ export default async function SitePreview({ params, searchParams }: { params: Pr
           <PageHead content={v.content} lang={lang} fallback={fallback} asset={(a) => `/site/assets/${a}`} />
           {/* 시안에서는 사이트 안 링크를 따라가지 않는다(공개 주소가 아직 없을 수 있음) */}
           <SiteBlocks content={v.content} lang={lang} fallback={fallback} assetUrl={(a) => `/site/assets/${a}`} link={() => '#'}
-            textInImage={String(detail.entry.meta.text_in_image) === 'true'} />
+            textInImage={String(detail.entry.meta.text_in_image) === 'true'}
+            inquiry={{ slug: null, open: !!settings?.inquiry_open, page: detail.entry.key === 'home' ? '/' : `/p/${detail.entry.key}` }} />
           <ReadingNav listHref={listHref} listLabel="목록으로" editHref={`${listHref}&id=${id}`} />
         </main>
       </div>
