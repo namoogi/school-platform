@@ -7,3 +7,6 @@ next-env.d.ts
 test-results
 .e2e-agent-*/
 .ui-review/
+
+# 학교 옮기기 묶음(개인정보 포함, ADR 0035)
+.school-move/
