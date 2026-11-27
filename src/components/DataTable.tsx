@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 import { nextSort, sortRows, type SortState, type SortValue } from '@/lib/table-sort';
+import { useI18n } from './I18nProvider';
 
 /**
  * 공통 표 (DESIGN-SYSTEM.md). 서버 화면이 셀 내용(cells)과 정렬 값(sort)을 만들어 넘긴다.
@@ -14,31 +15,32 @@ export type Column = { key: string; header: React.ReactNode; num?: boolean; sort
 export type Row = { id: string; cells: Record<string, React.ReactNode>; sort?: Record<string, SortValue> };
 export type Density = 'compact' | 'default' | 'comfortable';
 
-const DENSITY_LABEL: Record<Density, string> = { compact: '촘촘히', default: '기본', comfortable: '넉넉히' };
+const DENSITIES: Density[] = ['compact', 'default', 'comfortable'];
 
-export function DataTable({ columns, rows, caption, empty = '표시할 항목이 없습니다.', initialSort = null,
+export function DataTable({ columns, rows, caption, empty, initialSort = null,
   density: initialDensity = 'default', densityControl = false, testId }: {
   columns: Column[]; rows: Row[]; caption: string; empty?: React.ReactNode; initialSort?: SortState;
   density?: Density; densityControl?: boolean; testId?: string;
 }) {
+  const { t } = useI18n();
   const [sort, setSort] = useState<SortState>(initialSort);
   const [density, setDensity] = useState<Density>(initialDensity);
-  if (!rows.length) return <p className="muted data-table-empty" data-testid={testId}>{empty}</p>;
+  if (!rows.length) return <p className="muted data-table-empty" data-testid={testId}>{empty ?? t('table.empty')}</p>;
   const shown = sortRows(rows, sort);
   return (
     <div className="data-table" data-density={density === 'default' ? undefined : density}>
       {densityControl && (
-        <div className="data-table-tools" role="group" aria-label={`${caption} 행 간격`}>
-          {(Object.keys(DENSITY_LABEL) as Density[]).map((d) => (
+        <div className="data-table-tools" role="group" aria-label={t('table.densityGroup', { caption })}>
+          {DENSITIES.map((d) => (
             <button key={d} type="button" className="btn btn-ghost btn-sm" aria-pressed={density === d} onClick={() => setDensity(d)}>
-              {DENSITY_LABEL[d]}
+              {t(`table.density.${d}`)}
             </button>
           ))}
         </div>
       )}
       <div className="table-wrap">
         <table className="grid-table" data-testid={testId}>
-          <caption className="sr-only">{caption}{sort ? ` · ${headerText(columns, sort.key)} ${sort.dir === 'asc' ? '오름차순' : '내림차순'} 정렬` : ''}</caption>
+          <caption className="sr-only">{caption}{sort ? t(sort.dir === 'asc' ? 'table.sortedAsc' : 'table.sortedDesc', { column: headerText(columns, sort.key) }) : ''}</caption>
           <thead>
             <tr>
               {columns.map((c) => {

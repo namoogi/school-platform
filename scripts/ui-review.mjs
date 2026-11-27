@@ -1,5 +1,6 @@
 // UI 점검 루프 4-1·4-2(docs/UI_REVIEW.md): 화면 캡처 + 기계 검사. 모델 호출 없음.
-// 사용: node scripts/ui-review.mjs <페이지 이름…|--all> [--base http://localhost:3000]
+// 사용: node scripts/ui-review.mjs <페이지 이름…|--all> [--base http://localhost:3000] [--lang en]
+//   --lang: 화면 언어 쿠키를 넣고 찍는다(ADR 0037). 파일 이름 끝에 -<언어>가 붙는다. 영어는 한국어보다 길어 넘침을 따로 본다.
 //   페이지 목록은 scripts/ui-review.pages.mjs. 서버는 미리 띄워 둔다(npm run dev 또는 build+start, 로컬 DB + 시드).
 // 결과: .ui-review/<페이지>/<상태>-<뷰포트너비>.png, machine.json, machine.md
 // 기계 검사: 콘솔 오류 · 가로 스크롤(scrollWidth > clientWidth) · 접근성(axe serious 이상)
@@ -17,6 +18,8 @@ const AXE = fs.readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const args = process.argv.slice(2);
 const baseIdx = args.indexOf('--base');
 const BASE = (baseIdx >= 0 ? args.splice(baseIdx, 2)[1] : process.env.UI_BASE ?? 'http://localhost:3000').replace(/\/$/, '');
+const langIdx = args.indexOf('--lang');
+const LANG = langIdx >= 0 ? args.splice(langIdx, 2)[1] : null;
 const names = args.includes('--all') ? Object.keys(PAGES) : args;
 if (!names.length) {
   console.error(`페이지 이름을 주세요. 있는 이름: ${Object.keys(PAGES).join(', ')} (모두는 --all)`);
@@ -53,6 +56,7 @@ try {
     const results = [];
     for (const vp of VIEWPORTS) {
       const ctx = await browser.newContext({ viewport: { width: vp.w, height: vp.h } });
+      if (LANG) await ctx.addCookies([{ name: 'lang', value: LANG, url: BASE }]);
       const page = await ctx.newPage();
       const consoleErrors = [];
       // 리소스 404 콘솔 문구에는 주소가 없어, 같은 출처 응답 4xx·5xx 를 주소와 함께 따로 잡는다
@@ -65,7 +69,7 @@ try {
         const url = typeof target === 'function' ? await target({ page, BASE }) : `${BASE}${target}`;
         await page.goto(url, { waitUntil: 'networkidle' });
         await page.waitForTimeout(300);
-        const file = `${state}-${vp.w}.png`;
+        const file = `${state}-${vp.w}${LANG ? `-${LANG}` : ''}.png`;
         await page.screenshot({ path: path.join(dir, file), fullPage: true });
         const scroll = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
         await page.addScriptTag({ content: AXE });

@@ -2,6 +2,7 @@
 import { useCallback, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import s from './ConfirmDialog.module.css';
+import { useI18n } from './I18nProvider';
 
 /**
  * 확인 대화상자 (DESIGN-SYSTEM.md: danger 버튼은 확인 대화상자 안에서만).
@@ -25,8 +26,9 @@ export function ConfirmDialog({ open, options, onAnswer, returnFocus }: {
   returnFocus?: HTMLElement | null;
 }) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const { t } = useI18n();
   if (!options) return null;
-  const { title, description, confirmLabel, cancelLabel = '취소', tone = 'danger' } = options;
+  const { title, description, confirmLabel, cancelLabel = t('common.cancel'), tone = 'danger' } = options;
   // 화면 형식·명암 토큰(data-ui·data-mode)은 .app에 걸려 있다. body로 띄우면 :root의 밝은 기본 토큰을 받으므로
   // 연 버튼이 속한 .app(없으면 첫 .app) 안에 띄워 지금 테마를 그대로 쓴다(85차, Codex P2)
   const container = returnFocus?.closest<HTMLElement>('.app') ?? (typeof document !== 'undefined' ? document.querySelector<HTMLElement>('.app') : null) ?? undefined;
