@@ -14,7 +14,8 @@
  * - credits: 수업 학점
  *
  * - course: { pass_fail } (과목 속성으로 P/F 인지)
- * - student: { manual_level } (그 학생에게만 따로 적은 판정, 예 'P'·'F'. A~E 과목 안에 P 학생이 섞일 수 있다 — 드리미 정정 2026-11-27)
+ * - entry: { exists, level } (이번 평가 입력 행이 있는지, 그 행에 적힌 성취도. 예 'P'·'F'. A~E 과목 안에 P 학생이 섞일 수 있다)
+ * - prior: { level } (이미 저장된 기록의 성취도. 드리미는 입력 행이 없을 때만 이 값을 이어받는다 — 포털 정정 2026-11-27 ②③)
  *
  * 빈 값 규칙(3값): null 은 '자료 없음'이고 0점·미달과 다르다(드리미포털 회신 2026-11-27, 사고에서 나온 규칙).
  * - 산술·round·band 에 null 이 들어가면 null
@@ -40,7 +41,8 @@ export type CalcInput = {
   competencies?: string[];
   credits?: number;
   course?: { pass_fail?: boolean };
-  student?: { manual_level?: string | null };
+  entry?: { exists?: boolean; level?: string | null };
+  prior?: { level?: string | null };
 };
 export type CalcOutput = { score: number | null; passed: boolean | null; level: string | null };
 
@@ -50,7 +52,7 @@ const BOOL_OPS = new Set(['and', 'or', 'not']);
 const SPECIAL = new Set(['if', 'round', 'weighted_score', 'count_levels', 'missing', 'count', 'coalesce', 'band']);
 export const OPS = [...NUM_OPS, ...CMP_OPS, ...BOOL_OPS, ...SPECIAL];
 const ROUND_MODES = new Set(['half_up', 'half_even', 'floor', 'ceil', 'trunc']);
-const VAR_RE = /^(items\.[a-z0-9][a-z0-9_.-]{0,40}\.(score|weight|max|submitted)|attendance\.(rate|present_days|absent_days)|competencies\.(count)|credits|course\.pass_fail|student\.manual_level|let\.[a-z][a-z0-9_]{0,30})$/;
+const VAR_RE = /^(items\.[a-z0-9][a-z0-9_.-]{0,40}\.(score|weight|max|submitted)|attendance\.(rate|present_days|absent_days)|competencies\.(count)|credits|course\.pass_fail|entry\.(exists|level)|prior\.level|let\.[a-z][a-z0-9_]{0,30})$/;
 const MAX_NODES = 400;
 const MAX_DEPTH = 24;
 
@@ -162,7 +164,9 @@ function getVar(path: string, input: CalcInput, lets: Record<string, V>): V {
   if (path.startsWith('let.')) return lets[path.slice(4)] ?? null;
   if (path === 'credits') return input.credits ?? null;
   if (path === 'course.pass_fail') return input.course?.pass_fail ?? false;
-  if (path === 'student.manual_level') return input.student?.manual_level ?? null;
+  if (path === 'entry.exists') return input.entry?.exists ?? false;
+  if (path === 'entry.level') return input.entry?.level ?? null;
+  if (path === 'prior.level') return input.prior?.level ?? null;
   if (path === 'competencies.count') return input.competencies?.length ?? 0;
   if (path.startsWith('attendance.')) {
     const a = input.attendance as Record<string, number | null> | undefined;
@@ -259,19 +263,20 @@ export const PRESETS: Record<string, { spec: CalcSpec; note: string }> = {
     },
   },
   rounded_twice_bands: {
-    note: '드리미포털 방식(회신·정정 2026-11-27): 영역 합 Σ(점수÷만점×비율)을 정규화하지 않고 소수 2자리 → 정수(원점수) 반올림 → 원점수로 성취도 A~E. P/F 여부 = 과목 속성 P/F 또는 학생 판정이 P·F. P/F면 원점수만 비우고 성취도(P·F)는 남긴다',
+    note: '드리미포털 방식(회신·정정 2026-11-27): 영역 합 Σ(점수÷만점×비율)을 정규화하지 않고 소수 2자리 → 정수(원점수) 반올림 → 원점수로 성취도 A~E. 학생 판정 = 입력 행의 성취도, 입력 행이 없을 때만 이전 기록의 성취도(계승). P/F 여부 = 과목 속성 또는 학생 판정 P·F. P/F면 원점수만 비우고 성취도는 남긴다(과목만 P/F면 A~E + 원점수 빈칸)',
     spec: {
       lets: {
         total: { op: 'round', args: [{ op: 'weighted_score', normalize: false }], digits: 2 },
         raw: { op: 'round', args: [{ var: 'let.total' }], digits: 0 },
+        manual: { op: 'if', args: [{ var: 'entry.exists' }, { var: 'entry.level' }, { var: 'prior.level' }] },
         manual_pf: { op: 'coalesce', args: [{ op: 'or', args: [
-          { op: '==', args: [{ var: 'student.manual_level' }, 'P'] }, { op: '==', args: [{ var: 'student.manual_level' }, 'F'] },
+          { op: '==', args: [{ var: 'let.manual' }, 'P'] }, { op: '==', args: [{ var: 'let.manual' }, 'F'] },
         ] }, false] },
         is_pf: { op: 'or', args: [{ var: 'course.pass_fail' }, { var: 'let.manual_pf' }] },
       },
       outputs: {
         score: { op: 'if', args: [{ var: 'let.is_pf' }, null, { var: 'let.raw' }] },
-        level: { op: 'if', args: [{ var: 'let.manual_pf' }, { var: 'student.manual_level' },
+        level: { op: 'if', args: [{ var: 'let.manual_pf' }, { var: 'let.manual' },
           { op: 'band', args: [{ var: 'let.raw' }], bands: [[90, 'A'], [80, 'B'], [70, 'C'], [60, 'D']], else: 'E' }] },
       },
     },

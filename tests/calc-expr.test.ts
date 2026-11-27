@@ -89,13 +89,18 @@ describe('드리미포털 규칙 표현(회신 2026-11-27)', () => {
     expect(evaluate(spec, { items: {} })).toMatchObject({ score: null, level: null });
   });
   it('P/F(정정): 과목 속성 또는 학생 판정 P·F — 원점수만 비우고 성취도 P·F 는 남긴다', () => {
-    // 학생 한 명만 P: A~E 과목 안에 섞인 P 학생
-    expect(one(95, { student: { manual_level: 'P' } })).toEqual({ score: null, passed: null, level: 'P' });
-    expect(one(40, { student: { manual_level: 'F' } })).toEqual({ score: null, passed: null, level: 'F' });
-    // 과목이 P/F 여도 학생 판정이 없으면 원점수는 비우고 성취도는 점수 잣대(드리미 reflect.ts 의 대체 경로)
-    expect(one(95, { course: { pass_fail: true } })).toEqual({ score: null, passed: null, level: 'A' });
-    // 학생 판정이 P·F 가 아니면(비어 있거나 다른 값) 보통 과목처럼
-    expect(one(85, { student: { manual_level: null } })).toEqual({ score: 85, passed: null, level: 'B' });
+    // 학생 한 명만 P: A~E 과목 안에 섞인 P 학생(이번 입력 행의 성취도)
+    expect(one(95, { entry: { exists: true, level: 'P' } })).toEqual({ score: null, passed: null, level: 'P' });
+    expect(one(40, { entry: { exists: true, level: 'F' } })).toEqual({ score: null, passed: null, level: 'F' });
+    // 과목이 P/F 여도 학생 판정이 없으면 성취도는 점수 잣대, 원점수만 빈칸(포털 확인 ①)
+    expect(one(85, { course: { pass_fail: true } })).toEqual({ score: null, passed: null, level: 'B' });
+    // 입력 행의 성취도가 비었으면 보통 과목처럼
+    expect(one(85, { entry: { exists: true, level: null } })).toEqual({ score: 85, passed: null, level: 'B' });
+  });
+  it('계승(포털 정정 ②③): 입력 행이 없을 때만 이전 기록의 P 를 이어받고, 입력 행이 생기면 끊긴다', () => {
+    expect(one(85, { entry: { exists: false }, prior: { level: 'P' } })).toEqual({ score: null, passed: null, level: 'P' });
+    expect(one(85, { entry: { exists: true, level: null }, prior: { level: 'P' } })).toEqual({ score: 85, passed: null, level: 'B' });
+    expect(one(85, { entry: { exists: true, level: 'p ' }, prior: { level: 'P' } }).level).toBe('B'); // 대소문자·공백 정리는 입력을 만드는 쪽 몫
   });
   it('band: 하한 큰 순서·빈 값 null·검사', () => {
     expect(checkSpec({ outputs: { level: { op: 'band', args: [1], bands: [[60, 'D'], [90, 'A']] }, score: 1 } }).map((i) => i.message).join()).toMatch(/큰 것부터/);

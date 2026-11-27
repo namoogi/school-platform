@@ -59,7 +59,7 @@ describe('계산식 판', () => {
   });
 
   it('미리 계산은 저장하지 않고 견본 입력으로 결과만 돌려준다', () => {
-    const r = cr.previewCalc(spec, [{ label: '89.5점', items: { a: { score: 89.5, max: 100, weight: 100 } } }, { label: 'P 학생', student: { manual_level: 'P' }, items: { a: { score: 95, max: 100, weight: 100 } } }]);
+    const r = cr.previewCalc(spec, [{ label: '89.5점', items: { a: { score: 89.5, max: 100, weight: 100 } } }, { label: 'P 학생', entry: { exists: true, level: 'P' }, items: { a: { score: 95, max: 100, weight: 100 } } }]);
     expect(r.issues).toEqual([]);
     expect(r.results).toEqual([{ label: '89.5점', score: 90, passed: null, level: 'A' }, { label: 'P 학생', score: null, passed: null, level: 'P' }]);
   });

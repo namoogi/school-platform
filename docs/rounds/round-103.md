@@ -24,7 +24,7 @@
   - 명령 함수 `app.save_calc_rule`: 학교 관리자만, 409
 - `src/lib/calc-rules.ts`(목록·이력·저장·미리 계산), `GET/POST /api/calc-rules`
 - 드리미포털 교류
-  - 요청 → 회신(sha256 3907ce5a…) → 정정(P/F 출처 둘, P/F면 원점수만 비움, 중등 과목평균)
+  - 요청 → 회신(sha256 3907ce5a…) → 정정 1(P/F 출처 둘, P/F면 원점수만 비움, 중등 과목평균) → 정정 2(학생 판정 = 입력 행 성취도, 입력 행이 없을 때만 이전 기록 계승)
   - 정리 문서 `docs/research/dreamy-calc-rules-2026-11.md`
 - 오류는 이름표(ADR 0039): `err.calcSpecInvalid`, `db.calcRuleCode`, `db.calcRuleSpec`
 
