@@ -18,6 +18,7 @@
     "test:agent-translation": "python3 -m unittest discover -s tests -p 'agent_translation_test.py'",
     "ui:review": "node scripts/ui-review.mjs",
     "lint:colors": "node scripts/lint-colors.mjs",
+    "ui:seed": "node scripts/ui-review-seed.mjs",
     "lint:i18n": "node scripts/lint-i18n.mjs",
     "templates:thumbs": "node scripts/template-thumbs.mjs"
   },

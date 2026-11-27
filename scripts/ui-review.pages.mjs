@@ -14,6 +14,18 @@ const firstLink = (list, selector) => async ({ page, BASE }) => {
   return `${BASE}${href ?? list}`;
 };
 
+/** 목록에서 링크를 차례로 따라간다(앞 링크가 없으면 거기서 멈춤). `npm run ui:seed`로 채운 상태를 찍을 때 쓴다 */
+const follow = (start, selectors) => async ({ page, BASE }) => {
+  let url = `${BASE}${start}`;
+  for (const sel of selectors) {
+    await page.goto(url, { waitUntil: 'networkidle' });
+    const href = await page.locator(sel).first().getAttribute('href').catch(() => null);
+    if (!href) break;
+    url = new URL(href, url).toString();
+  }
+  return url;
+};
+
 export const PAGES = {
   intro: { states: { default: '/intro' } },
   login: { states: { default: '/login' } },
@@ -24,8 +36,9 @@ export const PAGES = {
   packages: { login: 'admin-a', states: { default: '/packages' } },
   academics: { login: 'admin-a', states: { default: '/academics' } },
   people: { login: 'admin-a', states: { default: '/people' } },
-  courses: { login: 'admin-a', states: { default: '/courses' } },
-  grades: { login: 'admin-a', states: { empty: '/grades' } },
+  // filled·offering: `npm run ui:seed` 뒤에만 채워진다(없으면 목록 그대로 찍힘)
+  courses: { login: 'admin-a', states: { default: '/courses', offering: follow('/courses', ['table a[href*="o="]']) } },
+  grades: { login: 'admin-a', states: { empty: '/grades', offering: follow('/courses', ['table a[href*="o="]', '[data-testid=to-grades]']) } },
   attendance: { login: 'admin-a', states: { default: '/attendance' } },
   records: { login: 'admin-a', states: { empty: '/records' } },
   site: { login: 'admin-a', states: { default: '/site', settings: '/site?box=settings' } },
