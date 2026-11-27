@@ -20,6 +20,8 @@ export const PAGES = {
   home: { login: 'admin-a', states: { default: '/home' } },
   intake: { login: 'admin-a', states: { default: '/intake', chat: '/intake?chat=1' } },
   review: { login: 'admin-a', states: { default: '/review', rules: '/review?box=rules' } },
+  documents: { login: 'admin-a', states: { default: '/documents' } },
+  packages: { login: 'admin-a', states: { default: '/packages' } },
   academics: { login: 'admin-a', states: { default: '/academics' } },
   people: { login: 'admin-a', states: { default: '/people' } },
   courses: { login: 'admin-a', states: { default: '/courses' } },

@@ -1936,8 +1936,8 @@ try {
     h.on('dialog', (d) => d.accept());
     await login(h, 'admin-b@school-b.test', 'demo-pass-b');
     await h.goto(`${BASE}/records`);
-    await h.locator('.people-list select[name=p]').selectOption({ label: 'E2E 학생 하나' });
-    await h.locator('.people-list button[type=submit]').click();
+    await h.locator('[data-testid=record-student] select[name=p]').selectOption({ label: 'E2E 학생 하나' });
+    await h.locator('[data-testid=record-student] button[type=submit]').click();
     await h.waitForURL(/\/records\?p=/);
     const cy = h.locator('[data-testid=close-year-form]');
     await cy.locator('select').selectOption({ label: 'E2E2030' });

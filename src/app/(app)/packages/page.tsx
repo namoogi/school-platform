@@ -3,25 +3,30 @@ import { loadForPage } from '@/lib/page';
 import { listDefinitions, listPackages, packageSpecs, previewPackage, type Issue, type Preview } from '@/lib/packages';
 import { PageHeader, StatusBadge } from '@/components/ui';
 import { PackageSwitch } from './PackagesClient';
+import { getI18n, userLang } from '@/lib/i18n/server';
+import type { MsgKey } from '@/lib/i18n/catalog';
 
-const KIND: Record<string, string> = { record_type: '기록 유형', form: '양식', view: '목록', output: '출력', flow: '흐름' };
+// 정의 종류 이름은 사전의 def.kind.*
+const DEF_KINDS = ['record_type', 'form', 'view', 'output', 'flow'];
 
 /** 61차 F5(ADR 0025): 학사 꾸러미 — 학교 AI가 만든 정의 묶음을 검사 결과·합성 미리보기로 보고, 관리자가 켠다 */
 export default async function PackagesPage() {
-  const { packages, previews, defs, school } = await loadForPage(async ({ db, school }) => {
+  const { packages, previews, defs, school, uiLang } = await loadForPage(async ({ db, school }) => {
     const packages = await listPackages(db, school.id);
     const defs = await listDefinitions(db, school.id);
     const previews: Record<string, Preview[]> = {};
     for (const p of packages) if (p.valid) previews[p.code] = previewPackage(await packageSpecs(db, school.id, p.code, p.version));
-    return { packages, previews, defs };
+    return { packages, previews, defs, uiLang: await userLang(db) };
   }, { module: 'records' });
+  const { t, lang } = await getI18n(uiLang);
+  const KIND = Object.fromEntries(DEF_KINDS.map((k) => [k, t(`def.kind.${k}` as MsgKey)]));
   return (
     <>
-      <PageHeader title="학사 꾸러미" crumbs={[{ label: '학사 운영' }, { label: '학사 꾸러미' }]}
-        description="학교가 정한 기록 유형·양식·목록·출력·흐름의 묶음입니다. 학교 AI가 작업 토큰으로 만들고 검사기가 확인하면, 합성 자료 미리보기를 보고 관리자가 켭니다."
-        meta={<span>꾸러미 {packages.length}개 · 켜짐 {packages.filter((p) => p.state?.state === 'enabled').length}개</span>} />
+      <PageHeader title={t('nav.packages.title')} crumbs={[{ label: t('intake.crumb') }, { label: t('nav.packages.title') }]}
+        description={t('pkg.lead')}
+        meta={<span>{t('pkg.meta', { n: packages.length, on: packages.filter((p) => p.state?.state === 'enabled').length })}</span>} />
       {packages.length === 0 && (
-        <section className="card"><p className="muted empty">아직 꾸러미가 없습니다. 홈페이지 → AI 작업 공간에서 &lsquo;학사 꾸러미&rsquo; 종류로 작업 토큰을 발급해 학교 AI에게 맡길 수 있습니다.</p></section>
+        <section className="card"><p className="muted empty">{t('pkg.empty')}</p></section>
       )}
       <div className="stack">
         {packages.map((p) => {
@@ -36,24 +41,24 @@ export default async function PackagesPage() {
           return (
             <section className="card" key={p.code} data-testid={`pkg-${p.code}`}>
               <div className="between">
-                <h2>{p.title.ko ?? p.title.en ?? p.code} <small className="muted">{p.code} · {p.version}판{p.author_kind === 'agent' ? ' · 학교 AI 작성' : ''}</small></h2>
+                <h2>{p.title[lang] ?? p.title.ko ?? p.title.en ?? p.code} <small className="muted">{p.code} · {t('common.version', { v: p.version })}{p.author_kind === 'agent' ? t('pkg.byAgent') : ''}</small></h2>
                 <span>
-                  {on ? <StatusBadge tone="success">켜짐 · {p.state!.version}판</StatusBadge> : <StatusBadge tone="neutral">꺼짐</StatusBadge>}{' '}
-                  {p.valid ? <StatusBadge tone="success">검사 통과</StatusBadge> : <StatusBadge tone="danger">검사 오류 {errors.length}</StatusBadge>}
+                  {on ? <StatusBadge tone="success">{t('pkg.onV', { v: p.state!.version })}</StatusBadge> : <StatusBadge tone="neutral">{t('pkg.off')}</StatusBadge>}{' '}
+                  {p.valid ? <StatusBadge tone="success">{t('pkg.valid')}</StatusBadge> : <StatusBadge tone="danger">{t('pkg.errors', { n: errors.length })}</StatusBadge>}
                 </span>
               </div>
               {p.why && <p className="muted">{p.why}</p>}
-              <p className="fine">{p.members.map((m) => `${KIND[m.kind] ?? m.kind} ${m.code}(${m.version}판)`).join(' · ')}</p>
+              <p className="fine">{p.members.map((m) => t('pkg.member', { kind: KIND[m.kind] ?? m.kind, code: m.code, v: m.version })).join(' · ')}</p>
               {shown.length > 0 && (
-                <ul className="issue-list" aria-label="검사 결과">
-                  {shown.map((i, n) => <li key={n}><StatusBadge tone={i.level === 'error' ? 'danger' : 'warning'}>{i.level === 'error' ? '오류' : '확인'}</StatusBadge> {i.path} — {i.message}</li>)}
+                <ul className="issue-list" aria-label={t('pkg.results')}>
+                  {shown.map((i, n) => <li key={n}><StatusBadge tone={i.level === 'error' ? 'danger' : 'warning'}>{t(i.level === 'error' ? 'pkg.error' : 'pkg.check')}</StatusBadge> {i.path} — {i.message}</li>)}
                 </ul>
               )}
               {(previews[p.code] ?? []).map((pv) => (
                 <details key={pv.record_type} className="preview">
-                  <summary>미리보기(합성 자료): {pv.title}{pv.flow ? ` · 흐름 ${pv.flow.states.join(' → ')}` : ''}</summary>
+                  <summary>{t('pkg.preview', { title: pv.title })}{pv.flow ? t('pkg.flow', { states: pv.flow.states.join(' → ') }) : ''}</summary>
                   {pv.form && pv.form.map((sec, n) => (
-                    <fieldset key={n}><legend>{sec.title || '양식'}</legend>
+                    <fieldset key={n}><legend>{sec.title || KIND.form}</legend>
                       <dl className="facts">{sec.fields.map((f) => <Fragment key={f.key}><dt>{f.label}{f.required ? ' *' : ''}</dt><dd>{f.type}{f.options ? ` (${f.options.join('·')})` : ''} · {f.privacy}</dd></Fragment>)}</dl>
                     </fieldset>
                   ))}
@@ -66,7 +71,7 @@ export default async function PackagesPage() {
                     : b.type === 'heading' ? <h3 key={n}>{b.text}</h3> : <p key={n}>{b.text}</p>)}
                 </details>
               ))}
-              {school.isAdmin ? <PackageSwitch code={p.code} version={p.version} enabled={on} valid={p.valid} /> : <p className="muted">켜기·끄기는 학교 관리자가 합니다.</p>}
+              {school.isAdmin ? <PackageSwitch code={p.code} version={p.version} enabled={on} valid={p.valid} /> : <p className="muted">{t('pkg.adminOnly')}</p>}
             </section>
           );
         })}

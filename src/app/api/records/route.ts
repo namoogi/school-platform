@@ -2,6 +2,7 @@ import { handle } from '@/lib/api';
 import { ValidationError } from '@/lib/services';
 import { closeRecordYear, publishRecordDocument, recordDisclosure, type Format } from '@/lib/records';
 import { addExternalResult, awardQualification, closeCountReport } from '@/lib/qualifications';
+import { resolveLang, userLang } from '@/lib/i18n/server';
 
 /**
  * 75차: 기록(학년도 기록 마감 판·발행·공개 기록·외부 결과·자격·지정일 보고). 모두 학교 관리자 일이고, 판정은 DB 명령 함수가 한다.
@@ -36,7 +37,9 @@ export async function POST(req: Request) {
       case 'qualification': {
         const min = b.minCredits === '' || b.minCredits == null ? undefined : Number(b.minCredits);
         return { id: await awardQualification(db, school.id, {
-          personId: b.personId, kind: txt(b.kind), title: { ko: txt(b.title) }, awardedOn: txt(b.awardedOn) || undefined,
+          // 자격 이름은 입력한 사람의 화면 언어 칸에 둔다(클라이언트가 보낸 언어를 믿지 않고 서버가 판정, ADR 0037).
+          // 영어 화면에서 넣은 이름이 ko 칸에 들어가 영어 학업 기록에 빠지지 않게 한다
+          personId: b.personId, kind: txt(b.kind), title: { [await resolveLang(await userLang(db))]: txt(b.title) }, awardedOn: txt(b.awardedOn) || undefined,
           requirements: min !== undefined && Number.isFinite(min) ? { min_credits: min } : {},
         }) };
       }
