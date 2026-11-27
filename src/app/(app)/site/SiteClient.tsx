@@ -1,5 +1,5 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
@@ -39,16 +39,27 @@ export function EntryPublishControl({ id, title, latestVersion, liveVersion }: {
 }
 
 // ── 설정 ─────────────────────────────────────────────────
-export function SiteSettingsForm({ initial, schoolName }: { initial: SiteSettings | null; schoolName: string }) {
+/**
+ * 저장 뒤 화면이 새 설정을 다시 읽으면 폼이 `key={updated_at}`로 새로 그려져 상태가 사라진다(88차 e2e 불안정의 원인).
+ * 그래서 성공 표시는 주소의 `saved=1`로 넘겨, 새로 그려진 폼도 같은 표시로 시작한다.
+ */
+export function SiteSettingsForm({ initial, schoolName, saved = false }: { initial: SiteSettings | null; schoolName: string; saved?: boolean }) {
   const router = useRouter();
   const [s, setS] = useState({
     public_slug: initial?.public_slug ?? '', langs: (initial?.langs ?? ['ko']) as Lang[], default_lang: (initial?.default_lang ?? 'ko') as Lang,
     theme: initial?.theme ?? 'campus', site_title: (initial?.site_title ?? { ko: schoolName }) as LText, is_open: initial?.is_open ?? false,
   });
-  const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
+  const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(saved ? { tone: 'success', text: '저장했습니다.' } : null);
+  // 표시를 넘겨받았으면 주소에서 saved=1을 지운다(새로 고침·즐겨찾기로 다시 열 때 저장한 것처럼 보이지 않게). 서버를 다시 부르지 않는다
+  useEffect(() => {
+    if (!saved) return;
+    const u = new URL(window.location.href);
+    u.searchParams.delete('saved');
+    window.history.replaceState(window.history.state, '', u.pathname + u.search);
+  }, [saved]);
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    try { await send('/api/site/settings', 'POST', s); setMsg({ tone: 'success', text: '저장했습니다.' }); router.replace('/site?box=settings', { scroll: false }); router.refresh(); }
+    try { await send('/api/site/settings', 'POST', s); setMsg({ tone: 'success', text: '저장했습니다.' }); router.replace('/site?box=settings&saved=1', { scroll: false }); router.refresh(); }
     catch (err) { setMsg({ tone: 'danger', text: (err as Error).message }); }
   }
   const toggleLang = (l: Lang) => setS((x) => {

@@ -780,6 +780,8 @@ try {
     await h.check('[data-testid=site-settings] label:has-text("홈페이지 열기") input');
     await h.click('text=설정 저장');
     await h.waitForSelector('[data-testid=site-settings] [role=status]:has-text("저장했습니다")');
+    // 88차: 표시를 넘겨받은 뒤 주소의 saved=1은 지워진다(새로 고침하면 표시가 다시 나오지 않음)
+    await h.waitForFunction(() => !location.search.includes('saved='));
     // 쪽 만들고 공개
     await h.click('.triage-box:has-text("쪽")');
     await h.click('[data-testid=new-entry]');
@@ -1590,10 +1592,17 @@ try {
     await h.click('[data-testid=site-templates-link]');
     await h.waitForURL(/\/site\/templates$/);
     assert.equal(await h.locator('[data-testid=template-grid] article').count(), 7);
+    assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 7);
+    assert.equal((await h.request.get(`${BASE}/site-templates/story.jpg`)).status(), 200);
     await shot(h, '65-templates.png');
     await h.click('[data-testid=template-open-story]');
     await h.locator('[data-testid=template-preview]').waitFor();
     assert.match(await h.textContent('[data-testid=template-preview]'), /학교의 하루/);
+    // 86차: 기본은 가상 학교 예시 내용 · '안내 자리'로 바꾸면 적용될 그대로
+    assert.match(await h.textContent('[data-testid=template-preview]'), /숲속이야기학교/);
+    await h.click('[data-testid=template-view-guide]');
+    await h.waitForURL(/view=guide/);
+    assert.match(await h.textContent('[data-testid=template-preview]'), /\[학교 이름\]/);
     await h.click('nav[aria-label="템플릿 쪽"] a:has-text("교육철학")');
     await h.waitForURL(/page=philosophy/);
     assert.match(await h.textContent('[data-testid=template-preview]'), /우리가 소중히 여기는 것/);
@@ -1624,6 +1633,18 @@ try {
     await h.goto(`${BASE}/site?box=page`);
     await h.click('.triage-list a:has-text("교육철학")');
     await h.locator('text=자료로 빈 칸 채움').first().waitFor();
+    await ctx.close();
+  });
+  await step('87차: 주소만 넣고 새 디자인으로 옮기기 — 둘러보기 위 패널, 내부 주소는 서버가 거부해 화면에 알린다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site/templates`);
+    const panel = h.locator('[data-testid=migrate-start]');
+    await panel.waitFor();
+    await panel.locator('[data-testid=migrate-start-url]').fill(`${BASE}/`);
+    await panel.locator('[data-testid=migrate-start-read]').click();
+    await panel.locator('[role=status]', { hasText: /공개 인터넷|포트|내부/ }).waitFor();
     await ctx.close();
   });
   await step('67차: 기존 홈페이지에서 옮기기 — 패널이 보이고, 내부·사설 주소는 서버가 거부해 화면에 알린다', async () => {
