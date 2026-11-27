@@ -1,3 +1,4 @@
+import { fail } from '@/lib/api';
 import { NextResponse } from 'next/server';
 import { handleControl } from '@/lib/control-api';
 import { control } from '@/lib/control';
@@ -11,7 +12,7 @@ type Req = { id: string; no: number; status: string; assignee_session: string | 
  */
 export async function GET(req: Request) {
   const session = new URL(req.url).searchParams.get('session') ?? '';
-  if (!/^session_[A-Za-z0-9]{8,64}$/.test(session)) return NextResponse.json({ error: '?session=<세션 id>가 필요합니다.' }, { status: 400 });
+  if (!/^session_[A-Za-z0-9]{8,64}$/.test(session)) return fail(400, 'err.sessionParam');
   return handleControl(req, async (db, t) => {
     const all = (await control.requests(db, t, null)) as Req[];
     return all.filter((r) => (r.assignee_session ?? r.source_session) === session && r.status !== 'pending').flatMap((r) => {

@@ -24,13 +24,13 @@ export type PortalRecord = {
 };
 
 const uuid = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError('err.whatNotFound', { what });
   return v;
 };
 
 // ── 관리자 ──────────────────────────────────────────────
 export async function addPortalAccount(db: Db, schoolId: string, i: { kind: unknown; personId: unknown; email: unknown; underConsentAge?: unknown; consentBasis?: unknown; consentNote?: unknown }) {
-  if (i.kind !== 'student' && i.kind !== 'guardian') throw new ValidationError('열람 계정 종류는 학생·보호자입니다.');
+  if (i.kind !== 'student' && i.kind !== 'guardian') throw new ValidationError('err.portal.kind');
   const { rows: [r] } = await db.query('select app.add_portal_account($1, $2) as v', [schoolId, JSON.stringify({
     kind: i.kind, person_id: uuid(i.personId, '사람'), email: typeof i.email === 'string' ? i.email : '',
     under_consent_age: i.underConsentAge === true, consent_basis: typeof i.consentBasis === 'string' ? i.consentBasis : null,
@@ -70,7 +70,7 @@ export type PortalRequest = { id: string; kind: RequestKind; target_kind: string
   events: { status: RequestStatus; note: string | null; at: string }[]; annotation: { body: string; at: string } | null };
 
 export async function portalRequest(db: Db, i: { personId: unknown; kind: unknown; targetKind?: unknown; targetId?: unknown; body: unknown }) {
-  if (i.kind !== 'inspect' && i.kind !== 'amend') throw new ValidationError('요청 종류는 열람·수정입니다.');
+  if (i.kind !== 'inspect' && i.kind !== 'amend') throw new ValidationError('err.portal.reqKind');
   const { rows: [r] } = await db.query('select app.portal_request($1) as v', [JSON.stringify({
     person_id: uuid(i.personId, '학생'), kind: i.kind, target_kind: typeof i.targetKind === 'string' ? i.targetKind : 'other',
     target_id: typeof i.targetId === 'string' && isUuid(i.targetId) ? i.targetId : null, body: typeof i.body === 'string' ? i.body.slice(0, 2000) : '',

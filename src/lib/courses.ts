@@ -17,7 +17,7 @@ export type Offering = {
 export type EnrollmentEntry = { person_id: string; name: string; status: string; source: string; pass_fail_choice: boolean | null };
 
 function id(value: unknown, what: string): string {
-  if (typeof value !== 'string' || !isUuid(value)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof value !== 'string' || !isUuid(value)) throw new NotFoundError('err.whatNotFound', { what });
   return value;
 }
 function text(value: unknown): string {
@@ -25,7 +25,7 @@ function text(value: unknown): string {
 }
 function revision(value: unknown): number {
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 1) throw new ValidationError('화면의 수업 판(revision)이 없습니다. 새로 고친 뒤 다시 해 주세요.');
+  if (!Number.isInteger(n) || n < 1) throw new ValidationError('err.course.revision');
   return n;
 }
 async function one<T = unknown>(db: Db, sql: string, params: unknown[]): Promise<T> {
@@ -55,9 +55,9 @@ export function createOffering(db: Db, schoolId: string, input: {
   section?: unknown; capacity?: unknown;
 }) {
   const credits = Number(input.credits);
-  if (!Number.isFinite(credits)) throw new ValidationError('학점을 숫자로 넣어 주세요.');
+  if (!Number.isFinite(credits)) throw new ValidationError('err.course.credits');
   const capacity = input.capacity == null || input.capacity === '' ? null : Number(input.capacity);
-  if (capacity !== null && !Number.isInteger(capacity)) throw new ValidationError('정원은 정수입니다.');
+  if (capacity !== null && !Number.isInteger(capacity)) throw new ValidationError('err.course.capacity');
   return one<string>(db, 'select app.create_offering($1, $2, $3, $4, $5, $6, $7, $8, $9) as v',
     [schoolId, id(input.termId, '학기'), id(input.subjectId, '과목'), id(input.typeId, '갈래'), id(input.levelId, '학교급'),
       credits, input.passFail === true, text(input.section), capacity]);
@@ -117,7 +117,7 @@ export async function offeringsOfTerm(db: Db, schoolId: string, termId: unknown,
 export async function offering(db: Db, schoolId: string, offeringId: unknown) {
   const { rows } = await db.query<{ id: string; status: string; revision: number }>(
     'select id, status, revision from public.course_offerings where school_id = $1 and id = $2', [schoolId, id(offeringId, '개설')]);
-  if (!rows[0]) throw new NotFoundError('개설을 찾을 수 없습니다.');
+  if (!rows[0]) throw new NotFoundError('db.offeringNotFound');
   return rows[0];
 }
 

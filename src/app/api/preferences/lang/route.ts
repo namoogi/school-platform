@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { currentUserId } from '@/lib/auth';
 import { asUser } from '@/lib/db';
-import { sameOrigin } from '@/lib/api';
+import { sameOrigin, fail } from '@/lib/api';
 import { getLanguages, LANG_COOKIE } from '@/lib/i18n/server';
 
 /**
@@ -9,11 +9,11 @@ import { getLanguages, LANG_COOKIE } from '@/lib/i18n/server';
  * 언어 목록에 있고 켜진 언어만 받는다(목록은 DB라 언어를 더해도 이 코드는 그대로).
  */
 export async function POST(req: Request) {
-  if (!sameOrigin(req)) return NextResponse.json({ error: '허용되지 않은 요청 출처입니다.' }, { status: 403 });
+  if (!sameOrigin(req)) return fail(403, 'err.badOrigin');
   const body = await req.json().catch(() => ({}));
   const lang = typeof body?.lang === 'string' ? body.lang : '';
   const langs = (await getLanguages()).filter((l) => l.active);
-  if (!langs.some((l) => l.code === lang)) return NextResponse.json({ error: '쓸 수 없는 언어입니다.' }, { status: 400 });
+  if (!langs.some((l) => l.code === lang)) return fail(400, 'err.langUnavailable');
   const userId = await currentUserId();
   if (userId) {
     await asUser(userId, (db) => db.query(

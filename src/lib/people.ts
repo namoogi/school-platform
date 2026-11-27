@@ -20,7 +20,7 @@ export type EnrollmentRow = {
 };
 
 function id(value: unknown, what: string): string {
-  if (typeof value !== 'string' || !isUuid(value)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof value !== 'string' || !isUuid(value)) throw new NotFoundError('err.whatNotFound', { what });
   return value;
 }
 function text(value: unknown): string {
@@ -30,12 +30,12 @@ function optText(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
 }
 function date(value: unknown, what: string): string {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new ValidationError(`${what}를 YYYY-MM-DD 형식으로 넣어 주세요.`);
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new ValidationError('err.whatDate', { what });
   return value;
 }
 function grade(value: unknown): number {
   const n = Number(value);
-  if (!Number.isInteger(n) || n < 1 || n > 12) throw new ValidationError('학년은 1~12 사이입니다.');
+  if (!Number.isInteger(n) || n < 1 || n > 12) throw new ValidationError('err.people.grade');
   return n;
 }
 async function call<T = unknown>(db: Db, sql: string, params: unknown[]): Promise<T> {

@@ -60,7 +60,7 @@
   4. **필요하면 도식·예시**: 흐름도·비교표·전후 예시
   5. 승인을 구할 때는 '승인하면 바뀌는 것 / 안 바뀌는 것 / 되돌릴 수 있는지'를 한 줄씩 적는다.
   - 연구소 본문에서는 서식 `> **요약** …`, `> **왜** …`, ```` ```terms ```` 블록(`용어 | 쉬운 설명 | 예시`)을 쓴다(`src/lib/richdoc.ts`). 대화창에서는 같은 내용을 짧은 표·목록으로 쓴다.
-- **화면은 여러 언어로(ADR 0037, 2026-11-27 사용자 결정)**: 화면 문구는 코드에 한국어로 박지 않고 `src/lib/i18n/catalog.ts`에 이름표 + 한국어 기준 문구로 두고 `t()`(서버 `getI18n`, 브라우저 `useI18n`)로 쓴다. 다른 언어는 DB 번역 사전에 있고 언어 추가는 관리 화면에서 한다(코드 변경 없음). 새 이름표를 만들면 `i18n/en.json`에도 영어를 넣는다(시험이 이름표·채우기 자리 일치를 본다). `npm run lint:i18n`(CI)이 화면 파일의 한글 줄이 늘면 막는다.
+- **화면은 여러 언어로(ADR 0037, 2026-11-27 사용자 결정)**: 화면 문구는 코드에 한국어로 박지 않고 `src/lib/i18n/catalog.ts`에 이름표 + 한국어 기준 문구로 두고 `t()`(서버 `getI18n`, 브라우저 `useI18n`)로 쓴다. 다른 언어는 DB 번역 사전에 있고 언어 추가는 관리 화면에서 한다(코드 변경 없음). 새 이름표를 만들면 `i18n/en.json`에도 영어를 넣는다(시험이 이름표·채우기 자리 일치를 본다). `npm run lint:i18n`(CI)이 화면 파일의 한글 줄이 늘면 막는다. 서버 오류도 문장 대신 이름표로 던진다: `new ValidationError('err.이름', { 값 })`. 응답 때 요청한 사람의 언어로 바뀐다. DB 함수는 고정 문구를 쓰고 글자가 같은 `db.*` 이름표를 더한다(ADR 0039).
 - 완료는 실제 동작과 테스트로 확인한다. 구현하지 못한 부분은 사유와 함께 PR·차시 문서에 적는다.
 
 ## 공통 패턴
@@ -106,3 +106,13 @@ npm run build && npm run test:e2e   # 브라우저 전체 흐름
 ```
 
 마이그레이션은 `supabase/migrations/`에 날짜 접두어로 추가한다. 이미 적용된 파일은 고치지 않는다.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

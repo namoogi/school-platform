@@ -14,6 +14,6 @@ export async function POST(req: Request) {
   return handlePlatform(req, async ({ db }) => {
     if (body?.action === 'language') return saveLanguage(db, body);
     if (body?.action === 'messages') return saveMessages(db, body.lang, body.messages, body.overwrite);
-    throw new ValidationError('알 수 없는 요청입니다.');
+    throw new ValidationError('err.unknownRequest');
   });
 }

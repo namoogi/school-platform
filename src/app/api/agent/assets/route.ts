@@ -1,3 +1,4 @@
+import { fail } from '@/lib/api';
 import { NextResponse } from 'next/server';
 import { handleAgent } from '@/lib/agent-api';
 import { agentAssets, agentUpload } from '@/lib/agent';
@@ -13,7 +14,7 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   const len = Number(req.headers.get('content-length') ?? 0);
-  if (len > PDF_MAX_BYTES + 1024 * 1024) return NextResponse.json({ error: '파일이 너무 큽니다(4MB 이하).' }, { status: 413 });
+  if (len > PDF_MAX_BYTES + 1024 * 1024) return fail(413, 'err.fileTooLarge4');
   const type = (req.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
   const name = new URL(req.url).searchParams.get('name') ?? 'file';
   return handleAgent(req, async (db, token) => agentUpload(db, token, { name, type, bytes: Buffer.from(await req.arrayBuffer()) }));

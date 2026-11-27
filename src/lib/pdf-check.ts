@@ -23,9 +23,9 @@ function found(s: string): string | null {
 }
 
 export function checkPdf(bytes: Buffer): void {
-  if (!bytes.length || bytes.length > PDF_MAX_BYTES) throw new ValidationError('PDF는 4MB 이하여야 합니다. 웹용(150dpi 정도)으로 줄여 주세요.');
-  if (bytes.subarray(0, 5).toString('latin1') !== '%PDF-') throw new ValidationError('PDF 파일이 아닙니다.');
-  if (!bytes.subarray(Math.max(0, bytes.length - 2048)).toString('latin1').includes('%%EOF')) throw new ValidationError('PDF 파일 끝이 잘렸습니다. 다시 만들어 주세요.');
+  if (!bytes.length || bytes.length > PDF_MAX_BYTES) throw new ValidationError('err.pdf.size');
+  if (bytes.subarray(0, 5).toString('latin1') !== '%PDF-') throw new ValidationError('err.pdf.notPdf');
+  if (!bytes.subarray(Math.max(0, bytes.length - 2048)).toString('latin1').includes('%%EOF')) throw new ValidationError('err.pdf.truncated');
 
   const s = bytes.toString('latin1');
   const outside: string[] = [];
@@ -41,26 +41,26 @@ export function checkPdf(bytes: Buffer): void {
     const dict = s.slice(dictStart < 0 ? pos : Math.max(pos, dictStart), dictEnd + 2);
     const bodyStart = m.index + m[0].length;
     const end = s.indexOf('endstream', bodyStart);
-    if (end < 0) throw new ValidationError('PDF 구조를 읽을 수 없습니다.');
+    if (end < 0) throw new ValidationError('err.pdf.structure');
     outside.push(s.slice(pos, bodyStart));
     if (/\/Type\s*\/ObjStm/.test(decodeNames(dict))) {
-      if (!/\/FlateDecode/.test(dict) && /\/Filter/.test(dict)) throw new ValidationError('검사할 수 없는 압축을 쓴 PDF입니다. 일반 설정으로 다시 저장해 주세요.');
+      if (!/\/FlateDecode/.test(dict) && /\/Filter/.test(dict)) throw new ValidationError('err.pdf.compression');
       let body = bytes.subarray(bodyStart, end);
       if (/\/FlateDecode/.test(dict)) {
         try { body = inflateSync(body, { maxOutputLength: INFLATE_LIMIT - inflated }); } catch {
-          throw new ValidationError('PDF 안의 압축을 풀 수 없습니다. 일반 설정으로 다시 저장해 주세요.');
+          throw new ValidationError('err.pdf.inflate');
         }
       }
       inflated += body.length;
       const bad = found(body.toString('latin1'));
-      if (bad) throw new ValidationError(`실행 기능(${bad})이 든 PDF는 올릴 수 없습니다. 그림·글만 담아 다시 만들어 주세요.`);
+      if (bad) throw new ValidationError('err.pdf.active', { feature: bad });
     }
     pos = end;
     streamRe.lastIndex = end + 9;
   }
   outside.push(s.slice(pos));
   const bad = found(outside.join('\n'));
-  if (bad) throw new ValidationError(`실행 기능(${bad})이 든 PDF는 올릴 수 없습니다. 그림·글만 담아 다시 만들어 주세요.`);
+  if (bad) throw new ValidationError('err.pdf.active', { feature: bad });
 }
 
 /** 올린 파일의 앞부분으로 형식 확인 (형식 머리 위조 방지) */

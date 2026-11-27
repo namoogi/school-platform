@@ -13,6 +13,6 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({})) as { action?: string };
     if (body.action === 'check') return checkStorage();
     if (body.action === 'copy') return copyToStorage(db);
-    throw new ValidationError('할 수 없는 일입니다.');
+    throw new ValidationError('err.notAllowed');
   });
 }

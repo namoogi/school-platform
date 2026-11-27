@@ -35,21 +35,21 @@ export const SCALE_PRESETS: Record<string, { kind: 'letter' | 'level' | 'pass_fa
 };
 
 const uuid = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError('err.whatNotFound', { what });
   return v;
 };
 const optUuid = (v: unknown, what: string) => (v == null || v === '' ? null : uuid(v, what));
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const ltext = (v: unknown, what: string): LText => {
-  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new ValidationError(`${what} 표기가 필요합니다.`);
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new ValidationError('err.whatLabelRequired', { what });
   const out: LText = {};
   for (const [k, s] of Object.entries(v)) if (/^[a-z]{2}$/.test(k) && typeof s === 'string' && s.trim()) out[k] = s.trim().slice(0, 200);
-  if (!Object.keys(out).length) throw new ValidationError(`${what} 표기가 필요합니다.`);
+  if (!Object.keys(out).length) throw new ValidationError('err.whatLabelRequired', { what });
   return out;
 };
 const base = (v: unknown) => {
   const n = Number(v);
-  if (!Number.isInteger(n) || n < 0) throw new ValidationError('base_version(보고 고친 판)이 필요합니다.');
+  if (!Number.isInteger(n) || n < 0) throw new ValidationError('err.baseVersion');
   return n;
 };
 async function one<T>(db: Db, sql: string, params: unknown[]): Promise<T> {
@@ -73,7 +73,7 @@ export async function subjectLabel(db: Db, schoolId: string, subjectId: unknown,
 
 // ── 척도·정책 ────────────────────────────────────────────
 export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }) {
-  if (!Array.isArray(input.bands) || !input.bands.length) throw new ValidationError('척도 띠가 필요합니다.');
+  if (!Array.isArray(input.bands) || !input.bands.length) throw new ValidationError('err.grade.bands');
   const bands = (input.bands as Band[]).map((b) => ({
     code: str(b?.code), label: ltext(b?.label, '척도 띠'), min: b?.min == null ? null : Number(b.min),
     points: b?.points == null ? null : Number(b.points), earns_credit: b?.earns_credit !== false,
@@ -122,7 +122,7 @@ export async function archiveAssessment(db: Db, schoolId: string, assessmentId: 
 }
 export function recordResult(db: Db, schoolId: string, assessmentId: unknown, personId: unknown, input: { score?: unknown; level?: unknown; comment?: unknown; reason?: unknown }) {
   const score = input.score == null || input.score === '' ? null : Number(input.score);
-  if (score !== null && !Number.isFinite(score)) throw new ValidationError('점수는 숫자입니다.');
+  if (score !== null && !Number.isFinite(score)) throw new ValidationError('err.grade.score');
   return one<string>(db, 'select app.record_result($1, $2, $3, $4) as v', [schoolId, uuid(assessmentId, '평가 항목'), uuid(personId, '사람'),
     JSON.stringify({ score, level_code: str(input.level), comment: str(input.comment), reason: str(input.reason) })]);
 }
@@ -145,7 +145,7 @@ export async function linkRetake(db: Db, schoolId: string, personId: unknown, of
 // ── 수업 마감 판 · 정정 판 ───────────────────────────────
 export function closeOffering(db: Db, schoolId: string, offeringId: unknown, input: { base_version?: unknown; reason?: unknown; requestKey?: unknown; scaleId?: unknown }) {
   const rk = str(input.requestKey);
-  if (!/^[A-Za-z0-9_.:-]{8,80}$/.test(rk)) throw new ValidationError('요청 키(requestKey)가 필요합니다.');
+  if (!/^[A-Za-z0-9_.:-]{8,80}$/.test(rk)) throw new ValidationError('err.grade.requestKey');
   return one<{ id: string; version: number; repeated: boolean }>(db, 'select app.close_offering($1, $2, $3) as v', [schoolId, uuid(offeringId, '개설'),
     JSON.stringify({ base_version: base(input.base_version), reason: str(input.reason), request_key: rk, scale_id: optUuid(input.scaleId, '척도') })]);
 }

@@ -30,7 +30,7 @@ export async function licenseInfo(db: Db, schoolId: string) {
 
 export async function setLicense(db: Db, schoolId: string, input: { seats?: unknown; modules?: unknown; note?: unknown }) {
   const seats = Number(input.seats);
-  if (!Number.isInteger(seats)) throw new ValidationError('좌석 수는 정수로 입력해 주세요.');
+  if (!Number.isInteger(seats)) throw new ValidationError('err.admin.seats');
   const modules = Array.isArray(input.modules) ? input.modules.map(String) : [];
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 300) : null;
   const { rows: [r] } = await db.query('select app.set_license($1, $2, $3, $4) as id', [schoolId, seats, modules, note]);
@@ -51,12 +51,12 @@ export async function invite(db: Db, schoolId: string, email: unknown, role: unk
 }
 
 export async function revokeInvitation(db: Db, schoolId: string, id: string) {
-  if (!isUuid(id)) throw new NotFoundError('초대를 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new NotFoundError('err.admin.inviteNotFound');
   await db.query('select app.revoke_invitation($1, $2)', [schoolId, id]);
 }
 
 export async function removeMember(db: Db, schoolId: string, userId: string) {
-  if (!isUuid(userId)) throw new NotFoundError('구성원을 찾을 수 없습니다.');
+  if (!isUuid(userId)) throw new NotFoundError('err.admin.memberNotFound');
   await db.query('select app.remove_member($1, $2)', [schoolId, userId]);
 }
 
@@ -105,31 +105,31 @@ export async function createSchool(db: Db, input: Record<string, unknown>) {
 }
 
 export async function setSchoolStatus(db: Db, schoolId: string, status: unknown) {
-  if (!isUuid(schoolId)) throw new NotFoundError('학교를 찾을 수 없습니다.');
+  if (!isUuid(schoolId)) throw new NotFoundError('err.schoolNotFound');
   await db.query('select app.set_school_status($1, $2)', [schoolId, String(status ?? '')]);
 }
 
 export async function setModulePrice(db: Db, key: unknown, price: unknown) {
   const p = Number(price);
-  if (!Number.isInteger(p)) throw new ValidationError('가격은 원 단위 정수로 입력해 주세요.');
+  if (!Number.isInteger(p)) throw new ValidationError('err.admin.price');
   await db.query('select app.set_module_price($1, $2)', [String(key ?? ''), p]);
 }
 
 export async function createStatement(db: Db, schoolId: string, period: unknown) {
-  if (!isUuid(schoolId)) throw new NotFoundError('학교를 찾을 수 없습니다.');
+  if (!isUuid(schoolId)) throw new NotFoundError('err.schoolNotFound');
   const pr = String(period ?? '');
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(pr)) throw new ValidationError('청구 월은 2026-11 형식으로 입력해 주세요.');
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(pr)) throw new ValidationError('err.admin.month');
   const { rows: [r] } = await db.query('select app.create_statement($1, $2) as id', [schoolId, pr]);
   return { id: r.id as string };
 }
 
 /** 작업 학교 전환. 볼 수 있는 학교인지 RLS로 확인하고, 소속이 아닌 전체 관리자의 입장은 기록한다. */
 export async function enterSchool(db: Db, schoolId: string) {
-  if (!isUuid(schoolId)) throw new NotFoundError('학교를 찾을 수 없습니다.');
+  if (!isUuid(schoolId)) throw new NotFoundError('err.schoolNotFound');
   const { rows } = await db.query(
     `select s.id, exists(select 1 from public.memberships m where m.school_id = s.id and m.user_id = app.uid()) as member
      from public.schools s where s.id = $1`, [schoolId]);
-  if (!rows[0]) throw new NotFoundError('학교를 찾을 수 없습니다.');
+  if (!rows[0]) throw new NotFoundError('err.schoolNotFound');
   if (!rows[0].member) await db.query(`select app.log_access($1, 'school.enter')`, [schoolId]);
   return { id: schoolId };
 }

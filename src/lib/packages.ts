@@ -24,11 +24,11 @@ export type Saved = { code: string; version: number; valid: boolean; issues: Iss
 
 const one = async <T>(db: Db, sql: string, params: unknown[]) => (await db.query(sql, params)).rows[0]?.v as T;
 const uuid = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError('err.whatNotFound', { what });
   return v;
 };
 const kindOf = (v: unknown): DefKind => {
-  if (!DEF_KINDS.includes(v as DefKind)) throw new ValidationError('정의 종류는 record_type·form·view·output·flow 입니다.');
+  if (!DEF_KINDS.includes(v as DefKind)) throw new ValidationError('err.pkg.defKind');
   return v as DefKind;
 };
 
@@ -67,7 +67,7 @@ export async function packageSpecs(db: Db, schoolId: string, code: string, versi
        from pv cross join jsonb_array_elements(pv.members) m
        join public.definitions d on d.school_id = $1 and d.kind = m ->> 'kind' and d.code = m ->> 'code'
        join public.definition_versions dv on dv.definition_id = d.id and dv.version = (m ->> 'version')::int`, [schoolId, code, version ?? null]);
-  if (!rows.length) throw new NotFoundError('꾸러미를 찾을 수 없습니다.');
+  if (!rows.length) throw new NotFoundError('err.pkg.notFound');
   return rows;
 }
 
@@ -182,11 +182,11 @@ export function agentSavePackage(db: Db, token: string, input: Record<string, un
 export async function agentPreview(db: Db, token: string, code: string, lang = 'ko') {
   const all = await agentPackages(db, token);
   const pkg = all.packages.find((p) => p.code === code);
-  if (!pkg) throw new NotFoundError('꾸러미를 찾을 수 없습니다.');
+  if (!pkg) throw new NotFoundError('err.pkg.notFound');
   const specs = pkg.members.map((m) => {
     const d = all.definitions.find((x) => x.kind === m.kind && x.code === m.code);
     return d && d.version === m.version ? { kind: m.kind, code: m.code, spec: d.spec } : null;
   });
-  if (specs.some((s) => !s)) throw new ValidationError('꾸러미가 최신이 아닌 정의 판을 가리킵니다. 꾸러미 새 판을 저장한 뒤 미리보세요.');
+  if (specs.some((s) => !s)) throw new ValidationError('err.pkg.stale');
   return { package: { code: pkg.code, version: pkg.version, valid: pkg.valid, issues: pkg.issues, state: pkg.state }, preview: previewPackage(specs as never, lang) };
 }

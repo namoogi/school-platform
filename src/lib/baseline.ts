@@ -21,8 +21,8 @@ export async function latestBaseline(db: Db) {
 }
 export async function publishBaseline(db: Db, input: { title?: unknown; manifest?: unknown; why?: unknown; base_version?: unknown }) {
   const base = Number(input.base_version);
-  if (!Number.isInteger(base) || base < 0) throw new ValidationError('base_version(보고 고친 기본판)이 필요합니다.');
-  if (!input.manifest || typeof input.manifest !== 'object') throw new ValidationError('기본판 내용이 필요합니다.');
+  if (!Number.isInteger(base) || base < 0) throw new ValidationError('err.base.version');
+  if (!input.manifest || typeof input.manifest !== 'object') throw new ValidationError('err.base.content');
   const { rows: [r] } = await db.query('select app.publish_baseline($1) as v',
     [JSON.stringify({ title: typeof input.title === 'string' ? input.title : '', manifest: input.manifest, why: typeof input.why === 'string' ? input.why : '', base_version: base })]);
   return r.v as number;
@@ -37,7 +37,7 @@ export async function baselineOffers(db: Db, schoolId: string): Promise<Baseline
     'select id, from_version, to_version, status, items, note, created_at from public.baseline_offers where school_id = $1 order by to_version desc', [schoolId])).rows;
 }
 export async function decideBaselineOffer(db: Db, schoolId: string, offerId: unknown, decision: 'accepted' | 'declined' | 'held', note?: string) {
-  if (typeof offerId !== 'string' || !isUuid(offerId)) throw new NotFoundError('기본판 제안을 찾을 수 없습니다.');
+  if (typeof offerId !== 'string' || !isUuid(offerId)) throw new NotFoundError('err.base.proposalNotFound');
   const { rows: [r] } = await db.query('select app.decide_baseline_offer($1, $2, $3, $4) as v', [schoolId, offerId, decision, note ?? null]);
   return r.v as { status: string; applied: number };
 }

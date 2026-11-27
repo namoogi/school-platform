@@ -7,12 +7,12 @@ import { isUuid, NotFoundError, ValidationError } from './services';
  * 하루 환산·요약 기준은 성적 정책 판 policy.attendance { day_absent_ratio, chronic_ratio, min_attendance_ratio }.
  */
 const uuid = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError('err.whatNotFound', { what });
   return v;
 };
 const optUuid = (v: unknown, what: string) => (v == null || v === '' ? null : uuid(v, what));
 const day = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new ValidationError(`${what}를 YYYY-MM-DD 형식으로 넣어 주세요.`);
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new ValidationError('err.whatDate', { what });
   return v;
 };
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
@@ -23,7 +23,7 @@ export type AttendanceInput = {
 };
 export async function recordAttendance(db: Db, schoolId: string, i: AttendanceInput) {
   const scope = i.scope ?? 'day';
-  if (!['day', 'session', 'period'].includes(scope)) throw new ValidationError('출결 범위는 day·session·period 입니다.');
+  if (!['day', 'session', 'period'].includes(scope)) throw new ValidationError('err.att.scope');
   const { rows: [r] } = await db.query('select app.record_attendance($1, $2) as v', [schoolId, JSON.stringify({
     person_id: uuid(i.personId, '사람'), day: day(i.day, '날짜'), scope, session_code: scope === 'session' ? str(i.session) : null,
     period: scope === 'period' ? Number(i.period) : null, offering_id: optUuid(i.offeringId, '수업'), kind_code: str(i.kind),

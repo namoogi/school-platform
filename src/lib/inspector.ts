@@ -11,13 +11,13 @@ export async function listInspectorTokens(db: Db): Promise<InspectorToken[]> {
 export async function createInspectorToken(db: Db, input: { label?: unknown; days?: unknown }) {
   const label = String(input.label ?? '').trim().slice(0, 80) || 'Claude 세션';
   const days = Number(input.days ?? 30);
-  if (![7, 30, 90].includes(days)) throw new ValidationError('기한은 7·30·90일 가운데 고릅니다.');
+  if (![7, 30, 90].includes(days)) throw new ValidationError('err.insp.term');
   const { rows: [r] } = await db.query<{ token: string }>('select app.create_inspector_token($1, $2) as token', [label, days]);
   return { token: r.token };
 }
 
 export async function revokeInspectorToken(db: Db, id: string) {
-  if (!isUuid(id)) throw new ValidationError('토큰을 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new ValidationError('err.tokenNotFound');
   await db.query('select app.revoke_inspector_token($1)', [id]);
   return { ok: true };
 }

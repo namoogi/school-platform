@@ -7,7 +7,8 @@ import {
 } from './analyze';
 
 export { ValidationError };
-export class NotFoundError extends Error {}
+export { NotFoundError } from './errors';
+import { NotFoundError, NoSchoolError } from './errors';
 
 export const MAX_FILE_BYTES = 2 * 1024 * 1024;
 export const MAX_FILES_PER_UPLOAD = 20;
@@ -57,13 +58,13 @@ export type PublishedDocument = {
 };
 
 // ── 학교 ─────────────────────────────────────────────────
-export class NoSchoolError extends Error {}
+export { NoSchoolError };
 /** ADR 0038: 이용이 중지된 학교가 다른 주소로 옮겨 갔다(옮김 판). 화면은 /moved 로 안내한다 */
 export class MovedSchoolError extends Error {}
 
 export async function me(db: Db): Promise<Me> {
   const { rows } = await db.query<Me>('select * from app.me()');
-  if (!rows[0]) throw new NotFoundError('계정을 찾을 수 없습니다.');
+  if (!rows[0]) throw new NotFoundError('err.accountNotFound');
   return rows[0];
 }
 
@@ -94,8 +95,8 @@ export async function currentSchool(db: Db, preferredId?: string | null): Promis
     row = rows[0];
   }
   if (!row) {
-    if (account.is_platform_admin) throw new NoSchoolError('작업할 학교를 고르세요.');
-    throw new NotFoundError('소속 학교가 없습니다.');
+    if (account.is_platform_admin) throw new NoSchoolError('err.pickWorkSchool');
+    throw new NotFoundError('err.noSchool');
   }
   if (row.status === 'suspended' && !account.is_platform_admin) {
     // 열린 소속 학교가 없고, 옮겨 간 학교가 하나라도 있으면 새 주소 안내가 먼저다(Codex P2)
@@ -104,7 +105,7 @@ export async function currentSchool(db: Db, preferredId?: string | null): Promis
           where p.school_id = m.school_id order by version desc limit 1) pl on true
         where m.user_id = app.uid() and pl.state = 'moved') as any`);
     if ((await movedAway(row)) || mv.any) throw new MovedSchoolError('이 학교는 새 주소로 옮겼습니다.');
-    throw new ValidationError('이용이 중지된 학교입니다. 전체 관리자에게 문의하세요.');
+    throw new ValidationError('err.schoolSuspended');
   }
   const role = (row.role as School['role']) ?? null;
   return {
@@ -152,11 +153,11 @@ export async function listSources(db: Db, schoolId: string): Promise<SourceFile[
 }
 
 export async function getSource(db: Db, schoolId: string, id: string) {
-  if (!isUuid(id)) throw new NotFoundError('자료를 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new NotFoundError('err.sourceNotFound');
   const { rows } = await db.query(
     `select id, kind, name, status, sha256, sheet_url, content, created_at, archived_at
      from public.source_files where id = $1 and school_id = $2`, [id, schoolId]);
-  if (!rows[0]) throw new NotFoundError('자료를 찾을 수 없습니다.');
+  if (!rows[0]) throw new NotFoundError('err.sourceNotFound');
   const { rows: srcRows } = await db.query(
     'select table_key, row_number, location, data from public.source_rows where file_id = $1 order by table_key, row_number', [id]);
   return { ...rows[0], rows: srcRows };
@@ -166,12 +167,12 @@ export type IncomingFile = { name: string; type: string; bytes: Buffer };
 
 /** 여러 파일을 한 번에 받는다. 이미 등록된 자료는 그대로 두고 목록에 더한다. */
 export async function addFiles(db: Db, schoolId: string, files: IncomingFile[]) {
-  if (!files.length) throw new ValidationError('추가할 파일이 없습니다.');
-  if (files.length > MAX_FILES_PER_UPLOAD) throw new ValidationError(`한 번에 ${MAX_FILES_PER_UPLOAD}개까지 올릴 수 있습니다.`);
+  if (!files.length) throw new ValidationError('err.noFiles');
+  if (files.length > MAX_FILES_PER_UPLOAD) throw new ValidationError('err.upload.maxFiles', { n: MAX_FILES_PER_UPLOAD });
   const added: { id: string; name: string; status: string }[] = [];
   for (const f of files) {
     const name = sanitizeName(f.name);
-    if (f.bytes.length > MAX_FILE_BYTES) throw new ValidationError(`${name}: 파일별 최대 2MB입니다.`);
+    if (f.bytes.length > MAX_FILE_BYTES) throw new ValidationError('err.upload.fileMax', { name });
     const sha256 = crypto.createHash('sha256').update(f.bytes).digest('hex');
     const result = await readFile(name, f.bytes);
     const isText = result?.ok && result.reader === 'text@1';
@@ -206,14 +207,14 @@ export async function addFiles(db: Db, schoolId: string, files: IncomingFile[]) 
 /** 시트 주소 등록. 주소만 등록한 상태와 내용을 읽은 상태를 구분한다. */
 export async function addSheetUrls(db: Db, schoolId: string, urls: string[]) {
   const clean = urls.map((u) => String(u ?? '').trim()).filter(Boolean);
-  if (!clean.length) throw new ValidationError('시트 주소를 입력해 주세요.');
-  if (clean.length > 10) throw new ValidationError('한 번에 10개까지 등록할 수 있습니다.');
+  if (!clean.length) throw new ValidationError('err.sheetUrl');
+  if (clean.length > 10) throw new ValidationError('err.max10');
   const added: { id: string; name: string; status: string }[] = [];
   for (const u of clean) {
     let parsed: URL;
-    try { parsed = new URL(u); } catch { throw new ValidationError(`주소 형식이 아닙니다: ${u}`); }
+    try { parsed = new URL(u); } catch { throw new ValidationError('err.sheet.badUrl'); }
     if (parsed.protocol !== 'https:' || parsed.hostname !== 'docs.google.com' || !parsed.pathname.startsWith('/spreadsheets/')) {
-      throw new ValidationError(`Google Sheets 주소만 등록할 수 있습니다: ${u}`);
+      throw new ValidationError('err.sheet.onlySheets');
     }
     const docId = parsed.pathname.split('/')[3] ?? '시트';
     const { rows: [row] } = await db.query(
@@ -228,11 +229,11 @@ export async function addSheetUrls(db: Db, schoolId: string, urls: string[]) {
 
 /** 목록에서 빼되 원문은 남긴다. (발행본 근거 보존) */
 export async function archiveSource(db: Db, schoolId: string, id: string) {
-  if (!isUuid(id)) throw new NotFoundError('자료를 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new NotFoundError('err.sourceNotFound');
   const { rowCount } = await db.query(
     'update public.source_files set archived_at = now() where id = $1 and school_id = $2 and archived_at is null',
     [id, schoolId]);
-  if (!rowCount) throw new NotFoundError('자료를 찾을 수 없습니다.');
+  if (!rowCount) throw new NotFoundError('err.sourceNotFound');
   return reanalyze(db, schoolId);
 }
 
@@ -322,21 +323,21 @@ export async function answerQuestion(
   db: Db, schoolId: string, questionId: string,
   input: { decision: 'accepted' | 'edited'; value?: unknown; rationale?: string },
 ) {
-  if (!isUuid(questionId)) throw new NotFoundError('질문을 찾을 수 없습니다.');
+  if (!isUuid(questionId)) throw new NotFoundError('err.questionNotFound');
   const { rows } = await db.query<Question>(
     `select id, status, proposal, evidence, issues from public.rule_questions where id = $1 and school_id = $2 for update`,
     [questionId, schoolId]);
   const q = rows[0];
-  if (!q) throw new NotFoundError('질문을 찾을 수 없습니다.');
-  if (q.status !== 'open') throw new ValidationError('이미 처리됐거나 새 자료로 대체된 질문입니다. 화면을 새로 고쳐 주세요.');
+  if (!q) throw new NotFoundError('err.questionNotFound');
+  if (q.status !== 'open') throw new ValidationError('err.questionStale');
   let value: PeriodValue;
   const rationale = (input.rationale ?? '').trim();
   if (input.decision === 'accepted') value = validatePeriodValue(q.proposal);
   else if (input.decision === 'edited') {
     value = validatePeriodValue(input.value);
-    if (!rationale) throw new ValidationError('수정한 이유(근거)를 적어 주세요.');
-    if (rationale.length > 1000) throw new ValidationError('근거는 1000자 이내로 적어 주세요.');
-  } else throw new ValidationError('처리 방식을 선택해 주세요.');
+    if (!rationale) throw new ValidationError('err.editReason');
+    if (rationale.length > 1000) throw new ValidationError('err.acad.reason1000');
+  } else throw new ValidationError('err.pickAction');
 
   // 확정 근거: 추정에 쓴 행 + 관리자가 판단한 충돌 행(예: 같은 기간의 다른 이름)
   const evidence: Evidence[] = [
@@ -370,8 +371,8 @@ export async function createTemplateVersion(
   const values: Record<string, string> = {};
   for (const k of fields) {
     const v = String(input[k] ?? '').trim();
-    if (!v) throw new ValidationError('양식의 모든 칸을 채워 주세요.');
-    if (v.length > 120) throw new ValidationError('양식 문구는 120자 이내로 적어 주세요.');
+    if (!v) throw new ValidationError('err.tpl.allFields');
+    if (v.length > 120) throw new ValidationError('err.tpl.text120');
     values[k] = v;
   }
   const { rows: [{ next }] } = await db.query(
@@ -412,17 +413,17 @@ export async function buildSnapshot(
 /** 확정 규칙과 현재 양식으로 문서 한 장을 발행한다. revisionOf가 있으면 앞선 발행본의 수정본으로 연결한다. */
 export async function publishDocument(db: Db, school: School, input: { revisionOf?: string | null } = {}) {
   const rule = await latestRule(db, school.id);
-  if (!rule) throw new ValidationError('확정한 학기 규칙이 없습니다. 먼저 관리자 확인을 마쳐 주세요.');
+  if (!rule) throw new ValidationError('err.noConfirmedRule');
   const template = await latestTemplate(db, school.id);
-  if (!template) throw new ValidationError('문서 양식이 없습니다.');
+  if (!template) throw new ValidationError('err.noTemplate');
   let revision = { number: 1, of: null as string | null };
   if (input.revisionOf) {
-    if (!isUuid(input.revisionOf)) throw new NotFoundError('수정할 발행본을 찾을 수 없습니다.');
+    if (!isUuid(input.revisionOf)) throw new NotFoundError('err.revisionTargetNotFound');
     const { rows } = await db.query(
       `select d.id, d.revision_number, exists(select 1 from public.published_documents n where n.revision_of = d.id) as has_next
        from public.published_documents d where d.id = $1 and d.school_id = $2`, [input.revisionOf, school.id]);
-    if (!rows[0]) throw new NotFoundError('수정할 발행본을 찾을 수 없습니다.');
-    if (rows[0].has_next) throw new ValidationError('이미 수정본이 있는 발행본입니다. 가장 최근 수정본에서 다시 발행해 주세요.');
+    if (!rows[0]) throw new NotFoundError('err.revisionTargetNotFound');
+    if (rows[0].has_next) throw new ValidationError('err.alreadyRevised');
     revision = { number: rows[0].revision_number + 1, of: rows[0].id };
   }
   const snapshot = await buildSnapshot(db, school, rule, template, revision);
@@ -444,12 +445,12 @@ export async function listDocuments(db: Db, schoolId: string): Promise<Published
 }
 
 export async function getDocument(db: Db, schoolId: string, id: string): Promise<PublishedDocument> {
-  if (!isUuid(id)) throw new NotFoundError('문서를 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new NotFoundError('err.documentNotFound');
   const { rows } = await db.query<PublishedDocument>(
     `select d.id, d.rule_id, d.template_id, d.revision_of, d.revision_number, d.snapshot, d.snapshot_sha256, d.published_at,
             (select n.id from public.published_documents n where n.revision_of = d.id) as superseded_by
      from public.published_documents d where d.id = $1 and d.school_id = $2`, [id, schoolId]);
-  if (!rows[0]) throw new NotFoundError('문서를 찾을 수 없습니다.');
+  if (!rows[0]) throw new NotFoundError('err.documentNotFound');
   return rows[0];
 }
 

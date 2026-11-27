@@ -9,8 +9,8 @@ export async function GET(req: Request) {
 }
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
-    const b = await req.json().catch(() => { throw new ValidationError('요청 형식이 올바르지 않습니다.'); });
-    if (!b?.expectedCounts || typeof b.expectedCounts !== 'object') throw new ValidationError('미리보기를 먼저 확인하세요.');
+    const b = await req.json().catch(() => { throw new ValidationError('err.badRequest'); });
+    if (!b?.expectedCounts || typeof b.expectedCounts !== 'object') throw new ValidationError('err.req.previewFirst');
     return redactPerson(db, school.id, { personId: b.personId, reason: b.reason, expectedCounts: b.expectedCounts });
   }, { admin: true });
 }
