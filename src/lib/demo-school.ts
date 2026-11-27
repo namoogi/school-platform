@@ -1,11 +1,12 @@
 import type { Db } from './db';
 import { createSchool } from './admin';
-import { definePeriodRule, latestPeriodRule } from './academics';
+import { latestPeriodRule } from './academics';
 import * as at from './attendance';
 import * as cs from './courses';
 import * as f from './foundation';
 import * as g from './grading';
-import { applyGradeScheme, gradeLabel, presetLevels, type LevelKey } from './grade-schemes';
+import { gradeLabel, presetLevels, type LevelKey } from './grade-schemes';
+import { applyTemplate } from './academic-templates';
 import * as pp from './people';
 import * as rec from './records';
 
@@ -72,17 +73,14 @@ export async function buildDemoSchool(db: Db): Promise<DemoResult> {
 
   // 1) 학교 관할 + 학교급·학년(한국식)
   await f.setSchoolProfile(db, schoolId, { country: 'KR', sector: 'alternative', why: '시연용 가상 학교(합성 자료)', base_version: 0 });
-  await applyGradeScheme(db, schoolId, { scheme: 'kr', levels: ['elementary', 'middle', 'high'], why: '시연 학교: 한국식 초1~고3', base_version: 1 });
+  // 111차: 학사 관리 템플릿 '한국 일반 초·중·고'로 시작한다(학교급·학년·학기 구조·척도)
+  await applyTemplate(db, schoolId, { key: 'kr_general', base_version: 1 });
   const levels = await pp.listSchoolLevels(db, schoolId);
   const grades = await f.listGradeLevels(db, schoolId);
   const levelId = (k: LevelKey) => levels.find((l) => l.code === k)!.id;
 
   // 2) 학년도·학기 구조(1·2학기)·학기 날짜·수업일
   const year = await pp.addAcademicYear(db, schoolId, { label: '2026', startsOn: '2026-03-01', endsOn: '2027-03-01' });
-  await definePeriodRule(db, schoolId, {
-    periods: [{ id: 's1', label: '1학기', assessments: [] }, { id: 's2', label: '2학기', assessments: [] }],
-    rationale: '시연 학교: 한국 학교의 두 학기', base_version: 0,
-  });
   const rule = (await latestPeriodRule(db, schoolId))!;
   await pp.createTermsFromRule(db, schoolId, year, rule.id);
   const terms = await pp.listTerms(db, schoolId, year);

@@ -20,6 +20,7 @@ afterAll(async () => { await su.end(); });
 
 /** school_id 가 없어도 되는 public 표(관제·플랫폼 영역). 더할 때는 이유를 적는다 */
 const NO_SCHOOL_ID: Record<string, string> = {
+  academic_templates: '학사 관리 템플릿(ADR 0043, 관제 기본판 갈래) — 전체 관리자만 표를 읽고, 학교는 app.academic_templates() 로 최신 판만',
   baselines: '관제 기본판(ADR 0027) — 전체 관리자만 읽음',
   languages: '언어 목록(ADR 0037) — 비밀 아님, 누구나 읽음, 전체 관리자만 명령 함수로 씀',
   module_catalog: '기능 목록(이름·가격) — 비밀 아님, 누구나 읽음',
