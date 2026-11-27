@@ -99,6 +99,10 @@ begin
   return rid;
 end $$;
 
+-- ── 수업 마감: 기존 함수는 app_writer 소유(F2). 운영 마이그레이션 역할은 슈퍼유저가 아니라 소유 역할로 바꿔서 다시 만든다(45차 agent_autopublish 와 같은 방식).
+-- create or replace 는 기존 실행 권한을 그대로 둔다
+grant create on schema app to app_writer;
+set local role app_writer;
 -- ── 수업 마감: p.calc = { code, version, results: { person_id: { input, score, level, passed } } } 가 있으면 계산식 결과로 굳힌다 ──
 create or replace function app.close_offering(target uuid, offering uuid, p jsonb)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
@@ -206,6 +210,8 @@ begin
   insert into public.closure_stats(school_id, closure_id, n, mean, sd) values (target, cid, n, m, s);
   return jsonb_build_object('id', cid, 'version', v + 1, 'repeated', false, 'calc', c_spec is not null);
 end $$;
+reset role;
+revoke create on schema app from app_writer;
 
 -- ── 마감과 쓰기를 줄 세운다(Codex #169 P1) ──
 -- 마감은 수업 단위 잠금을 혼자(exclusive) 잡는다. 마감 입력이 되는 쓰기(평가 결과·이 수업 교시 출결·보충 이수)는 같은 잠금을 함께(shared) 잡는다.
@@ -241,7 +247,7 @@ grant create on schema app to app_writer;
 do $$
 declare f text;
 begin
-  foreach f in array array['app.offering_calc_inputs(uuid, uuid)', 'app.record_remediation(uuid, jsonb)', 'app.close_offering(uuid, uuid, jsonb)'] loop
+  foreach f in array array['app.offering_calc_inputs(uuid, uuid)', 'app.record_remediation(uuid, jsonb)'] loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
     execute format('alter function %s owner to app_writer', f);
