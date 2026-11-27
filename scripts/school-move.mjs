@@ -1,7 +1,7 @@
 // 학교 한 곳 꺼내기·넣기·확인 (ADR 0035: 공용 기본 + 언제든 전용·독립으로 옮길 수 있게)
 // 사용
 //   SOURCE_DATABASE_URL=... node scripts/school-move.mjs export <학교 주소 이름|id> <묶음 파일>
-//   TARGET_DATABASE_URL=... node scripts/school-move.mjs import <묶음 파일> [--status active|trial]
+//   TARGET_DATABASE_URL=... node scripts/school-move.mjs import <묶음 파일> [--status active|trial] [--auth reset|keep]
 //   node scripts/school-move.mjs keys <묶음 파일>   (버킷을 바꿀 때 복사할 R2 객체 키 목록)
 //   SOURCE_DATABASE_URL=... TARGET_DATABASE_URL=... node scripts/school-move.mjs verify <묶음 파일>
 // - 묶음 파일에는 그 학교의 모든 기록(학생·교직원 개인정보 포함)이 들어 있다. 저장소에 커밋하지 않고(.school-move/ 는 무시됨),
@@ -64,7 +64,7 @@ async function exportSnapshot(db, key) {
     `select * from public.schools where id::text = $1 or slug = $1`, [key]);
   if (!school) throw new Error(`학교를 찾을 수 없습니다: ${key}`);
   const id = school.id;
-  const tables = {};
+  const tables = /** @type {Record<string, any[]>} */ ({});
   const userIds = new Set();
   const { rows: appUsers } = await db.query('select id::text from private.app_users');
   const known = new Set(appUsers.map((r) => r.id));
@@ -160,8 +160,32 @@ export async function sameMigrations(db, bundle) {
   return { onlySource, onlyTarget, same: !onlySource.length && !onlyTarget.length };
 }
 
-/** status: 넣은 뒤 학교 상태. 옮기는 동안 원본을 '이용 중지'로 두므로, 대상에서 열 상태를 넣을 때 정한다 */
-export async function importSchool(db, bundle, { status } = {}) {
+/** 순번(비 UUID) 번호 표에서 대상에 이미 같은 번호가 있는지(다른 학교가 사는 셀로 넣을 때 번호가 겹칠 수 있다) */
+async function identityCollisions(db, bundle) {
+  const hits = [];
+  for (const [t, rows] of Object.entries(bundle.tables)) {
+    const { rows: pk } = await db.query(
+      `select a.attname as col, format_type(a.atttypid, a.atttypmod) as type from pg_constraint k
+         join pg_class c on c.oid = k.conrelid join pg_namespace n on n.oid = c.relnamespace
+         join pg_attribute a on a.attrelid = c.oid and a.attnum = k.conkey[1]
+        where k.contype = 'p' and n.nspname = 'public' and c.relname = $1 and array_length(k.conkey, 1) = 1`, [t]);
+    if (!pk.length || pk[0].type === 'uuid') continue;
+    const vals = rows.map((r) => r[pk[0].col]).filter((v) => v != null).map(String);
+    if (!vals.length) continue;
+    const { rows: [{ n }] } = await db.query(`select count(*)::int as n from public.${q(t)} where ${q(pk[0].col)}::text = any($1::text[])`, [vals]);
+    if (n) hits.push(`${t} ${n}행`);
+  }
+  return hits;
+}
+
+/**
+ * status: 넣은 뒤 학교 상태. 옮기는 동안 원본을 '이용 중지'로 두므로, 대상에서 열 상태를 넣을 때 정한다
+ * auth: 'reset'(기본) 이면 외부 로그인 연결(auth_subject)을 비운다. 대상이 다른 로그인 서버(독립형의 학교 Supabase 등)를 쓰면
+ *   옛 연결이 새 로그인과 맞지 않아 거부되므로, 비워 두고 첫 로그인 때 확인된 메일로 다시 잇는다(초대와 같은 길, src/lib/google.ts).
+ *   'keep' 은 같은 로그인 서버를 계속 쓸 때(전용형 + 공용 로그인)만.
+ */
+export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) {
+  if (!['reset', 'keep'].includes(auth)) throw new Error('로그인 연결은 reset·keep 중 하나입니다.');
   if (bundle.format !== 'school-move/1') throw new Error('묶음 형식이 다릅니다.');
   const m = await sameMigrations(db, bundle);
   if (m.onlySource.length) throw new Error(`대상 DB에 마이그레이션 ${m.onlySource.length}개가 빠져 있습니다. 같은 판까지 올린 뒤 넣으세요.`);
@@ -175,11 +199,14 @@ export async function importSchool(db, bundle, { status } = {}) {
   }
   const { rowCount: exists } = await db.query('select 1 from public.schools where id = $1', [bundle.school_id]);
   if (exists) throw new Error('대상 DB에 이미 그 학교가 있습니다. 넣기는 빈 자리에만 합니다.');
+  // 다른 학교가 사는 셀로 넣을 때: 순번 번호가 겹치면 넣지 않는다(번호 다시 매기기는 셀 합치기 단계에서, ADR 0035 남은 일)
+  const collisions = await identityCollisions(db, bundle);
+  if (collisions.length) throw new Error(`대상에 같은 순번 번호가 이미 있습니다(${collisions.join(', ')}). 지금은 빈 대상 또는 번호가 겹치지 않는 셀에만 넣습니다.`);
   await db.query('begin');
   try {
     await db.query('set local session_replication_role = replica');
     await insertRows(db, 'public', 'baselines', bundle.baselines, { onConflictNothing: true });
-    await insertRows(db, 'private', 'app_users', bundle.users, { onConflictNothing: true });
+    await insertRows(db, 'private', 'app_users', auth === 'reset' ? bundle.users.map((u) => ({ ...u, auth_subject: null })) : bundle.users, { onConflictNothing: true });
     await insertRows(db, 'public', 'schools', [school]);
     const counts = {};
     for (const [t, rows] of Object.entries(bundle.tables)) counts[t] = await insertRows(db, 'public', t, rows);
@@ -248,8 +275,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       await db.end();
     } else if (cmd === 'import' && a1) {
       const db = await connect('TARGET_DATABASE_URL');
-      const si = process.argv.indexOf('--status');
-      const counts = await importSchool(db, JSON.parse(fs.readFileSync(a1, 'utf8')), { status: si > 0 ? process.argv[si + 1] : undefined });
+      const opt = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : undefined; };
+      const counts = await importSchool(db, JSON.parse(fs.readFileSync(a1, 'utf8')), { status: opt('--status'), auth: opt('--auth') ?? 'reset' });
       console.log(`넣음: 표 ${Object.keys(counts).length}개, 행 ${Object.values(counts).reduce((n, v) => n + v, 0)}개`);
       await db.end();
     } else if (cmd === 'keys' && a1) {

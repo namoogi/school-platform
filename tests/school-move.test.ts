@@ -103,6 +103,7 @@ beforeAll(async () => {
   const { rows: [pa] } = await su.query(`select id from private.app_users where email = 'platform@example.test'`);
   platformAdmin = pa.id;
   await su.query(`insert into public.school_dev_links(school_id, kind, label, url, created_by) values ($1, 'other', '이전 시험 링크', 'https://example.com', $2)`, [A.schoolId, platformAdmin]);
+  await su.query(`insert into public.access_log(school_id, actor, actor_label, action) values ($1, $2, '이전 시험', 'move_test')`, [A.schoolId, platformAdmin]);
   await su.query(`insert into public.control_sessions(id, name) values ('session_moveglobal01', '전체 관제') on conflict do nothing`);
   await su.query(`insert into public.control_requests(kind, title, author, created_by, school_id, source_session, topic) values ('chat', '이전 시험 대화', 'control', $1, $2, 'session_moveglobal01', 'school_ai')`, [platformAdmin, A.schoolId]);
   await asUser(A.userId, (db) => g.closeOffering(db, A.schoolId, off, { base_version: 0, requestKey: 'move-close-aaaa', scaleId: scale.id }));
@@ -132,9 +133,10 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     const { rows: [moved] } = await dst.query('select email, password_hash, auth_subject, is_platform_admin from private.app_users where id = $1', [platformAdmin]);
     expect(moved).toMatchObject({ password_hash: null, auth_subject: null, is_platform_admin: false });
     expect(moved.email).toMatch(/@invalid\.example$/);
-    // 학교 구성원(A 관리자)은 로그인 정보를 들고 간다
-    const { rows: [member] } = await dst.query('select password_hash from private.app_users where id = $1', [A.userId]);
+    // 학교 구성원(A 관리자)은 로그인 정보를 들고 가되, 외부 로그인 연결은 비운다(기본 reset: 첫 로그인 때 메일로 다시 잇는다)
+    const { rows: [member] } = await dst.query('select password_hash, auth_subject from private.app_users where id = $1', [A.userId]);
     expect(member.password_hash).toBeTruthy();
+    expect(member.auth_subject).toBeNull();
     expect(await orphanForeignKeys(dst)).toEqual([]);
     for (const t of await schoolTables(dst)) {
       const { rows: [{ n }] } = await dst.query(`select count(*)::int as n from public."${t}" where school_id <> $1`, [A.schoolId]);
@@ -158,6 +160,15 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     await expect(importSchool(dst, { ...bundle, school: { ...bundle.school, status: 'suspended' } })).rejects.toThrow(/--status/);
     await expect(importSchool(dst, { ...bundle, migrations: bundle.migrations.slice(0, -1) })).rejects.toThrow(/대상 DB에만 있는/);
     await expect(importSchool(dst, { ...bundle, migrations: [...bundle.migrations, '29991231000000_future.sql'] })).rejects.toThrow(/빠져 있습니다/);
+  });
+
+  it('다른 학교가 사는 대상에서 순번 번호가 겹치면 넣지 않는다', async () => {
+    const bundle = await exportSchool(su, A.schoolId);
+    const otherId = '00000000-0000-4000-8000-0000000000bb';
+    const clone = JSON.parse(JSON.stringify(bundle).split(A.schoolId).join(otherId));
+    clone.tables.access_log = [{ ...bundle.tables.access_log[0], school_id: otherId }];
+    expect(bundle.tables.access_log?.length).toBeGreaterThan(0);
+    await expect(importSchool(dst, clone)).rejects.toThrow(/순번 번호/);
   });
 
   it('같은 학교를 두 번 넣지 않는다', async () => {
