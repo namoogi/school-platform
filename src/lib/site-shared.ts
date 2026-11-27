@@ -51,6 +51,8 @@ export type Block = (
   | { type: 'news_list'; eyebrow?: LText; title?: LText; body?: LText; count: number; style: 'cards' | 'list' }
   /** 34차: 파일(PDF) 내려받기. 파일 이름·크기는 저장할 때 서버가 그 학교 자산에서 채운다(판 스냅샷에 남음) */
   | { type: 'download'; asset: string; label?: LText; note?: LText; file_name?: string; size_bytes?: number }
+  /** 91차(ADR 0036): 방문·상담 신청 칸. 학교가 설정에서 '신청 받기'를 켰을 때만 방문자에게 보인다 */
+  | { type: 'inquiry'; title?: LText; body?: LText }
 ) & { hidden?: boolean };
 
 /** 사이트 머리·바닥 정보. 'home' 쪽 내용에 두어 판·공개 흐름을 그대로 따른다(로고 그림도 공개된 판이 가리킬 때만 보임). */
@@ -64,7 +66,7 @@ export type EntryKind = 'page' | 'news' | 'story';
 export const KIND_LABEL: Record<EntryKind, string> = { page: '쪽', news: '소식', story: '성품 동화' };
 export const BLOCK_LABEL: Record<Block['type'], string> = {
   heading: '제목', text: '글', notice: '알림', image: '그림', gallery: '사진 묶음', video: '영상', story_page: '동화 한 쪽',
-  section: '잡지형 구역', news_list: '최근 소식', download: 'PDF 내려받기',
+  section: '잡지형 구역', news_list: '최근 소식', download: 'PDF 내려받기', inquiry: '방문·상담 신청',
 };
 
 /**
@@ -89,6 +91,7 @@ export const isSiteTheme = (v: unknown): v is SiteTheme => SITE_THEMES.some((t) 
 export type SiteSettings = {
   school_id: string; public_slug: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme;
   site_title: LText; is_open: boolean; updated_at: string;
+  /** 91차: 방문·상담 신청 받기 */ inquiry_open: boolean;
 };
 export type EntryStatus = 'draft' | 'live' | 'changed' | 'hidden';
 export type EntrySummary = {

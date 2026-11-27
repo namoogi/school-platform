@@ -47,7 +47,7 @@ export function SiteSettingsForm({ initial, schoolName, saved = false }: { initi
   const router = useRouter();
   const [s, setS] = useState({
     public_slug: initial?.public_slug ?? '', langs: (initial?.langs ?? ['ko']) as Lang[], default_lang: (initial?.default_lang ?? 'ko') as Lang,
-    theme: initial?.theme ?? 'campus', site_title: (initial?.site_title ?? { ko: schoolName }) as LText, is_open: initial?.is_open ?? false,
+    theme: initial?.theme ?? 'campus', site_title: (initial?.site_title ?? { ko: schoolName }) as LText, is_open: initial?.is_open ?? false, inquiry_open: initial?.inquiry_open ?? false,
   });
   const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(saved ? { tone: 'success', text: '저장했습니다.' } : null);
   // 표시를 넘겨받았으면 주소에서 saved=1을 지운다(새로 고침·즐겨찾기로 다시 열 때 저장한 것처럼 보이지 않게). 서버를 다시 부르지 않는다
@@ -92,6 +92,8 @@ export function SiteSettingsForm({ initial, schoolName, saved = false }: { initi
         </select>
       </label>
       <label className="radio"><input type="checkbox" checked={s.is_open} onChange={(e) => setS({ ...s, is_open: e.target.checked })} /> 홈페이지 열기 (방문자가 공개한 판을 볼 수 있음)</label>
+      {/* 91차(ADR 0036): 방문·상담 신청 — 쪽에 '방문·상담 신청' 블록을 넣고 이것을 켜면 방문자가 신청을 남긴다 */}
+      <label className="radio"><input type="checkbox" checked={s.inquiry_open} onChange={(e) => setS({ ...s, inquiry_open: e.target.checked })} data-testid="site-inquiry-open" /> 방문·상담 신청 받기 (이름·연락처를 받습니다. 학교 관리자만 보고, 1년이 지나면 가릴 수 있습니다)</label>
       {msg && <p className="banner" data-tone={msg.tone} role="status">{msg.text}</p>}
       <div className="form-actions"><button type="submit" className="btn btn-primary">설정 저장</button></div>
     </form>
@@ -142,6 +144,7 @@ const NEW_BLOCK: Record<Block['type'], () => Block> = {
   video: () => ({ type: 'video', url: {} }), story_page: () => ({ type: 'story_page', text: {} }),
   section: () => ({ type: 'section', template: 'text', title: {}, body: {} }), news_list: () => ({ type: 'news_list', count: 3, style: 'cards' }),
   download: () => ({ type: 'download', asset: '', label: {} }),
+  inquiry: () => ({ type: 'inquiry', title: {}, body: {} }),
 };
 type SectionBlock = Extract<Block, { type: 'section' }>;
 const HAS_PHOTO: SectionTemplate[] = ['media-left', 'media-right', 'banner'];
@@ -308,6 +311,11 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
             </>}
             {b.type === 'gallery' && b.items && <p className="fine">사진마다 묶음·대체 글이 있습니다({b.items.length}장{b.filters ? ` · 거르기 ${b.filters.length}개` : ''}). 사진을 빼면 함께 빠집니다.</p>}
             {b.type === 'section' && <SectionFields b={b} langs={langs} assets={assets} onUploaded={uploaded} onChange={(nb) => setBlock(i, nb)} />}
+            {b.type === 'inquiry' && <>
+              <LangFields label="신청 칸 제목" value={b.title} langs={langs} onChange={(title) => setBlock(i, { ...b, title })} />
+              <LangFields label="신청 안내" value={b.body} langs={langs} multiline onChange={(body) => setBlock(i, { ...b, body })} />
+              <p className="fine">홈페이지 설정에서 '방문·상담 신청 받기'를 켜야 방문자에게 보입니다. 받은 신청은 학교 관리자만 '홈페이지 → 신청'에서 봅니다.</p>
+            </>}
             {b.type === 'news_list' && <>
               <LangFields label="제목" value={b.title} langs={langs} onChange={(title) => setBlock(i, { ...b, title })} />
               <div className="row-wrap">
@@ -329,7 +337,7 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
         ))}
       </ol>
       <div className="block-add" role="group" aria-label="블록 더하기">
-        {(isStory ? (['story_page', 'gallery', 'section', 'download', 'video', 'text'] as const) : (['heading', 'text', 'section', 'image', 'gallery', 'news_list', 'notice', 'video', 'download'] as const)).map((t) => (
+        {(isStory ? (['story_page', 'gallery', 'section', 'download', 'video', 'text'] as const) : (['heading', 'text', 'section', 'image', 'gallery', 'news_list', 'notice', 'video', 'download', 'inquiry'] as const)).map((t) => (
           <button key={t} type="button" className="btn btn-secondary btn-sm" onClick={() => add(t)}><Plus size={14} aria-hidden="true" />{BLOCK_LABEL[t]}</button>
         ))}
       </div>

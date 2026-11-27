@@ -29,7 +29,7 @@ export default async function SiteHome({ params, searchParams }: P) {
     <SiteFrame site={site} lang={lang} current="home" path="" profile={L.profile} assetUrl={asset}>
       {home
         ? <><PageHead content={home.content} lang={lang} fallback={site.default_lang} asset={asset} link={link} />
-            <SiteBlocks content={{ ...home.content, blocks: body }} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} /></>
+            <SiteBlocks content={{ ...home.content, blocks: body }} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} inquiry={{ slug: site.slug, open: !!site.inquiry_open, page: '/' }} /></>
         : <h1 className="site-h1">{t(site.title) || site.school}</h1>}
       {news.length > 0 && (
         <section className="site-section"><h2 className="site-h2">{siteText('news', lang)}</h2>
@@ -43,7 +43,7 @@ export default async function SiteHome({ params, searchParams }: P) {
             <li key={s.key}><Link href={link(`/stories/${s.key}`)}>{s.cover && /* eslint-disable-next-line @next/next/no-img-element */ <img src={asset(s.cover)} alt="" />}<b>{t(s.title)}</b>{s.meta.virtue && <small>{s.meta.virtue}</small>}</Link></li>))}</ul>
         </section>
       )}
-      {home && closing.length > 0 && <SiteBlocks content={{ ...home.content, blocks: closing }} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} />}
+      {home && closing.length > 0 && <SiteBlocks content={{ ...home.content, blocks: closing }} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} inquiry={{ slug: site.slug, open: !!site.inquiry_open, page: '/' }} />}
     </SiteFrame>
   );
 }

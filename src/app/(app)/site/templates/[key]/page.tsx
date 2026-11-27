@@ -56,7 +56,7 @@ export default async function TemplatePreview({ params, searchParams }: { params
           <div className="site site-preview template-preview" data-theme={t.theme} lang={lang} data-testid="template-preview" data-view={view}>
             <main className="site-wrap site-main">
               <PageHead content={shown} lang={lang} fallback={t.langs[0] as Lang} asset={view === 'sample' ? sampleAssetUrl : () => ''} />
-              <SiteBlocks content={shown} lang={lang} fallback={t.langs[0] as Lang} assetUrl={view === 'sample' ? sampleAssetUrl : () => ''} link={() => '#'} news={view === 'sample' ? sampleNews() : []} />
+              <SiteBlocks content={shown} lang={lang} fallback={t.langs[0] as Lang} assetUrl={view === 'sample' ? sampleAssetUrl : () => ''} link={() => '#'} news={view === 'sample' ? sampleNews() : []} inquiry={{ slug: null, open: true, page: pg.key }} />
             </main>
           </div>
         </section>
