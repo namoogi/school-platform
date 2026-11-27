@@ -59,7 +59,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
           </form>
           <h2>{t('courses.offeredTitle', { term: `${term.year} ${term.label}`, level: level.name })}</h2>
           {offerings.length === 0 ? <p className="muted">{t('courses.noOfferings')}</p> : (
-            <div className="table-wrap"><table className="grid-table nowrap-cells"><thead><tr><th>{t('courses.col.subject')}</th><th>{t('courses.col.type')}</th>{hasGrades && <th>{t('courses.col.grade')}</th>}<th>{t('courses.col.section')}</th><th>{t('courses.col.credits')}</th><th>{t('courses.col.status')}</th><th>{t('courses.col.enrolled')}</th></tr></thead>
+            <div className="table-wrap" tabIndex={0} role="region" aria-label={t('courses.offeredTitle', { term: `${term.year} ${term.label}`, level: level.name })}><table className="grid-table nowrap-cells"><thead><tr><th>{t('courses.col.subject')}</th><th>{t('courses.col.type')}</th>{hasGrades && <th>{t('courses.col.grade')}</th>}<th>{t('courses.col.section')}</th><th>{t('courses.col.credits')}</th><th>{t('courses.col.status')}</th><th>{t('courses.col.enrolled')}</th></tr></thead>
               <tbody>{offerings.map((o) => (
                 <tr key={o.id} aria-current={sel?.id === o.id ? 'true' : undefined}>
                   <td><Link href={q(o.id)}>{o.subject_name}</Link>{o.pass_fail ? <small className="muted"> P/F</small> : null}</td><td>{o.course_type_name}</td>{hasGrades && <td>{o.grade_level_id ? gradeLabels[o.grade_level_id] ?? '-' : t('courses.allGrades')}</td>}<td>{o.section || '-'}</td>
