@@ -31,6 +31,7 @@ const NON_UUID_PK: Record<string, string> = {
   control_messages: '관제 대화 메시지(로그)',
   usage_events: '사용량 기록(로그)',
   school_reports: '보고 스냅샷(관제가 모음)',
+  control_requests: '관제 요청 일련번호 no(기본 키는 UUID) — 사람이 부르는 번호',
 };
 /** 학교 표끼리 연결하면서 school_id 를 함께 묶지 않은 것. 다른 학교 행을 가리킬 수 없게 트리거·명령 함수가 막는지 확인 뒤 복합 외래키로 바꾼다. 줄이기만 한다 */
 const FK_WITHOUT_SCHOOL: Record<string, string> = {
@@ -56,11 +57,20 @@ let B: { schoolId: string; userId: string };
 let platformAdmin: string;
 
 async function nonUuidPk(db: pg.Client) {
+  // 순번(식별 칸·nextval) 칸이 있거나(여러 칸 기본 키 안이라도), school_id·UUID 를 하나도 품지 않은 기본 키를 쓰는 학교 표
   const { rows } = await db.query(
-    `select c.relname as t from pg_constraint k join pg_class c on c.oid = k.conrelid join pg_namespace n on n.oid = c.relnamespace
-       join pg_attribute a on a.attrelid = c.oid and a.attnum = k.conkey[1]
-      where k.contype = 'p' and n.nspname = 'public' and array_length(k.conkey, 1) = 1 and format_type(a.atttypid, a.atttypmod) <> 'uuid'
-        and exists (select 1 from pg_attribute s where s.attrelid = c.oid and s.attname = 'school_id' and not s.attisdropped) order by 1`);
+    `select distinct c.relname as t from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+       left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+      where n.nspname = 'public' and c.relkind = 'r'
+        and exists (select 1 from pg_attribute s where s.attrelid = c.oid and s.attname = 'school_id' and not s.attisdropped)
+        and (a.attidentity <> '' or pg_get_expr(d.adbin, d.adrelid) like 'nextval(%'
+             or (a.attname <> 'school_id' and format_type(a.atttypid, a.atttypmod) <> 'uuid'
+                 and exists (select 1 from pg_constraint k where k.conrelid = c.oid and k.contype = 'p' and a.attnum = any(k.conkey)
+                               -- (school_id, 날짜) · (부모 uuid, 판) 처럼 school_id 나 UUID 를 품은 기본 키는 셀로 옮겨도 겹치지 않으므로 허용
+                               and not exists (select 1 from pg_attribute z where z.attrelid = c.oid and z.attnum = any(k.conkey)
+                                                 and (z.attname = 'school_id' or format_type(z.atttypid, z.atttypmod) = 'uuid')))))
+      order by 1`);
   return rows.map((r) => r.t as string).filter((t) => !NON_UUID_PK[t]);
 }
 async function fkWithoutSchool(db: pg.Client) {
@@ -205,7 +215,10 @@ describe('이전 가능성 문: 구조 규칙', () => {
     try {
       await su.query(`create table public.zz_move_probe (id bigserial primary key, school_id uuid not null references public.schools(id),
                         offering_id uuid references public.course_offerings(id))`);
-      expect(await nonUuidPk(su)).toEqual(['zz_move_probe']);
+      // 여러 칸 기본 키 안의 순번 번호도 잡힌다(Codex 지적)
+      await su.query(`create table public.zz_move_probe2 (school_id uuid not null references public.schools(id), n bigint generated always as identity,
+                        primary key (school_id, n))`);
+      expect(await nonUuidPk(su)).toEqual(['zz_move_probe', 'zz_move_probe2']);
       expect(await fkWithoutSchool(su)).toEqual(['zz_move_probe.zz_move_probe_offering_id_fkey']);
     } finally { await su.query('rollback'); }
   });

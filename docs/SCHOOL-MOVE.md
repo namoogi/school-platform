@@ -16,8 +16,16 @@
 3. 원본에서 그 학교를 잠시 '이용 중지'로 둔다. 옮기는 동안 새 기록이 생기지 않게 하기 위해서다.
 
 ## 2. 꺼내기 · 넣기 · 확인
+**DB 주소와 비밀번호는 따로 넣는다**(78차 규약: 특수기호 오류 방지).
+- `SOURCE_DATABASE_URL`·`TARGET_DATABASE_URL`: 주소는 비밀번호 자리를 `[YOUR-PASSWORD]` 그대로 둔다.
+- `SOURCE_DATABASE_PASSWORD`·`TARGET_DATABASE_PASSWORD`: 비밀번호는 이 변수에 넣는다.
+
+| | 만드는 곳 | 다시 볼 수 있나 | 보관 |
+|---|---|---|---|
+| 원본(공용) 비밀번호 | 이미 있음. GitHub Environment `production`의 `DATABASE_PASSWORD`와 같은 값 | Supabase는 다시 보여 주지 않음. 잊었으면 Supabase → Project Settings → Database → Reset database password(바꾸면 운영 비밀값도 함께 바꿔야 함) | 비밀번호 관리 앱에 따로 |
+| 대상 비밀번호 | 새 프로젝트를 만들 때 Supabase가 정하게 하거나 직접 입력 | **만들 때 한 번만 보임**. 그 자리에서 복사 | 비밀번호 관리 앱에 따로. 채팅·메일·저장소에 두지 않음 |
+
 ```bash
-# 비밀번호는 주소와 따로: SOURCE_DATABASE_PASSWORD · TARGET_DATABASE_PASSWORD (78차 규약)
 mkdir -p .school-move
 SOURCE_DATABASE_URL=<원본> node scripts/school-move.mjs export <학교 주소 이름> .school-move/<학교>.json
 TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs import .school-move/<학교>.json --status active
