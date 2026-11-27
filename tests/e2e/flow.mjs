@@ -780,6 +780,8 @@ try {
     await h.check('[data-testid=site-settings] label:has-text("홈페이지 열기") input');
     await h.click('text=설정 저장');
     await h.waitForSelector('[data-testid=site-settings] [role=status]:has-text("저장했습니다")');
+    // 88차: 표시를 넘겨받은 뒤 주소의 saved=1은 지워진다(새로 고침하면 표시가 다시 나오지 않음)
+    await h.waitForFunction(() => !location.search.includes('saved='));
     // 쪽 만들고 공개
     await h.click('.triage-box:has-text("쪽")');
     await h.click('[data-testid=new-entry]');
