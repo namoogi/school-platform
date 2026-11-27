@@ -81,6 +81,10 @@ language sql immutable set search_path = pg_catalog, public, pg_temp as $$
                                                   or jsonb_typeof(b -> 'label') <> 'object'
                                                   or not exists (select 1 from jsonb_each(b -> 'label') l where l.key ~ '^[a-z]{2}$' and jsonb_typeof(l.value) = 'string' and length(trim(l.value #>> '{}')) > 0)
                                                   or jsonb_typeof(b -> 'min') not in ('number', 'null')))))
+    -- 척도 코드는 한 판 안에서 겹치지 않고, 직접 정한 척도의 '왜'는 척도 판과 같은 500자 이내
+    and (select count(distinct e ->> 'code') from jsonb_array_elements(m -> 'scales') e) = jsonb_array_length(m -> 'scales')
+    and not exists (select 1 from jsonb_array_elements(m -> 'scales') e
+                     where e ? 'why' and (jsonb_typeof(e -> 'why') <> 'string' or length(e ->> 'why') > 500))
     and m ->> 'attendance' in ('day', 'period', 'day_period')
     and jsonb_typeof(m -> 'calc_samples') = 'array'
     and not exists (select 1 from jsonb_array_elements(m -> 'calc_samples') e where jsonb_typeof(e) <> 'string')

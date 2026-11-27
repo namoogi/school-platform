@@ -5,7 +5,7 @@ import { useI18n } from '@/components/I18nProvider';
 import { useConfirm } from '@/components/ConfirmDialog';
 
 /** 111차 ADR 0043: 템플릿 적용. 확인 창에 '바뀌는 것 / 안 바뀌는 것 / 되돌리기'를 보여 준 뒤 학교 사본을 만든다 */
-export function ApplyTemplate({ templateKey, title, baseVersion, mode }: { templateKey: string; title: string; baseVersion: number; mode: 'choose' | 'reapply' | 'update' }) {
+export function ApplyTemplate({ templateKey, templateVersion, title, baseVersion, mode }: { templateKey: string; templateVersion: number; title: string; baseVersion: number; mode: 'choose' | 'reapply' | 'update' }) {
   const router = useRouter();
   const { t } = useI18n();
   const [ask, dialog] = useConfirm();
@@ -28,7 +28,7 @@ export function ApplyTemplate({ templateKey, title, baseVersion, mode }: { templ
     setBusy(true);
     try {
       const res = await fetch('/api/academics', { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'template', key: templateKey, base_version: baseVersion }) });
+        body: JSON.stringify({ action: 'template', key: templateKey, version: templateVersion, base_version: baseVersion }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (res.status === 409) router.refresh();

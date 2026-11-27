@@ -65,7 +65,7 @@ export default async function TemplatesPage() {
               <dl className="facts">
                 {rows.map((r) => <Fragment key={r.label}><dt>{r.label}</dt><dd>{r.value(tp)}</dd></Fragment>)}
               </dl>
-              {admin && <ApplyTemplate templateKey={tp.key} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />}
+              {admin && <ApplyTemplate templateKey={tp.key} templateVersion={tp.version} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />}
             </section>);
         })}
       </div>

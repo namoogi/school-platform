@@ -2846,7 +2846,7 @@
   "atpl.changes": "What changes:",
   "atpl.changesBody": "Missing levels and grades, the term structure (only if none exists) and grading scales are created, and the template is recorded on your school profile.",
   "atpl.keeps": "What stays:",
-  "atpl.keepsBody": "Existing levels, grades, term structure, scales and all student, class and grade records stay as they are.",
+  "atpl.keepsBody": "Your grade naming if already set, existing levels, grades, term structure, scales and all student, class and grade records stay as they are.",
   "atpl.undo": "Undo:",
   "atpl.undoBody": "Created items are records and are not deleted. Choose another template or adjust them on the school setup screen.",
   "atpl.applied": "Created {levels} levels, {grades} grades, {periods} terms and {scales} scales.",

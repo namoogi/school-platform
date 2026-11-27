@@ -117,6 +117,8 @@ describe('학사 관리 템플릿', () => {
     await expect(asUser(platformId, (db) => db.query(`select app.publish_academic_template($1)`, [JSON.stringify({
       key: 'us_k12', base_version: 2, title: { ko: 'x' }, summary: { ko: { text: 'x' } }, manifest: { ...ok, scales: [] } })]))).rejects.toThrow('템플릿 내용');
     expect((await asUser(B.userId, (db) => at.listTemplates(db))).find((t) => t.key === 'us_k12')!.version).toBe(2);
+    await expect(bad({ ...ok, scales: [{ code: 'pass_fail', preset: 'pass_fail' }, { code: 'pass_fail', preset: 'pass_fail' }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', why: 'w'.repeat(501), bands: [{ code: 'A', label: { ko: 'A' }, min: 0 }] }] })).rejects.toThrow('템플릿 내용');
     // SCALE_PRESETS 와 DB 검사 목록이 같아야 한다(한쪽만 늘면 템플릿이 막히거나 적용이 깨짐)
     const { SCALE_PRESETS } = await import('@/lib/grading');
     const fn = (await su.query(`select prosrc from pg_proc where proname = 'academic_template_ok'`)).rows[0].prosrc as string;
@@ -135,5 +137,15 @@ describe('학사 관리 템플릿', () => {
     const r = await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'edge_case', base_version: await ver(A) }));
     expect(r.made.scales).toEqual(['edge_scale']);
     expect(await asUser(A.userId, (db) => at.schoolTemplate(db, A.schoolId))).toMatchObject({ key: 'edge_case', version: 1 });
+  });
+  it('본 판만 적용하고(그 사이 새 판이면 409), 학교가 정한 학년 체계는 다시 적용해도 지킨다', async () => {
+    // B는 us_k12 1판을 골랐고 최신은 2판
+    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 1, base_version: await ver(B) }))).rejects.toMatchObject({ code: 'P0409' });
+    // 학년 체계를 커스텀으로 바꾼 뒤 템플릿 새 판을 채워도 커스텀이 남는다
+    await asUser(B.userId, async (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'custom', levels: ['high'], base_version: await ver(B) }, 'en'));
+    const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 2, base_version: await ver(B) }, 'en'));
+    expect(r.kept.scheme).toBe('custom');
+    expect((await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'en'))).scheme).toBe('custom');
+    expect(await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId))).toMatchObject({ key: 'us_k12', version: 2 });
   });
 });

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         return { created: await createTermsFromRule(db, school.id, b.yearId, rule.id), rule_version: rule.version };
       }
       case 'grade-scheme': return applyGradeScheme(db, school.id, { scheme: b.scheme, levels: b.levels, labels: b.labels, base_version: b.base_version }, school.locale);
-      case 'template': return applyTemplate(db, school.id, { key: b.key, base_version: b.base_version }, school.locale);
+      case 'template': return applyTemplate(db, school.id, { key: b.key, version: b.version, base_version: b.base_version }, school.locale);
       case 'term-dates': await setTermDates(db, school.id, b.termId, b.startsOn, b.endsOn); return { ok: true };
       default: throw new ValidationError('err.unknownAction');
     }

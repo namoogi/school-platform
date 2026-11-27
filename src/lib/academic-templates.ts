@@ -35,24 +35,31 @@ export function gradePreview(m: TemplateManifest, lang: string) {
 export type ApplyResult = {
   key: string; version: number; profileVersion: number;
   made: { levels: number; grades: number; periods: number; scales: string[] };
-  kept: { periods: boolean; scales: string[] };
+  kept: { periods: boolean; scales: string[]; scheme: GradeScheme | null };
 };
 
 /**
  * 템플릿을 학교에 적용한다(학교 관리자). base_version = 지금 학교 관할 판 번호(지침 10).
  * 같은 템플릿을 다시 적용해도 빠진 것만 더한다. 다른 템플릿으로 바꾸면 새 학교급·학년·척도만 더해지고 있던 것은 그대로다.
  */
-export async function applyTemplate(db: Db, schoolId: string, input: { key?: unknown; base_version?: unknown }, locale = 'ko'): Promise<ApplyResult> {
+export async function applyTemplate(db: Db, schoolId: string, input: { key?: unknown; version?: unknown; base_version?: unknown }, locale = 'ko'): Promise<ApplyResult> {
   const key = String(input.key ?? '');
   const t = (await listTemplates(db)).find((x) => x.key === key);
   if (!t) throw new ValidationError('err.template.unknown');
+  // 화면에서 본 판을 적용한다: 그 사이 관제가 새 판을 냈으면 보지 않은 내용을 넣지 않고 409(Codex #180)
+  if (input.version != null && Number(input.version) !== t.version) {
+    throw Object.assign(new Error('그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.'), { code: 'P0409' });
+  }
   const m = t.manifest;
   const base = Number(input.base_version);
   if (input.base_version == null || input.base_version === '' || !Number.isInteger(base) || base < 0) throw new ValidationError('err.baseVersion');
 
-  // 1) 학교급·학년 + 관할 판(학년 체계·템플릿 키·판을 한 판에)
+  // 1) 학교급·학년 + 관할 판(학년 체계·템플릿 키·판을 한 판에).
+  //    학교가 이미 학년 체계를 정했으면 그 체계를 지킨다(학교 값 유지, Codex #180). 처음일 때만 템플릿 체계를 쓴다
+  const cur = await schoolProfile(db, schoolId);
+  const keepScheme = (cur?.grade_scheme ?? null) as GradeScheme | null;
   const scheme = await applyGradeScheme(db, schoolId, {
-    scheme: m.grade_scheme, levels: m.levels, base_version: base, why: `템플릿: ${key} ${t.version}판`, template: { key, version: t.version },
+    scheme: keepScheme ?? m.grade_scheme, levels: m.levels, base_version: base, why: `템플릿: ${key} ${t.version}판`, template: { key, version: t.version },
   }, locale);
 
   // 2) 학기 구조: 학교에 규칙 판이 없을 때만 템플릿 학기로 1판을 만든다
@@ -81,7 +88,7 @@ export async function applyTemplate(db: Db, schoolId: string, input: { key?: unk
   return {
     key, version: t.version, profileVersion: scheme.version,
     made: { levels: scheme.levels, grades: scheme.grades, periods, scales: madeScales },
-    kept: { periods: keptPeriods, scales: keptScales },
+    kept: { periods: keptPeriods, scales: keptScales, scheme: keepScheme && keepScheme !== m.grade_scheme ? keepScheme : null },
   };
 }
 

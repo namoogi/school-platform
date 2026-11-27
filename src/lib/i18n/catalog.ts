@@ -2884,7 +2884,7 @@ export const CATALOG = {
   'atpl.changes': '바뀌는 것:',
   'atpl.changesBody': '없는 학교급·학년, 학기 구조(없을 때만), 척도가 새로 생기고 학교 관할 판에 템플릿이 기록됩니다.',
   'atpl.keeps': '안 바뀌는 것:',
-  'atpl.keepsBody': '이미 있는 학교급·학년·학기 구조·척도와 학생·수업·성적 기록은 그대로입니다.',
+  'atpl.keepsBody': '이미 정한 학년 체계, 이미 있는 학교급·학년·학기 구조·척도와 학생·수업·성적 기록은 그대로입니다.',
   'atpl.undo': '되돌리기:',
   'atpl.undoBody': '만든 것은 기록이라 지우지 않습니다. 다른 템플릿을 고르거나 학교 구조 화면에서 고칩니다.',
   'atpl.applied': '학교급 {levels}개, 학년 {grades}개, 학기 {periods}개, 척도 {scales}개를 만들었습니다.',
