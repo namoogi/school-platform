@@ -2086,6 +2086,9 @@ try {
     const small = await p.evaluate(() => [...document.querySelectorAll('main select, main input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), main textarea')]
       .filter((e) => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height < 44).map((e) => `${e.tagName}:${Math.round(e.getBoundingClientRect().height)}`));
     assert.deepEqual(small, [], `44px 미만 입력: ${small.join(' ')}`);
+    const smallBtn = await p.evaluate(() => [...document.querySelectorAll('main .btn, main button.small')]
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height < 44; }).map((e) => `${(e.textContent || '').trim().slice(0, 12)}:${Math.round(e.getBoundingClientRect().height)}`));
+    assert.deepEqual(smallBtn, [], `44px 미만 단추: ${smallBtn.join(' ')}`);
     assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, '390px 가로 넘침');
     await p.goto(`${BASE}/admin/languages`);
     await p.locator('[data-testid=language-form] .field-req').first().waitFor();

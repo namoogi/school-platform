@@ -380,6 +380,8 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
   input.switch:checked { background: radial-gradient(circle at calc(100% - 12px) 50%, var(--text-on-brand) 8px, transparent 8.5px), var(--action-primary-bg); }
   /* 표 안 작은 select(행 동작)도 손가락 기기에서는 컨트롤 높이로 */
   html .actions select, html select.small, html input.small { min-height: var(--control-h); }
+  /* 작은 단추(.btn-sm·.small)도 손가락 기기에서는 44px — 모양은 작게, 누르는 높이만 */
+  html .btn-sm, html .small, html button.small { min-height: var(--control-h); }
 }
 .choices { border: 0; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
 .choices legend { font-weight: 600; margin-bottom: var(--space-1); }
