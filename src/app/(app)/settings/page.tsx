@@ -9,17 +9,14 @@ import { DataTable } from '@/components/DataTable';
 import { estimate, fmtBytes, schoolUsage, usd } from '@/lib/usage';
 import { baselineOffers, schoolBaseline } from '@/lib/baseline';
 import { ActionForm } from '@/components/ActionForm';
+import { getI18n, userLang } from '@/lib/i18n/server';
+import { CATALOG, type MsgKey } from '@/lib/i18n/catalog';
 
-const ACTION: Record<string, string> = {
-  'license.set': '라이선스 변경', 'member.invite': '구성원 초대', 'member.add': '구성원 추가', 'member.join': '초대 수락(로그인)',
-  'member.remove': '구성원 제외', 'member.invite_revoke': '초대 취소', 'school.create': '학교 생성', 'school.status': '학교 상태 변경',
-  'school.enter': '전체 관리자 입장', 'billing.statement': '청구 기록 생성', 'price.set': '기능 가격 변경', 'devlink.add': '개발 연동 추가', 'devlink.update': '개발 연동 변경',
-  'portal.account_add': '열람 계정 만들기', 'portal.account_end': '열람 계정 끝내기', 'portal.claim': '열람 계정 연결(로그인)',
-};
-const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
+// 기록 종류 이름은 사전의 log.action.<종류>(없는 종류는 코드 그대로)
 
 export default async function SettingsPage() {
-  const { school, license, team, log, bills, links, usage, portal, people, baseline, offers } = await loadForPage(async ({ db, school }) => ({
+  const { school, license, team, log, bills, links, usage, portal, people, baseline, offers, uiLang } = await loadForPage(async ({ db, school }) => ({
+    uiLang: await userLang(db),
     license: await licenseInfo(db, school.id),
     team: await members(db, school.id),
     log: await accessLog(db, school.id, 30),
@@ -31,21 +28,24 @@ export default async function SettingsPage() {
     baseline: await schoolBaseline(db, school.id),
     offers: await baselineOffers(db, school.id),
   }), { admin: true });
-  const fmt = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+  const { t, locale } = await getI18n(uiLang);
+  const fmt = (d: string) => new Date(d).toLocaleString(locale, { timeZone: 'Asia/Seoul' });
+  const won = (n: number) => t('common.won', { n: n.toLocaleString(locale) });
+  const action = (a: string) => (`log.action.${a}` in CATALOG ? t(`log.action.${a}` as MsgKey) : a);
   return (
     <>
-      <PageHeader title="학교 설정" crumbs={[{ label: '학교 관리' }, { label: '학교 설정' }]}
-        description="좌석 수와 사용할 기능을 정하고 구성원을 초대합니다. 변경은 판으로 쌓이고 청구 예정액에 반영됩니다."
-        status={<StatusBadge tone={school.status === 'active' ? 'success' : school.status === 'trial' ? 'info' : 'danger'}>{school.status === 'trial' ? '시범' : school.status === 'active' ? '운영' : '이용 중지'}</StatusBadge>}
-        meta={<><span>{school.name}</span>{license.current && <span>라이선스 {license.current.version}판</span>}</>} />
+      <PageHeader title={t('nav.settings.title')} crumbs={[{ label: t('settings.crumb') }, { label: t('nav.settings.title') }]}
+        description={t('settings.lead')}
+        status={<StatusBadge tone={school.status === 'active' ? 'success' : school.status === 'trial' ? 'info' : 'danger'}>{t(school.status === 'trial' ? 'switcher.trial' : school.status === 'active' ? 'home.status.active' : 'switcher.suspended')}</StatusBadge>}
+        meta={<><span>{school.name}</span>{license.current && <span>{t('settings.metaLicense', { v: license.current.version })}</span>}</>} />
       {usage && (() => { const e = estimate(usage); return (
         <section className="card" data-testid="school-usage">
-          <div className="card-header"><h2>우리 학교 사용량</h2><span className="fine">최근 30일 · USD 추정, 청구서 아님</span></div>
+          <div className="card-header"><h2>{t('settings.usage')}</h2><span className="fine">{t('settings.usageSub')}</span></div>
           <div className="kpis">
-            <div className="kpi"><span className="kpi-label">파일 저장</span><span className="kpi-value">{fmtBytes(usage.db_site_bytes + usage.db_source_bytes + usage.r2_bytes)}</span><span className="muted small-text">{usage.files}개</span></div>
-            <div className="kpi"><span className="kpi-label">AI 사용</span><span className="kpi-value">{usage.ai_calls_30d}회</span><span className="muted small-text">토큰 {usage.ai_tokens_30d.toLocaleString('ko-KR')}</span></div>
-            <div className="kpi"><span className="kpi-label">외부 에이전트 작업</span><span className="kpi-value">{usage.agent_actions_30d}회</span><span className="muted small-text">학교 구독으로 처리</span></div>
-            <div className="kpi"><span className="kpi-label">월 추정</span><span className="kpi-value">{usd(e.total)}</span><span className="muted small-text">저장 {usd(e.db + e.r2)} · AI {usd(e.ai)}</span></div>
+            <div className="kpi"><span className="kpi-label">{t('settings.storage')}</span><span className="kpi-value">{fmtBytes(usage.db_site_bytes + usage.db_source_bytes + usage.r2_bytes)}</span><span className="muted small-text">{t('settings.files', { n: usage.files })}</span></div>
+            <div className="kpi"><span className="kpi-label">{t('settings.ai')}</span><span className="kpi-value">{t('settings.times', { n: usage.ai_calls_30d })}</span><span className="muted small-text">{t('settings.tokens', { n: usage.ai_tokens_30d.toLocaleString(locale) })}</span></div>
+            <div className="kpi"><span className="kpi-label">{t('settings.agent')}</span><span className="kpi-value">{t('settings.times', { n: usage.agent_actions_30d })}</span><span className="muted small-text">{t('settings.bySubscription')}</span></div>
+            <div className="kpi"><span className="kpi-label">{t('settings.monthly')}</span><span className="kpi-value">{usd(e.total)}</span><span className="muted small-text">{t('settings.monthlySub', { storage: usd(e.db + e.r2), ai: usd(e.ai) })}</span></div>
           </div>
         </section>
       ); })()}
@@ -61,38 +61,38 @@ export default async function SettingsPage() {
           <PortalAccountsPanel accounts={JSON.parse(JSON.stringify(portal))} people={people} />
         </section>
         <section className="card" data-testid="school-dev-links">
-          <h2>개발 연동</h2>
-          <p className="fine">이 학교 전용 개발 자원입니다. 연결·변경은 전체 관리자가 합니다.</p>
-          {links.length === 0 ? <p className="muted">연결된 자원이 없습니다.</p> : (
+          <h2>{t('settings.devLinks')}</h2>
+          <p className="fine">{t('settings.devLinksNote')}</p>
+          {links.length === 0 ? <p className="muted">{t('settings.noDevLinks')}</p> : (
             <ul className="sources">{links.map((l) => (
               <li key={l.id}><div><strong>{l.label}</strong><small>{LINK_KINDS[l.kind].label} · <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a></small></div></li>
             ))}</ul>)}
         </section>
         <section className="card stack" data-testid="baseline-offers">
-          <h2>기본판 갱신 제안</h2>
-          <p className="fine">관제가 기본판(코드 목록·척도·성적 정책)을 새로 내면 여기로 제안이 옵니다. 수락하면 이 학교에 없는 것만 더하고, 학교가 고친 값과 다르면 학교 값을 그대로 둡니다(ADR 0027). 지금 사본: {baseline ? `${baseline.version}판` : '없음'}</p>
-          {offers.length === 0 ? <p className="muted">받은 제안이 없습니다.</p> : (
+          <h2>{t('settings.offers')}</h2>
+          <p className="fine">{t('settings.offersNote', { copy: baseline ? t('common.version', { v: baseline.version }) : t('docs.none') })}</p>
+          {offers.length === 0 ? <p className="muted">{t('settings.noOffers')}</p> : (
             <ul className="issue-list">{offers.map((o) => {
               const add = o.items.add as { kind: string; item: { code?: string; list_key?: string } }[];
               const conflicts = o.items.conflicts as { kind: string; item: { code?: string; list_key?: string } }[];
-              const name = (x: { kind: string; item: { code?: string; list_key?: string } }) => x.kind === 'grading_policy' ? '성적 정책' : `${x.kind === 'scale' ? '척도' : x.item.list_key} ${x.item.code ?? ''}`;
+              const name = (x: { kind: string; item: { code?: string; list_key?: string } }) => x.kind === 'grading_policy' ? t('settings.policyName') : `${x.kind === 'scale' ? t('settings.scaleName') : x.item.list_key} ${x.item.code ?? ''}`;
               return (
                 <li key={o.id} className="stack">
-                  <span><strong>{o.from_version}판 → {o.to_version}판</strong> <StatusBadge tone={o.status === 'accepted' ? 'success' : o.status === 'offered' ? 'info' : 'neutral'}>{({ offered: '제안 중', accepted: '수락', declined: '거절', held: '보류' } as Record<string, string>)[o.status] ?? o.status}</StatusBadge>
-                    <small className="muted"> 더할 것 {add.length}{add.length ? `(${add.slice(0, 6).map(name).join(', ')}${add.length > 6 ? ' …' : ''})` : ''} · 학교 값 유지 {conflicts.length}{conflicts.length ? `(${conflicts.slice(0, 4).map(name).join(', ')}${conflicts.length > 4 ? ' …' : ''})` : ''}{o.note ? ` · ${o.note}` : ''}</small></span>
+                  <span><strong>{t('settings.offerVersions', { from: o.from_version, to: o.to_version })}</strong> <StatusBadge tone={o.status === 'accepted' ? 'success' : o.status === 'offered' ? 'info' : 'neutral'}>{['offered', 'accepted', 'declined', 'held'].includes(o.status) ? t(`offer.status.${o.status}` as MsgKey) : o.status}</StatusBadge>
+                    <small className="muted">{t('settings.offerAdd', { n: add.length })}{add.length ? `(${add.slice(0, 6).map(name).join(', ')}${add.length > 6 ? ' …' : ''})` : ''}{t('settings.offerKeep', { n: conflicts.length })}{conflicts.length ? `(${conflicts.slice(0, 4).map(name).join(', ')}${conflicts.length > 4 ? ' …' : ''})` : ''}{o.note ? ` · ${o.note}` : ''}</small></span>
                   {(o.status === 'offered' || o.status === 'held') && (
-                    <ActionForm url="/api/baseline" extra={{ offerId: o.id }} inline submitLabel="결정" successText="결정을 남겼습니다." testId={`offer-${o.to_version}`}
-                      fields={[{ name: 'decision', label: '결정', type: 'select', options: [{ value: 'accepted', label: '수락' }, { value: 'held', label: '보류' }, { value: 'declined', label: '거절' }] },
-                        { name: 'note', label: '메모(선택)' }]} />)}
+                    <ActionForm url="/api/baseline" extra={{ offerId: o.id }} inline submitLabel={t('settings.decide')} successText={t('settings.decided')} testId={`offer-${o.to_version}`}
+                      fields={[{ name: 'decision', label: t('settings.decision'), type: 'select', options: ['accepted', 'held', 'declined'].map((v) => ({ value: v, label: t(`offer.status.${v}` as MsgKey) })) },
+                        { name: 'note', label: t('settings.memoOptional') }]} />)}
                 </li>);
             })}</ul>)}
         </section>
         <section className="card">
-          <h2>청구 기록</h2>
-          <p className="fine">실제 결제는 아직 연결되지 않았습니다. 전체 관리자가 월별 청구 예정액을 확정하면 여기에 남습니다.</p>
-          <DataTable caption="청구 기록" testId="bill-table" empty="아직 청구 기록이 없습니다." initialSort={{ key: 'period', dir: 'desc' }}
-            columns={[{ key: 'period', header: '청구 월', sortable: true }, { key: 'seats', header: '좌석', num: true, sortable: true },
-              { key: 'modules', header: '기능' }, { key: 'amount', header: '금액', num: true, sortable: true }]}
+          <h2>{t('settings.bills')}</h2>
+          <p className="fine">{t('settings.billsNote')}</p>
+          <DataTable caption={t('settings.bills')} testId="bill-table" empty={t('settings.noBills')} initialSort={{ key: 'period', dir: 'desc' }}
+            columns={[{ key: 'period', header: t('settings.col.period'), sortable: true }, { key: 'seats', header: t('settings.col.seats'), num: true, sortable: true },
+              { key: 'modules', header: t('settings.col.modules') }, { key: 'amount', header: t('settings.col.amount'), num: true, sortable: true }]}
             rows={bills.map((b) => ({
               id: b.id,
               sort: { period: b.period, seats: b.seats, amount: b.amount_krw },
@@ -100,14 +100,14 @@ export default async function SettingsPage() {
             }))} />
         </section>
         <section className="card">
-          <h2>접근·변경 기록</h2>
-          <p className="fine">전체 관리자가 이 학교에 들어온 기록도 여기에 남습니다.</p>
+          <h2>{t('settings.log')}</h2>
+          <p className="fine">{t('settings.logNote')}</p>
           <ul className="log" data-testid="access-log">
             {log.map((e) => (
-              <li key={e.id}><time>{fmt(e.created_at)}</time> <strong>{e.actor_label}</strong> · {ACTION[e.action] ?? e.action}
+              <li key={e.id}><time>{fmt(e.created_at)}</time> <strong>{e.actor_label}</strong> · {action(e.action)}
                 {typeof e.detail?.email === 'string' && <span className="muted"> · {e.detail.email}</span>}</li>
             ))}
-            {log.length === 0 && <li className="muted">기록이 없습니다.</li>}
+            {log.length === 0 && <li className="muted">{t('settings.noLog')}</li>}
           </ul>
         </section>
       </div>

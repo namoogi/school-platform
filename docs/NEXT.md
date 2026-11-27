@@ -7,7 +7,7 @@
 선생님께 쓰는 모든 설명은 **핵심 요약 → 왜 필요한가 → 용어 풀이(쉬운 말 + 학교 예시) → 필요하면 도식**. 승인을 구할 때는 바뀌는 것/안 바뀌는 것/되돌릴 수 있는지. AGENTS.md '선생님께 설명할 때'.
 
 ## 언어 (93차, ADR 0037)
-화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개) 완료, 남은 한글 줄 941. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db))`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
+화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개), 98차 4묶음(설정·/my·/locked) 완료, 남은 한글 줄 819. 셸 밖 화면은 `providerValue(i18n)`로 공급자를 둔다. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db))`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
 
 ## 학교 이전 (92차, ADR 0035)
 공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
