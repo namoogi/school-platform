@@ -94,7 +94,7 @@ export function platformGroup(t: T): NavGroup {
     label: t('nav.group.platform'), items: [
       item(t, '/admin', 'admin'), item(t, '/admin/integrations', 'integrations'), item(t, '/admin/control', 'control'),
       item(t, '/admin/usage', 'usage'), item(t, '/admin/baseline', 'baseline'), item(t, '/admin/lab', 'lab'),
-      item(t, '/admin/languages', 'languages'), item(t, '/admin/design', 'design'),
+      item(t, '/admin/placements', 'placements'), item(t, '/admin/languages', 'languages'), item(t, '/admin/design', 'design'),
     ],
   };
 }

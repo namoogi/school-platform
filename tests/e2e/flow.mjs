@@ -158,12 +158,23 @@ try {
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name), fullPage: true }); }
   };
 
+  let bLangChecked = false;
   async function login(page, email, password) {
     await page.goto(`${BASE}/login`);
     await page.fill('input[name=email]', email);
     await page.fill('input[name=password]', password);
     await page.click('button[type=submit]');
     await page.waitForURL(/\/home$/);
+    // 96차(ADR 0038 5항): 영어 학교 B는 화면 언어를 고르지 않으면 영어로 열린다. 처음 한 번 확인한 뒤,
+    // 이 시험의 한국어 기준 단계를 위해 B 관리자의 화면 언어를 한국어로 고른다(사용자 설정이 학교 기본보다 앞선다)
+    if (email.startsWith('admin-b@')) {
+      if (!bLangChecked) {
+        assert.equal(await page.locator('.app').getAttribute('lang'), 'en', '영어 학교 B는 영어 화면으로 열린다');
+        bLangChecked = true;
+      }
+      const r = await page.evaluate(() => fetch('/api/preferences/lang', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ lang: 'ko' }) }).then((x) => x.status));
+      assert.equal(r, 200);
+    }
     await page.goto(`${BASE}/intake`);
   }
   async function dropFile(page, name, text) {
@@ -1082,8 +1093,10 @@ try {
     await dlg.waitFor();
     assert.match(await dlg.textContent(), /자료를 목록에서 뺄까요\?.*b-calendar-2027\.pdf.*발행한 문서의 근거로 그대로 보관/s);
     const focusedName = () => b.evaluate(() => { const e = document.activeElement; return e === document.body ? '(body)' : (e?.textContent ?? '').slice(0, 40); });
-    await b.waitForFunction(() => document.activeElement?.textContent === '취소', null, { timeout: 3000 }).catch(() => {});
-    assert.equal(await focusedName(), '취소', '처음 포커스');
+    // 95차: 학교 기본 언어가 화면 언어가 된다(B = 영어 학교). 다국어로 옮긴 부품(취소)은 그 언어로 나온다
+    const cancelLabel = (await b.locator('.app').getAttribute('lang')) === 'en' ? 'Cancel' : '취소';
+    await b.waitForFunction((l) => document.activeElement?.textContent === l, cancelLabel, { timeout: 3000 }).catch(() => {});
+    assert.equal(await focusedName(), cancelLabel, '처음 포커스');
     await shot(b, '31-confirm-dialog.png');
     // 대화상자는 화면 형식·명암 토큰을 가진 .app 안에 그린다(#135, 어두운 화면에서도 같은 토큰)
     assert.ok(await dlg.evaluate((el) => !!el.closest('.app[data-mode]')), '대화상자가 .app 안에 있다');
