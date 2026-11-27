@@ -21,15 +21,19 @@ afterAll(async () => { await su.end(); });
 /** school_id 가 없어도 되는 public 표(관제·플랫폼 영역). 더할 때는 이유를 적는다 */
 const NO_SCHOOL_ID: Record<string, string> = {
   baselines: '관제 기본판(ADR 0027) — 전체 관리자만 읽음',
+  languages: '언어 목록(ADR 0037) — 비밀 아님, 누구나 읽음, 전체 관리자만 명령 함수로 씀',
   module_catalog: '기능 목록(이름·가격) — 비밀 아님, 누구나 읽음',
   platform_item_history: '관제 연구소 이력 — 전체 관리자',
   platform_items: '관제 연구소·결정 요청 — 전체 관리자',
   schools: '학교 자체 — 소속·전체 관리자만',
+  ui_messages: '화면 문구 번역 사전(ADR 0037) — 비밀 아님, 누구나 읽음(로그인 화면 포함), 전체 관리자만 명령 함수로 씀',
   user_preferences: '사용자 본인 화면 설정 — 본인 행만',
 };
 /** USING/WITH CHECK 가 그냥 true 여도 되는 정책(사람이 쓰는 역할 대상). 더할 때는 이유를 적는다 */
 const TRUE_POLICY_OK: Record<string, string> = {
   'module_catalog.module_catalog_read': '기능 목록은 공개 정보',
+  'languages.languages_read': '언어 목록은 공개 정보(ADR 0037)',
+  'ui_messages.ui_messages_read': '화면 문구는 공개 정보(ADR 0037)',
 };
 /** 앱 내부 소유 역할(사용자 요청이 직접 쓰지 않음). 이 역할에만 열린 true 정책은 허용 */
 const INTERNAL_ROLES = new Set(['app_writer', 'agent_writer', 'control_writer']);

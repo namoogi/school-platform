@@ -36,6 +36,7 @@ jobs:
       - run: npm ci
       - run: npm run check:repo
       - run: npm run lint:colors
+      - run: npm run lint:i18n
       - run: npm run typecheck
       - run: npm run test:unit
       - name: Create database
