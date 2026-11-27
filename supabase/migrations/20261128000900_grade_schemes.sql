@@ -16,6 +16,10 @@ alter table public.homerooms add constraint homerooms_grade_level_fk
   foreign key (grade_level_id, school_id) references public.grade_levels(id, school_id);
 create index homerooms_grade_level on public.homerooms (school_id, grade_level_id);
 
+-- 관할 판 쓰기: 기존 함수는 app_writer 소유(F1). 운영 마이그레이션 역할은 슈퍼유저가 아니라 소유 역할로 바꿔서 다시 만든다(108차 후속 #171 과 같은 방식).
+-- create or replace 는 기존 실행 권한을 그대로 둔다
+grant create on schema app to app_writer;
+set local role app_writer;
 create or replace function app.set_school_profile(target uuid, p jsonb)
 returns integer language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare v integer; prev text; prev_labels jsonb; scheme text; labels jsonb;
@@ -44,6 +48,8 @@ begin
           coalesce(p -> 'external_codes', '{}'), nullif(trim(p ->> 'why'), ''), scheme, labels);
   return v;
 end $$;
+reset role;
+revoke create on schema app from app_writer;
 
 -- 학년 행으로 반을 만든다. 학교급·학교급 안 순번은 학년 행에서 정한다(클라이언트가 고르지 않음).
 create or replace function app.add_grade_homeroom(target uuid, year_id uuid, grade_level uuid, homeroom_name text)
@@ -75,7 +81,7 @@ grant create on schema app to app_writer;
 do $$
 declare f text;
 begin
-  foreach f in array array['app.set_school_profile(uuid, jsonb)', 'app.add_grade_homeroom(uuid, uuid, uuid, text)'] loop
+  foreach f in array array['app.add_grade_homeroom(uuid, uuid, uuid, text)'] loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
     execute format('alter function %s owner to app_writer', f);
