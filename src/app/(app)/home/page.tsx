@@ -110,7 +110,7 @@ export default async function HomePage() {
         <header className="home-head">
           <p className="home-date">{fmtDay(new Date())} · {school.name}</p>
           <h1>안녕하세요, {greeting}</h1>
-          <p className="home-summary">{summary}</p>
+          <p className="home-summary">{summary}{open.length > 0 && <> <a href="#tasks" className="home-jump">할 일 보기</a></>}</p>
         </header>
 
         <section aria-labelledby="work-title">
@@ -145,7 +145,7 @@ export default async function HomePage() {
       </div>
 
       <aside className="home-side" aria-label="할 일과 최근 기록">
-        <section className="side-card" data-testid="tasks">
+        <section className="side-card" id="tasks" data-testid="tasks">
           <div className="home-section-head"><h2>할 일</h2><span className="fine">남은 일 {open.length}건</span></div>
           {(['지금', '다음', '완료'] as const).map((when) => {
             const list = tasks.filter((t) => t.when === when);

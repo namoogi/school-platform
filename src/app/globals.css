@@ -659,7 +659,10 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
 .activity { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
 .activity li { display: grid; gap: 2px; padding-left: var(--space-4); border-left: 2px solid var(--border-default); }
 .activity time { color: var(--text-muted); font-size: var(--fs-body-sm); font-variant-numeric: tabular-nums; }
-@media (max-width: 1100px) { .home { grid-template-columns: 1fr; } .home-side { position: static; } }
+/* 85차 UI 점검(home): 좁은 화면에서는 할 일 칸이 업무 카드 아래로 내려가므로, 요약 문장 옆에 바로가기를 둔다 */
+.home-jump { display: none; font-weight: 600; white-space: nowrap; }
+@media (max-width: 1100px) { .home { grid-template-columns: 1fr; } .home-side { position: static; }
+  .home-jump { display: inline-flex; align-items: center; min-height: 44px; } #tasks { scroll-margin-top: calc(var(--topbar-h) + var(--space-4)); } }
 
 /* ── 25차: 3단 작업함 (관리자 확인, ADR 0006) ─────────────────────── */
 .content-inner:has(> .triage) { max-width: none; }
