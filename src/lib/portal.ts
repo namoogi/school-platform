@@ -64,10 +64,7 @@ export async function portalDocument(db: Db, id: unknown) {
 // ── 63차 ADR 0030: 열람·수정 요청 · 이의 의견서 ─────────────
 export type RequestKind = 'inspect' | 'amend';
 export type RequestStatus = 'received' | 'in_review' | 'granted' | 'amended' | 'denied' | 'not_applicable' | 'hearing_offered' | 'closed';
-export const REQUEST_STATUS: Record<RequestStatus, string> = {
-  received: '접수', in_review: '검토 중', granted: '열람 허락', amended: '수정함', denied: '거부', not_applicable: '대상 아님(성적·평가 판단 등)',
-  hearing_offered: '청문 제안', closed: '끝남',
-};
+// 상태 이름은 화면 사전의 req.status.<상태>(ADR 0037)
 export const REQUEST_DONE: RequestStatus[] = ['granted', 'amended', 'not_applicable', 'closed'];
 export type PortalRequest = { id: string; kind: RequestKind; target_kind: string; body: string; due_on: string; created_at: string; status: RequestStatus;
   events: { status: RequestStatus; note: string | null; at: string }[]; annotation: { body: string; at: string } | null };

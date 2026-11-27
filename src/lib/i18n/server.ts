@@ -83,3 +83,8 @@ export async function getI18n(userPref?: string | null, schoolLang?: string | nu
 export async function userLang(db: Db): Promise<string | null> {
   return ((await db.query('select ui_lang from public.user_preferences where user_id = app.uid()')).rows[0]?.ui_lang as string | undefined) ?? null;
 }
+
+/** 브라우저 부품에 넘길 사전 묶음(I18nProvider value). 셸 밖 화면(로그인·/my 등)이 공급자를 직접 둘 때 쓴다 */
+export function providerValue(i18n: I18n) {
+  return { lang: i18n.lang, dir: i18n.dir, dict: i18n.dict, languages: i18n.languages.filter((l) => l.active).map((l) => ({ code: l.code, native_name: l.native_name })) };
+}

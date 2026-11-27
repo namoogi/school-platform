@@ -8,7 +8,7 @@ import { DecideForm, RedactPanel, RetentionForm } from './RequestsClient';
 
 /** 63차(ADR 0030·0028): 학생·보호자의 열람·수정 요청과 이의 의견서, 보존 규칙과 파기(가림 판) */
 export default async function RequestsPage() {
-  const { requests, rule, people, uiLang } = await loadForPage(async ({ db, school }) => ({
+  const { requests, rule, people, uiLang, school } = await loadForPage(async ({ db, school }) => ({
     uiLang: await userLang(db),
     requests: await listRecordRequests(db, school.id),
     rule: await retentionRule(db, school.id),
@@ -16,7 +16,7 @@ export default async function RequestsPage() {
   }), { module: 'records', admin: true });
   const open = requests.filter((r) => !['granted', 'amended', 'not_applicable', 'closed'].includes(r.status));
   const today = new Date().toISOString().slice(0, 10);
-  const { t } = await getI18n(uiLang);
+  const { t } = await getI18n(uiLang, school.locale);
   const status = (s: string) => t(`req.status.${s}` as MsgKey);
   return (
     <>

@@ -38,7 +38,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   }, { module: 'records' });
   const { school, levels, level, year, from, to, rows, month, summaries, kinds, reasons, uiLang } = data;
   const admin = school.isAdmin;
-  const { t, lang } = await getI18n(uiLang);
+  const { t, lang } = await getI18n(uiLang, school.locale);
   const CAL = Object.fromEntries(CAL_KINDS.map((k) => [k, t(`cal.kind.${k}` as MsgKey)]));
   // 학교 코드 이름은 데이터의 언어 칸: 화면 언어 → 한국어 → 영어 → 코드
   const label = (l: Record<string, string>, code: string) => l[lang] ?? l.ko ?? l.en ?? code;

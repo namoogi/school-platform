@@ -16,7 +16,7 @@ export default async function AcademicsPage() {
     return { levels: await listSchoolLevels(db, school.id), years, rule: await latestPeriodRule(db, school.id), terms, uiLang: await userLang(db) };
   }, { module: 'records' });
   const admin = school.isAdmin;
-  const { t } = await getI18n(uiLang);
+  const { t } = await getI18n(uiLang, school.locale);
   return (
     <>
       <PageHeader title={t('nav.academics.title')} crumbs={[{ label: t('intake.crumb') }, { label: t('nav.academics.title') }]}

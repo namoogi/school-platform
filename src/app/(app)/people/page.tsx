@@ -23,7 +23,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
   const q = (sp.q ?? '').trim();
   const shown = q ? people.filter((p) => p.name.includes(q) || (p.name_latin ?? '').toLowerCase().includes(q.toLowerCase())) : people;
   const admin = school.isAdmin;
-  const { t } = await getI18n(uiLang);
+  const { t } = await getI18n(uiLang, school.locale);
   const statusLabel = (s: string) => (STATUSES.includes(s) ? t(`enroll.status.${s}` as MsgKey) : s);
   const today = new Date().toISOString().slice(0, 10);
   return (

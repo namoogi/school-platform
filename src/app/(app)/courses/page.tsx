@@ -32,7 +32,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
   }, { module: 'records' });
   const { terms, levels, term, level, offerings, sel, subjects, types, labels, people, school, uiLang } = data;
   const admin = school.isAdmin;
-  const { t } = await getI18n(uiLang);
+  const { t } = await getI18n(uiLang, school.locale);
   const tk = (prefix: string, v: string) => t(`${prefix}.${v}` as MsgKey);
   const yesNo = [{ value: 'no', label: t('common.no') }, { value: 'yes', label: t('common.yes') }];
   const q = (o?: string) => `/courses?${new URLSearchParams({ ...(term ? { term: term.id } : {}), ...(level ? { level: level.id } : {}), ...(o ? { o } : {}) })}`;

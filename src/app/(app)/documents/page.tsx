@@ -13,7 +13,7 @@ export default async function DocumentsPage() {
     const preview = rule && template ? await buildSnapshot(db, school, rule, template, { number: 1, of: null }) : null;
     return { rule, template, docs: await listDocuments(db, school.id), preview, done: await flowProgress(db, school.id), uiLang: await userLang(db) };
   }, { module: 'records' });
-  const { t, locale } = await getI18n(uiLang);
+  const { t, locale } = await getI18n(uiLang, school.locale);
   return (
     <>
       <PageHeader title={t('nav.documents.title')} crumbs={[{ label: t('intake.crumb') }, { label: t('nav.documents.title') }]}
