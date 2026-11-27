@@ -751,6 +751,8 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
   font-size: var(--fs-caption); font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s;
 }
 .app[data-ui="analytics"] .nav-item:hover::after, .app[data-ui="analytics"] .nav-item:focus-visible::after { opacity: 1; }
+/* 90차: 마우스가 메뉴 위에 있으면 가리킨 항목의 풍선만 띄운다(키보드 초점이 남은 다른 항목 풍선과 겹치지 않게) */
+.app[data-ui="analytics"] .sidebar:hover .nav-item:not(:hover)::after { opacity: 0; }
 .app[data-ui="analytics"] .nav-item .count-badge { right: 8px; top: 2px; }
 .app[data-ui="analytics"] .sidebar { overflow: visible; }
 .app[data-ui="analytics"] .content { padding: var(--space-5) var(--space-6) var(--space-10); }

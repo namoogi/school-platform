@@ -9,7 +9,7 @@ const ICONS: Record<string, LucideIcon> = {
   '/admin': Building2, '/admin/integrations': Link2, '/admin/control': MessagesSquare, '/admin/usage': Gauge, '/admin/baseline': Layers, '/admin/lab': FlaskConical, '/admin/design': Palette,
 };
 
-/** label: 레일에 보이는 짧은 이름, title: 화면 이름(도움말·화면낭독기) */
+/** label: 레일에 보이는 짧은 이름, title: 화면 이름(마우스 풍선·화면낭독기). 브라우저 기본 title 풍선은 쓰지 않는다 — 우리 풍선과 겹쳐 두 개가 뜨고 늦게 사라진다(90차) */
 export type NavItem = { href: string; label: string; title?: string; count?: number };
 export type NavGroup = { label: string; items: NavItem[] };
 
@@ -26,7 +26,7 @@ export function Nav({ groups }: { groups: NavGroup[] }) {
           {g.items.map((i) => {
             const Icon = ICONS[i.href];
             return (
-              <Link key={i.href} href={i.href} className="nav-item" title={i.title} data-tip={i.title ?? i.label} aria-current={current?.href === i.href ? 'page' : undefined}>
+              <Link key={i.href} href={i.href} className="nav-item" data-tip={i.title ?? i.label} aria-current={current?.href === i.href ? 'page' : undefined}>
                 {/* 접근 이름은 aria-label 대신 링크 안 글자로 만든다. 보이는 이름·건수가 그대로 들어가야
                     음성 명령·화면낭독기가 같은 이름으로 찾는다 (WCAG 2.5.3, axe label-content-name-mismatch) */}
                 <span className="nav-label">{Icon && <Icon size={22} aria-hidden="true" />}<span className="nav-text">{i.label}</span></span>
