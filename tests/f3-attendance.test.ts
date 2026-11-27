@@ -93,6 +93,25 @@ describe('하루 환산·요약', () => {
     expect(s2).toMatchObject({ absent_days: 0.5, chronic_absence: false });
     expect(s2.thresholds.chronic_ratio).toBe(0.2);
   });
+
+  it('출석인정은 그 날짜에 유효한 코드 판으로 본다: 옛 판(출석인정)·새 판(아님)이 같은 코드여도 새 판 기간 결석은 결석(111차)', async () => {
+    // 학교가 3월 10일부터 'recognized' 를 출석인정이 아닌 것으로 바꾼다(app.add_code 로 새 판, 옛 판은 3/10에 닫힘)
+    const old = (await asUser(A.userId, (db) => f.codes(db, A.schoolId, 'attendance_reason', '2026-03-05'))).find((c) => c.code === 'recognized')!;
+    await asUser(A.userId, (db) => f.addCode(db, A.schoolId, { listKey: 'attendance_reason', code: 'recognized', label: { ko: '출석인정(폐지)', en: 'Recognized (retired)' },
+      attrs: { excused: true, counts_present: false }, priorCodeId: old.id, effectiveFrom: '2026-03-10', why: '111차 시험: 출석인정 폐지' }));
+    const { rows: versions } = await su.query(`select effective_from, effective_to, attrs from public.code_lists
+      where school_id = $1 and list_key = 'attendance_reason' and code = 'recognized' order by effective_from nulls first`, [A.schoolId]);
+    expect(versions.map((v) => v.attrs.counts_present)).toEqual([true, false]);
+    // 3/12(새 판 기간) 같은 사유로 결석
+    await asUser(A.userId, (db) => at.recordAttendance(db, A.schoolId, { personId: kr, day: '2026-03-12', kind: 'absent', reason: 'recognized' }));
+    const days = await asUser(A.userId, (db) => at.attendanceDays(db, A.schoolId, kr, '2026-03-01', '2026-04-01'));
+    const byDay = Object.fromEntries(days.map((d) => [d.day, d.absent_value]));
+    expect(byDay['2026-03-05']).toBe(0); // 옛 판 기간: 여전히 출석인정
+    expect(byDay['2026-03-12']).toBe(1); // 새 판 기간: 결석
+    const s = await asUser(A.userId, (db) => at.attendanceSummary(db, A.schoolId, kr, '2026-03-01', '2026-04-01'));
+    expect(s.absent_days).toBe(3);
+    expect(s.absent_by_reason).toEqual({ illness: 1, unexcused: 1, recognized: 1 });
+  });
 });
 
 describe('증거물·확인(서명)', () => {
