@@ -20,12 +20,16 @@
 mkdir -p .school-move
 SOURCE_DATABASE_URL=<원본> node scripts/school-move.mjs export <학교 주소 이름> .school-move/<학교>.json
 TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs import .school-move/<학교>.json
-SOURCE_DATABASE_URL=<원본> TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs verify <학교 id>
+SOURCE_DATABASE_URL=<원본> TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs verify .school-move/<학교>.json
 ```
 - 넣기는 그 학교가 아직 없는 자리에만 한다.
   - 트리거·외래키 검사를 잠시 끄고 넣는다(pg_dump와 같은 방식).
   - 같은 트랜잭션에서 고아 연결을 검사하고, 하나라도 있으면 모두 되돌린다.
 - 확인은 학교 표마다 행 수와 내용 지문(md5)을 비교한다.
+- 꺼낼 때 정리하는 것(묶음의 `normalized`에 적고, 확인 때 같은 칸은 빼고 비교한다)
+  - 학교 밖을 가리키는 연결은 비운다. 예: 학교 없는 관제 세션, 연구소 항목, 다른 학교 행.
+  - 로그인 정보는 이 학교 구성원·열람 계정만 들고 간다.
+  - 전체 관리자(관제)와 그 밖의 사람은 이름표만 남긴다. 비밀번호·외부 로그인·관리자 권한을 빼고 메일을 가린다. 옮긴 DB에서 관제 계정이 관리자로 되살아나지 않게 하기 위해서다.
 
 ## 3. 파일·접속 옮기기
 - R2 파일

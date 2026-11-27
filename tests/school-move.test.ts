@@ -50,6 +50,7 @@ let su: pg.Client;
 let dst: pg.Client;
 let A: { schoolId: string; userId: string };
 let B: { schoolId: string; userId: string };
+let platformAdmin: string;
 
 async function nonUuidPk(db: pg.Client) {
   const { rows } = await db.query(
@@ -95,6 +96,12 @@ beforeAll(async () => {
     return o;
   });
   const { rows: [scale] } = await su.query(`select id from public.scales where school_id = $1 and code = 'kr_achievement'`, [A.schoolId]);
+  // 학교 밖 연결(Codex 지적): 전체 관리자가 만든 학교 행, 학교 없는 관제 세션을 가리키는 학교 요청
+  const { rows: [pa] } = await su.query(`select id from private.app_users where email = 'platform@example.test'`);
+  platformAdmin = pa.id;
+  await su.query(`insert into public.school_dev_links(school_id, kind, label, url, created_by) values ($1, 'other', '이전 시험 링크', 'https://example.com', $2)`, [A.schoolId, platformAdmin]);
+  await su.query(`insert into public.control_sessions(id, name) values ('session_moveglobal01', '전체 관제') on conflict do nothing`);
+  await su.query(`insert into public.control_requests(kind, title, author, created_by, school_id, source_session, topic) values ('chat', '이전 시험 대화', 'control', $1, $2, 'session_moveglobal01', 'school_ai')`, [platformAdmin, A.schoolId]);
   await asUser(A.userId, (db) => g.closeOffering(db, A.schoolId, off, { base_version: 0, requestKey: 'move-close-aaaa', scaleId: scale.id }));
 
   // 대상: 같은 마이그레이션만 적용한 빈 DB(시드 없음)
@@ -116,7 +123,15 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     expect(Object.keys(bundle.tables).length).toBeGreaterThan(10);
     expect(JSON.stringify(bundle)).not.toContain(B.schoolId);
     await importSchool(dst, JSON.parse(JSON.stringify(bundle)));
-    expect(await compareSchool(su, dst, A.schoolId)).toEqual([]);
+    expect(bundle.normalized.control_requests?.source_session).toBe(1);
+    expect(await compareSchool(su, dst, A.schoolId, bundle.normalized)).toEqual([]);
+    // 전체 관리자는 이름표만: 비밀번호·외부 로그인·관리자 권한 없음, 메일 가림
+    const { rows: [moved] } = await dst.query('select email, password_hash, auth_subject, is_platform_admin from private.app_users where id = $1', [platformAdmin]);
+    expect(moved).toMatchObject({ password_hash: null, auth_subject: null, is_platform_admin: false });
+    expect(moved.email).toMatch(/@invalid\.example$/);
+    // 학교 구성원(A 관리자)은 로그인 정보를 들고 간다
+    const { rows: [member] } = await dst.query('select password_hash from private.app_users where id = $1', [A.userId]);
+    expect(member.password_hash).toBeTruthy();
     expect(await orphanForeignKeys(dst)).toEqual([]);
     for (const t of await schoolTables(dst)) {
       const { rows: [{ n }] } = await dst.query(`select count(*)::int as n from public."${t}" where school_id <> $1`, [A.schoolId]);

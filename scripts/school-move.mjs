@@ -2,7 +2,7 @@
 // 사용
 //   SOURCE_DATABASE_URL=... node scripts/school-move.mjs export <학교 주소 이름|id> <묶음 파일>
 //   TARGET_DATABASE_URL=... node scripts/school-move.mjs import <묶음 파일>
-//   SOURCE_DATABASE_URL=... TARGET_DATABASE_URL=... node scripts/school-move.mjs verify <학교 id>
+//   SOURCE_DATABASE_URL=... TARGET_DATABASE_URL=... node scripts/school-move.mjs verify <묶음 파일>
 // - 묶음 파일에는 그 학교의 모든 기록(학생·교직원 개인정보 포함)이 들어 있다. 저장소에 커밋하지 않고(.school-move/ 는 무시됨),
 //   옮긴 뒤 지운다. 운영 DB 주소·비밀번호는 환경 변수로만 받고 출력하지 않는다.
 // - 넣기는 '그 학교가 아직 없는' 대상 DB에만 한다(같은 마이그레이션을 적용한 빈 프로젝트 또는 셀).
@@ -33,10 +33,20 @@ async function columnsOf(db, schema, table) {
   return { cols: rows.filter((r) => !r.gen).map((r) => r.name), always: rows.some((r) => r.ident === 'a'), all: rows };
 }
 
-/** 관제(플랫폼) 쪽을 가리키는 칸: 옮길 때 다루는 방법 */
-const PLATFORM_REFS = {
-  'control_requests.lab_item_id': 'null', // 연구소 항목은 관제 영역이라 옮기지 않는다. 연결만 끊는다
-};
+/** 한 칸짜리 외래키 목록(학교 표 → 어떤 표) */
+async function singleForeignKeys(db) {
+  const { rows } = await db.query(
+    `select c.relname as t, a.attname as col, rn.nspname as rs, r.relname as rt, ra.attname as rcol, not a.attnotnull as nullable
+       from pg_constraint k join pg_class c on c.oid = k.conrelid join pg_namespace n on n.oid = c.relnamespace
+       join pg_class r on r.oid = k.confrelid join pg_namespace rn on rn.oid = r.relnamespace
+       join pg_attribute a on a.attrelid = c.oid and a.attnum = k.conkey[1]
+       join pg_attribute ra on ra.attrelid = r.oid and ra.attnum = k.confkey[1]
+      where k.contype = 'f' and n.nspname = 'public' and array_length(k.conkey, 1) = 1`);
+  return rows;
+}
+
+/** 옮기는 쪽에서 그대로 들고 가는 플랫폼 표(그 밖의 플랫폼 표를 가리키는 칸은 연결만 끊는다) */
+const CARRIED = new Set(['schools', 'app_users', 'baselines']);
 
 export async function exportSchool(db, key) {
   const { rows: [school] } = await db.query(
@@ -47,22 +57,41 @@ export async function exportSchool(db, key) {
   const userIds = new Set();
   const { rows: appUsers } = await db.query('select id::text from private.app_users');
   const known = new Set(appUsers.map((r) => r.id));
-  for (const t of await schoolTables(db)) {
-    const { all } = await columnsOf(db, 'public', t);
+  const schoolSet = new Set(await schoolTables(db));
+  for (const t of schoolSet) {
     const { rows: [{ data }] } = await db.query(
       `select coalesce(json_agg(x order by row_to_json(x)::text), '[]'::json) as data from public.${q(t)} x where school_id = $1`, [id]);
-    for (const [col, how] of Object.entries(PLATFORM_REFS)) {
-      const [tt, cc] = col.split('.');
-      if (tt === t && how === 'null') for (const r of data) r[cc] = null;
-    }
-    // 사람 계정: uuid 칸 값 가운데 계정 표에 있는 것(외래키가 없는 created_by 같은 칸 포함)
-    for (const c of all.filter((x) => x.type === 'uuid' && x.name !== 'id' && x.name !== 'school_id')) {
-      for (const r of data) if (r[c.name] && known.has(r[c.name])) userIds.add(r[c.name]);
-    }
     if (data.length) tables[t] = data;
   }
-  const { rows: users } = await db.query(
+  // 연결 정리: 이 학교 묶음 밖(다른 학교·학교 없는 관제 세션·연구소 항목 등)을 가리키는 칸은 비운다(외래키가 비움을 허락할 때만).
+  // 비운 칸은 normalized 에 적어, 확인(verify) 때 같은 칸을 빼고 비교한다.
+  const normalized = /** @type {Record<string, Record<string, number>>} */ ({});
+  const ids = (t, col) => new Set((tables[t] ?? []).map((r) => String(r[col])));
+  for (const f of await singleForeignKeys(db)) {
+    if (!tables[f.t] || CARRIED.has(f.rt)) continue;
+    const inside = schoolSet.has(f.rt) ? ids(f.rt, f.rcol) : new Set();
+    for (const r of tables[f.t]) {
+      if (r[f.col] == null || inside.has(String(r[f.col]))) continue;
+      if (!f.nullable) throw new Error(`${f.t}.${f.col} 이 학교 밖(${f.rt})을 가리키는데 비울 수 없습니다. 꺼내기 규칙을 더해야 합니다.`);
+      r[f.col] = null;
+      ((normalized[f.t] ??= {})[f.col] = (normalized[f.t]?.[f.col] ?? 0) + 1);
+    }
+  }
+  // 사람 계정: uuid 칸 값 가운데 계정 표에 있는 것(외래키가 없는 created_by 같은 칸 포함)
+  for (const [t, rows] of Object.entries(tables)) {
+    const { all } = await columnsOf(db, 'public', t);
+    for (const c of all.filter((x) => x.type === 'uuid' && x.name !== 'id' && x.name !== 'school_id')) {
+      for (const r of rows) if (r[c.name] && known.has(r[c.name])) userIds.add(r[c.name]);
+    }
+  }
+  // 이 학교 구성원·열람 계정만 로그인 정보를 들고 간다. 전체 관리자(관제)와 그 밖의 사람은 이름표만 남긴다:
+  // 비밀번호·외부 로그인 연결·전체 관리자 권한을 빼고 메일을 가린다(옮긴 DB에서 관제가 관리자로 되살아나지 않게)
+  const holders = new Set([...(tables.memberships ?? []), ...(tables.portal_accounts ?? [])].map((r) => r.user_id).filter(Boolean));
+  const { rows: [{ data: users }] } = await db.query(
     `select coalesce(json_agg(u order by u.id), '[]'::json) as data from private.app_users u where u.id = any($1::uuid[])`, [[...userIds]]);
+  const exported = users.map((u) => (holders.has(u.id) && !u.is_platform_admin)
+    ? { ...u, is_platform_admin: false }
+    : { ...u, email: `moved-${u.id}@invalid.example`, password_hash: null, auth_subject: null, is_platform_admin: false });
   const baselineIds = new Set([...(tables.school_baselines ?? []).map((r) => r.version), ...(tables.baseline_offers ?? []).map((r) => r.to_version)]);
   const { rows: [{ data: baselines }] } = await db.query(
     `select coalesce(json_agg(b), '[]'::json) as data from public.baselines b where b.version = any($1::int[])`, [[...baselineIds].filter((v) => v != null)]);
@@ -71,9 +100,10 @@ export async function exportSchool(db, key) {
     exported_at: new Date().toISOString(),
     school_id: id,
     migrations: (await db.query('select name from _migrations.applied order by name')).rows.map((r) => r.name),
-    school: [school].map((s) => JSON.parse(JSON.stringify(s)))[0],
-    users: users[0].data,
+    school: JSON.parse(JSON.stringify(school)),
+    users: exported,
     baselines,
+    normalized,
     tables,
   };
 }
@@ -145,11 +175,13 @@ export async function importSchool(db, bundle) {
 }
 
 /** 두 DB에서 그 학교의 표마다 행 수와 내용 지문(md5)을 비교한다 */
-export async function compareSchool(src, dst, schoolId) {
+export async function compareSchool(src, dst, schoolId, normalized = {}) {
   const diffs = [];
   for (const t of await schoolTables(src)) {
+    // 꺼낼 때 비운 칸(학교 밖 연결)은 양쪽 모두에서 빼고 비교한다
+    const drop = Object.keys(normalized[t] ?? {}).map((c) => ` - '${c.replace(/'/g, "''")}'`).join('');
     const sum = async (db) => (await db.query(
-      `select count(*)::int as n, md5(coalesce(string_agg(row_to_json(x)::text, '|' order by row_to_json(x)::text), '')) as h
+      `select count(*)::int as n, md5(coalesce(string_agg((to_jsonb(x)${drop})::text, '|' order by (to_jsonb(x)${drop})::text), '')) as h
          from public.${q(t)} x where school_id = $1`, [schoolId])).rows[0];
     const [a, b] = [await sum(src), await sum(dst)];
     if (a.n !== b.n || a.h !== b.h) diffs.push(`${t}: 원본 ${a.n}행 / 대상 ${b.n}행${a.n === b.n ? ' (내용 다름)' : ''}`);
@@ -172,7 +204,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (cmd === 'export' && a1 && a2) {
       const db = await connect('SOURCE_DATABASE_URL');
       const b = await exportSchool(db, a1);
+      // 이미 있는 파일에 덮어쓸 때도 권한을 다시 좁힌다(mode 옵션은 새로 만들 때만 적용된다)
+      if (fs.existsSync(a2)) fs.chmodSync(a2, 0o600);
       fs.writeFileSync(a2, JSON.stringify(b), { mode: 0o600 });
+      fs.chmodSync(a2, 0o600);
       console.log(`꺼냄: 표 ${Object.keys(b.tables).length}개, 행 ${Object.values(b.tables).reduce((n, r) => n + r.length, 0)}개, 계정 ${b.users.length}명 → ${a2}`);
       console.log('주의: 이 파일에는 개인정보가 들어 있습니다. 커밋하지 말고, 옮긴 뒤 지우세요.');
       await db.end();
@@ -182,14 +217,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log(`넣음: 표 ${Object.keys(counts).length}개, 행 ${Object.values(counts).reduce((n, v) => n + v, 0)}개`);
       await db.end();
     } else if (cmd === 'verify' && a1) {
+      const bundle = JSON.parse(fs.readFileSync(a1, 'utf8'));
       const [s, d] = [await connect('SOURCE_DATABASE_URL'), await connect('TARGET_DATABASE_URL')];
-      const diffs = await compareSchool(s, d, a1);
+      const diffs = await compareSchool(s, d, bundle.school_id, bundle.normalized ?? {});
       const orphans = await orphanForeignKeys(d);
       console.log(diffs.length || orphans.length ? [...diffs, ...orphans].join('\n') : '같음: 모든 표의 행 수·내용 지문이 일치하고 고아 연결이 없습니다.');
       await s.end(); await d.end();
       if (diffs.length || orphans.length) process.exit(1);
     } else {
-      console.error('사용: export <학교> <파일> | import <파일> | verify <학교 id> (docs/SCHOOL-MOVE.md)');
+      console.error('사용: export <학교> <파일> | import <파일> | verify <묶음 파일> (docs/SCHOOL-MOVE.md)');
       process.exit(2);
     }
   } catch (e) {
