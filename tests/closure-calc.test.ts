@@ -16,6 +16,7 @@ let A: S; let B: S;
 let su: pg.Client;
 let teacherA: string; let otherTeacherA: string;
 let offering: string; let exam: string; let task: string;
+let second: { off: string; exam: string };
 const st: string[] = [];
 
 async function account(email: string, s: S, role: 'admin' | 'teacher') {
@@ -55,10 +56,17 @@ beforeAll(async () => {
     for (let i = 1; i <= 4; i++) ids.push(await pp.addPerson(db, A.schoolId, { name: `가명 학생 ${i}` }));
     const ex = await g.addAssessment(db, A.schoolId, off, { code: 'exam', title: { ko: '정기시험' }, kind: 'exam', axis: 'course', weight: 60, maxScore: 100 });
     const tk = await g.addAssessment(db, A.schoolId, off, { code: 'task', title: { ko: '수행평가' }, kind: 'task', axis: 'course', weight: 40, maxScore: 100 });
-    return { off, ids, ex, tk };
+    // 줄 세우기 시험용 두 번째 수업(아직 마감 전)
+    const off2 = await cs.createOffering(db, A.schoolId, { termId: terms[0]?.id, subjectId: subj, typeId: type, levelId: level, credits: 2, section: '2' });
+    await cs.assignStaff(db, A.schoolId, off2, lead, 'lead');
+    const ex2 = await g.addAssessment(db, A.schoolId, off2, { code: 'exam', title: { ko: '시험' }, kind: 'exam', axis: 'course', weight: 100, maxScore: 100 });
+    return { off, ids, ex, tk, off2, ex2 };
   });
+  second = { off: setup.off2, exam: setup.ex2 };
   offering = setup.off; exam = setup.ex; task = setup.tk; st.push(...setup.ids);
   // 합성 수강: 4번째 학생은 철회
+  await su.query(`insert into public.offering_enrollments(school_id, offering_id, person_id, status, source, created_by, updated_by)
+                  values ($1, $2, $3, 'enrolled', 'staff', $4, $4)`, [A.schoolId, second.off, setup.ids[0], A.userId]);
   for (const [i, p] of st.entries()) {
     await su.query(`insert into public.offering_enrollments(school_id, offering_id, person_id, status, source, created_by, updated_by)
                     values ($1, $2, $3, $4, 'staff', $5, $5)`, [A.schoolId, offering, p, i === 3 ? 'withdrawn' : 'enrolled', A.userId]);
@@ -178,5 +186,35 @@ describe('계산식으로 마감', () => {
     expect(c!.stats.n).toBe(3);
     await asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'third', spec: { outputs: { score: { op: '/', args: [1, 3] } } }, base_version: 0 }));
     await expect(asUser(A.userId, (db) => g.closeOffering(db, A.schoolId, offering, { base_version: 4, reason: 'x', requestKey: 'calc-third-0001', calcCode: 'third' }))).rejects.toThrow('소수 둘째 자리');
+  });
+
+  it('마감과 쓰기는 줄 선다: 쓰는 중이면 마감이 기다렸다가 바뀐 입력을 보고 409, 마감 중이면 쓰기가 기다렸다가 마감 뒤 규칙으로 거부(Codex #169 P1)', async () => {
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    await asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'plain', spec: PRESETS.weighted_average.spec, base_version: 0 }));
+    await asUser(teacherA, (db) => g.recordResult(db, A.schoolId, second.exam, st[0], { score: 80 }));
+    // 1) 교사가 점수를 쓰고 아직 확정하지 않은 사이 관리자가 계산·마감 → 마감은 쓰기가 끝날 때까지 기다리고, 앱 입력이 낡았으니 409
+    const writer = asUser(teacherA, async (db) => { await g.recordResult(db, A.schoolId, second.exam, st[0], { score: 88 }); await sleep(600); });
+    await sleep(150);
+    const closer = asUser(A.userId, (db) => g.closeOffering(db, A.schoolId, second.off, { base_version: 0, requestKey: 'calc-race-0001', calcCode: 'plain' })).then(() => null, (e) => e);
+    await writer;
+    expect(await closer).toMatchObject({ code: 'P0409' });
+    // 2) 관리자가 마감하고 아직 확정하지 않은 사이 교사가 점수를 씀 → 교사의 앞 검사는 '마감 전'으로 통과하지만,
+    //    쓰기가 마감이 끝날 때까지 기다린 뒤 다시 확인해 '마감 뒤 정정' 규칙으로 거부된다
+    const closing = asUser(A.userId, async (db) => {
+      const r = await g.closeOffering(db, A.schoolId, second.off, { base_version: 0, requestKey: 'calc-race-0002', calcCode: 'plain' });
+      await sleep(600); return r;
+    });
+    await sleep(150);
+    const late = asUser(teacherA, (db) => g.recordResult(db, A.schoolId, second.exam, st[0], { score: 70 })).then(() => null, (e) => e);
+    expect((await closing).version).toBe(1);
+    expect(String(await late)).toMatch('마감한 수업의 결과는');
+    const c = await asUser(A.userId, (db) => g.offeringClosure(db, A.schoolId, second.off));
+    expect(c!.results[0].final_score).toBe(88);
+  });
+
+  it('과목 출석률은 잘라내지 않는다: 1/3 출석은 식의 1/3 과 같다(Codex #169 P2)', async () => {
+    await su.query(`delete from public.attendance_events where person_id = $1`, [st[2]]).catch(() => undefined);
+    const inputs = await asUser(A.userId, (db) => g.offeringCalcInputs(db, A.schoolId, offering));
+    expect((inputs[st[1]].attendance as { rate: number }).rate).toBe(2 / 3);
   });
 });

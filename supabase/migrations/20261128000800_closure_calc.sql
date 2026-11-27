@@ -57,7 +57,8 @@ begin
     select coalesce(jsonb_agg(r.level_code order by a.code), '[]') into comps
       from public.assessments a join public.current_assessment_results r on r.assessment_id = a.id and r.person_id = e.person_id
      where a.offering_id = offering and a.school_id = target and a.archived_at is null and a.axis = 'competency' and r.level_code is not null;
-    -- 과목 출석률: 이 수업 교시 기록 중 결석·결과가 아닌 것의 비율. 출석인정 사유는 출석으로 친다(F3). 기록이 없으면 null
+    -- 과목 출석률: 이 수업 교시 기록 중 결석·결과가 아닌 것의 비율. 출석인정 사유는 출석으로 친다(F3). 기록이 없으면 null.
+    -- 잘라내지 않는다(Codex #169 P2): float8 로 나누면 앱(JS)의 2/3·1/3 과 같은 값이 되어 경계 비교가 맞고, JSON 왕복에도 글자가 같다
     select count(*), count(*) filter (where a.kind_code not in ('absent', 'class_absent')
              or exists (select 1 from public.code_lists c where c.school_id = target and c.list_key = 'attendance_reason' and c.code = a.reason_code
                          and coalesce((c.attrs ->> 'counts_present')::boolean, false)))
@@ -69,7 +70,7 @@ begin
              where school_id = target and offering_id = offering and person_id = e.person_id order by kind, recorded_at desc, id) x;
     res := res || jsonb_build_object(e.person_id::text, jsonb_build_object(
       'items', items, 'competencies', comps,
-      'attendance', jsonb_build_object('rate', case when tot > 0 then round(pres::numeric / tot, 6) end),
+      'attendance', jsonb_build_object('rate', case when tot > 0 then pres::float8 / tot end),
       'course', jsonb_build_object('pass_fail', o.pass_fail or coalesce(e.pass_fail_choice, false)),
       'support', sup, 'credits', o.credits));
   end loop;
@@ -201,6 +202,36 @@ begin
   insert into public.closure_stats(school_id, closure_id, n, mean, sd) values (target, cid, n, m, s);
   return jsonb_build_object('id', cid, 'version', v + 1, 'repeated', false, 'calc', c_spec is not null);
 end $$;
+
+-- ── 마감과 쓰기를 줄 세운다(Codex #169 P1) ──
+-- 마감은 수업 단위 잠금을 혼자(exclusive) 잡는다. 마감 입력이 되는 쓰기(평가 결과·이 수업 교시 출결·보충 이수)는 같은 잠금을 함께(shared) 잡는다.
+-- 그래서 마감은 진행 중인 쓰기가 끝난 뒤 원장을 읽고, 마감 뒤에 들어오는 결과 쓰기는 '마감 뒤 정정' 규칙을 다시 확인받는다.
+create or replace function private.closure_input_lock() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+begin
+  -- 이 수업 교시 출결·보충 이수: 마감과 줄만 선다
+  if new.offering_id is not null then
+    perform pg_advisory_xact_lock_shared(hashtext('school-platform:closures'), hashtext(new.offering_id::text));
+  end if;
+  return new;
+end $$;
+create or replace function private.closure_result_lock() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare off uuid;
+begin
+  select a.offering_id into off from public.assessments a where a.id = new.assessment_id;
+  perform pg_advisory_xact_lock_shared(hashtext('school-platform:closures'), hashtext(off::text));
+  -- 잠금을 기다리는 사이 마감됐으면, 결과는 학교 관리자가 사유와 함께 고치는 경우만 받는다(record_result 와 같은 규칙)
+  if app.offering_closed(off) and (not app.is_school_admin(new.school_id) or length(trim(coalesce(new.reason, ''))) = 0) then
+    raise exception '마감한 수업의 결과는 학교 관리자가 사유와 함께 정정합니다.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+revoke all on function private.closure_input_lock() from public, anon, authenticated;
+revoke all on function private.closure_result_lock() from public, anon, authenticated;
+create trigger assessment_results_closure_lock before insert on public.assessment_results for each row execute function private.closure_result_lock();
+create trigger attendance_events_closure_lock before insert on public.attendance_events for each row execute function private.closure_input_lock();
+create trigger remediation_events_closure_lock before insert on public.remediation_events for each row execute function private.closure_input_lock();
 
 grant create on schema app to app_writer;
 do $$
