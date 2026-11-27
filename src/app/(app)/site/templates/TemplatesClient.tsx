@@ -100,6 +100,8 @@ export function AutofillPanel({ templateKey }: { templateKey: string }) {
   );
 }
 
+type Fit = { key: string; name: string; score: number; filled: number; reasons: string[] };
+type TemplateProposals = { proposals: Proposal[]; unfilled: { id: string; label: string; hint: string }[]; imageSlots: { slotId: string; page: string; label: string }[] };
 type MigrateResult = { start: string; pages: { url: string; title: string }[]; skipped: { url: string; why: string }[]; proposals: Proposal[];
   images: { src: string; alt: string }[]; unfilled: { id: string; label: string }[]; imageSlots: { slotId: string; page: string; label: string }[] };
 
@@ -193,6 +195,125 @@ export function MigratePanel({ templateKey }: { templateKey: string }) {
         </div>
       )}
       {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && !res && <> <a href="/site?box=page">쪽 목록으로</a></>}</p>}
+    </section>
+  );
+}
+
+
+/**
+ * 87차(사용자 지시 2026-11-27): 주소만 넣어 시작하는 이관 — 읽기 → 맞는 템플릿 추천(바꿀 수 있음) → 칸 제안 확인 →
+ * '새 디자인으로 옮기기' = 템플릿 시작(없는 쪽만 시안) + 고른 제안 넣기(새 시안 판). 기존 두 경로(/api/site/templates, autofill/apply)를 차례로 쓴다.
+ * 공개하지 않는다. 그림을 새로 그리는 일은 학교 AI(Codex 등)가 작업 토큰으로 한다(아래 '학교 AI에게 맡길 글').
+ */
+export function MigrateStart({ templates }: { templates: { key: string; name: string; summary: string }[] }) {
+  const router = useRouter();
+  const [url, setUrl] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [res, setRes] = useState<(MigrateResult & { template: string; fits: Fit[]; byTemplate: Record<string, TemplateProposals> }) | null>(null);
+  const [key, setKey] = useState('');
+  const [pick, setPick] = useState<Record<string, boolean>>({});
+  const [edit, setEdit] = useState<Record<string, string>>({});
+  const [msg, setMsg] = useState<{ text: string; error?: boolean; done?: boolean } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const post = async (path: string, body: unknown) => {
+    const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error ?? '처리하지 못했습니다.');
+    return data;
+  };
+  const choose = (k: string, data = res) => {
+    if (!data) return;
+    const tp = data.byTemplate[k];
+    setKey(k);
+    setPick(Object.fromEntries(tp.proposals.filter((p) => p.kind !== 'image').map((p) => [p.slotId, p.confidence === 'high'])));
+    setEdit(Object.fromEntries(tp.proposals.filter((p) => typeof p.value === 'string' && p.kind !== 'image').map((p) => [p.slotId, p.value as string])));
+  };
+  async function read(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true); setMsg(null); setRes(null);
+    try {
+      const data = await post('/api/site/templates/migrate', { url });
+      setRes(data); choose(data.template, data);
+    } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
+    finally { setBusy(false); }
+  }
+  const tp = res && key ? res.byTemplate[key] : null;
+  const name = templates.find((t) => t.key === key)?.name ?? key;
+  async function move() {
+    if (!res || !tp) return;
+    setBusy(true); setMsg(null);
+    try {
+      const applied = await post('/api/site/templates', { key });
+      const fills = tp.proposals.filter((p) => pick[p.slotId] && p.kind !== 'image').map((p) => ({ slotId: p.slotId, value: typeof p.value === 'string' ? (edit[p.slotId] ?? p.value) : p.value }));
+      let n = 0;
+      if (fills.length) {
+        const body = await post('/api/site/templates/autofill/apply', { key, fills });
+        n = (body.result as { filled: string[] }[]).reduce((a, x) => a + x.filled.length, 0);
+      }
+      setMsg({ done: true, text: `‘${name}’ 디자인으로 시안 쪽 ${applied.created.length}개를 만들고 옛 사이트 내용으로 ${n}칸을 채웠습니다${applied.skipped.length ? ` (이미 있는 ${applied.skipped.join('·')} 쪽은 그대로 둠)` : ''}. 아직 공개되지 않았습니다.` });
+      router.refresh();
+    } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
+    finally { setBusy(false); }
+  }
+  const agentText = res && tp ? [
+    `우리 학교 홈페이지를 '${name}' 템플릿(새 디자인)으로 옮기는 중입니다. 옛 사이트: ${res.start}`,
+    `학교 관리자가 'AI 작업 공간'에서 발급한 작업 토큰(종류 page, 권한 read·upload·edit)으로만 일하고, 공개하지 마세요(사람이 확인 뒤 공개합니다).`,
+    `안내: 저장소 문서 docs/agents/site-migrate.md 와 docs/agents/README.md(API).`,
+    '',
+    '할 일',
+    ...(tp.unfilled.length ? [`1. 아직 못 채운 칸을 옛 사이트(${res.pages.length}쪽 읽음)에서 찾아 채운 새 판을 저장: ${tp.unfilled.map((u) => `${u.label}(${u.hint})`).join(', ')}`] : ['1. 채운 칸을 옛 사이트와 대조해 틀린 곳을 고친 새 판을 저장']),
+    ...(tp.imageSlots.length ? [`2. 사진 칸: ${tp.imageSlots.map((s) => `${s.label}(${s.page} 쪽)`).join(', ')} — 옛 사이트 사진 가운데 학교가 권리를 가진 것을 쓰거나, 실제 사람 얼굴이 없는 삽화를 만들어 POST /api/agent/assets 로 올리고 그 쪽 새 판에 넣기`] : []),
+    `${tp.imageSlots.length ? 3 : 2}. 남은 [ ] 안내 자리 목록과 확인이 필요한 사실(학비·날짜·연락처)을 사람에게 보고`,
+  ].join('\n') : '';
+  return (
+    <section className="card stack" data-testid="migrate-start" aria-labelledby="migrate-start-title">
+      <h2 id="migrate-start-title">기존 홈페이지를 새 디자인으로 옮기기</h2>
+      <p className="fine">지금 쓰는 홈페이지 주소를 넣으면 같은 사이트의 공개된 쪽을 8개까지 읽고(robots.txt를 따름), 내용에 맞는 템플릿을 추천합니다. 템플릿을 바꿔 볼 수 있고, 확인한 내용만 새 디자인의 시안으로 옮깁니다. 공개는 직접 합니다.</p>
+      <form className="row-wrap" onSubmit={read}>
+        <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://our-school.example" aria-label="기존 홈페이지 주소" required data-testid="migrate-start-url" />
+        <button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-start-read">{busy && !res ? '읽는 중…' : '읽고 추천받기'}</button>
+      </form>
+      {res && tp && (
+        <div className="stack">
+          <p className="fine">읽은 쪽 {res.pages.length}개: {res.pages.map((p) => p.title || new URL(p.url).pathname).join(' · ')}{res.skipped.length ? ` · 건너뜀 ${res.skipped.length}개` : ''}</p>
+          <fieldset className="stack migrate-fits">
+            <legend>옮길 디자인(템플릿)</legend>
+            {res.fits.map((f, i) => (
+              <label key={f.key} className="radio migrate-fit">
+                <input type="radio" name="migrate-template" value={f.key} checked={key === f.key} onChange={() => choose(f.key)} data-testid={`migrate-fit-${f.key}`} />
+                <img src={`/site-templates/${f.key}.jpg`} alt="" width={96} height={60} />
+                <span><strong>{f.name}</strong>{i === 0 && <span className="badge" data-tone="success"> 추천</span>}<br />
+                  <small className="muted">채울 수 있는 칸 {f.filled}개{f.reasons.length ? ` · 찾은 단서: ${f.reasons.join(', ')}` : ''} · <a href={`/site/templates/${f.key}`} target="_blank" rel="noreferrer">미리보기</a></small></span>
+              </label>
+            ))}
+          </fieldset>
+          <h3>‘{name}’에 옮길 내용</h3>
+          {tp.proposals.filter((p) => p.kind !== 'image').length === 0 ? <p className="muted">이 템플릿 칸에 맞는 내용을 찾지 못했습니다. 템플릿만 시작하고 학교 AI에게 맡길 수 있습니다.</p> : (
+            <ul className="issue-list" data-testid="migrate-start-proposals">{tp.proposals.filter((p) => p.kind !== 'image').map((p) => (
+              <li key={p.slotId} className="autofill-item">
+                <label className="radio"><input type="checkbox" checked={!!pick[p.slotId]} onChange={(e) => setPick({ ...pick, [p.slotId]: e.target.checked })} /><strong>{p.label}</strong></label>
+                <small className="muted">{p.page} 쪽 · {p.confidence === 'high' ? '제목으로 찾음' : '확인 필요'}{p.source?.file ? ` · ${p.source.file}` : ''}</small>
+                {Array.isArray(p.value) ? <ul className="fine">{p.value.map((it, k) => <li key={k}>{it.title}{it.body ? ` — ${it.body}` : ''}</li>)}</ul>
+                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={`${p.label} 내용`} />}
+              </li>
+            ))}</ul>
+          )}
+          {tp.unfilled.length > 0 && <p className="fine">못 찾은 칸: {tp.unfilled.map((u) => u.label).join(' · ')} — 옮긴 뒤 직접 쓰거나 학교 AI에게 맡깁니다.</p>}
+          {res.images.length > 0 && <p className="fine">옛 사이트 그림 {res.images.length}장은 옮긴 뒤 ‘{name}’ 미리보기 아래 ‘기존 홈페이지에서 옮기기’에서 골라 가져옵니다.</p>}
+          <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy} onClick={move} data-testid="migrate-start-move">‘{name}’ 디자인으로 옮기기</button></div>
+          <details data-testid="migrate-agent">
+            <summary>학교 AI(Codex·Claude Code)에게 맡길 글</summary>
+            <p className="fine">못 찾은 칸 채우기, 사진 칸의 그림 만들기는 학교가 쓰는 AI 구독으로 합니다(플랫폼 비용 없음). 아래 글과 ‘AI 작업 공간’에서 발급한 작업 토큰을 함께 AI 대화창에 붙여 넣으세요. 토큰은 이 글에 들어 있지 않습니다.</p>
+            <textarea readOnly rows={8} value={agentText} aria-label="학교 AI에게 맡길 글" />
+            <div className="form-actions">
+              <button type="button" className="btn" onClick={async () => { try { await navigator.clipboard.writeText(agentText); setCopied(true); } catch { setCopied(false); } }}>글 복사</button>
+              <a className="btn btn-ghost" href="/site?box=settings">AI 작업 공간(토큰 발급)</a>
+              {copied && <span role="status" className="fine">복사했습니다.</span>}
+            </div>
+          </details>
+        </div>
+      )}
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{msg.done && <> <a href="/site?box=page">쪽 목록으로</a> · <a href={`/site/templates/${key}`}>‘{name}’ 미리보기·그림 가져오기</a></>}</p>}
     </section>
   );
 }

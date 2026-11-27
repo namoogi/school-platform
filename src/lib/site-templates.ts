@@ -349,20 +349,58 @@ export async function autofillApply(db: Db, schoolId: string, key: string, fills
 }
 
 // ── 67차: 기존 사이트에서 옮기기 ──────────────────────────
-/** 주소를 받아 같은 사이트 쪽 몇 개를 읽고(공개 주소만·robots.txt 따름) 빈 칸 제안을 만든다. 읽은 글은 저장하지 않는다 */
+// 87차(사용자 지시 2026-11-27): 주소만 넣어도 옛 사이트 내용에 맞는 템플릿을 추천하고, 고른 템플릿의 새 디자인으로 옮긴다.
+// 규칙 기반(무료, ADR 0032): 템플릿마다 알아보는 낱말이 몇 쪽에 나오는지 + 채울 수 있는 칸 수. 사람이 다른 템플릿을 고를 수 있다.
+const SIGNALS: Record<string, string[]> = {
+  notice: ['가정통신문', '급식', '식단', '공지', '알림', '학사일정', '방과후', '돌봄', 'newsletter', 'lunch menu'],
+  story: ['교육철학', '철학', '하루', '이야기', '대안', '공동체', 'philosophy', 'our story'],
+  admissions: ['입학', '모집', '전형', '학비', '원서', '견학', 'admission', 'tuition', 'apply', 'enrol'],
+  project: ['프로젝트', 'pbl', '발표회', '탐구', '전시', '작품', 'project', 'exhibition'],
+  mission: ['후원', '선교', '기도', '사명', '봉사', '기부', 'donate', 'mission', 'prayer', 'sponsor'],
+  international: ['international', 'ib ', 'curriculum', 'boarding', '국제', 'โรงเรียน', 'นานาชาติ'],
+  single: [],
+};
+export type TemplateFit = { key: string; name: string; score: number; filled: number; reasons: string[] };
+export function recommendTemplates(docs: { name: string; text: string }[], filledByKey: Record<string, number>): TemplateFit[] {
+  const lower = docs.map((d) => d.text.toLowerCase());
+  const total = lower.reduce((a, t) => a + t.length, 0);
+  const fits = SITE_TEMPLATES.map((t) => {
+    const reasons: string[] = [];
+    let score = 0;
+    for (const w of SIGNALS[t.key] ?? []) {
+      const pages = lower.filter((x) => x.includes(w.toLowerCase())).length;
+      if (pages) { reasons.push(w.trim()); score += Math.min(pages, 3); }
+    }
+    if (t.key === 'single' && docs.length <= 2 && total < 3000) { score += 4; reasons.push('쪽이 적고 짧음'); }
+    const filled = filledByKey[t.key] ?? 0;
+    return { key: t.key, name: t.name, score: score + filled * 0.5, filled, reasons: reasons.slice(0, 5) };
+  });
+  return fits.sort((a, b) => b.score - a.score);
+}
+
+/**
+ * 주소를 받아 같은 사이트 쪽 몇 개를 읽고(공개 주소만·robots.txt 따름) 빈 칸 제안을 만든다. 읽은 글은 저장하지 않는다.
+ * key가 없으면(87차) 템플릿마다 제안을 만들어 맞는 순서(fits)와 함께 돌려준다 — 한 번 읽고 화면에서 템플릿을 바꿔 볼 수 있게.
+ */
 export async function migratePropose(db: Db, schoolId: string, key: string, url: string, schoolName: string, crawler: typeof crawlSite = crawlSite) {
-  const t = templateByKey(key);
+  if (key) templateByKey(key); // 없는 템플릿이면 읽기 전에 거부
   if (typeof url !== 'string' || !url.trim()) throw new ValidationError('옮겨 올 홈페이지 주소를 적어 주세요.');
   const crawl = await crawler(url.trim(), { maxPages: 8, timeoutMs: 6000, budgetMs: 35000 });
   if (!crawl.pages.length) throw new ValidationError(`쪽을 읽지 못했습니다${crawl.skipped[0] ? `: ${crawl.skipped[0].why}` : ''}.`);
   const docs = crawl.pages.map((p) => ({ name: new URL(p.url).pathname || '/', text: `${p.title}\n${p.text}` }));
   const images = (await listAssets(db, schoolId)).filter((a) => a.mime.startsWith('image/')).map((a) => ({ id: a.id, name: a.name }));
-  const proposals = proposeFills(t, docs, { schoolName, images });
+  const forTemplate = (t: SiteTemplate) => {
+    const proposals = proposeFills(t, docs, { schoolName, images });
+    return { proposals, unfilled: t.slots.filter((s) => !proposals.some((p) => p.slotId === s.id)).map((s) => ({ id: s.id, label: s.label, hint: s.hint })),
+      imageSlots: t.slots.filter((s) => s.kind === 'image').map((s) => ({ slotId: s.id, page: s.page, label: s.label })) };
+  };
+  const byTemplate = Object.fromEntries((key ? [templateByKey(key)] : SITE_TEMPLATES).map((t) => [t.key, forTemplate(t)]));
+  const fits = key ? [] : recommendTemplates(docs, Object.fromEntries(Object.entries(byTemplate).map(([k, v]) => [k, v.proposals.length])));
+  const chosen = key || fits[0].key;
   const seen = new Set<string>();
   const found = crawl.pages.flatMap((p) => p.images).filter((i) => !seen.has(i.src) && seen.add(i.src)).slice(0, 40);
-  return { template: t.key, start: crawl.start, pages: crawl.pages.map((p) => ({ url: p.url, title: p.title })), skipped: crawl.skipped, proposals, images: found,
-    unfilled: t.slots.filter((s) => !proposals.some((p) => p.slotId === s.id)).map((s) => ({ id: s.id, label: s.label, hint: s.hint })),
-    imageSlots: t.slots.filter((s) => s.kind === 'image').map((s) => ({ slotId: s.id, page: s.page, label: s.label })) };
+  return { template: chosen, ...byTemplate[chosen], start: crawl.start, pages: crawl.pages.map((p) => ({ url: p.url, title: p.title })), skipped: crawl.skipped, images: found,
+    fits, byTemplate: key ? undefined : byTemplate };
 }
 
 /** 옛 사이트 그림 가져오기(고른 것만, 10장까지): 같은 안전 검사로 받아 형식을 확인한 뒤 학교 홈페이지 그림으로 올린다 */
