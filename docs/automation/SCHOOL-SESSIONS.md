@@ -51,3 +51,4 @@
 | `session_013RZyUomAv7AE6YjhpHp6Kc` 자동 개발(매시간) | QUEUE.md UI 점검(85차~)·자동 허용 항목, PR까지 | — |
 | `session_013RZyUnMgGiq22d4cMX1rCX` 다국어 전환 (2026-11-27) | 기존 화면 문구를 이름표로 옮기고 영어 채우기, 용어집, 서버 오류 문구(ADR 0037) | adr-0037 |
 | `session_013RZyUom6xS67hpTPYHpecQ` 학교 홈페이지 기능·템플릿 (2026-11-27) | 홈페이지 모듈 기능 개선, 새 템플릿 제작(ADR 0008·0011·0031). CI + Codex 선별 뒤 병합까지 | adr-0031 |
+| `session_013RZyUnwt4z9YdwgRdiKz8U` 학사 시스템 개발 (2026-11-27) | 시연 가상 학교(초1~고3 가명), 학교급·학년 체계(한국·미국·커스텀), 학사 템플릿 → 학교 AI 작업, SIS UI·UX 조사, Codex 연계(ADR 0025·0041~0043). 계산식 엔진·마감 판 핵심은 관제 몫 | adr-0025 |
