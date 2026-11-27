@@ -73,6 +73,35 @@ export function jsonbTextLength(v: unknown): number {
   return 2 + ents.reduce((n, [k, x]) => n + JSON.stringify(k).length + 2 + jsonbTextLength(x), 0) + Math.max(0, ents.length - 1) * 2;
 }
 
+/**
+ * 중간값 계산 순서: 서로 가리키는 관계(let.x)로 정한다. 적힌 순서에 기대지 않는다 —
+ * DB(jsonb)는 저장할 때 객체 칸 순서를 바꾸므로(짧은 이름부터), 적힌 순서로 계산하면 저장 뒤 결과가 달라진다(106차에서 발견).
+ * 관계가 없는 것끼리는 적힌 순서. 서로를 가리키면(cycle) 그 이름을 돌려주고, 나머지는 뒤에 붙인다(검사가 문제로 낸다).
+ */
+export function letOrder(lets: Record<string, unknown>): { order: string[]; cycle: string | null } {
+  const names = Object.keys(lets);
+  const deps = new Map<string, Set<string>>();
+  const collect = (e: unknown, acc: Set<string>, depth = 0) => {
+    if (depth > 64 || !e || typeof e !== 'object') return;
+    if (Array.isArray(e)) { for (const x of e) collect(x, acc, depth + 1); return; }
+    const o = e as Record<string, unknown>;
+    if (typeof o.var === 'string' && o.var.startsWith('let.')) acc.add(o.var.slice(4));
+    if (Array.isArray(o.args)) for (const x of o.args) collect(x, acc, depth + 1);
+  };
+  for (const n of names) { const acc = new Set<string>(); collect(lets[n], acc); deps.set(n, new Set([...acc].filter((d) => d in lets && d !== n))); if (acc.has(n)) deps.get(n)!.add(n); }
+  const order: string[] = []; const done = new Set<string>();
+  let progress = true;
+  while (order.length < names.length && progress) {
+    progress = false;
+    for (const n of names) {
+      if (done.has(n)) continue;
+      if ([...deps.get(n)!].every((d) => done.has(d))) { order.push(n); done.add(n); progress = true; }
+    }
+  }
+  const rest = names.filter((n) => !done.has(n));
+  return { order: [...order, ...rest], cycle: rest[0] ?? null };
+}
+
 export function checkSpec(spec: unknown, knownItems?: string[]): Issue[] {
   const issues: Issue[] = [];
   if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return [{ path: '', message: '계산식은 { "outputs": {…} } 꼴입니다.' }];
@@ -92,7 +121,7 @@ export function checkSpec(spec: unknown, knownItems?: string[]): Issue[] {
     if ('var' in o) {
       const v = o.var;
       if (typeof v !== 'string' || !VAR_RE.test(v)) { issues.push({ path, message: `쓸 수 없는 변수입니다: ${String(v).slice(0, 60)}` }); return; }
-      if (v.startsWith('let.') && !lets.has(v.slice(4))) issues.push({ path, message: `앞에서 정하지 않은 중간값입니다: ${v}` });
+      if (v.startsWith('let.') && !lets.has(v.slice(4))) issues.push({ path, message: `정하지 않은 중간값입니다: ${v}` });
       if (knownItems && v.startsWith('items.')) {
         const code = v.split('.').slice(1, -1).join('.');
         if (!knownItems.includes(code)) issues.push({ path, message: `수업에 없는 평가 항목입니다: ${code}` });
@@ -125,10 +154,15 @@ export function checkSpec(spec: unknown, knownItems?: string[]): Issue[] {
   };
   if (s.lets !== undefined) {
     if (!s.lets || typeof s.lets !== 'object' || Array.isArray(s.lets)) issues.push({ path: 'lets', message: 'lets 는 {이름: 식} 꼴입니다.' });
-    else for (const [name, e] of Object.entries(s.lets as Record<string, unknown>)) {
-      if (!/^[a-z][a-z0-9_]{0,30}$/.test(name)) issues.push({ path: `lets.${name}`, message: '중간값 이름은 영문 소문자로 시작합니다.' });
-      walk(e, `lets.${name}`, 0);
-      lets.add(name);
+    else {
+      const l = s.lets as Record<string, unknown>;
+      const { order, cycle } = letOrder(l);
+      if (cycle) issues.push({ path: `lets.${cycle}`, message: `중간값이 서로를 가리킵니다: ${cycle}` });
+      for (const name of order) {
+        if (!/^[a-z][a-z0-9_]{0,30}$/.test(name)) issues.push({ path: `lets.${name}`, message: '중간값 이름은 영문 소문자로 시작합니다.' });
+        walk(l[name], `lets.${name}`, 0);
+        lets.add(name);
+      }
     }
   }
   const out = s.outputs as Record<string, unknown> | undefined;
@@ -296,7 +330,8 @@ export function evaluate(spec: CalcSpec, rawInput: CalcInput): CalcOutput {
       default: return null;
     }
   };
-  for (const [name, e] of Object.entries(spec.lets ?? {})) lets[name] = ev(e);
+  const l = spec.lets ?? {};
+  for (const name of letOrder(l).order) lets[name] = ev(l[name]);
   const score = spec.outputs.score === undefined ? null : num(ev(spec.outputs.score));
   const passedV = spec.outputs.passed === undefined ? null : ev(spec.outputs.passed);
   const levelV = spec.outputs.level === undefined ? null : ev(spec.outputs.level);

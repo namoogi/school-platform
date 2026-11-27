@@ -4,6 +4,7 @@ import { roster } from '@/lib/courses';
 import { currentResults, offeringClosure, SCALE_PRESETS } from '@/lib/grading';
 import { assessmentsOf, latestPolicy, listScales, narrativesOf, offeringContext } from '@/lib/gradebook';
 import { isUuid } from '@/lib/services';
+import { listCalcRules } from '@/lib/calc-rules';
 import { PageHeader, StatusBadge } from '@/components/ui';
 import { ActionForm, type FieldSpec } from '@/components/ActionForm';
 import { ResultGrid } from '@/components/ResultGrid';
@@ -26,9 +27,10 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
       results: ctx && o && ctx.can_grade ? await currentResults(db, school.id, o) : [],
       narratives: ctx && o && ctx.can_grade ? await narrativesOf(db, school.id, o) : [],
       closure: ctx && o ? await offeringClosure(db, school.id, o) : null,
+      calcRules: ctx && o && school.isAdmin ? await listCalcRules(db, school.id) : [],
     };
   }, { module: 'records' });
-  const { school, scales, policy, ctx, assessments, students, results, narratives, closure, uiLang } = data;
+  const { school, scales, policy, ctx, assessments, students, results, narratives, closure, uiLang, calcRules } = data;
   const admin = school.isAdmin;
   const { t, lang, locale } = await getI18n(uiLang, school.locale);
   const tk = (prefix: string, v: string) => t(`${prefix}.${v}` as MsgKey);
@@ -87,7 +89,7 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
             <h2>{t('grades.closing')}</h2>
             {closure ? (
               <>
-                <p className="fine">{t('grades.closureMeta', { v: closure.version, when: new Date(closure.closed_at).toLocaleString(locale), policy: closure.policy_version ? t('common.version', { v: closure.policy_version }) : t('common.default') })}{closure.scale_version ? t('grades.scaleSuffix', { v: closure.scale_version }) : ''}{closure.reason ? t('grades.reasonSuffix', { reason: closure.reason }) : ''}</p>
+                <p className="fine">{t('grades.closureMeta', { v: closure.version, when: new Date(closure.closed_at).toLocaleString(locale), policy: closure.policy_version ? t('common.version', { v: closure.policy_version }) : t('common.default') })}{closure.scale_version ? t('grades.scaleSuffix', { v: closure.scale_version }) : ''}{closure.calc_code ? t('grades.calcSuffix', { code: closure.calc_code, v: closure.calc_version ?? '' }) : ''}{closure.reason ? t('grades.reasonSuffix', { reason: closure.reason }) : ''}</p>
                 <p className="fine">{t('grades.stats', { n: closure.stats.n, mean: closure.stats.mean ?? '-', sd: closure.stats.sd ?? '-' })}</p>
                 <div className="table-wrap"><table className="grid-table" data-testid="closure-results">
                   <thead><tr><th scope="col">{t('common.student')}</th><th scope="col">{t('grades.col.raw')}</th><th scope="col">{t('grades.col.final')}</th><th scope="col">{t('grades.col.level')}</th><th scope="col">{t('grades.col.status')}</th><th scope="col">{t('grades.col.credits')}</th></tr></thead>
@@ -101,8 +103,25 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
                 extra={{ offeringId: o, base_version: closure?.version ?? 0, requestKey: `close-${o.slice(0, 8)}-${Date.now()}` }}
                 submitLabel={closure ? t('grades.closeCorrection') : t('grades.closing')} successText={t('grades.closed')}
                 confirmText={t(closure ? 'grades.confirmCorrection' : 'grades.confirmClose')}
-                fields={[{ name: 'scaleId', label: t('grades.scale'), type: 'select', options: [{ value: '', label: t('grades.noGrade') }, ...scales.map((s) => ({ value: s.id, label: `${s.code} ${t('common.version', { v: s.version })}` }))] }, ...reasonField]} />)}
+                fields={[{ name: 'scaleId', label: t('grades.scale'), type: 'select', options: [{ value: '', label: t('grades.noGrade') }, ...scales.map((s) => ({ value: s.id, label: `${s.code} ${t('common.version', { v: s.version })}` }))] },
+                  // ADR 0042: 계산식으로 마감하면 성취도·이수·학점을 그 식의 결과로 굳힌다
+                  ...(calcRules.length ? [{ name: 'calcCode', label: t('grades.calc'), type: 'select' as const, options: [{ value: '', label: t('grades.noCalc') }, ...calcRules.map((r) => ({ value: r.code, label: `${r.code} ${t('common.version', { v: r.version })}` }))] }] : []),
+                  ...reasonField]} />)}
           </section>
+          {ctx.can_grade && enrolled.length > 0 && (
+            <section className="card stack" data-testid="remediation">
+              <h2>{t('grades.remediation')}</h2>
+              <p className="fine">{t('grades.remediationLead')}</p>
+              <ActionForm url="/api/grades" action="remediation" inline testId="remediation-form" extra={{ offeringId: o }}
+                submitLabel={t('grades.remediationSave')} successText={t('grades.remediationSaved')}
+                fields={[
+                  { name: 'personId', label: t('common.student'), type: 'select', required: true, options: enrolled.map((s) => ({ value: s.person_id, label: s.name })) },
+                  { name: 'kind', label: t('grades.remediationKind'), type: 'select', options: ['achievement', 'attendance'].map((k) => ({ value: k, label: tk('grade.remediation', k) })) },
+                  { name: 'completed', label: t('grades.remediationState'), type: 'select', options: [{ value: 'true', label: t('grades.completedYes') }, { value: 'false', label: t('grades.completedNo') }] },
+                  { name: 'note', label: t('grades.remediationNote'), width: 'wide' },
+                ]} />
+            </section>
+          )}
         </>
       )}
       {admin && (

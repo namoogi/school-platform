@@ -1,11 +1,11 @@
 import { handle } from '@/lib/api';
 import { ValidationError } from '@/lib/services';
-import { addAssessment, archiveAssessment, closeOffering, type GradingPolicy, recordNarrative, recordResult, saveGradingPolicy, saveScalePreset, SCALE_PRESETS } from '@/lib/grading';
+import { addAssessment, archiveAssessment, closeOffering, type GradingPolicy, recordRemediation, recordNarrative, recordResult, saveGradingPolicy, saveScalePreset, SCALE_PRESETS } from '@/lib/grading';
 import { latestPolicy } from '@/lib/gradebook';
 
 /**
  * 73차: 성적(척도·정책 판·평가 항목·결과·서술·수업 마감 판). 권한(관리자·담당 교사)·마감 뒤 정정·판 충돌은 DB 명령 함수가 판정한다.
- * body.action: scale-preset | policy | assessment | archive-assessment | results | narrative | close
+ * body.action: scale-preset | policy | assessment | archive-assessment | results | narrative | close(calcCode: ADR 0042) | remediation
  */
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
@@ -36,7 +36,8 @@ export async function POST(req: Request) {
       case 'narrative': return { id: await recordNarrative(db, school.id, {
         personId: b.personId, offeringId: b.offeringId, academicYearId: b.academicYearId, termId: b.termId, kind: b.kind || 'subject_detail', authorRole: 'teacher', body: b.body, reason: b.reason,
       }) };
-      case 'close': return await closeOffering(db, school.id, b.offeringId, { base_version: b.base_version, reason: b.reason, requestKey: b.requestKey, scaleId: b.scaleId || null });
+      case 'close': return await closeOffering(db, school.id, b.offeringId, { base_version: b.base_version, reason: b.reason, requestKey: b.requestKey, scaleId: b.scaleId || null, calcCode: b.calcCode || null });
+      case 'remediation': return { id: await recordRemediation(db, school.id, b) };
       default: throw new ValidationError('err.unknownAction');
     }
   }, { module: 'records' });

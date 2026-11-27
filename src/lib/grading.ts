@@ -1,5 +1,6 @@
 import type { Db } from './db';
 import { isUuid, NotFoundError, ValidationError } from './services';
+import { evaluate, type CalcSpec } from './calc/expr';
 
 /**
  * 57차 ADR 0025 F2 — 평가·마감(한국 + 미국 기준).
@@ -171,11 +172,44 @@ export async function linkRetake(db: Db, schoolId: string, personId: unknown, of
 }
 
 // ── 수업 마감 판 · 정정 판 ───────────────────────────────
-export function closeOffering(db: Db, schoolId: string, offeringId: unknown, input: { base_version?: unknown; reason?: unknown; requestKey?: unknown; scaleId?: unknown }) {
+/**
+ * ADR 0042 마감 연결: calcCode 를 주면 그 계산식 판(최신 판)으로 학생마다 계산해 마감에 넘긴다.
+ * 입력은 DB 가 원장에서 조립한 것(app.offering_calc_inputs)을 그대로 쓰고, 마감 함수가 같은 입력을 다시 조립해 대조한다.
+ */
+export async function closeOffering(db: Db, schoolId: string, offeringId: unknown, input: { base_version?: unknown; reason?: unknown; requestKey?: unknown; scaleId?: unknown; calcCode?: unknown }) {
   const rk = str(input.requestKey);
   if (!/^[A-Za-z0-9_.:-]{8,80}$/.test(rk)) throw new ValidationError('err.grade.requestKey');
-  return one<{ id: string; version: number; repeated: boolean }>(db, 'select app.close_offering($1, $2, $3) as v', [schoolId, uuid(offeringId, '개설'),
-    JSON.stringify({ base_version: base(input.base_version), reason: str(input.reason), request_key: rk, scale_id: optUuid(input.scaleId, '척도') })]);
+  const off = uuid(offeringId, '개설');
+  const calc = input.calcCode ? await calcForClosure(db, schoolId, off, str(input.calcCode)) : undefined;
+  return one<{ id: string; version: number; repeated: boolean; calc: boolean }>(db, 'select app.close_offering($1, $2, $3) as v', [schoolId, off,
+    JSON.stringify({ base_version: base(input.base_version), reason: str(input.reason), request_key: rk, scale_id: optUuid(input.scaleId, '척도'), calc })]);
+}
+
+export type CalcInputs = Record<string, Record<string, unknown>>;
+/** 수강생마다 계산 입력(DB 가 원장에서 조립) */
+export async function offeringCalcInputs(db: Db, schoolId: string, offeringId: unknown): Promise<CalcInputs> {
+  return one<CalcInputs>(db, 'select app.offering_calc_inputs($1, $2) as v', [schoolId, uuid(offeringId, '개설')]);
+}
+
+/** 마감에 넘길 계산 결과: { code, version, results: { 사람 id: { input, score, level, passed } } } */
+export async function calcForClosure(db: Db, schoolId: string, offeringId: string, code: string) {
+  if (!/^[a-z][a-z0-9_]{1,40}$/.test(code)) throw new ValidationError('err.grade.calcCode');
+  const { rows: [rule] } = await db.query<{ version: number; spec: CalcSpec }>(
+    'select version, spec from public.calc_rules where school_id = $1 and code = $2 order by version desc limit 1', [schoolId, code]);
+  if (!rule) throw new NotFoundError('err.grade.calcNotFound');
+  const inputs = await offeringCalcInputs(db, schoolId, offeringId);
+  const results: Record<string, { input: unknown; score: number | null; level: string | null; passed: boolean | null }> = {};
+  for (const [personId, inp] of Object.entries(inputs)) results[personId] = { input: inp, ...evaluate(rule.spec, inp) };
+  return { code, version: rule.version, results };
+}
+
+/** 보충 이수 기록(보장지도 achievement · 추가학습 attendance). 담당 교사·학교 관리자 */
+export async function recordRemediation(db: Db, schoolId: string, input: { offeringId?: unknown; personId?: unknown; kind?: unknown; completed?: unknown; note?: unknown }) {
+  if (input.kind !== 'achievement' && input.kind !== 'attendance') throw new ValidationError('err.grade.remediationKind');
+  return one<string>(db, 'select app.record_remediation($1, $2) as v', [schoolId, JSON.stringify({
+    offering_id: uuid(input.offeringId, '개설'), person_id: uuid(input.personId, '사람'), kind: input.kind,
+    completed: input.completed === true || input.completed === 'true' || input.completed === 'on', note: str(input.note).slice(0, 500) || null,
+  })]);
 }
 export type ClosureResult = {
   person_id: string; raw_score: number | null; final_score: number | null; level_code: string | null;
@@ -183,13 +217,13 @@ export type ClosureResult = {
 };
 export type Closure = {
   id: string; version: number; previous_id: string | null; reason: string | null; policy_version: number | null; scale_id: string | null;
-  scale_version: number | null; credits: number; pass_fail: boolean; closed_at: string;
+  scale_version: number | null; credits: number; pass_fail: boolean; closed_at: string; calc_code: string | null; calc_version: number | null;
   results: ClosureResult[]; stats: { n: number; mean: number | null; sd: number | null };
 };
 export type CurrentResult = { assessment_id: string; assessment_code: string; person_id: string; score: number | null; level_code: string | null; comment: string | null; corrects_id: string | null; recorded_at: string };
 export async function offeringClosure(db: Db, schoolId: string, offeringId: unknown, version?: number): Promise<Closure | null> {
   const { rows: [c] } = await db.query(
-    `select id, version, previous_id, reason, policy_version, scale_id, scale_version, credits::float, pass_fail, closed_at
+    `select id, version, previous_id, reason, policy_version, scale_id, scale_version, credits::float, pass_fail, closed_at, calc_code, calc_version
        from public.offering_closures where school_id = $1 and offering_id = $2 and ($3::int is null or version = $3)
       order by version desc limit 1`, [schoolId, uuid(offeringId, '개설'), version ?? null]);
   if (!c) return null;

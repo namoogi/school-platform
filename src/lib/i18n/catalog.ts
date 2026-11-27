@@ -2775,6 +2775,31 @@ export const CATALOG = {
   'site.tpl.t.single.name': '한 쪽 소개형',
   'site.tpl.t.single.summary': '막 시작한 작은 학교·모임이 한 쪽에 소개·연락·소식을 담습니다.',
   'site.tpl.t.single.fits': '막 시작한 작은 학교 · 홈스쿨 연합·배움 모임',
+  // 마감 연결 (106차, ADR 0042)
+  'grades.calc': '계산식',
+  'grades.noCalc': '계산식 없이(척도로)',
+  'grades.calcSuffix': ' · 계산식 {code} {v}판',
+  'grades.remediation': '보충 이수',
+  'grades.remediationLead': '최소 성취수준 보장지도·추가학습을 마쳤는지 적습니다. 계산식으로 마감할 때 반영되고, 가장 최근 기록이 현재 값입니다.',
+  'grades.remediationKind': '종류',
+  'grades.remediationState': '마쳤는지',
+  'grades.remediationNote': '메모',
+  'grades.remediationSave': '기록',
+  'grades.remediationSaved': '보충 이수를 기록했습니다.',
+  'grade.remediation.achievement': '최소 성취수준 보장지도',
+  'grade.remediation.attendance': '추가학습(과목 출석 미달)',
+  'grades.completedYes': '마쳤음',
+  'grades.completedNo': '마치지 않음',
+  'err.grade.calcCode': '계산식 이름이 올바르지 않습니다.',
+  'err.grade.calcNotFound': '계산식 판을 찾을 수 없습니다.',
+  'err.grade.remediationKind': '보충 이수 종류는 보장지도·추가학습 중 하나입니다.',
+  'db.calcInputChanged': '그 사이 점수·출결·보충 이수가 바뀌었습니다. 다시 계산해 주세요.',
+  'db.calcResultMissing': '계산 결과가 빠진 학생이 있습니다. 다시 계산해 주세요.',
+  'db.calcRuleNotFound': '계산식 판을 찾을 수 없습니다.',
+  'db.offeringGraders': '이 수업을 맡은 교사나 학교 관리자만 할 수 있습니다.',
+  'db.notEnrolled': '이 수업을 수강 중인 학생이 아닙니다.',
+  // 마감 연결 (108차, ADR 0042)
+  'db.calcScoreDigits': '계산 결과 점수는 소수 둘째 자리까지입니다. 식에 반올림(round)을 넣어 주세요.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

@@ -174,3 +174,17 @@ describe('Codex 지적(12b816e): 칸 값의 종류와 모르는 칸', () => {
     expect(msgs({ outputs: { score: { op: 'count_levels', in: ['TOO_LONG_LEVEL'] } } })).toMatch(/1~8자/);
   });
 });
+
+describe('106차: 중간값은 적힌 순서가 아니라 서로 가리키는 관계로 계산한다(jsonb 는 칸 순서를 바꾼다)', () => {
+  it('칸 순서를 뒤집어도 같은 결과, 서로 가리키면 검사가 막는다', () => {
+    for (const [code, { spec }] of Object.entries(PRESETS)) {
+      const flipped = { ...spec, lets: Object.fromEntries(Object.entries(spec.lets ?? {}).reverse()) };
+      const input = { items: { a: { score: 39.5, max: 100, weight: 60 }, b: { score: 88, max: 100, weight: 40 } }, attendance: { rate: 0.9 }, support: { achievement: true } };
+      expect([code, evaluate(flipped, input)]).toEqual([code, evaluate(spec, input)]);
+      expect([code, checkSpec(flipped)]).toEqual([code, []]);
+    }
+    const cyc = { lets: { a: { op: '+', args: [{ var: 'let.b' }, 1] }, b: { op: '+', args: [{ var: 'let.a' }, 1] } }, outputs: { score: { var: 'let.a' } } };
+    expect(checkSpec(cyc).map((i) => i.message).join()).toMatch(/서로를 가리킵니다/);
+    expect(checkSpec({ lets: { a: { var: 'let.a' } }, outputs: { score: 1 } }).map((i) => i.message).join()).toMatch(/서로를 가리킵니다/);
+  });
+});
