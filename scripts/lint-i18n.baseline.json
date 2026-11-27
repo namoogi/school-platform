@@ -11,10 +11,6 @@
   "src/app/(app)/site/templates/TemplatesClient.tsx": 77,
   "src/app/(app)/site/templates/[key]/page.tsx": 18,
   "src/app/(app)/site/templates/page.tsx": 11,
-  "src/app/admin/AdminClient.tsx": 26,
-  "src/app/admin/baseline/page.tsx": 22,
-  "src/app/admin/control/ControlCenter.tsx": 35,
-  "src/app/admin/control/page.tsx": 6,
   "src/app/admin/design/ArchetypeThumb.tsx": 2,
   "src/app/admin/design/ChooseDirection.tsx": 3,
   "src/app/admin/design/page.tsx": 21,
@@ -25,9 +21,6 @@
   "src/app/admin/lab/[id]/ItemClient.tsx": 38,
   "src/app/admin/lab/[id]/page.tsx": 18,
   "src/app/admin/lab/page.tsx": 3,
-  "src/app/admin/page.tsx": 29,
-  "src/app/admin/usage/StorageActions.tsx": 4,
-  "src/app/admin/usage/page.tsx": 16,
   "src/app/auth/callback/page.tsx": 5,
   "src/app/intro/page.tsx": 26,
   "src/app/layout.tsx": 1,
@@ -35,7 +28,6 @@
   "src/app/preview/[slug]/page.tsx": 1,
   "src/app/templates/[key]/page.tsx": 10,
   "src/components/DocumentPaper.tsx": 3,
-  "src/components/Field.tsx": 3,
   "src/components/RecordDocumentView.tsx": 6,
   "src/components/RichDoc.tsx": 7
 }
