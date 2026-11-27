@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Breadcrumb, Steps, type Crumb, type StepItem } from './ui-client';
 
 export { Steps, type Crumb, type StepItem };
@@ -95,11 +96,13 @@ export const LEARNING_STEPS: StepItem[] = [
 ];
 
 /**
- * ADR 0037: 번역문 속 자리({link} 등)에 링크·강조 같은 요소를 끼운다.
+ * ADR 0037: 번역문 속 자리({link}, {people} 등)에 링크·강조 같은 요소를 끼운다.
  * 언어마다 어순이 달라 문장을 앞·뒤로 쪼개 옮기지 않고, 한 문장을 옮긴 뒤 자리에서 나눈다.
- * 예: withLink(t('people.needLevel'), <Link href="/academics">…</Link>)
+ * 예: withLink(t('people.needLevel'), <Link …/>) · withLink(t('rec.whereElse'), { people: <Link …/>, grades: <Link …/> })
  */
-export function withLink(text: string, node: React.ReactNode, slot = 'link'): React.ReactNode {
-  const [before, after = ''] = text.split(`{${slot}}`);
-  return <>{before}{node}{after}</>;
+export function withLink(text: string, nodes: React.ReactNode | Record<string, React.ReactNode>, slot = 'link'): React.ReactNode {
+  const map: Record<string, React.ReactNode> = nodes && typeof nodes === 'object' && !('$$typeof' in (nodes as object)) && !Array.isArray(nodes)
+    ? nodes as Record<string, React.ReactNode> : { [slot]: nodes as React.ReactNode };
+  const parts = text.split(/\{(\w+)\}/);
+  return <>{parts.map((p, i) => (i % 2 ? <Fragment key={i}>{p in map ? map[p] : `{${p}}`}</Fragment> : p))}</>;
 }
