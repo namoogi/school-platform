@@ -2730,5 +2730,8 @@
   "site.tpl.t.kinder.fits": "Kindergartens and daycares · Schools focused on early elementary",
   "site.tpl.t.single.name": "One-page intro",
   "site.tpl.t.single.summary": "A newly started small school or group puts its introduction, contact and news on one page.",
-  "site.tpl.t.single.fits": "Newly started small schools · Homeschool co-ops and learning groups"
+  "site.tpl.t.single.fits": "Newly started small schools · Homeschool co-ops and learning groups",
+  "err.calcSpecInvalid": "Please fix the formula ({count} problems, first at: {path}). Preview shows the full list.",
+  "db.calcRuleCode": "A formula name starts with a lowercase letter and uses only lowercase letters, digits and underscores.",
+  "db.calcRuleSpec": "A formula needs an outputs section."
 }
