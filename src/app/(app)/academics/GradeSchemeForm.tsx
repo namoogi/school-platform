@@ -25,7 +25,11 @@ export function GradeSchemeForm({ current, baseVersion, presets }: { current: Sc
       const res = await fetch('/api/academics', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ action: 'grade-scheme', scheme, levels, labels: scheme === 'custom' ? labels : {}, base_version: baseVersion }) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) return setMsg({ text: data.error ?? t('academics.saveFailed'), error: true });
+      if (!res.ok) {
+        // 409(그 사이 새 판): 화면 자료를 새로 받아 다음 시도가 최신 판 번호를 쓰게 한다. 고른 체계·표기는 이 양식 상태라 그대로 남는다
+        if (res.status === 409) router.refresh();
+        return setMsg({ text: data.error ?? t('academics.saveFailed'), error: true });
+      }
       setMsg({ text: t('scheme.saved', { levels: data.levels, grades: data.grades }) });
       router.refresh();
     } catch {
