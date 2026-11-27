@@ -44,7 +44,7 @@ describe('학사 관리 템플릿', () => {
 
   it('미국 K-12: 학교급 3·학년 13·학기 2(Fall·Spring)·척도는 없는 것만, 관할 판에 템플릿과 체계가 한 판으로', async () => {
     const before = await ver(B);
-    const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', base_version: before }, 'en'));
+    const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 1, base_version: before }, 'en'));
     expect(r).toMatchObject({ key: 'us_k12', version: 1, profileVersion: before + 1, made: { levels: 3, grades: 13, periods: 2 }, kept: { periods: false } });
     // us_letter 는 기본판 복제로 이미 있어 그대로, us_plus_minus 만 새로
     expect(r.made.scales).toEqual(['us_plus_minus']);
@@ -60,14 +60,14 @@ describe('학사 관리 템플릿', () => {
 
   it('다시 적용하면 빠진 것만(아무것도 늘지 않음), 학교가 만든 학기 구조는 그대로', async () => {
     const grades = await count('grade_levels', B.schoolId);
-    const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', base_version: await ver(B) }, 'en'));
+    const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 1, base_version: await ver(B) }, 'en'));
     expect(r.made).toEqual({ levels: 0, grades: 0, periods: 0, scales: [] });
     expect(r.kept.periods).toBe(true);
     expect(await count('grade_levels', B.schoolId)).toBe(grades);
   });
 
   it('국제학교: 템플릿 고유 척도(IB 1–7)를 띠 그대로 만든다', async () => {
-    const r = await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'international', base_version: await ver(A) }));
+    const r = await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'international', version: 1, base_version: await ver(A) }));
     expect(r.made.scales).toContain('ib_1_7');
     const bands = (await su.query(
       `select v.bands from public.scale_versions v join public.scales s on s.id = v.scale_id where s.school_id = $1 and s.code = 'ib_1_7'`, [A.schoolId])).rows[0].bands;
@@ -76,12 +76,12 @@ describe('학사 관리 템플릿', () => {
 
   it('판 번호가 없거나 낡으면 아무것도 만들지 않는다(지침 10), 모르는 템플릿·다른 학교는 거부', async () => {
     const n = await count('grade_levels', A.schoolId);
-    await expect(asUser(A.userId, (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general' }))).rejects.toThrow('base_version');
-    await expect(asUser(A.userId, (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general', base_version: 0 }))).rejects.toMatchObject({ code: 'P0409' });
+    await expect(asUser(A.userId, (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general', version: 1 }))).rejects.toThrow('base_version');
+    await expect(asUser(A.userId, (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general', version: 1, base_version: 0 }))).rejects.toMatchObject({ code: 'P0409' });
     expect(await count('grade_levels', A.schoolId)).toBe(n);
-    await expect(asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'nope', base_version: await ver(A) }))).rejects.toThrow();
+    await expect(asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'nope', version: 1, base_version: await ver(A) }))).rejects.toThrow();
     // 다른 학교: B에게는 A의 관할 판이 보이지 않아(판 0) 그 판으로 보내면 DB 명령 함수가 권한으로 거부한다
-    await expect(asUser(B.userId, (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general', base_version: 0 }))).rejects.toMatchObject({ code: '42501' });
+    await expect(asUser(B.userId, (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general', version: 1, base_version: 0 }))).rejects.toMatchObject({ code: '42501' });
     expect(await count('grade_levels', A.schoolId)).toBe(n);
     // 없는 템플릿 판은 관할 판에 못 적는다
     await expect(asUser(A.userId, (db) => db.query(`select app.set_school_profile($1, '{"template_key":"kr_general","template_version":9}')`, [A.schoolId]))).rejects.toThrow('템플릿 판');
@@ -134,18 +134,21 @@ describe('학사 관리 템플릿', () => {
       key: 'edge_case', base_version: 0, title: { ko: '경계', en: 'Edge' }, summary: { en: 'edge' }, manifest })]));
     const fresh = (await su.query(`select id from public.schools where slug = 'school-a'`)).rows[0].id;
     expect(fresh).toBe(A.schoolId);
-    const r = await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'edge_case', base_version: await ver(A) }));
+    const r = await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'edge_case', version: 1, base_version: await ver(A) }));
     expect(r.made.scales).toEqual(['edge_scale']);
     expect(await asUser(A.userId, (db) => at.schoolTemplate(db, A.schoolId))).toMatchObject({ key: 'edge_case', version: 1 });
   });
-  it('본 판만 적용하고(그 사이 새 판이면 409), 학교가 정한 학년 체계는 다시 적용해도 지킨다', async () => {
-    // B는 us_k12 1판을 골랐고 최신은 2판
-    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 1, base_version: await ver(B) }))).rejects.toMatchObject({ code: 'P0409' });
-    // 학년 체계를 커스텀으로 바꾼 뒤 템플릿 새 판을 채워도 커스텀이 남는다
+  it('이름 댄 판 그대로 적용하고(판 번호 필수), 학교가 정한 학년 체계는 다시 적용해도 지킨다', async () => {
+    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', base_version: await ver(B) }))).rejects.toThrow();
+    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 9, base_version: await ver(B) }))).rejects.toThrow();
+    // 학년 체계를 커스텀으로 바꾼 뒤 템플릿 2판을 채워도 커스텀이 남는다
     await asUser(B.userId, async (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'custom', levels: ['high'], base_version: await ver(B) }, 'en'));
     const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 2, base_version: await ver(B) }, 'en'));
     expect(r.kept.scheme).toBe('custom');
     expect((await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'en'))).scheme).toBe('custom');
     expect(await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId))).toMatchObject({ key: 'us_k12', version: 2 });
+    // 최신이 2판이어도 1판을 이름 대면 1판이 들어간다(화면이 본 판)
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 1, base_version: await ver(B) }, 'en'));
+    expect(await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId))).toMatchObject({ key: 'us_k12', version: 1, latest: { version: 2 } });
   });
 });

@@ -47,6 +47,15 @@ language sql stable security definer set search_path = pg_catalog, public, pg_te
    order by t.key, t.version desc
 $$;
 
+-- 학교가 정한 판 하나(키·판)를 읽는다: 적용은 늘 화면·요청이 이름 댄 그 판으로 한다(보지 않은 새 판을 넣지 않음, Codex #180)
+create or replace function app.academic_template(p_key text, p_version integer)
+returns table (key text, version integer, sort_order integer, title jsonb, summary jsonb, manifest jsonb)
+language sql stable security definer set search_path = pg_catalog, public, pg_temp as $$
+  select t.key, t.version, t.sort_order, t.title, t.summary, t.manifest
+    from public.academic_templates t
+   where app.uid() is not null and t.key = p_key and t.version = p_version
+$$;
+
 -- 템플릿 판 모양 검사: 학교 화면이 이 모양을 믿고 그리므로 낼 때 막는다(Codex #180)
 create or replace function private.academic_template_ok(title jsonb, summary jsonb, m jsonb) returns boolean
 language sql immutable set search_path = pg_catalog, public, pg_temp as $$
@@ -170,5 +179,7 @@ create policy academic_templates_writer on public.academic_templates for select 
 -- 템플릿 읽기·내기 함수는 관제 표 소유 역할(마이그레이션 역할)이 소유한다(app.publish_baseline 과 같음)
 revoke all on function app.academic_templates() from public, anon;
 grant execute on function app.academic_templates() to authenticated;
+revoke all on function app.academic_template(text, integer) from public, anon;
+grant execute on function app.academic_template(text, integer) to authenticated;
 revoke all on function app.publish_academic_template(jsonb) from public, anon;
 grant execute on function app.publish_academic_template(jsonb) to authenticated;

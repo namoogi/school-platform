@@ -2898,6 +2898,8 @@ export const CATALOG = {
   'atpl.update': '새 판으로 빠진 것 채우기',
   'atpl.confirmUpdate': '{name} 새 판으로 학교 사본을 채울까요?',
   'db.templateShape': '템플릿 내용이 올바르지 않습니다(학년 체계·학교급·학기·척도·출결 단위·서식·숨길 구획).',
+  // 111차 템플릿 판 번호
+  'err.template.version': '적용할 템플릿 판 번호(version)가 필요합니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

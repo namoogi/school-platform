@@ -44,12 +44,11 @@ export type ApplyResult = {
  */
 export async function applyTemplate(db: Db, schoolId: string, input: { key?: unknown; version?: unknown; base_version?: unknown }, locale = 'ko'): Promise<ApplyResult> {
   const key = String(input.key ?? '');
-  const t = (await listTemplates(db)).find((x) => x.key === key);
+  // 늘 이름 댄 판 그대로 적용한다(판 번호 필수). 그 사이 새 판이 나와도 본 판이 들어가고, 보지 않은 판은 들어가지 않는다(Codex #180)
+  const ver = Number(input.version);
+  if (input.version == null || input.version === '' || !Number.isInteger(ver) || ver < 1) throw new ValidationError('err.template.version');
+  const t = (await db.query<AcademicTemplate>('select * from app.academic_template($1, $2)', [key, ver])).rows[0];
   if (!t) throw new ValidationError('err.template.unknown');
-  // 화면에서 본 판을 적용한다: 그 사이 관제가 새 판을 냈으면 보지 않은 내용을 넣지 않고 409(Codex #180)
-  if (input.version != null && Number(input.version) !== t.version) {
-    throw Object.assign(new Error('그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.'), { code: 'P0409' });
-  }
   const m = t.manifest;
   const base = Number(input.base_version);
   if (input.base_version == null || input.base_version === '' || !Number.isInteger(base) || base < 0) throw new ValidationError('err.baseVersion');
