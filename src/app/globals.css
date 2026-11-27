@@ -380,8 +380,6 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
   input.switch:checked { background: radial-gradient(circle at calc(100% - 12px) 50%, var(--text-on-brand) 8px, transparent 8.5px), var(--action-primary-bg); }
   /* 표 안 작은 select(행 동작)도 손가락 기기에서는 컨트롤 높이로 */
   html .actions select, html select.small, html input.small { min-height: var(--control-h); }
-  /* 작은 단추(.btn-sm·.small)도 손가락 기기에서는 44px — 모양은 작게, 누르는 높이만 */
-  html .btn-sm, html .small, html button.small { min-height: var(--control-h); }
 }
 .choices { border: 0; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
 .choices legend { font-weight: 600; margin-bottom: var(--space-1); }
@@ -2404,3 +2402,13 @@ label.check input { margin-top: 0.25em; }
 
 /* 110차: 칸이 많은 표는 글자를 꺾지 않고 표 틀 안에서 옆으로 넘긴다(휴대폰 폭에서 한 글자씩 꺾이던 수업 목록) */
 .grid-table.nowrap-cells td { white-space: nowrap; }
+
+/* 37차 후속 2: 손가락 기기 누르는 대상 44px — 파일 끝에 두고 특이성을 높여, 화면별 작은 높이 규칙(.btn-sm 28px,
+   .le-bar 32px, .item-meta select 24px 등)보다 항상 이긴다. 모양(글자 크기·여백)은 그대로, 누르는 높이만 올린다.
+   공개 홈페이지(.site)는 테마 세션 몫이라 빼되, 그 위에 얹는 화면 편집 도구(.le-*)는 넣는다. 시안(.pv-root)은 제외 */
+@media (pointer: coarse) {
+  html body :is(button, .btn, .btn-sm, .small, .link-button, select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])):not(.pv-root *):not(.site *),
+  html body :is(.le-bar, .le-switch, .le-note, .le-picker, .le-guide) :is(button, .btn, select, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])),
+  html body .le-grip { min-height: 44px; }
+  html body .le-bar :is(.btn-sm, button), html body .le-grip { min-width: 44px; }
+}
