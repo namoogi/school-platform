@@ -21,17 +21,20 @@ export class AppError extends Error {
 }
 
 /**
- * 값 안의 낱말도 그 언어로: 값이 이름표면 그 문구로, 한국어 명사가 'noun.' 이름표의 기준 문구와 같으면 그 번역으로 바꾼다.
+ * 값 안의 낱말도 그 언어로. 번역하는 칸은 개발자가 넣는 'what'(명사)·'kind'(이름표)뿐이다.
+ * 그 칸의 값이 이름표이거나 'noun.' 이름표의 기준 문구(한국어 명사)와 같으면 그 언어 문구로 바꾼다.
+ * 사람이 입력한 값(기간 ID·파일 이름 등)은 다른 칸 이름으로 넘겨 그대로 둔다.
  *   new NotFoundError('err.whatNotFound', { what: '학생' })  → en: "Student not found."
  * dict 가 없으면 기준 문구(한국어).
  */
+const TRANSLATED_VARS = new Set(['what', 'kind']);
 let nouns: Map<string, MsgKey> | null = null;
 export function localVars(vars?: Vars, dict?: Record<string, string>): Vars | undefined {
   if (!vars) return vars;
   nouns ??= new Map((Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('noun.')).map((k) => [CATALOG[k] as string, k]));
   const out: Vars = {};
   for (const [k, v] of Object.entries(vars)) {
-    if (typeof v !== 'string') { out[k] = v; continue; }
+    if (typeof v !== 'string' || !TRANSLATED_VARS.has(k)) { out[k] = v; continue; }
     const key = Object.prototype.hasOwnProperty.call(CATALOG, v) ? (v as MsgKey) : nouns.get(v);
     out[k] = key ? (dict?.[key] ?? (CATALOG[key] as string)) : v;
   }

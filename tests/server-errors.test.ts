@@ -86,3 +86,10 @@ describe('코드 속 오류 이름표', () => {
       .toBe(`This isn't a valid ${enDict['devlink.kind.github_repo']} address. Example: https://github.com/o/r`);
   });
 });
+
+describe('입력값은 번역하지 않는다 (Codex 지적, #157)', () => {
+  it('기간 ID·파일 이름처럼 사람이 넣은 값이 이름표·명사와 같아도 그대로 싣는다', () => {
+    expect(errorBody(new ValidationError('err.period.dupId', { id: 'noun.student' }), 'en', enDict).body.error).toBe('Period ID noun.student is duplicated.');
+    expect(new ValidationError('err.upload.fileMax', { name: '학생' }).message).toBe('학생: 파일별 최대 2MB입니다.');
+  });
+});

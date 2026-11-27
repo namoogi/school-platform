@@ -1776,7 +1776,7 @@
   "err.agent.blockRange": "{at}: block index is out of range (0–{max}).",
   "err.agent.path": "{at}: invalid path.",
   "err.agent.unknownOp": "{at}: unknown operation (move, insert, remove, hide, set).",
-  "err.pdf.active": "PDFs with executable features ({what}) can't be uploaded. Export it again with only images and text.",
+  "err.pdf.active": "PDFs with executable features ({feature}) can't be uploaded. Export it again with only images and text.",
   "err.period.dupId": "Period ID {id} is duplicated.",
   "err.period.assessTwice": "Assessment period ‘{name}’ belongs to two periods at once.",
   "err.upload.maxFiles": "You can upload up to {n} files at a time.",

@@ -1801,7 +1801,7 @@ export const CATALOG = {
   'err.agent.blockRange': '{at}: 블록 번호가 범위 밖입니다(0~{max}).',
   'err.agent.path': '{at}: path 가 올바르지 않습니다.',
   'err.agent.unknownOp': '{at}: 알 수 없는 연산입니다(move·insert·remove·hide·set).',
-  'err.pdf.active': '실행 기능({what})이 든 PDF는 올릴 수 없습니다. 그림·글만 담아 다시 만들어 주세요.',
+  'err.pdf.active': '실행 기능({feature})이 든 PDF는 올릴 수 없습니다. 그림·글만 담아 다시 만들어 주세요.',
   'err.period.dupId': '기간 ID {id}가 중복됩니다.',
   'err.period.assessTwice': '평가 기간 ‘{name}’가 두 기간에 동시에 속해 있습니다.',
   'err.upload.maxFiles': '한 번에 {n}개까지 올릴 수 있습니다.',

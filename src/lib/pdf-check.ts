@@ -53,14 +53,14 @@ export function checkPdf(bytes: Buffer): void {
       }
       inflated += body.length;
       const bad = found(body.toString('latin1'));
-      if (bad) throw new ValidationError('err.pdf.active', { what: bad });
+      if (bad) throw new ValidationError('err.pdf.active', { feature: bad });
     }
     pos = end;
     streamRe.lastIndex = end + 9;
   }
   outside.push(s.slice(pos));
   const bad = found(outside.join('\n'));
-  if (bad) throw new ValidationError('err.pdf.active', { what: bad });
+  if (bad) throw new ValidationError('err.pdf.active', { feature: bad });
 }
 
 /** 올린 파일의 앞부분으로 형식 확인 (형식 머리 위조 방지) */
