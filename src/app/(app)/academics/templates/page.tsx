@@ -8,7 +8,7 @@ import { getI18n, userLang } from '@/lib/i18n/server';
 import type { MsgKey } from '@/lib/i18n/catalog';
 import { ApplyTemplate } from './ApplyTemplate';
 
-/** 111차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
+/** 113차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
 export default async function TemplatesPage() {
   const { templates, current, steps, profileVersion, school, uiLang } = await loadForPage(async ({ db, school }) => ({
     templates: await listTemplates(db),

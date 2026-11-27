@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
 import { useConfirm } from '@/components/ConfirmDialog';
 
-/** 111차 ADR 0043: 템플릿 적용. 확인 창에 '바뀌는 것 / 안 바뀌는 것 / 되돌리기'를 보여 준 뒤 학교 사본을 만든다 */
+/** 113차 ADR 0043: 템플릿 적용. 확인 창에 '바뀌는 것 / 안 바뀌는 것 / 되돌리기'를 보여 준 뒤 학교 사본을 만든다 */
 export function ApplyTemplate({ templateKey, templateVersion, title, baseVersion, mode }: { templateKey: string; templateVersion: number; title: string; baseVersion: number; mode: 'choose' | 'reapply' | 'update' }) {
   const router = useRouter();
   const { t } = useI18n();

@@ -6,7 +6,7 @@ import { saveScale, saveScalePreset, SCALE_PRESETS, type Band } from './grading'
 import { ValidationError } from './services';
 
 /**
- * 111차 ADR 0043 2단계 — 학사 관리 템플릿.
+ * 113차 ADR 0043 2단계 — 학사 관리 템플릿.
  * 템플릿은 관제 영역의 판(`academic_templates`)이다. 학교는 `app.academic_templates()`로 최신 판만 본다.
  * 고르면 그 판의 내용을 학교 사본으로 만든다: 학교급·학년(학년 체계) → 학기 구조 규칙 판 → 척도.
  * 이미 학교에 있는 것은 덮어쓰지 않고 그대로 둔다(ADR 0027 '학교 값 유지'). 쓰기는 모두 기존 명령 함수로만 한다.

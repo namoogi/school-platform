@@ -73,7 +73,7 @@ export async function buildDemoSchool(db: Db): Promise<DemoResult> {
 
   // 1) 학교 관할 + 학교급·학년(한국식)
   await f.setSchoolProfile(db, schoolId, { country: 'KR', sector: 'alternative', why: '시연용 가상 학교(합성 자료)', base_version: 0 });
-  // 111차: 학사 관리 템플릿 '한국 일반 초·중·고' 1판으로 시작한다(학교급·학년·학기 구조·척도).
+  // 113차: 학사 관리 템플릿 '한국 일반 초·중·고' 1판으로 시작한다(학교급·학년·학기 구조·척도).
   // 판을 못 박아 둔다: 템플릿 판은 고칠 수 없으므로 관제가 새 판을 내도 시연 학교는 늘 같은 모양으로 만들어진다
   await applyTemplate(db, schoolId, { key: 'kr_general', version: 1, base_version: 1 });
   const levels = await pp.listSchoolLevels(db, schoolId);

@@ -1,4 +1,4 @@
-/** 111차 ADR 0043 2단계 — 학사 관리 템플릿: 목록·학교 사본 만들기·학교 값 유지·판 충돌·관제 새 판·점검표 */
+/** 113차 ADR 0043 2단계 — 학사 관리 템플릿: 목록·학교 사본 만들기·학교 값 유지·판 충돌·관제 새 판·점검표 */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { lookupIds, resetTestDb, TEST_URL } from './helpers';
