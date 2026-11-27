@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Invitation, License, Member, Module } from '@/lib/admin';
 import { Meter } from '@/components/ui';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
@@ -67,18 +68,20 @@ export function MembersPanel({ members, invitations, seats, used }: { members: M
   const [role, setRole] = useState<'teacher' | 'admin'>('teacher');
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   const ROLE = { admin: '학교 관리자', teacher: '교사' };
+  const [ask, confirmDialog] = useConfirm();
   async function act(url: string, body: unknown, ok: string) {
     try { await post(url, body); setMsg({ text: ok }); router.refresh(); }
     catch (e) { setMsg({ text: (e as Error).message, error: true }); }
   }
   return (
     <>
+      {confirmDialog}
       <div className="between"><h2>구성원</h2><span className={`tag ${used >= seats ? 'amber' : ''}`} data-testid="seat-usage">좌석 {used} / {seats}</span></div>
       <Meter value={used} max={seats} label="좌석 사용 (구성원 + 대기 중 초대)" />
       <ul className="sources">
         {members.map((m) => (
           <li key={m.user_id}><div><strong>{m.display_name}</strong><small className="muted">{m.email} · {ROLE[m.role]}</small></div>
-            <button type="button" className="link-button" onClick={() => confirm(`${m.email}을 구성원에서 뺄까요?`) && act('/api/settings/members/remove', { userId: m.user_id }, '구성원에서 뺐습니다.')}>빼기</button></li>
+            <button type="button" className="link-button" onClick={async () => { if (await ask({ title: '구성원에서 뺄까요?', description: <>{m.email}({m.display_name})은 이 학교에 더 이상 들어올 수 없습니다. 지금까지 남긴 기록은 그대로 남고, 다시 초대하면 돌아올 수 있습니다.</>, confirmLabel: '구성원에서 빼기' })) act('/api/settings/members/remove', { userId: m.user_id }, '구성원에서 뺐습니다.'); }}>빼기</button></li>
         ))}
         {invitations.map((i) => (
           <li key={i.id}><div><strong>{i.email}</strong><small className="muted">{ROLE[i.role]} · 초대 대기 (첫 로그인 때 합류)</small></div>

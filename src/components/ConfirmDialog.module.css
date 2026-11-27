@@ -1,0 +1,13 @@
+/* 확인 대화상자 (ConfirmDialog.tsx). danger 버튼은 여기 안에서만 쓴다.
+   globals.css 끝에 두면 여러 세션이 덧붙일 때마다 충돌해서 컴포넌트 전용 모듈로 둔다. 색·간격은 의미 토큰만 쓴다. */
+.overlay { position: fixed; inset: 0; z-index: 90; background: var(--surface-scrim); }
+.dialog {
+  position: fixed; z-index: 91; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto;
+  display: grid; gap: var(--space-3); padding: var(--space-5, 20px);
+  background: var(--surface-default); color: var(--text-default);
+  border: 1px solid var(--border-default); border-radius: var(--radius-lg); box-shadow: var(--shadow-3);
+}
+.title { margin: 0; font-size: var(--fs-heading-sm, 17px); line-height: 1.4; }
+.desc { margin: 0; color: var(--text-subtle); }
+.actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Module } from '@/lib/admin';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 async function post(url: string, body: unknown) {
   const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
@@ -10,19 +11,31 @@ async function post(url: string, body: unknown) {
   return data;
 }
 
-export function SchoolActions({ schoolId, status, period }: { schoolId: string; status: string; period: string }) {
+const STATUS_LABEL: Record<string, string> = { trial: '시범', active: '운영', suspended: '이용 중지' };
+
+export function SchoolActions({ schoolId, schoolName, status, period }: { schoolId: string; schoolName: string; status: string; period: string }) {
   const router = useRouter();
+  const [ask, confirmDialog] = useConfirm();
   async function run(fn: () => Promise<unknown>) {
     try { await fn(); router.refresh(); } catch (e) { alert((e as Error).message); }
   }
+  async function changeStatus(next: string) {
+    const ok = await ask(next === 'suspended'
+      ? { title: `${schoolName}을 이용 중지할까요?`, description: '구성원이 이 학교 화면을 쓸 수 없게 됩니다. 기록은 지우지 않으며, 상태를 다시 바꾸면 이어서 쓸 수 있습니다.', confirmLabel: '이용 중지' }
+      : { title: `${schoolName} 상태를 ‘${STATUS_LABEL[next]}’(으)로 바꿀까요?`, description: '상태는 학교 기록에 남습니다.', confirmLabel: '상태 바꾸기', tone: 'primary' });
+    if (ok) run(() => post(`/api/admin/schools/${schoolId}/status`, { status: next }));
+  }
   return (
     <>
-      <select aria-label="학교 상태" value={status} className="small"
-        onChange={(e) => run(() => post(`/api/admin/schools/${schoolId}/status`, { status: e.target.value }))}>
+      {confirmDialog}
+      <select aria-label={`${schoolName} 상태`} value={status} className="small" onChange={(e) => changeStatus(e.target.value)}>
         <option value="trial">시범</option><option value="active">운영</option><option value="suspended">이용 중지</option>
       </select>
       <button type="button" className="secondary small"
-        onClick={() => confirm(`${period} 청구 예정액을 확정할까요? (실제 결제 아님, 확정 후 수정 불가)`) && run(() => post(`/api/admin/schools/${schoolId}/statement`, { period }))}>
+        onClick={async () => {
+          if (await ask({ title: `${period} 청구 예정액을 확정할까요?`, description: <>{schoolName}의 {period} 청구 기록을 만듭니다. 실제 결제는 일어나지 않지만, <strong>확정한 기록은 고치거나 지울 수 없습니다.</strong></>, confirmLabel: '청구 확정' }))
+            run(() => post(`/api/admin/schools/${schoolId}/statement`, { period }));
+        }}>
         {period} 청구 확정
       </button>
     </>
