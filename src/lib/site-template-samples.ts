@@ -74,6 +74,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
     text: {
       ...contact('새솔아카데미', '000-000-0000', 'admissions@example.org', '가상시 새솔구 미래로 30', '작은 학급, 깊은 배움'),
       '[School name]': 'Saesol Academy',
+      '[신청 안내 한 줄]': '견학이나 상담을 원하시면 남겨 주세요. 입학 담당이 연락드립니다.',
       '[우리 학교를 고르는 이유 한 문장]': '한 반 열다섯 명, 한 명도 놓치지 않습니다',
       '[Why families choose us]': 'Fifteen students per class, no one left behind',
       '[차별점 1]': '작은 학급', '[차별점 2]': '두 언어 수업', '[차별점 3]': '진로 멘토링',
@@ -173,6 +174,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
     text: {
       ...contact('햇살숲 유치원', '000-000-0000', 'hello-kids@example.org', '가상시 햇살동 놀이터길 8', '놀이로 배우고 햇살 속에 자라요'),
       '[유치원 이름]': '햇살숲 유치원',
+      '[신청 안내 한 줄]': '방문 상담을 원하시면 남겨 주세요. 하루 안에 연락드립니다.',
       '[아이들이 웃으며 자라는 곳]': '오늘도 마음껏 놀고, 쑥쑥 자라요',
       '[처음 오신 가정께 드리는 두 문장]': '햇살숲 유치원은 놀이가 곧 배움인 곳입니다. 아이 한 명 한 명의 속도에 맞춰 함께 자랍니다.',
       '[반 이름 · 나이 1]': '새싹반 · 만 3세', '[반 이름 · 나이 2]': '꽃잎반 · 만 4세', '[반 이름 · 나이 3]': '열매반 · 만 5세',

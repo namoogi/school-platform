@@ -25,6 +25,7 @@ export const PAGES = {
   attendance: { login: 'admin-a', states: { default: '/attendance' } },
   records: { login: 'admin-a', states: { empty: '/records' } },
   site: { login: 'admin-a', states: { default: '/site', settings: '/site?box=settings' } },
+  'site-inquiries': { login: 'admin-a', states: { empty: '/site/inquiries' } },
   'template-live': { login: 'admin-a', states: { play: '/templates/kinder', ivory: '/templates/story', 'play-inner': '/templates/kinder?page=daily', clear: '/templates/notice', bold: '/templates/admissions', studio: '/templates/project', lamp: '/templates/mission', horizon: '/templates/international', seed: '/templates/single', } },
   'site-templates': { login: 'admin-a', states: { default: '/site/templates', story: '/site/templates/story', international: '/site/templates/international' } },
   settings: { login: 'admin-a', states: { default: '/settings' } },

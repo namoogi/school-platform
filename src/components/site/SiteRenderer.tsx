@@ -7,6 +7,7 @@ import { isStoryOutline, storyImageAsset } from '@/lib/story-language';
 import { StoryBook } from './StoryBook';
 import { GalleryGrid } from './GalleryGrid';
 import { TagFilter } from './TagFilter';
+import { InquiryForm } from './InquiryForm';
 import { RainbowArc, Ribbon } from './Rainbow';
 
 /** 공개 화면 낱말 (블록 안) */
@@ -96,11 +97,13 @@ export function PageHead({ content, lang, fallback, asset, meta, ed, crumb, link
  * 글은 텍스트로만 넣는다(HTML 해석 없음). 그림 주소·사이트 안 링크는 호출하는 쪽이 정한다(공개 판 / 구성원 미리보기).
  * 35차: 숨긴 블록(hidden)은 방문자에게 그리지 않는다. 편집 갈고리(ed)가 있으면 숨긴 블록도 그리고 칸마다 고치기를 단다.
  */
-export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h, news = [], textInImage = false, ed }: {
+export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h, news = [], textInImage = false, ed, inquiry }: {
   content: Content; lang: Lang; fallback: Lang; assetUrl: (id: string) => string; link?: (href: string) => string; news?: NewsItem[];
   /** 동화 쪽 그림 안에 글이 이미 들어 있으면 글을 그림 위에 다시 쓰지 않고 대체 글로 준다 */
   textInImage?: boolean;
   ed?: EditHooks;
+  /** 91차: 방문·상담 신청 칸 — 학교가 신청을 켰을 때만(open). slug가 null이면 미리보기(보내지 않음) */
+  inquiry?: { slug: string | null; open: boolean; page: string };
 }) {
   const t = (x: LText | null | undefined) => pick(x, lang, fallback);
   // 42차: 줄마다 '· '로 시작하는 문단은 점 목록으로(옛 사이트 교육 단계 핵심)
@@ -157,6 +160,11 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         return yt
           ? <div className="site-video"><iframe src={`https://www.youtube-nocookie.com/embed/${yt[1]}`} title={t(content.title)} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" /></div>
           : <p><a href={url} target="_blank" rel="noopener noreferrer">{w('watch', lang)}</a></p>;
+      }
+      case 'inquiry': {
+        if (ed) return <section className="sec site-inquiry" data-template="inquiry"><h2 className="site-h2">{T(at('title'), b.title, '신청 칸 제목')}</h2><p className="fine">방문·상담 신청 칸(설정에서 '신청 받기'를 켜면 방문자에게 보입니다)</p></section>;
+        if (!inquiry?.open) return null; // 학교가 신청을 받지 않으면 방문자에게 보이지 않는다
+        return <InquiryForm slug={inquiry.slug} lang={lang} page={inquiry.page} title={t(b.title) || undefined} body={t(b.body) || undefined} />;
       }
       case 'download': {
         // 34차: PDF 내려받기. 파일 이름·크기는 판에 저장된 값(스냅샷)을 쓴다. 서버는 PDF를 attachment 로만 준다
