@@ -75,7 +75,7 @@
 로드맵과 결정 대기 항목: `docs/ROADMAP.md`
 
 ## UI 점검
-UI 점검 요청을 받으면 `docs/UI_REVIEW.md`의 5장 체크리스트와 6장 출력 형식을 따른다. 점검 시에는 코드를 수정하지 않는다. (ADR 0033)
+UI 점검(검토자 역할) 요청을 받으면 `docs/UI_REVIEW.md`의 5장 체크리스트와 6장 출력 형식을 따른다. 검토자는 코드를 수정하지 않는다. 수정은 구현자(Claude)가 4-4 선별 뒤에 한다(UI_REVIEW 2장 역할표). 자동 세션의 페이지별 UI 점검(`docs/automation/QUEUE.md`)은 구현자 작업이고, 그 화면 판정은 자체 점검으로만 기록한다. (ADR 0033)
 
 ## Review guidelines (Code Review Rules)
 
