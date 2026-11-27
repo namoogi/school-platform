@@ -117,7 +117,11 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
   - 그전까지 PR 26개의 `@codex review`에 봇 반응이 **0건**이었다. 막혀 있던 곳은 세 군데다: ① 저장소 Code review 꺼짐 ② 개인 설정 자동 검토 꺼짐 ③ GitHub 앱 권한 갱신 요청 미승인. 셋 다 풀어야 했다. 다시 막히면 이 세 곳부터 본다.
   - 개인 설정을 켜고, GitHub의 ChatGPT Codex Connector 앱에 걸려 있던 권한 갱신 요청을 승인한 뒤(01:57Z) 봇(`chatgpt-codex-connector[bot]`)이 PR #127에 처음으로 검토를 남겼다(01:58Z, P1 1건 → 수용). 이제 PR을 열면 자동 검토되고, `@codex review` 댓글로도 다시 청할 수 있다.
   - 보조 경로: 선생님 쪽 Codex 세션이 GitHub 커넥터로 PR을 읽고 검토 댓글을 직접 남긴다. 첫 줄은 `(Codex 수동 검토 …)`이다. 85차 PR #127에서 P2 2건을 받아 반영했다.
-- 사용자 1회 설정: Codex Code review를 이 저장소에 켜기, Codex 환경(Environment) 하나 만들기. 그 뒤로는 사람이 중계하지 않는다.
+- 사용자 1회 설정(85차에 확인한 순서). 그 뒤로는 사람이 중계하지 않는다.
+  1. Codex 설정 → Code review → 이 저장소 켜기(Automatic review)
+  2. Codex 설정 → Personal preferences → 자동 검토 켜기. 저장소 칸이 'Follow personal preferences'면 이 값을 따른다.
+  3. GitHub → Settings → Applications → ChatGPT Codex Connector: 권한 갱신 요청이 있으면 승인하고, 저장소 접근에 이 저장소를 넣는다.
+  4. Codex 환경(Environment): 85차에는 따로 만들지 않고도 검토가 돌았다. 공식 안내에는 필요하다고 되어 있으니, 막히면 만든다.
 - 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
 
 ## Vercel 미리보기 빌드 (2026-11-24 사용자 결정, 관제 D-12)
