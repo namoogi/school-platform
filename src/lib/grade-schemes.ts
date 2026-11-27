@@ -92,11 +92,15 @@ export async function applyGradeScheme(db: Db, schoolId: string, input: ApplyInp
   const wanted = Array.isArray(input.levels) ? input.levels.map(String).filter((k): k is LevelKey => (LEVEL_KEYS as readonly string[]).includes(k)) : [];
   if (!wanted.length) throw new ValidationError('err.scheme.levels');
   const labels = input.labels && typeof input.labels === 'object' && !Array.isArray(input.labels) ? input.labels as Record<string, unknown> : {};
+  // 지침 10: 판으로 쌓는 쓰기는 보고 고친 판을 받는다. 학년을 만들기 전에 먼저 본다(낡은 판이면 아무것도 만들지 않음)
+  const base = Number(input.base_version);
+  if (input.base_version == null || input.base_version === '' || !Number.isInteger(base) || base < 0) throw new ValidationError('err.baseVersion');
   const lang = locale;
   const levels = await listSchoolLevels(db, schoolId);
   const grades = await listGradeLevels(db, schoolId);
   const made = { levels: 0, grades: 0 };
   const prev = await schoolProfile(db, schoolId);
+  if ((prev?.version ?? 0) !== base) throw Object.assign(new Error('그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.'), { code: 'P0409' });
   // 커스텀 표기는 직전 판 표기에 이번에 적은 것을 덮어 잇는다
   const customByOrdinal: Record<string, string> = { ...((prev?.grade_labels ?? {}) as Record<string, string>) };
   for (const [i, pl] of presetLevels(scheme).entries()) {
@@ -117,7 +121,7 @@ export async function applyGradeScheme(db: Db, schoolId: string, input: ApplyInp
   const version = await setSchoolProfile(db, schoolId, {
     country: prev?.country ?? '', sector: prev?.sector ?? '', accreditation: prev?.accreditation ?? '', external_codes: prev?.external_codes ?? {},
     why: typeof input.why === 'string' && input.why.trim() ? input.why : `학년 체계: ${scheme}`, grade_scheme: scheme, grade_labels: customByOrdinal,
-    ...(input.base_version != null ? { base_version: input.base_version } : {}),
+    base_version: base,
   });
   return { scheme, version, ...made };
 }

@@ -8,6 +8,10 @@ const { asUser, getPool } = await import('@/lib/db');
 const gs = await import('@/lib/grade-schemes');
 const demo = await import('@/lib/demo-school');
 const pp = await import('@/lib/people');
+const f = await import('@/lib/foundation');
+/** 지금 판을 읽어 base_version 으로 넘긴다(지침 10) */
+const apply = (userId: string, schoolId: string, input: Record<string, unknown>, locale = 'ko') =>
+  asUser(userId, async (db) => gs.applyGradeScheme(db, schoolId, { ...input, base_version: (await f.schoolProfile(db, schoolId))?.version ?? 0 }, locale));
 
 type S = { schoolId: string; userId: string };
 let A: S; let B: S;
@@ -38,9 +42,9 @@ describe('학년 체계', () => {
   });
 
   it('미국식으로 학교급 3개·학년 13개, 다시 불러도 빠진 것만(중복 없음), 체계는 판으로 쌓임', async () => {
-    const r1 = await asUser(B.userId, (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'us', levels: ['elementary', 'middle', 'high'] }, 'en'));
+    const r1 = await apply(B.userId, B.schoolId, { scheme: 'us', levels: ['elementary', 'middle', 'high'] }, 'en');
     expect(r1).toMatchObject({ scheme: 'us', levels: 3, grades: 13 });
-    const r2 = await asUser(B.userId, (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'us', levels: ['elementary', 'middle', 'high'] }, 'en'));
+    const r2 = await apply(B.userId, B.schoolId, { scheme: 'us', levels: ['elementary', 'middle', 'high'] }, 'en');
     expect(r2).toMatchObject({ levels: 0, grades: 0, version: r1.version + 1 });
     const v = await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'en'));
     expect(v.scheme).toBe('us');
@@ -50,7 +54,7 @@ describe('학년 체계', () => {
   });
 
   it('커스텀은 학년 표기를 학교가 정하고, 고른 학교급만 만든다', async () => {
-    const r = await asUser(A.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'custom', levels: ['middle'], labels: { m1: '씨앗반', m2: '새싹반' } }));
+    const r = await apply(A.userId, A.schoolId, { scheme: 'custom', levels: ['middle'], labels: { m1: '씨앗반', m2: '새싹반' } });
     expect(r).toMatchObject({ levels: 1, grades: 3 });
     const v = await asUser(A.userId, (db) => gs.schemeView(db, A.schoolId, 'ko'));
     expect(v.levels.find((l) => l.code === 'middle')!.grades.map((x) => x.label)).toEqual(['씨앗반', '새싹반', '중3']);
@@ -60,12 +64,12 @@ describe('학년 체계', () => {
     const count = async () => Number((await su.query(`select count(*) n from public.grade_levels where school_id = $1`, [B.schoolId])).rows[0].n);
     const before = await count();
     // 미국식으로 만든 학교를 한국식으로: K~12 그대로, 새 학년 없음
-    expect(await asUser(B.userId, (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'kr', levels: ['elementary', 'middle', 'high'] }, 'en'))).toMatchObject({ grades: 0 });
+    expect(await apply(B.userId, B.schoolId, { scheme: 'kr', levels: ['elementary', 'middle', 'high'] }, 'en')).toMatchObject({ grades: 0 });
     expect(await count()).toBe(before);
     let v = await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'ko'));
     expect(v.levels.find((l) => l.code === 'high')!.grades.map((x) => x.label)).toEqual(['중3', '고1', '고2', '고3']);
     // 커스텀으로: 이미 있는 학년(고1 = 서수 10)에도 표기가 붙는다
-    expect(await asUser(B.userId, (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'custom', levels: ['high'], labels: { h1: '열매반' } }, 'en'))).toMatchObject({ grades: 0 });
+    expect(await apply(B.userId, B.schoolId, { scheme: 'custom', levels: ['high'], labels: { h1: '열매반' } }, 'en')).toMatchObject({ grades: 0 });
     expect(await count()).toBe(before);
     v = await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'ko'));
     expect(v.levels.find((l) => l.code === 'high')!.grades.map((x) => x.label)).toContain('열매반');
@@ -78,10 +82,16 @@ describe('학년 체계', () => {
   });
 
   it('잘못된 체계·학교급은 거부, 학교 관리자가 아니면 DB가 거부, 다른 학교 학년으로 반을 못 만든다', async () => {
-    await expect(asUser(A.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'uk', levels: ['high'] }))).rejects.toThrow();
-    await expect(asUser(A.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'kr', levels: [] }))).rejects.toThrow();
+    await expect(apply(A.userId, A.schoolId, { scheme: 'uk', levels: ['high'] })).rejects.toThrow();
+    await expect(apply(A.userId, A.schoolId, { scheme: 'kr', levels: [] })).rejects.toThrow();
     await expect(asUser(A.userId, (db) => db.query(`select app.set_school_profile($1, '{"grade_scheme":"uk"}')`, [A.schoolId]))).rejects.toThrow('학년 체계');
-    await expect(asUser(B.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'kr', levels: ['high'] }))).rejects.toMatchObject({ code: '42501' });
+    await expect(apply(B.userId, A.schoolId, { scheme: 'kr', levels: ['high'] })).rejects.toMatchObject({ code: '42501' });
+    // 지침 10: 보고 고친 판이 없거나 낡았으면 아무것도 만들지 않는다
+    const n = async () => Number((await su.query(`select count(*) n from public.grade_levels where school_id = $1`, [A.schoolId])).rows[0].n);
+    const before = await n();
+    await expect(asUser(A.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'kr', levels: ['high'] }))).rejects.toThrow('base_version');
+    await expect(asUser(A.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'kr', levels: ['high'], base_version: 0 }))).rejects.toMatchObject({ code: 'P0409' });
+    expect(await n()).toBe(before);
     const bGrade = (await su.query(`select id from public.grade_levels where school_id = $1 limit 1`, [B.schoolId])).rows[0].id;
     const aYear = await asUser(A.userId, (db) => pp.addAcademicYear(db, A.schoolId, { label: 'gs-2030', startsOn: '2030-03-01', endsOn: '2031-03-01' }));
     await expect(asUser(A.userId, (db) => pp.addGradeHomeroom(db, A.schoolId, { yearId: aYear, gradeLevelId: bGrade, name: '1반' }))).rejects.toThrow('학년');

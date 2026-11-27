@@ -72,7 +72,7 @@ export async function buildDemoSchool(db: Db): Promise<DemoResult> {
 
   // 1) 학교 관할 + 학교급·학년(한국식)
   await f.setSchoolProfile(db, schoolId, { country: 'KR', sector: 'alternative', why: '시연용 가상 학교(합성 자료)', base_version: 0 });
-  await applyGradeScheme(db, schoolId, { scheme: 'kr', levels: ['elementary', 'middle', 'high'], why: '시연 학교: 한국식 초1~고3' });
+  await applyGradeScheme(db, schoolId, { scheme: 'kr', levels: ['elementary', 'middle', 'high'], why: '시연 학교: 한국식 초1~고3', base_version: 1 });
   const levels = await pp.listSchoolLevels(db, schoolId);
   const grades = await f.listGradeLevels(db, schoolId);
   const levelId = (k: LevelKey) => levels.find((l) => l.code === k)!.id;
