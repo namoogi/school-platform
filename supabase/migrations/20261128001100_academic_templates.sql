@@ -61,9 +61,18 @@ language sql immutable set search_path = pg_catalog, public, pg_temp as $$
                      where jsonb_typeof(e -> 'id') <> 'string' or jsonb_typeof(e -> 'label') <> 'string'
                         or e ->> 'id' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,40}$' or length(trim(e ->> 'label')) not between 1 and 60)
     and jsonb_typeof(m -> 'scales') = 'array'
+    -- 척도: 미리 만든 척도 이름(src/lib/grading.ts SCALE_PRESETS 와 같은 목록) 또는 종류 + 띠 1~30개(코드·표기·하한)
     and not exists (select 1 from jsonb_array_elements(m -> 'scales') e
                      where jsonb_typeof(e) <> 'object' or coalesce(e ->> 'code', '') !~ '^[a-z][a-z0-9_]{1,40}$'
-                        or not (jsonb_typeof(e -> 'preset') = 'string' or jsonb_typeof(e -> 'bands') = 'array'))
+                        or not (
+                          (e ->> 'preset') in ('kr_achievement', 'us_letter', 'kr_elective', 'kr_arts_pe', 'kr_science_lab', 'us_plus_minus', 'pass_fail')
+                          or (not (e ? 'preset')
+                              and e ->> 'kind' in ('letter', 'level', 'pass_fail', 'percent', 'points')
+                              and jsonb_typeof(e -> 'bands') = 'array' and jsonb_array_length(e -> 'bands') between 1 and 30
+                              and not exists (select 1 from jsonb_array_elements(e -> 'bands') b
+                                               where jsonb_typeof(b) <> 'object' or jsonb_typeof(b -> 'code') <> 'string' or length(b ->> 'code') not between 1 and 10
+                                                  or jsonb_typeof(b -> 'label') <> 'object' or b -> 'label' = '{}'::jsonb
+                                                  or jsonb_typeof(b -> 'min') not in ('number', 'null')))))
     and m ->> 'attendance' in ('day', 'period', 'day_period')
     and jsonb_typeof(m -> 'calc_samples') = 'array'
     and not exists (select 1 from jsonb_array_elements(m -> 'calc_samples') e where jsonb_typeof(e) <> 'string')

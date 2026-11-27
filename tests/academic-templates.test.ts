@@ -107,7 +107,15 @@ describe('학사 관리 템플릿', () => {
     await expect(bad({ grade_scheme: 'us' })).rejects.toThrow('템플릿 내용');
     await expect(bad({ grade_scheme: 'us', levels: ['college'], periods: [{ id: 's1', label: 'A' }], scales: [], calc_samples: [], attendance: 'day', outputs: [], hide: [] })).rejects.toThrow('템플릿 내용');
     await expect(bad({ grade_scheme: 'us', levels: ['high'], periods: [{ id: 's1', label: 'A' }], scales: [], calc_samples: [], attendance: 'day', outputs: ['diploma'], hide: [] })).rejects.toThrow('템플릿 내용');
+    const ok = { grade_scheme: 'us', levels: ['high'], periods: [{ id: 's1', label: 'A' }], calc_samples: [], attendance: 'day', outputs: [], hide: [] };
+    await expect(bad({ ...ok, scales: [{ code: 'x', preset: 'unknown' }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [] }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'A' }] }] })).rejects.toThrow('템플릿 내용');
     expect((await asUser(B.userId, (db) => at.listTemplates(db))).find((t) => t.key === 'us_k12')!.version).toBe(2);
+    // SCALE_PRESETS 와 DB 검사 목록이 같아야 한다(한쪽만 늘면 템플릿이 막히거나 적용이 깨짐)
+    const { SCALE_PRESETS } = await import('@/lib/grading');
+    const fn = (await su.query(`select prosrc from pg_proc where proname = 'academic_template_ok'`)).rows[0].prosrc as string;
+    for (const k of Object.keys(SCALE_PRESETS)) expect(fn).toContain(`'${k}'`);
     // 템플릿 판은 고칠 수 없다
     await expect(su.query(`update public.academic_templates set why = 'x'`)).rejects.toThrow();
   });
