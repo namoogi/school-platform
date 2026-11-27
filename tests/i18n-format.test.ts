@@ -1,6 +1,6 @@
 /** ADR 0037: 화면 문구 채우기·대체 순서·브라우저 언어 고르기 (DB 없이) */
 import { describe, expect, it } from 'vitest';
-import { fallbackChain, formatMessage, pickFromAcceptLanguage } from '@/lib/i18n/format';
+import { fallbackChain, formatMessage, pickFromAcceptLanguage, placeholders, sameShape } from '@/lib/i18n/format';
 import { CATALOG } from '@/lib/i18n/catalog';
 import en from '../i18n/en.json';
 
@@ -47,8 +47,16 @@ describe('기본 영어 묶음', () => {
     expect(Object.keys(en).filter((k) => !keys.includes(k))).toEqual([]);
   });
   it('채우기 자리({…})가 기준 문구와 같다', () => {
-    const slots = (s: string) => [...s.matchAll(/\{(\w+)\s*[,}]/g)].map((m) => m[1]).sort().join(',');
-    const bad = Object.entries(CATALOG).filter(([k, v]) => slots(v) !== slots((en as Record<string, string>)[k])).map(([k]) => k);
+    const bad = Object.entries(CATALOG).filter(([k, v]) => !sameShape(v, (en as Record<string, string>)[k])).map(([k]) => k);
     expect(bad).toEqual([]);
+  });
+});
+
+describe('번역 모양 검사', () => {
+  it('채우기 자리 이름이 다르거나 중괄호 짝이 맞지 않으면 거부', () => {
+    expect(placeholders('{n, plural, one {#} other {# {unit}}}')).toEqual(['n', 'unit']);
+    expect(sameShape('화면 형식: {kind}', 'Layout: {kind}')).toBe(true);
+    expect(sameShape('화면 형식: {kind}', 'Layout: {type}')).toBe(false);
+    expect(sameShape('{n, plural, other {#개}}', '{n, plural, one {# item} other {# items}')).toBe(false);
   });
 });

@@ -6,7 +6,7 @@ import { useI18n } from './I18nProvider';
 
 type S = { id: string; name: string; status: string };
 
-async function setContext(schoolId: string | null, fallbackError = '학교를 바꾸지 못했습니다.') {
+async function setContext(schoolId: string | null, fallbackError: string) {
   const res = await fetch('/api/context', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ schoolId }) });
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? fallbackError);
 }
@@ -51,20 +51,21 @@ export function LeaveSchoolButton() {
   const router = useRouter();
   const { t } = useI18n();
   async function leave() {
-    await setContext(null);
+    await setContext(null, t('switcher.error'));
     router.push('/admin'); router.refresh();
   }
   return <button type="button" className="btn btn-ghost btn-sm" onClick={leave}>{t('switcher.leave')}</button>;
 }
 
-export function EnterSchoolButton({ schoolId, label = '들어가기' }: { schoolId: string; label?: string }) {
+export function EnterSchoolButton({ schoolId, label }: { schoolId: string; label?: string }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   async function enter() {
     setBusy(true);
-    try { await setContext(schoolId); router.push('/'); router.refresh(); }
+    try { await setContext(schoolId, t('switcher.error')); router.push('/'); router.refresh(); }
     catch (e) { alert((e as Error).message); }
     finally { setBusy(false); }
   }
-  return <button type="button" className="btn btn-secondary btn-sm" onClick={enter} disabled={busy}>{label}</button>;
+  return <button type="button" className="btn btn-secondary btn-sm" onClick={enter} disabled={busy}>{label ?? t('switcher.enter')}</button>;
 }

@@ -2,6 +2,7 @@ import type { Db } from './db';
 import { ValidationError } from './services';
 import { CATALOG, CATALOG_KEYS } from './i18n/catalog';
 import { forgetI18nCache } from './i18n/server';
+import { sameShape } from './i18n/format';
 
 /** ADR 0037: 언어·번역 관리(전체 관리자). 쓰기는 DB 명령 함수(app.save_language·app.save_ui_messages)가 권한을 다시 확인한다 */
 export type LanguageRow = { code: string; native_name: string; direction: 'ltr' | 'rtl'; fallback: string | null; active: boolean; sort: number; translated: number };
@@ -35,10 +36,13 @@ export async function saveMessages(db: Db, lang: unknown, messages: unknown, ove
   const known = new Set<string>(CATALOG_KEYS);
   const entries = Object.entries(messages as Record<string, unknown>);
   const unknown = entries.filter(([k]) => !known.has(k)).length;
-  const clean = Object.fromEntries(entries.filter(([k, v]) => known.has(k) && typeof v === 'string' && v.trim() && v.length <= 4000));
+  const usable = entries.filter(([k, v]) => known.has(k) && typeof v === 'string' && v.trim() && v.length <= 4000) as [keyof typeof CATALOG, string][];
+  // 채우기 자리({name}·복수형)가 기준 문구와 다르면 받지 않는다(화면에 {name} 이 그대로 보이거나 빈칸이 되지 않게)
+  const invalid = usable.filter(([k, v]) => !sameShape(CATALOG[k], v)).map(([k]) => k);
+  const clean = Object.fromEntries(usable.filter(([k]) => !invalid.includes(k)));
   const { rows: [r] } = await db.query('select app.save_ui_messages($1, $2, $3) as n', [lang, JSON.stringify(clean), overwrite === true]);
   forgetI18nCache();
-  return { saved: r.n as number, skippedUnknown: unknown };
+  return { saved: r.n as number, skippedUnknown: unknown, skippedInvalid: invalid };
 }
 
 /** 내보내기: 기준 문구(한국어)와 그 언어의 지금 번역을 나란히. 학교 AI·관제 세션이 빈 칸을 채워 다시 넣는다 */

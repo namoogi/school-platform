@@ -89,3 +89,16 @@ export function pickFromAcceptLanguage(header: string | null | undefined, availa
   }
   return null;
 }
+
+/** 채우기 자리 이름 목록(정렬). 번역이 기준 문구와 같은 자리를 쓰는지 볼 때 쓴다 */
+export function placeholders(s: string): string[] {
+  return [...s.matchAll(/\{(\w+)\s*[,}]/g)].map((m) => m[1]).sort();
+}
+
+/** 번역 한 줄이 기준 문구와 맞는지: 중괄호 짝, 같은 채우기 자리 */
+export function sameShape(source: string, translated: string): boolean {
+  let depth = 0;
+  for (const ch of translated) { if (ch === '{') depth++; else if (ch === '}' && --depth < 0) return false; }
+  if (depth !== 0) return false;
+  return placeholders(source).join(',') === placeholders(translated).join(',');
+}

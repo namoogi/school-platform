@@ -39,8 +39,8 @@ describe('언어 목록·번역 사전', () => {
 
   it('전체 관리자가 언어를 더하면 코드 변경 없이 바로 쓸 수 있고, 목록 밖 이름표는 받지 않는다', async () => {
     await asUser(platformId, (db) => lg.saveLanguage(db, { code: 'vi', native_name: 'Tiếng Việt', fallback: 'en' }));
-    const r = await asUser(platformId, (db) => lg.saveMessages(db, 'vi', { 'login.submit': 'Đăng nhập', 'no.such.key': 'x' }, false));
-    expect(r).toEqual({ saved: 1, skippedUnknown: 1 });
+    const r = await asUser(platformId, (db) => lg.saveMessages(db, 'vi', { 'login.submit': 'Đăng nhập', 'no.such.key': 'x', 'ui.kindMenu': 'Bố cục: {type}' }, false));
+    expect(r).toEqual({ saved: 1, skippedUnknown: 1, skippedInvalid: ['ui.kindMenu'] });
     const list = await asUser(platformId, (db) => lg.listLanguages(db));
     expect(list.rows.find((l) => l.code === 'vi')).toMatchObject({ native_name: 'Tiếng Việt', translated: 1, active: true });
   });
