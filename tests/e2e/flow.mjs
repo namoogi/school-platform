@@ -1709,6 +1709,24 @@ try {
     const list = await h.textContent('.triage-list');
     assert.match(list, /교육철학/);
     assert.match(list, /공동체/);
+    // #143: both new filter layouts must expose editable categories after template application.
+    await h.goto(`${BASE}/site/templates/project`);
+    await h.getByTestId('template-apply').click();
+    await h.locator('[role=status]', { hasText: '시안 쪽' }).waitFor();
+    for (const title of ['프로젝트', '학생 작품']) {
+      await h.goto(`${BASE}/site?box=page`);
+      await h.locator('.triage-list a').filter({ hasText: new RegExp(title) }).first().click();
+      const category = h.getByLabel('1. 분류(거르기 단추) 한국어', { exact: true });
+      await category.fill('학교 생태 탐구');
+      await h.getByRole('button', { name: '새 판으로 저장', exact: true }).click();
+      await h.getByRole('status').filter({ hasText: '새 판으로 저장했습니다' }).waitFor();
+      await h.reload();
+      assert.equal(await category.inputValue(), '학교 생태 탐구');
+      const previewHref = await h.getByRole('link', { name: '시안 미리보기', exact: true }).getAttribute('href');
+      await h.goto(`${BASE}${previewHref}`);
+      await h.locator('.sec-filter-bar button', { hasText: '학교 생태 탐구' }).click();
+      await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
+    }
     await ctx.close();
   });
   await step('66차: 학교 자료로 빈 칸 채우기 — 이야기형 미리보기에서 소개서 올리기 → 제안 확인 → 넣기 → 교육철학 쪽 새 시안 판', async () => {
