@@ -15,6 +15,9 @@
 ## 홈페이지 템플릿 (99차, Codex 협업)
 대표 3종(이야기·프로젝트·유치원)에 Codex가 생성한 예시 사진 22장(`public/site-templates/img/`, 프롬프트·규격 `docs/design/template-photo-manifest.json`)과 쪽마다 다른 배치(홈 + 안쪽 9쪽)가 들어갔다. 판: story 3, project 4, kinder 3. 다음은 골격 B·E와 나머지 5종 사진(16장, `docs/design/template-image-prompts.md`), 새 템플릿(재외 한글학교·기숙형·진로 특성화). Codex에게 맡기는 길은 `docs/COLLABORATION.md` 8절.
 
+## 홈페이지 레이아웃 (106차)
+키트 테마에 레이아웃 층(1200px 격자·구역 띠·구역 머리·한 줄 머리글·4칸 바닥글)이 들어갔다(`globals.css` 맨 끝 '100차' 주석 블록, `SiteFrame` kit 분기). 다음: `docs/design/school-site-ia.md`(메뉴 6개·홈 구역 순서) + `template-reference-board.md` 3절 구역 모양 8가지.
+
 ## 학교 이전 (92차, ADR 0035)
 공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
 
