@@ -39,6 +39,9 @@ jobs:
       - run: npm run lint:i18n
       - run: npm run typecheck
       - run: npm run test:unit
+      # 108차 교훈: 운영 마이그레이션 역할은 슈퍼유저가 아니다. 새 클러스터에서 그런 역할로 처음부터 적용해 본다(역할이 생기기 전, 첫 DB 단계)
+      - name: Migrations as non-superuser (like production)
+        run: ADMIN_URL=postgres://postgres@127.0.0.1:54322 bash scripts/check-migrate-nonsuper.sh
       - name: Create database
         run: psql -h 127.0.0.1 -p 54322 -U postgres -c "create database school_platform"
       - run: npm test
