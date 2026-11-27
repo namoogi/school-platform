@@ -1640,8 +1640,8 @@ try {
     await h.goto(`${BASE}/site`);
     await h.click('[data-testid=site-templates-link]');
     await h.waitForURL(/\/site\/templates$/);
-    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 7);
-    assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 7);
+    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 8);
+    assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 8);
     assert.equal((await h.request.get(`${BASE}/site-templates/story.jpg`)).status(), 200);
     // 89차(ADR 0034): 미리보기는 관리 화면 밖 전체 화면 — 디자인(테마)·메뉴 그대로, 쪽을 넘겨 본다
     await h.click('[data-testid=template-live-project]');
@@ -1649,6 +1649,13 @@ try {
     await h.locator('[data-testid=template-live]').waitFor();
     assert.equal(await h.getAttribute('.site', 'data-theme'), 'studio');
     assert.match(await h.textContent('.site-brand'), /두레프로젝트학교/);
+    // 90차: 작품 갤러리형 — 분야로 거르기(과학을 누르면 과학 작품만)
+    const works = h.locator('.sec[data-variant="filter"] .sec-photos li');
+    assert.equal(await works.count(), 6);
+    await h.click('.sec-filter-bar button:has-text("과학")');
+    assert.equal(await h.locator('.sec[data-variant="filter"] .sec-photos li:visible').count(), 2);
+    await h.click('.sec-filter-bar button:has-text("전체")');
+    assert.equal(await h.locator('.sec[data-variant="filter"] .sec-photos li:visible').count(), 6);
     await h.click('.site-nav a:has-text("프로젝트")');
     await h.waitForURL(/page=projects/);
     assert.match(await h.textContent('[data-testid=template-live]'), /마을 하천 지도/);

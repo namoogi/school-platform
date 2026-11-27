@@ -5,13 +5,14 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 
 const PAL = {
-  notice: ['#cfe0f7', '#8fb3e6', '#1f5fbf'], story: ['#f3ece0', '#d9c6a5', '#7a6a4f'], admissions: ['#fde3dd', '#f1a493', '#c13c27'],
+  notice: ['#cfe0f7', '#8fb3e6', '#1f5fbf'], story: ['#efe6cf', '#b9c7a8', '#2f5d46'], admissions: ['#fde3dd', '#f1a493', '#c13c27'],
   project: ['#fff3c4', '#ffd23f', '#111111'], mission: ['#f3e6d3', '#d7b48a', '#8a4b1f'], international: ['#dff1ef', '#8ccfc8', '#0b7a75'],
-  single: ['#e6f2dc', '#a9cf8f', '#3f7d2b'],
+  single: ['#e6f2dc', '#a9cf8f', '#3f7d2b'], kinder: ['#ffe3ec', '#ffc8a8', '#c2366c'],
 };
 const NAMES = {
-  notice: ['hero', 'calendar', 'lunch', 'way'], story: ['hero', 'day', 'learning'], admissions: ['hero', 'class', 'books', 'mentor'],
-  project: ['hero', 'river', 'market'], mission: ['hero', 'village'], international: ['hero', 'early', 'primary', 'secondary'], single: ['study', 'outing'],
+  notice: ['hero', 'calendar', 'lunch', 'way'], story: ['hero', 'day', 'learning', 'season-1', 'season-2', 'season-3', 'season-4', 'season-5'], admissions: ['hero', 'class', 'books', 'mentor'],
+  project: ['hero', 'river', 'market', 'work-1', 'work-2', 'work-3', 'work-4', 'work-5', 'work-6'], mission: ['hero', 'village'], international: ['hero', 'early', 'primary', 'secondary'], single: ['study', 'outing'],
+  kinder: ['hero', 'class-1', 'class-2', 'class-3', 'play'],
 };
 const svg = ([light, mid, dark], wide, seed) => {
   const w = wide ? 1600 : 1200, h = 900;

@@ -74,7 +74,7 @@ function sectionBlock(x: Record<string, unknown>, at: string): Block {
     return {
       title: opt(text(y.title, f, 200), noText), body: opt(text(y.body, f, 3000), noText),
       asset: y.asset ? asset(y.asset, f) : undefined, alt: opt(text(y.alt, `${f} 대체 글`, 300), noText),
-      href: y.href ? href(y.href, f) : undefined,
+      href: y.href ? href(y.href, f) : undefined, tag: opt(text(y.tag, `${f} 분류`, 40), noText),
     };
   });
   const variant = x.variant == null || x.variant === '' ? undefined : (x.variant as SectionVariant);
