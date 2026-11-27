@@ -120,6 +120,8 @@ export const CATALOG = {
   'placement.state.active': "운영 중",
   'placement.costRange': "추정 ${min}~${max}/월",
   'placement.costSchool': "학교 부담",
+  'placement.movedTitle': "학교가 새 주소로 옮겼습니다",
+  'placement.movedNone': "옮긴 학교가 없습니다.",
   'placement.movedBanner': "이 학교는 새 주소로 옮겼습니다: {url}",
   // 언어·번역 관리(전체 관리)
   'langAdmin.title': '언어·번역',

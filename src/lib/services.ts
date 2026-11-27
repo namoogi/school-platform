@@ -58,6 +58,8 @@ export type PublishedDocument = {
 
 // ── 학교 ─────────────────────────────────────────────────
 export class NoSchoolError extends Error {}
+/** ADR 0038: 이용이 중지된 학교가 다른 주소로 옮겨 갔다(옮김 판). 화면은 /moved 로 안내한다 */
+export class MovedSchoolError extends Error {}
 
 export async function me(db: Db): Promise<Me> {
   const { rows } = await db.query<Me>('select * from app.me()');
@@ -90,6 +92,9 @@ export async function currentSchool(db: Db, preferredId?: string | null): Promis
     throw new NotFoundError('소속 학교가 없습니다.');
   }
   if (row.status === 'suspended' && !account.is_platform_admin) {
+    const { rows: [pl] } = await db.query(
+      'select state from public.school_placements where school_id = $1 order by version desc limit 1', [row.id]);
+    if (pl?.state === 'moved') throw new MovedSchoolError('이 학교는 새 주소로 옮겼습니다.');
     throw new ValidationError('이용이 중지된 학교입니다. 전체 관리자에게 문의하세요.');
   }
   const role = (row.role as School['role']) ?? null;

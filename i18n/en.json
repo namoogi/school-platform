@@ -149,5 +149,7 @@
   "placement.state.active": "Running",
   "placement.costRange": "est. ${min}–${max}/mo",
   "placement.costSchool": "Paid by the school",
-  "placement.movedBanner": "This school has moved to a new address: {url}"
+  "placement.movedBanner": "This school has moved to a new address: {url}",
+  "placement.movedTitle": "Your school has moved to a new address",
+  "placement.movedNone": "No moved schools."
 }

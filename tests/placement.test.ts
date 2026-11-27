@@ -6,6 +6,7 @@ import { lookupIds, resetTestDb, TEST_URL } from './helpers';
 process.env.DATABASE_URL = TEST_URL;
 const { asUser, getPool } = await import('@/lib/db');
 const pl = await import('@/lib/placement');
+const svc = await import('@/lib/services');
 
 let A: { schoolId: string; userId: string };
 let B: { schoolId: string; userId: string };
@@ -60,5 +61,23 @@ describe('격리 등급 판', () => {
   it('판은 고치거나 지울 수 없다', async () => {
     await expect(su.query(`update public.school_placements set reason = 'x' where school_id = $1`, [A.schoolId])).rejects.toThrow();
     await expect(su.query(`delete from public.school_placements where school_id = $1`, [A.schoolId])).rejects.toThrow();
+  });
+
+  it('옮긴 학교(원본 이용 중지)의 구성원은 학교 화면 대신 새 주소 안내를 받는다 — 주소는 DB 옮김 판에서', async () => {
+    await su.query(`update public.schools set status = 'suspended' where id = $1`, [A.schoolId]);
+    try {
+      await expect(asUser(A.userId, (db) => svc.currentSchool(db, A.schoolId))).rejects.toBeInstanceOf(svc.MovedSchoolError);
+      expect(await asUser(A.userId, (db) => pl.myMovedSchools(db))).toEqual([{ name: expect.any(String), target_url: 'https://a.example.org' }]);
+      // B(옮김 판 없음)는 다른 학교의 옮김 주소를 보지 않는다
+      expect(await asUser(B.userId, (db) => pl.myMovedSchools(db))).toEqual([]);
+    } finally {
+      await su.query(`update public.schools set status = 'active' where id = $1`, [A.schoolId]);
+    }
+  });
+
+  it('이력은 학교 수와 상관없이 한 번에 읽는다', async () => {
+    const h = await asUser(platformId, (db) => pl.placementHistories(db));
+    expect(h[A.schoolId].map((x) => x.version)).toEqual([2, 1]);
+    expect(h[B.schoolId].map((x) => x.version)).toEqual([1]);
   });
 });

@@ -1,6 +1,6 @@
 import { loadForPlatform } from '@/lib/page';
 import { accessibleSchools } from '@/lib/services';
-import { currentPlacements, placementHistory, TIER_COST_USD, TIERS, type Tier } from '@/lib/placement';
+import { currentPlacements, placementHistories, TIER_COST_USD, TIERS, type Tier } from '@/lib/placement';
 import { getI18n } from '@/lib/i18n/server';
 import type { MsgKey } from '@/lib/i18n/catalog';
 import { PageHeader, StatusBadge } from '@/components/ui';
@@ -12,7 +12,7 @@ export default async function PlacementsPage() {
     const schools = await accessibleSchools(db);
     return {
       schools, current: await currentPlacements(db),
-      histories: Object.fromEntries(await Promise.all(schools.map(async (s) => [s.id, await placementHistory(db, s.id)] as const))),
+      histories: await placementHistories(db),
       uiLang: (await db.query('select ui_lang from public.user_preferences where user_id = app.uid()')).rows[0]?.ui_lang as string | null,
     };
   });
@@ -46,7 +46,7 @@ export default async function PlacementsPage() {
             <PlacementForm schoolId={s.id} current={p ? { version: p.version, tier: p.tier, state: p.state, target_url: p.target_url, monthly_cost_usd: p.monthly_cost_usd } : null} />
             <details>
               <summary>{t('placement.history')}</summary>
-              {histories[s.id].length ? (
+              {histories[s.id]?.length ? (
                 <ol className="activity">{histories[s.id].map((h) => (
                   <li key={h.version}><span><b>{t('placement.version')} {h.version}</b> · {tierName(h.tier)} · {t(`placement.state.${h.state}` as MsgKey)}{h.target_url ? ` · ${h.target_url}` : ''}</span>
                     <span className="fine">{h.reason}</span><time dateTime={h.created_at}>{new Date(h.created_at).toISOString().slice(0, 16).replace('T', ' ')}</time></li>

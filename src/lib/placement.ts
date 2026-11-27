@@ -29,11 +29,24 @@ export async function currentPlacements(db: Db): Promise<Record<string, Placemen
   return Object.fromEntries(rows.map((r) => [r.school_id, r as Placement]));
 }
 
-export async function placementHistory(db: Db, schoolId: string): Promise<Placement[]> {
+/** 학교마다 최근 20판을 한 번에(학교 수만큼 질의하지 않게) */
+export async function placementHistories(db: Db): Promise<Record<string, Placement[]>> {
   const { rows } = await db.query(
-    `select school_id, version, tier, state, target_url, reason, monthly_cost_usd, created_at
-       from public.school_placements where school_id = $1 order by version desc limit 20`, [schoolId]);
-  return rows as Placement[];
+    `select school_id, version, tier, state, target_url, reason, monthly_cost_usd, created_at from (
+       select p.*, row_number() over (partition by school_id order by version desc) as rn from public.school_placements p) x
+      where rn <= 20 order by school_id, version desc`);
+  const out: Record<string, Placement[]> = {};
+  for (const r of rows as Placement[]) (out[r.school_id] ??= []).push(r);
+  return out;
+}
+
+/** 내가 속한 학교 가운데 옮김 판이 마지막인 학교와 새 주소(옮긴 학교 구성원 안내용) */
+export async function myMovedSchools(db: Db): Promise<{ name: string; target_url: string }[]> {
+  const { rows } = await db.query(
+    `select s.name, p.target_url from public.memberships m join public.schools s on s.id = m.school_id
+       join lateral (select state, target_url from public.school_placements x where x.school_id = s.id order by version desc limit 1) p on true
+      where m.user_id = app.uid() and p.state = 'moved' and p.target_url is not null order by s.name`);
+  return rows as { name: string; target_url: string }[];
 }
 
 export async function setPlacement(db: Db, schoolId: unknown, input: Record<string, unknown>) {
