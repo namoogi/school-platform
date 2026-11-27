@@ -121,7 +121,7 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
   1. Codex 설정 → Code review → 이 저장소 켜기(Automatic review)
   2. Codex 설정 → Personal preferences → 자동 검토 켜기. 저장소 칸이 'Follow personal preferences'면 이 값을 따른다.
   3. GitHub → Settings → Applications → ChatGPT Codex Connector: 권한 갱신 요청이 있으면 승인하고, 저장소 접근에 이 저장소를 넣는다.
-  4. Codex 환경(Environment): 85차에는 따로 만들지 않고도 검토가 돌았다. 공식 안내에는 필요하다고 되어 있으니, 막히면 만든다.
+  4. Codex 환경(Environment): 공식 안내에는 필요하다고 되어 있다. 85차에는 환경이 있는지 확인하지 않았다(검토는 돌았다). 막히면 이것도 본다.
 - 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
 
 ## Vercel 미리보기 빌드 (2026-11-24 사용자 결정, 관제 D-12)
