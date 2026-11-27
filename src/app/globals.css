@@ -288,6 +288,8 @@ select:disabled, input:disabled, textarea:disabled { background-color: var(--sur
 input[readonly]:not([type=checkbox]):not([type=radio]) { background-color: var(--surface-subtle); }
 /* 숫자: 위아래 화살표 대신 키보드 ↑↓ (오른쪽 정렬·고정폭 숫자) */
 input[type=number]:not(.pv-root *) { font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+/* UI 점검(records, 390px): 날짜 칸이 자체 최소 폭 때문에 두 칸 격자에서 옆 칸보다 넓어져 카드 여백을 넘었다. 격자 칸 폭을 따르게 한다 */
+input[type=date]:not(.pv-root *), input[type=time]:not(.pv-root *) { min-width: 0; max-width: 100%; }
 input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* 날짜·시간: 달력 단추를 흐린 아이콘으로 (다크 화면은 .app의 color-scheme이 달력 창도 어둡게) */
 input[type=date]::-webkit-calendar-picker-indicator, input[type=time]::-webkit-calendar-picker-indicator, input[type=datetime-local]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; border-radius: var(--radius-sm); padding: 2px; }
