@@ -1,5 +1,5 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
@@ -50,6 +50,13 @@ export function SiteSettingsForm({ initial, schoolName, saved = false }: { initi
     theme: initial?.theme ?? 'campus', site_title: (initial?.site_title ?? { ko: schoolName }) as LText, is_open: initial?.is_open ?? false,
   });
   const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(saved ? { tone: 'success', text: '저장했습니다.' } : null);
+  // 표시를 넘겨받았으면 주소에서 saved=1을 지운다(새로 고침·즐겨찾기로 다시 열 때 저장한 것처럼 보이지 않게). 서버를 다시 부르지 않는다
+  useEffect(() => {
+    if (!saved) return;
+    const u = new URL(window.location.href);
+    u.searchParams.delete('saved');
+    window.history.replaceState(window.history.state, '', u.pathname + u.search);
+  }, [saved]);
   async function save(e: React.FormEvent) {
     e.preventDefault();
     try { await send('/api/site/settings', 'POST', s); setMsg({ tone: 'success', text: '저장했습니다.' }); router.replace('/site?box=settings&saved=1', { scroll: false }); router.refresh(); }
