@@ -2854,5 +2854,9 @@
   "err.template.unknown": "That template was not found.",
   "db.templateAdminOnly": "Only platform admins publish templates.",
   "db.templateKey": "Invalid template key.",
-  "db.templateVersionNotFound": "That template version was not found."
+  "db.templateVersionNotFound": "That template version was not found.",
+  "atpl.newVersion": "Update available (v{from} → v{to})",
+  "atpl.update": "Fill in from the new version",
+  "atpl.confirmUpdate": "Fill in your school copy from the new version of {name}?",
+  "db.templateShape": "Invalid template content (grade naming, levels, terms, scales, attendance unit, records or hidden sections)."
 }

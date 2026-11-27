@@ -2893,6 +2893,11 @@ export const CATALOG = {
   'db.templateAdminOnly': '전체 관리자만 템플릿을 냅니다.',
   'db.templateKey': '템플릿 키가 올바르지 않습니다.',
   'db.templateVersionNotFound': '그 템플릿 판을 찾을 수 없습니다.',
+  // 111차 템플릿 새 판
+  'atpl.newVersion': '새 판 있음({from}판 → {to}판)',
+  'atpl.update': '새 판으로 빠진 것 채우기',
+  'atpl.confirmUpdate': '{name} 새 판으로 학교 사본을 채울까요?',
+  'db.templateShape': '템플릿 내용이 올바르지 않습니다(학년 체계·학교급·학기·척도·출결 단위·서식·숨길 구획).',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

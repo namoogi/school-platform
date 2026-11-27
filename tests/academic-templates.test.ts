@@ -101,6 +101,13 @@ describe('학사 관리 템플릿', () => {
     await asUser(B.userId, async (db) => f.setSchoolProfile(db, B.schoolId, { country: 'TH', base_version: await ver(B) }));
     expect(await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId))).toMatchObject({ key: 'us_k12', version: 1 });
     expect((await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'en'))).scheme).toBe('us');
+    // 모양이 틀린 판은 내지 못한다(학교 화면이 깨지지 않게)
+    const bad = (manifest: object) => asUser(platformId, (db) => db.query(`select app.publish_academic_template($1)`, [JSON.stringify({
+      key: 'us_k12', base_version: 2, title: { ko: 'x' }, manifest })]));
+    await expect(bad({ grade_scheme: 'us' })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ grade_scheme: 'us', levels: ['college'], periods: [{ id: 's1', label: 'A' }], scales: [], calc_samples: [], attendance: 'day', outputs: [], hide: [] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ grade_scheme: 'us', levels: ['high'], periods: [{ id: 's1', label: 'A' }], scales: [], calc_samples: [], attendance: 'day', outputs: ['diploma'], hide: [] })).rejects.toThrow('템플릿 내용');
+    expect((await asUser(B.userId, (db) => at.listTemplates(db))).find((t) => t.key === 'us_k12')!.version).toBe(2);
     // 템플릿 판은 고칠 수 없다
     await expect(su.query(`update public.academic_templates set why = 'x'`)).rejects.toThrow();
   });

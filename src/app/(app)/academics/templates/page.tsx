@@ -54,16 +54,18 @@ export default async function TemplatesPage() {
 
       <div className="template-grid" data-testid="template-cards">
         {templates.map((tp) => {
-          const isCurrent = current?.key === tp.key;
+          // 학교가 고른 판과 최신 판이 다르면 '새 판'으로 따로 보인다(같은 키라도 지금 판이 아님, Codex #180)
+          const mode = current?.key !== tp.key ? 'choose' : current.version === tp.version ? 'reapply' : 'update';
           return (
             <section key={tp.key} className="card stack" data-testid={`tpl-${tp.key}`}>
-              <h2>{pick(tp.title)} {isCurrent && <StatusBadge tone="success">{t('atpl.current')}</StatusBadge>}</h2>
+              <h2>{pick(tp.title)} {mode === 'reapply' && <StatusBadge tone="success">{t('atpl.current')}</StatusBadge>}
+                {mode === 'update' && <StatusBadge tone="info">{t('atpl.newVersion', { from: current!.version, to: tp.version })}</StatusBadge>}</h2>
               <p className="fine">{pick(tp.summary)}</p>
               <h3>{t('atpl.youGet')}</h3>
               <dl className="facts">
                 {rows.map((r) => <Fragment key={r.label}><dt>{r.label}</dt><dd>{r.value(tp)}</dd></Fragment>)}
               </dl>
-              {admin && <ApplyTemplate templateKey={tp.key} title={pick(tp.title)} baseVersion={profileVersion} current={isCurrent} />}
+              {admin && <ApplyTemplate templateKey={tp.key} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />}
             </section>);
         })}
       </div>
