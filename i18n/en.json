@@ -2317,6 +2317,7 @@
   "site.section.photoAlt": "Photo alt text",
   "site.section.items": "Items ({n})",
   "site.section.tag": "Category (filter button)",
+  "site.section.eventDate": "Date (event badge)",
   "site.section.removeItem": "Remove item {n}",
   "site.section.addItem": "Add item",
   "site.section.buttonLabel": "Button label",

@@ -410,7 +410,7 @@ function SectionFields({ b, langs, assets, onUploaded, onChange }: { b: SectionB
         <li key={k} className="block-card">
           <LangFields label={`${k + 1}. ${t('site.field.title')}`} value={it.title} langs={langs} onChange={(title) => setItem(k, { ...it, title })} />
           {b.template !== 'photos' && <LangFields label={`${k + 1}. ${t('site.field.text')}`} value={it.body} langs={langs} multiline onChange={(body) => setItem(k, { ...it, body })} />}
-          {['filter', 'feature-filter', 'portfolio'].includes(b.variant ?? '') && (b.template === 'cards' || b.template === 'photos') && <LangFields label={`${k + 1}. ${t('site.section.tag')}`} value={it.tag} langs={langs} onChange={(tag) => setItem(k, { ...it, tag })} />}
+          {['filter', 'feature-filter', 'portfolio', 'events'].includes(b.variant ?? '') && (b.template === 'cards' || b.template === 'photos') && <LangFields label={`${k + 1}. ${t(b.variant === 'events' ? 'site.section.eventDate' : 'site.section.tag')}`} value={it.tag} langs={langs} onChange={(tag) => setItem(k, { ...it, tag })} />}
           {(b.template === 'cards' || b.template === 'photos') && <AssetPick label={`${k + 1}. ${t('site.field.photo')}`} value={it.asset} assets={assets} onUploaded={onUploaded} onChange={(asset) => setItem(k, { ...it, asset: asset || undefined })} />}
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChange({ ...b, items: items.filter((_, j) => j !== k) })}>{t('site.section.removeItem', { n: k + 1 })}</button>
         </li>))}</ol>
