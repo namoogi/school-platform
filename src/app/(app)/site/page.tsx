@@ -24,7 +24,7 @@ const ICON: Record<Box, LucideIcon> = { settings: Settings2, page: FileText, new
  * 27차 학교 홈페이지 관리 (ADR 0008): 함(설정·쪽·소식·성품 동화) → 목록 → 편집.
  * 편집은 새 판으로 쌓이고, 공개는 학교 관리자가 판을 골라 한다. 방문자에게는 공개한 판만 보인다.
  */
-export default async function SiteAdminPage({ searchParams }: { searchParams: Promise<{ box?: string; id?: string; new?: string }> }) {
+export default async function SiteAdminPage({ searchParams }: { searchParams: Promise<{ box?: string; id?: string; new?: string; saved?: string }> }) {
   const sp = await searchParams;
   const { school, settings, entries, assets, detail, tokens } = await loadForPage(async ({ db, school }) => {
     const entries = await listEntries(db, school.id);
@@ -120,7 +120,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                 ? <>
                     {/* 가져오기 등으로 설정이 바뀌면 양식을 새 값으로 다시 연다(예전 값으로 덮어쓰지 않게) */}
                     {tokens && <TokenAlerts tokens={JSON.parse(JSON.stringify(tokens))} />}
-                    <SiteSettingsForm key={settings?.updated_at ?? 'new'} initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} />
+                    <SiteSettingsForm key={settings?.updated_at ?? 'new'} initial={settings ? JSON.parse(JSON.stringify(settings)) : null} schoolName={school.name} saved={sp.saved === '1'} />
                     {settings && <ImportPanel settings={JSON.parse(JSON.stringify(settings))} existing={entries.map((e) => ({ id: e.id, kind: e.kind, key: e.key }))} />}
                     {tokens && <AgentTokenPanel tokens={JSON.parse(JSON.stringify(tokens))}
                       stories={school.modules.includes('stories')} records={school.modules.includes('records')}
