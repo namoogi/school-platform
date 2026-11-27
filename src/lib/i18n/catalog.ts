@@ -2830,6 +2830,11 @@ export const CATALOG = {
   'demo.exists': '시연 학교가 이미 있습니다(다시 만들지 않음).',
   // 109차 학년 체계 표기 (ADR 0043)
   'db.gradeLabelsInvalid': '학년 표기는 서수(-3~14)마다 1~40자입니다.',
+  // 110차 수업 학년 칸
+  'courses.col.grade': '학년',
+  'courses.gradeOptional': '학년(선택)',
+  'courses.allGrades': '학교급 전체',
+  'db.offeringGradeNotFound': '이 학교급의 학년을 찾을 수 없습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

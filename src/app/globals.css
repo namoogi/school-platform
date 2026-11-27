@@ -2390,3 +2390,6 @@ label.check { display: flex; gap: var(--space-2); align-items: flex-start; }
 label.check input { margin-top: 0.25em; }
 .scheme-grades { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: var(--space-2); padding-left: var(--space-5); }
 .grade-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); list-style: none; padding: 0; margin: var(--space-1) 0 0; }
+
+/* 110차: 칸이 많은 표는 글자를 꺾지 않고 표 틀 안에서 옆으로 넘긴다(휴대폰 폭에서 한 글자씩 꺾이던 수업 목록) */
+.grid-table.nowrap-cells td { white-space: nowrap; }

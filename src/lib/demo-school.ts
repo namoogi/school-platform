@@ -116,43 +116,44 @@ export async function buildDemoSchool(db: Db): Promise<DemoResult> {
     }
   }
 
-  // 5) 수업: 학년마다 과목별 개설(분반 = 학년 표기), 승인 → 그 학년 학생만 수강
+  // 5) 수업: 학년마다 과목별 개설(학년 칸 = 그 학년, 분반 = 학년 표기) → 학기 시작에 그 학년 학생만 자동 수강(110차)
   const type = await cs.addCourseType(db, schoolId, { code: 'grade_core', name: '학년 공통' });
-  await cs.setCourseTypeRule(db, schoolId, type, { trigger: 'approval', publishable: false, passFailAllowed: true, note: '시연 학교: 학년별 공통 수업' });
+  await cs.setCourseTypeRule(db, schoolId, type, { trigger: 'term_start', publishable: false, passFailAllowed: true, note: '시연 학교: 학년별 공통 수업' });
   const subjectIds = new Map<string, string>();
   for (const k of Object.keys(SUBJECTS) as LevelKey[]) {
     for (const s of SUBJECTS[k]) subjectIds.set(s.code, await cs.addSubject(db, schoolId, { code: s.code, name: s.name, levelId: levelId(k) }));
   }
-  let offerings = 0;
+  const planned: { off: string; key: LevelKey; s: (typeof SUBJECTS)[LevelKey][number]; roster: typeof students }[] = [];
   for (const pl of presetLevels('kr')) {
     for (const pg of pl.grades) {
       const gl = grades.find((x) => x.code === pg.code)!;
       const roster = students.filter((s) => s.gradeId === gl.id);
       for (const s of SUBJECTS[pl.key]) {
         const off = await cs.createOffering(db, schoolId, {
-          termId: term, subjectId: subjectIds.get(s.code), typeId: type, levelId: levelId(pl.key), credits: s.credits, passFail: s.pf, section: roster[0].label,
+          termId: term, subjectId: subjectIds.get(s.code), typeId: type, levelId: levelId(pl.key), gradeLevelId: gl.id,
+          credits: s.credits, passFail: s.pf, section: roster[0].label,
         });
-        offerings++;
-        let rev = (await cs.offering(db, schoolId, off)).revision;
-        await cs.approve(db, schoolId, off, rev);
-        rev++;
-        for (const st of roster) rev = await cs.setEnrollment(db, schoolId, off, st.id, 'enrolled', rev);
-        // 평가 항목과 결과
-        for (const it of s.items) {
-          const a = await g.addAssessment(db, schoolId, off, { code: it.code, title: { ko: it.title }, weight: it.weight, maxScore: 100 });
-          for (const st of roster) {
-            const score = Math.round(55 + rnd() * 45);
-            await g.recordResult(db, schoolId, a, st.id, s.pf ? { score, comment: score >= 70 ? '활동에 꾸준히 참여함' : '도움을 받아 활동을 마침' } : { score });
-          }
-        }
-        // 서술(과목 세부능력·특기사항 꼴): 첫 학생 한 명에게만 예시로
-        await g.recordNarrative(db, schoolId, {
-          personId: roster[0].id, offeringId: off, academicYearId: year, kind: 'subject_detail', authorRole: 'subject_teacher',
-          body: `${s.name} 시간에 질문을 스스로 만들고 친구들과 답을 찾아 발표함(시연용 예시 문장).`,
-        });
-        await g.closeOffering(db, schoolId, off, { base_version: 0, requestKey: `demo-close-${off}`, scaleId: scaleOf(pl.key) });
+        planned.push({ off, key: pl.key, s, roster });
       }
     }
+  }
+  await cs.startTerm(db, schoolId, term);
+  const offerings = planned.length;
+  for (const { off, key, s, roster } of planned) {
+    // 평가 항목과 결과
+    for (const it of s.items) {
+      const a = await g.addAssessment(db, schoolId, off, { code: it.code, title: { ko: it.title }, weight: it.weight, maxScore: 100 });
+      for (const st of roster) {
+        const score = Math.round(55 + rnd() * 45);
+        await g.recordResult(db, schoolId, a, st.id, s.pf ? { score, comment: score >= 70 ? '활동에 꾸준히 참여함' : '도움을 받아 활동을 마침' } : { score });
+      }
+    }
+    // 서술(과목 세부능력·특기사항 꼴): 첫 학생 한 명에게만 예시로
+    await g.recordNarrative(db, schoolId, {
+      personId: roster[0].id, offeringId: off, academicYearId: year, kind: 'subject_detail', authorRole: 'subject_teacher',
+      body: `${s.name} 시간에 질문을 스스로 만들고 친구들과 답을 찾아 발표함(시연용 예시 문장).`,
+    });
+    await g.closeOffering(db, schoolId, off, { base_version: 0, requestKey: `demo-close-${off}`, scaleId: scaleOf(key) });
   }
 
   // 6) 출결: 수업일 10일 중 몇 건만 결석·지각(출석은 기본값이라 사건을 남기지 않는다)

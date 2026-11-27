@@ -2793,5 +2793,9 @@
   "demo.building": "Creating…",
   "demo.built": "Demo school created: {students} students, {offerings} classes.",
   "demo.exists": "The demo school already exists (not created again).",
-  "db.gradeLabelsInvalid": "Grade labels must be 1–40 characters per grade position (-3 to 14)."
+  "db.gradeLabelsInvalid": "Grade labels must be 1–40 characters per grade position (-3 to 14).",
+  "courses.col.grade": "Grade",
+  "courses.gradeOptional": "Grade (optional)",
+  "courses.allGrades": "Whole level",
+  "db.offeringGradeNotFound": "That grade was not found in this school level."
 }
