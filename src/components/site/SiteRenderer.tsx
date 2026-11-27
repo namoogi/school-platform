@@ -262,7 +262,9 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                           {pic}
                           {v === 'index' && <span className="sec-index">{num}</span>}
                           <div className="sec-item-copy">
-                            {(t(it.tag) || (ed && filterable)) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
+                            {/* 107차: 행사 카드는 분류 칸을 날짜 배지로 쓴다 */}
+                            {v === 'events' && (t(it.tag) || ed) && <span className="sec-date">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 날짜`)}</span>}
+                            {v !== 'events' && (t(it.tag) || (ed && filterable)) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
                             {show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}번 카드 제목`)}</h3>}
                             {show(it.body) ? P(at('items', k, 'body'), it.body, `${k + 1}번 카드 글`) : null}
                             {v === 'rows' && it.href && <span className="site-link">{w('more', lang)}<Arrow /></span>}
