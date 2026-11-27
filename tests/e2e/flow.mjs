@@ -158,12 +158,23 @@ try {
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name), fullPage: true }); }
   };
 
+  let bLangChecked = false;
   async function login(page, email, password) {
     await page.goto(`${BASE}/login`);
     await page.fill('input[name=email]', email);
     await page.fill('input[name=password]', password);
     await page.click('button[type=submit]');
     await page.waitForURL(/\/home$/);
+    // 96차(ADR 0038 5항): 영어 학교 B는 화면 언어를 고르지 않으면 영어로 열린다. 처음 한 번 확인한 뒤,
+    // 이 시험의 한국어 기준 단계를 위해 B 관리자의 화면 언어를 한국어로 고른다(사용자 설정이 학교 기본보다 앞선다)
+    if (email.startsWith('admin-b@')) {
+      if (!bLangChecked) {
+        assert.equal(await page.locator('.app').getAttribute('lang'), 'en', '영어 학교 B는 영어 화면으로 열린다');
+        bLangChecked = true;
+      }
+      const r = await page.evaluate(() => fetch('/api/preferences/lang', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ lang: 'ko' }) }).then((x) => x.status));
+      assert.equal(r, 200);
+    }
     await page.goto(`${BASE}/intake`);
   }
   async function dropFile(page, name, text) {
