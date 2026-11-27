@@ -14,6 +14,25 @@ const firstLink = (list, selector) => async ({ page, BASE }) => {
   return `${BASE}${href ?? list}`;
 };
 
+/** 목록에서 링크를 차례로 따라간다(앞 링크가 없으면 거기서 멈춤). `npm run ui:seed`로 채운 상태를 찍을 때 쓴다 */
+const follow = (start, selectors) => async ({ page, BASE }) => {
+  let url = `${BASE}${start}`;
+  for (const sel of selectors) {
+    await page.goto(url, { waitUntil: 'networkidle' });
+    const href = await page.locator(sel).first().getAttribute('href').catch(() => null);
+    if (!href) break;
+    url = new URL(href, url).toString();
+  }
+  return url;
+};
+
+/** 고르기 상자에서 글자가 맞는 첫 항목의 값을 찾아 주소에 붙인다(없으면 기본 주소). 시드한 학교급·학생을 고를 때 쓴다 */
+const pickOption = (start, select, text, build) => async ({ page, BASE }) => {
+  await page.goto(`${BASE}${start}`, { waitUntil: 'networkidle' });
+  const value = await page.locator(`${select} option`, { hasText: text }).first().getAttribute('value').catch(() => null);
+  return `${BASE}${value ? build(value) : start}`;
+};
+
 export const PAGES = {
   intro: { states: { default: '/intro' } },
   login: { states: { default: '/login' } },
@@ -24,10 +43,12 @@ export const PAGES = {
   packages: { login: 'admin-a', states: { default: '/packages' } },
   academics: { login: 'admin-a', states: { default: '/academics' } },
   people: { login: 'admin-a', states: { default: '/people' } },
-  courses: { login: 'admin-a', states: { default: '/courses' } },
-  grades: { login: 'admin-a', states: { empty: '/grades' } },
-  attendance: { login: 'admin-a', states: { default: '/attendance' } },
-  records: { login: 'admin-a', states: { empty: '/records' } },
+  // filled·offering: `npm run ui:seed` 뒤에만 채워진다(없으면 목록 그대로 찍힘)
+  courses: { login: 'admin-a', states: { default: '/courses', offering: follow('/courses', ['table a[href*="o="]']) } },
+  grades: { login: 'admin-a', states: { empty: '/grades', offering: follow('/courses', ['table a[href*="o="]', '[data-testid=to-grades]']) } },
+  // seeded: ui:seed의 3월 출결(학교급 '중학교(점검)', 2026-03-03)
+  attendance: { login: 'admin-a', states: { default: '/attendance', seeded: pickOption('/attendance?day=2026-03-03', 'select[name=level]', '점검', (v) => `/attendance?day=2026-03-03&level=${v}&from=2026-03-02&to=2026-03-14`) } },
+  records: { login: 'admin-a', states: { empty: '/records', person: pickOption('/records', 'select[name=p]', '점검 학생 1', (v) => `/records?p=${v}`) } },
   site: { login: 'admin-a', states: { default: '/site', settings: '/site?box=settings' } },
   'site-inquiries': { login: 'admin-a', states: { empty: '/site/inquiries' } },
   'template-live': { login: 'admin-a', states: { play: '/templates/kinder', ivory: '/templates/story', 'play-inner': '/templates/kinder?page=daily', clear: '/templates/notice', bold: '/templates/admissions', studio: '/templates/project', lamp: '/templates/mission', horizon: '/templates/international', seed: '/templates/single', } },
