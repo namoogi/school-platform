@@ -1740,6 +1740,19 @@ try {
       await h.locator('.sec-filter-bar button', { hasText: '학교 생태 탐구' }).click();
       await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
     }
+    // 112차(Codex 검토): 행사 구역은 날짜 배지(분류 칸)를 편집기에서 고칠 수 있다
+    const ev = await h.evaluate(async () => (await (await fetch('/api/site/entries', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kind: 'page', key: 'e2e-events', content: { title: { ko: 'E2E 행사 쪽' }, blocks: [{ type: 'section', template: 'cards', variant: 'events', items: [{ title: { ko: '학교 여는 날' }, tag: { ko: '[날짜]' } }] }] } }) })).json()));
+    assert.ok(ev.id, '행사 쪽 시안');
+    await h.goto(`${BASE}/site?box=page`);
+    await h.locator('.triage-list a').filter({ hasText: 'E2E 행사 쪽' }).first().click();
+    const date = h.getByLabel('1. 날짜(행사 배지) 한국어', { exact: true });
+    assert.equal(await date.inputValue(), '[날짜]');
+    await date.fill('5.12');
+    await h.getByRole('button', { name: '새 판으로 저장', exact: true }).click();
+    await h.getByRole('status').filter({ hasText: '새 판으로 저장했습니다' }).waitFor();
+    await h.reload();
+    assert.equal(await date.inputValue(), '5.12');
     await ctx.close();
   });
   await step('66차: 학교 자료로 빈 칸 채우기 — 이야기형 미리보기에서 소개서 올리기 → 제안 확인 → 넣기 → 교육철학 쪽 새 시안 판', async () => {

@@ -2348,6 +2348,7 @@ export const CATALOG = {
   'site.section.photoAlt': '사진 대체 글',
   'site.section.items': '항목 ({n})',
   'site.section.tag': '분류(거르기 단추)',
+  'site.section.eventDate': '날짜(행사 배지)',
   'site.section.removeItem': '{n}번 항목 빼기',
   'site.section.addItem': '항목 더하기',
   'site.section.buttonLabel': '단추 이름',
