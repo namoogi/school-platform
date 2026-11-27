@@ -15,7 +15,8 @@ export default async function MovedPage() {
     moved: await myMovedSchools(db),
     uiLang: (await db.query('select ui_lang from public.user_preferences where user_id = app.uid()')).rows[0]?.ui_lang as string | null,
   }));
-  const { t, lang, dir } = await getI18n(uiLang);
+  // 옮긴 학교의 기본 언어를 쿠키 다음으로 쓴다(ADR 0038 5항)
+  const { t, lang, dir } = await getI18n(uiLang, moved[0]?.locale);
   return (
     <main className="login" lang={lang} dir={dir}>
       <div className="login-card" data-testid="moved-page">

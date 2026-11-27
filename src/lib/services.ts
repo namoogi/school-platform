@@ -82,19 +82,23 @@ export async function currentSchool(db: Db, preferredId?: string | null): Promis
   if (preferredId && isUuid(preferredId)) {
     row = (await db.query(`select ${cols} from public.schools s ${join} where s.id = $1`, [preferredId])).rows[0];
   }
+  // ADR 0038: 고른 학교가 옮겨 간 학교(원본 이용 중지 + 옮김 판)이고 다른 소속 학교가 열려 있으면 그 학교로 넘어간다
+  const movedAway = async (r: Record<string, unknown>) => r.status === 'suspended' && !account.is_platform_admin
+    && (await db.query('select state from public.school_placements where school_id = $1 order by version desc limit 1', [r.id])).rows[0]?.state === 'moved';
+  if (row && (await movedAway(row))) row = undefined;
   if (!row) {
-    row = (await db.query(
+    // 이용 중인 학교를 먼저(이용 중지 학교는 뒤로)
+    const { rows } = await db.query(
       `select ${cols} from public.memberships m join public.schools s on s.id = m.school_id ${join}
-       where m.user_id = app.uid() order by s.slug limit 1`)).rows[0];
+       where m.user_id = app.uid() order by (s.status = 'suspended'), s.slug`);
+    row = rows[0];
   }
   if (!row) {
     if (account.is_platform_admin) throw new NoSchoolError('작업할 학교를 고르세요.');
     throw new NotFoundError('소속 학교가 없습니다.');
   }
   if (row.status === 'suspended' && !account.is_platform_admin) {
-    const { rows: [pl] } = await db.query(
-      'select state from public.school_placements where school_id = $1 order by version desc limit 1', [row.id]);
-    if (pl?.state === 'moved') throw new MovedSchoolError('이 학교는 새 주소로 옮겼습니다.');
+    if (await movedAway(row)) throw new MovedSchoolError('이 학교는 새 주소로 옮겼습니다.');
     throw new ValidationError('이용이 중지된 학교입니다. 전체 관리자에게 문의하세요.');
   }
   const role = (row.role as School['role']) ?? null;

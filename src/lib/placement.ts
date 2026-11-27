@@ -41,12 +41,12 @@ export async function placementHistories(db: Db): Promise<Record<string, Placeme
 }
 
 /** 내가 속한 학교 가운데 옮김 판이 마지막인 학교와 새 주소(옮긴 학교 구성원 안내용) */
-export async function myMovedSchools(db: Db): Promise<{ name: string; target_url: string }[]> {
+export async function myMovedSchools(db: Db): Promise<{ name: string; locale: string; target_url: string }[]> {
   const { rows } = await db.query(
-    `select s.name, p.target_url from public.memberships m join public.schools s on s.id = m.school_id
+    `select s.name, s.locale, p.target_url from public.memberships m join public.schools s on s.id = m.school_id
        join lateral (select state, target_url from public.school_placements x where x.school_id = s.id order by version desc limit 1) p on true
       where m.user_id = app.uid() and p.state = 'moved' and p.target_url is not null order by s.name`);
-  return rows as { name: string; target_url: string }[];
+  return rows as { name: string; locale: string; target_url: string }[];
 }
 
 export async function setPlacement(db: Db, schoolId: unknown, input: Record<string, unknown>) {

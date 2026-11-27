@@ -1082,8 +1082,10 @@ try {
     await dlg.waitFor();
     assert.match(await dlg.textContent(), /자료를 목록에서 뺄까요\?.*b-calendar-2027\.pdf.*발행한 문서의 근거로 그대로 보관/s);
     const focusedName = () => b.evaluate(() => { const e = document.activeElement; return e === document.body ? '(body)' : (e?.textContent ?? '').slice(0, 40); });
-    await b.waitForFunction(() => document.activeElement?.textContent === '취소', null, { timeout: 3000 }).catch(() => {});
-    assert.equal(await focusedName(), '취소', '처음 포커스');
+    // 95차: 학교 기본 언어가 화면 언어가 된다(B = 영어 학교). 다국어로 옮긴 부품(취소)은 그 언어로 나온다
+    const cancelLabel = (await b.locator('.app').getAttribute('lang')) === 'en' ? 'Cancel' : '취소';
+    await b.waitForFunction((l) => document.activeElement?.textContent === l, cancelLabel, { timeout: 3000 }).catch(() => {});
+    assert.equal(await focusedName(), cancelLabel, '처음 포커스');
     await shot(b, '31-confirm-dialog.png');
     // 대화상자는 화면 형식·명암 토큰을 가진 .app 안에 그린다(#135, 어두운 화면에서도 같은 토큰)
     assert.ok(await dlg.evaluate((el) => !!el.closest('.app[data-mode]')), '대화상자가 .app 안에 있다');

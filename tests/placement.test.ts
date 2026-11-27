@@ -67,7 +67,17 @@ describe('격리 등급 판', () => {
     await su.query(`update public.schools set status = 'suspended' where id = $1`, [A.schoolId]);
     try {
       await expect(asUser(A.userId, (db) => svc.currentSchool(db, A.schoolId))).rejects.toBeInstanceOf(svc.MovedSchoolError);
-      expect(await asUser(A.userId, (db) => pl.myMovedSchools(db))).toEqual([{ name: expect.any(String), target_url: 'https://a.example.org' }]);
+      expect(await asUser(A.userId, (db) => pl.myMovedSchools(db))).toEqual([{ name: expect.any(String), locale: 'ko', target_url: 'https://a.example.org' }]);
+      // A 관리자가 B에도 소속이면(B는 열려 있음) 옮긴 A를 골라 두었어도 B로 넘어간다(Codex P1)
+      await su.query(`insert into public.memberships(user_id, school_id, role) values ($1, $2, 'teacher')`, [A.userId, B.schoolId]);
+      try {
+        const s = await asUser(A.userId, (db) => svc.currentSchool(db, A.schoolId));
+        expect(s.id).toBe(B.schoolId);
+        const s2 = await asUser(A.userId, (db) => svc.currentSchool(db, null));
+        expect(s2.id).toBe(B.schoolId);
+      } finally {
+        await su.query('delete from public.memberships where user_id = $1 and school_id = $2', [A.userId, B.schoolId]);
+      }
       // B(옮김 판 없음)는 다른 학교의 옮김 주소를 보지 않는다
       expect(await asUser(B.userId, (db) => pl.myMovedSchools(db))).toEqual([]);
     } finally {
