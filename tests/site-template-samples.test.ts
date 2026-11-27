@@ -1,8 +1,8 @@
 /** 86차 — 템플릿 예시 내용(가상 학교)·썸네일 검사(DB 없음) */
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { recommendTemplates, SITE_TEMPLATES } from '@/lib/site-templates';
-import { placeholders, sampleAssetUrl, samplePages, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
+import { placeholders, sampleAssetUrl, samplePages, SAMPLE_PHOTOS, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { isSiteTheme, validateContent } from '@/lib/site';
 
 describe('템플릿 예시 내용', () => {
@@ -70,4 +70,30 @@ describe('템플릿 예시 내용', () => {
     const fits = recommendTemplates([{ name: '/', text: '햇님 유치원 · 만 3세 새싹반, 만 4세 꽃잎반 · 놀이 중심 · 등원 시간 9시' }], {});
     expect(fits[0].key).toBe('kinder');
   });
+  it('#143: 대표 3종의 모든 쪽이 등록된 JPG와 설명을 쓰며 사진은 실제 학교에 자동 적용되지 않는다', () => {
+    expect(SAMPLE_PHOTOS.size).toBe(22);
+    const assets = (value: unknown): { asset: string; alt?: { ko?: string } }[] => {
+      if (!value || typeof value !== 'object') return [];
+      const obj = value as Record<string, unknown>;
+      return [...(typeof obj.asset === 'string' ? [obj as { asset: string; alt?: { ko?: string } }] : []), ...Object.values(obj).flatMap(assets)];
+    };
+    for (const key of ['story', 'project', 'kinder']) {
+      const template = SITE_TEMPLATES.find((t) => t.key === key)!;
+      expect(assets(template.pages), '실제 적용 템플릿에 예시 자산을 넣지 않음').toEqual([]);
+      for (const [page, content] of Object.entries(samplePages(template))) {
+        const photos = assets(content);
+        expect(photos.length, `${key}/${page}`).toBeGreaterThan(0);
+        for (const photo of photos) {
+          expect(sampleAssetUrl(photo.asset)).toMatch(/\.jpg$/);
+          expect(photo.alt?.ko).toContain('AI 예시 사진');
+        }
+      }
+    }
+    for (const name of SAMPLE_PHOTOS) {
+      const file = `public/site-templates/img/${name}.jpg`;
+      expect([...readFileSync(file).subarray(0, 3)]).toEqual([255, 216, 255]);
+      expect(statSync(file).size).toBeLessThanOrEqual(300000);
+    }
+  });
+
 });

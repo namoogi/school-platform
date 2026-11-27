@@ -11,7 +11,7 @@ export function TagFilter({ tags, allLabel, label, children }: { tags: string[];
   useEffect(() => {
     // 분류가 없는 항목도 포함해 목록의 모든 항목을 본다(분류를 고르면 분류 없는 항목은 숨김)
     box.current?.querySelectorAll<HTMLElement>(':scope > ul > li').forEach((li) => { li.hidden = on !== null && li.dataset.tag !== on; });
-  }, [on]);
+  }, [on, children]);
   return (
     <div className="sec-filter" ref={box}>
       <div className="sec-filter-bar" role="group" aria-label={label}>

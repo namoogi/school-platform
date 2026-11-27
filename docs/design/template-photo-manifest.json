@@ -1,0 +1,162 @@
+{
+  "generatedAt": "2026-11-27",
+  "generator": "Codex built-in image generation (subscription)",
+  "fictional": true,
+  "usage": "Template previews only; no school uploads or published content modified",
+  "assets": [
+    {
+      "name": "story-hero.jpg",
+      "width": 1600,
+      "height": 900,
+      "bytes": 289645,
+      "prompt": "See template-image-prompts.md: story-hero"
+    },
+    {
+      "name": "story-day.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 283669,
+      "prompt": "Single photorealistic premium editorial photograph for a fictional nature school website, asset story-day.jpg. Children seen entirely from behind walking together on a forest trail with small plain backpacks, warm morning light, diverse small group, no turned heads. Landscape 4:3 at least 1600x1200. Real textures, natural photographic composition. Absolutely no visible faces, no words, letters, numbers, labels, logos or watermark. Not an identifiable real school. Full photograph, no layout or collage."
+    },
+    {
+      "name": "story-learning.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 228476,
+      "prompt": "Single photorealistic premium editorial photograph for a fictional nature school website, asset story-learning.jpg. Wooden table in a sunny classroom with leaves, a magnifying glass, blank notebooks and unlabeled botanical plant sketches, warm natural light. No people. Landscape 4:3 at least 1600x1200. Real textures, natural photographic composition. Absolutely no visible faces, no words, letters, numbers, labels, logos or watermark. Not an identifiable real school. Full photograph, no layout or collage."
+    },
+    {
+      "name": "story-season-1.jpg",
+      "width": 1200,
+      "height": 1200,
+      "bytes": 288906,
+      "prompt": "Single photorealistic premium editorial photograph for a fictional nature school website, asset story-season-1.jpg. Spring forest path with fresh green leaves and cherry blossoms, gentle morning light, calm natural atmosphere. No people. Square 1:1 at least 1200x1200. Real textures, natural photographic composition. Absolutely no visible faces, no words, letters, numbers, labels, logos or watermark. Not an identifiable real school. Full photograph, no layout or collage."
+    },
+    {
+      "name": "story-season-2.jpg",
+      "width": 1200,
+      "height": 1200,
+      "bytes": 289592,
+      "prompt": "Single photorealistic premium editorial photograph for a fictional nature school website, asset story-season-2.jpg. Small fictional school vegetable garden in summer with ripe tomatoes and unbranded watering cans, fresh green foliage, gentle sunlight. No people. Square 1:1 at least 1200x1200. Real textures and natural composition. No faces, no text, letters, numbers, labels, signage, logos or watermarks. No identifiable real school. Full photograph, not a collage or UI."
+    },
+    {
+      "name": "story-season-3.jpg",
+      "width": 1200,
+      "height": 1200,
+      "bytes": 295345,
+      "prompt": "Single photorealistic premium editorial photograph for a fictional nature school website, asset story-season-3.jpg. Woodworking corner in autumn with hand tools, wood shavings and a half-finished stool, warm afternoon light, tactile wood grain, no people. Square 1:1 at least 1200x1200. Real textures and natural composition. No faces, no text, letters, numbers, labels, signage, logos or watermarks. No identifiable real school. Full photograph, not a collage or UI."
+    },
+    {
+      "name": "story-season-4.jpg",
+      "width": 1200,
+      "height": 1200,
+      "bytes": 284222,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset story-season-4.jpg. Cozy fictional school reading room in winter, wooden shelves with plain unmarked book spines, cushions, window showing fresh snow, warm natural light, no people. Square 1:1 at least 1200x1200. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "story-season-5.jpg",
+      "width": 1200,
+      "height": 1200,
+      "bytes": 286369,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset story-season-5.jpg. Long wooden communal school table set with simple home-cooked dishes and ceramic bowls, vegetables and rice, steam rising, inviting overhead composition, no people. Square 1:1 at least 1200x1200. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-hero.jpg",
+      "width": 1600,
+      "height": 900,
+      "bytes": 248576,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-hero.jpg. Maker workshop classroom with cardboard prototypes, an unbranded 3D printer, hand tools and blank colorful sticky notes on a wall. Students' hands working at a large table, no heads or faces in frame. Bright yellow accents and daylight. Wide 16:9 at least 1600x900, lower third calm for text overlay. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-river.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 289090,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-river.jpg. Hand-made scale model of a small river and village on a table, water sample bottles without labels and a blank notebook nearby, natural daylight. No people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-market.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 299150,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-market.jpg. Small outdoor market stall made by students, baskets of fresh vegetables from a school garden, plain blank cards with no numbers or marks, sunny day. No people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-work-1.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 269131,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-work-1.jpg. Hand-drawn water quality map of a small river laid on a table, entirely unlabeled blue river lines and color areas, test tubes and colored pins, scientific classroom still life, no people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-work-2.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 239575,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-work-2.jpg. Open handmade ledger notebook with blank ruled rows, plain round metal tokens, blank receipt-shaped paper and an unbranded calculator with blank screen and unmarked keys on a wooden desk, natural daylight. No people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-work-3.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 282378,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-work-3.jpg. Colorful mural sketch of abstract nature shapes on large paper taped to a brick wall with unlabeled paint cans below, original student art, sunny studio light, no words or typographic shapes, no people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-work-4.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 283441,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-work-4.jpg. Student-made rainwater barrel prototype made from recycled blue plastic with a small tap and simple collection tubing, outdoors beside a small school garden, natural daylight, no people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-work-5.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 232249,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-work-5.jpg. Small unbranded video camera on a tripod in a cozy living room facing an empty armchair, warm afternoon light, cinematic documentary atmosphere, no people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "project-work-6.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 262186,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset project-work-6.jpg. Simple handmade wooden chair in a fictional school workshop with clamps, a workbench and sawdust, beautiful natural wood grain, daylight, no people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "kinder-hero.jpg",
+      "width": 1600,
+      "height": 900,
+      "bytes": 290926,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset kinder-hero.jpg. Bright fictional kindergarten playground with colorful wooden play equipment and sandbox, small children seen strictly from behind playing, soft peach and yellow accents. Centered main subject safe for a circular crop. Wide 16:9 at least 1600x900, calm lower third. No visible face or profile. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "kinder-class-1.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 280495,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset kinder-class-1.jpg. Cozy toddler classroom corner with soft cushions, large wooden blocks and picture books with unmarked covers, no people, gentle natural daylight and peach yellow accents. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "kinder-class-2.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 240284,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset kinder-class-2.jpg. Pretend-play kitchen corner in a fictional kindergarten, beautiful small wooden play kitchen with toy pots and play food, warm sunlight, peach and pale yellow accents, no people. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "kinder-class-3.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 227442,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset kinder-class-3.jpg. Kindergarten table with unbranded crayons, blank colorful wooden blocks and simple wordless drawings, only children's hands drawing visible and no heads. Warm natural daylight, playful cheerful mood. Landscape 4:3 at least 1200x900. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "kinder-play.jpg",
+      "width": 1200,
+      "height": 1200,
+      "bytes": 273329,
+      "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset kinder-play.jpg. Children's hands planting seedlings in a small garden bed with tiny unbranded watering cans, sunny gentle morning, close-up showing only hands and soil, center composition safe for circular cropping. Square 1:1 at least 1200x1200. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    }
+  ]
+}
