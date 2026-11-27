@@ -406,6 +406,22 @@ export function slotTarget(t: SiteTemplate, s: Slot): { parent: unknown; field: 
   return cur != null && typeof cur === 'object' ? { parent: cur, field: s.path[s.path.length - 1] } : null;
 }
 
+/**
+ * 112차(Codex 검토): 빈 칸 경로가 학교 쪽에서도 같은 구역을 가리키는지 확인한다.
+ * 템플릿 판이 오르며 구역 순서가 바뀌면 예전 판으로 만든 쪽의 blocks[n]은 다른 구역일 수 있다 →
+ * 그 칸을 가진 구역의 종류·모양(template·variant)이 지금 템플릿과 같을 때만 채운다(아니면 '그대로 둠').
+ */
+export function slotMatchesContent(t: SiteTemplate, s: Slot, content: Content): boolean {
+  const i = s.path.indexOf('blocks');
+  if (i < 0) return true; // 쪽 정보(site.*) 칸은 구역 순서와 관계없다
+  const idx = s.path[i + 1];
+  const want = t.pages.find((p) => p.key === s.page)?.content.blocks[idx as number];
+  const have = content.blocks?.[idx as number];
+  if (!want || !have || want.type !== have.type) return false;
+  if (want.type === 'section' && have.type === 'section') return want.template === have.template && (want.variant ?? '') === (have.variant ?? '');
+  return true;
+}
+
 /** 템플릿 적용: 쪽마다 시안(1판). 같은 주소의 쪽이 있으면(보관한 것 포함) 건너뛴다. 공개하지 않는다 */
 /**
  * 템플릿 적용: 없는 쪽만 시안(1판)으로 만든다. 89차(ADR 0034): design이면 화면 모양(테마)도 템플릿 디자인으로 바꾼다.
@@ -479,7 +495,10 @@ export async function autofillApply(db: Db, schoolId: string, key: string, fills
     const { versions } = await getEntry(db, schoolId, entry.id);
     const content = structuredClone(versions[0].content) as Content;
     const filled: string[] = []; const kept: string[] = [];
-    for (const f of list) (putProposal(content, t.slots.find((s) => s.id === f.slotId)!, f.value) ? filled : kept).push(f.slotId);
+    for (const f of list) {
+      const slot = t.slots.find((s) => s.id === f.slotId)!;
+      (slotMatchesContent(t, slot, content) && putProposal(content, slot, f.value) ? filled : kept).push(f.slotId);
+    }
     if (!filled.length) { result.push({ page: pageKey, version: null, filled, kept }); continue; }
     const v = await saveVersion(db, schoolId, entry.id, { content: validateContent(content), base_version: versions[0].version, note: `자료로 빈 칸 채움: ${filled.join(', ')}` });
     result.push({ page: pageKey, version: v!.version, filled, kept });
