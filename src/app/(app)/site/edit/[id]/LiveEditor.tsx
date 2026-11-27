@@ -18,7 +18,7 @@ import { PageHead, SiteBlocks, type EditHooks, type NewsItem } from '@/component
 import { SiteFrame } from '@/components/site/SiteFrame';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import { uploadWithProgress } from '@/lib/file-check';
-import { siteLabel } from '@/lib/site-labels';
+import { blockLabel, fieldLabel, paletteText, siteLabel } from '@/lib/site-labels';
 import { useI18n } from '@/components/I18nProvider';
 import { withLink } from '@/components/ui';
 
@@ -204,7 +204,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
     if (item.needsPhoto && !photo) { setPicker({ mode: 'insert', item, at }); return; }
     change((c) => insertBlock(c, at, item.make(photo)));
     setSel(at); setPicker(null);
-    setMsg({ tone: 'info', text: t('site.edit.inserted', { n: at + 1, name: item.label }) });
+    setMsg({ tone: 'info', text: t('site.edit.inserted', { n: at + 1, name: paletteText(t, item).label }) });
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(`[data-block-index="${at}"]`);
       el?.scrollIntoView({ block: 'center' });
@@ -218,13 +218,13 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
   const ed: EditHooks | undefined = editing ? {
     text: (path, value, o) => (
       <EditableText key={`${path.join('.')}|${lang}`} value={value} base={getAt(base, path) as LText | undefined} lang={lang} def={defaultLang}
-        label={o.label} multiline={o.multiline} onFocus={arm} onChange={(s) => typed((c) => setLangText(c, path, lang, s))} />
+        label={fieldLabel(t, o.label)} multiline={o.multiline} onFocus={arm} onChange={(s) => typed((c) => setLangText(c, path, lang, s))} />
     ),
     image: (path, asset, o, img) => (
       <span className="le-photo" data-empty={asset ? undefined : true}>
-        {img ?? <span className="le-photo-empty"><ImagePlus size={22} aria-hidden="true" />{o.label}</span>}
-        <button type="button" className="btn btn-secondary btn-sm le-photo-btn" onClick={() => setPicker({ mode: 'set', path, altPath: o.altPath, optional: o.optional, label: o.label })}>
-          <ImagePlus size={16} aria-hidden="true" />{asset ? t('site.edit.photo.change') : t('site.edit.photo.insert')}<span className="sr-only">: {o.label}</span>
+        {img ?? <span className="le-photo-empty"><ImagePlus size={22} aria-hidden="true" />{fieldLabel(t, o.label)}</span>}
+        <button type="button" className="btn btn-secondary btn-sm le-photo-btn" onClick={() => setPicker({ mode: 'set', path, altPath: o.altPath, optional: o.optional, label: fieldLabel(t, o.label) })}>
+          <ImagePlus size={16} aria-hidden="true" />{asset ? t('site.edit.photo.change') : t('site.edit.photo.insert')}<span className="sr-only">: {fieldLabel(t, o.label)}</span>
         </button>
       </span>
     ),
@@ -387,7 +387,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
                         setSel(i);
                         document.querySelector<HTMLElement>(`[data-block-index="${i}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
                       }}>
-                        <b>{i + 1}. {blockName(b)}</b>{b.hidden && <span className="badge" data-tone="neutral">{t('site.edit.hiddenBadge')}</span>}
+                        <b>{i + 1}. {blockLabel(t, b, blockName(b))}</b>{b.hidden && <span className="badge" data-tone="neutral">{t('site.edit.hiddenBadge')}</span>}
                         <small>{blockSnippet(b, pickT)}</small>
                       </button>
                       <span className="le-outline-actions">
@@ -489,7 +489,7 @@ function BlockBar({ i, b, count, settingsOpen, onMove, onHide, onRemove, onSetti
   onDragStart: () => void; onDragEnd: () => void;
 }) {
   const { t } = useI18n();
-  const name = blockName(b);
+  const name = blockLabel(t, b, blockName(b));
   const hasSettings = b.type === 'section' || b.type === 'gallery' || b.type === 'news_list' || b.type === 'video' || b.type === 'image';
   return (
     <div className="le-bar" role="group" aria-label={t('site.edit.bar.group', { n: i + 1, name })}>
@@ -619,7 +619,7 @@ function PaletteButton({ p, onPick }: { p: PaletteItem; onPick: () => void }) {
   const { t } = useI18n();
   return (
     <button type="button" className="le-pal" onClick={onPick} data-palette={p.id}>
-      <b>{p.label}</b><span>{p.hint}{p.needsPhoto ? ` · ${t('site.edit.palette.photoFirst')}` : ''}</span>
+      <b>{paletteText(t, p).label}</b><span>{paletteText(t, p).hint}{p.needsPhoto ? ` · ${t('site.edit.palette.photoFirst')}` : ''}</span>
     </button>
   );
 }
@@ -640,7 +640,7 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
     return () => { (opener.current as HTMLElement | null)?.focus?.(); };
   }, []);
   const current = picker.mode === 'set' ? (getAt(content, picker.path) as string | undefined) : undefined;
-  const label = picker.mode === 'set' ? picker.label : picker.mode === 'insert' ? t('site.edit.picker.forInsert', { name: picker.item.label }) : t('site.edit.picker.forGallery');
+  const label = picker.mode === 'set' ? picker.label : picker.mode === 'insert' ? t('site.edit.picker.forInsert', { name: paletteText(t, picker.item).label }) : t('site.edit.picker.forGallery');
   const alt = picker.mode === 'set' && picker.altPath && current ? (getAt(content, picker.altPath) as LText | undefined) : undefined;
   async function upload(files: File[], { signal, progress }: FileDropContext) {
     let last = '';
