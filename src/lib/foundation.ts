@@ -50,6 +50,7 @@ export function setSchoolProfile(db: Db, schoolId: string, input: Record<string,
   return one<number>(db, 'select app.set_school_profile($1, $2) as v', [schoolId, JSON.stringify({
     country: str(input.country), sector: str(input.sector), accreditation: str(input.accreditation),
     external_codes: plainObj(input.external_codes), why: str(input.why),
+    ...(input.grade_scheme !== undefined ? { grade_scheme: str(input.grade_scheme) } : {}),
     ...(input.base_version != null ? { base_version: Number(input.base_version) } : {}),
   })]);
 }
