@@ -11,10 +11,12 @@ export type FieldSpec = {
   name: string; label: string; type?: 'text' | 'date' | 'number' | 'select' | 'textarea' | 'email';
   options?: { value: string; label: string }[]; required?: boolean; placeholder?: string; defaultValue?: string; width?: 'narrow' | 'wide';
 };
-export function ActionForm({ url, action, fields, extra = {}, submitLabel, successText, testId, inline = false, confirmText, keep = false }: {
+export function ActionForm({ url, action, fields, extra = {}, submitLabel, successText, testId, inline = false, confirmText, keep = false, tone = 'primary' }: {
   url: string; action?: string; fields: FieldSpec[]; extra?: Record<string, unknown>; submitLabel: string; successText?: string; testId?: string; inline?: boolean;
   /** 되돌리기 어려운 일이면 확인 창 문구 */
   confirmText?: string;
+  /** 단추 모양. 목록 줄마다 되풀이되는 부가 행동(예: 수강 철회)은 'secondary'로 주 행동과 구분한다(UI 점검 courses A1·A4) */
+  tone?: 'primary' | 'secondary';
   /** 성공 뒤에도 넣은 값을 그대로 둔다(고쳐 쓰는 글 칸) */
   keep?: boolean;
 }) {
@@ -49,7 +51,7 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
               : <input type={f.type ?? 'text'} value={v[f.name]} onChange={(e) => setV({ ...v, [f.name]: e.target.value })} required={f.required} placeholder={f.placeholder} />}
         </label>
       ))}
-      <div className="form-actions"><button type="submit" className="btn btn-primary" disabled={busy}>{submitLabel}</button></div>
+      <div className="form-actions"><button type="submit" className={tone === 'secondary' ? 'btn btn-secondary' : 'btn btn-primary'} disabled={busy}>{submitLabel}</button></div>
       {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}</p>}
     </form>
   );
