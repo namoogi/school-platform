@@ -35,6 +35,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check:repo
+      - run: npm run lint:colors
       - run: npm run typecheck
       - run: npm run test:unit
       - name: Create database

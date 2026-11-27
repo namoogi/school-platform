@@ -74,7 +74,10 @@
 
 로드맵과 결정 대기 항목: `docs/ROADMAP.md`
 
-## Review guidelines
+## UI 점검
+UI 점검 요청을 받으면 `docs/UI_REVIEW.md`의 5장 체크리스트와 6장 출력 형식을 따른다. 점검 시에는 코드를 수정하지 않는다. (ADR 0033)
+
+## Review guidelines (Code Review Rules)
 
 Claude·Codex가 PR을 검토할 때 아래 순서로 본다. 1~3은 반드시 지적한다.
 
@@ -84,6 +87,7 @@ Claude·Codex가 PR을 검토할 때 아래 순서로 본다. 1~3은 반드시 �
 4. **마이그레이션**: 이미 적용된 파일 수정, 되돌릴 수 없는 변경의 사전 확인 누락.
 5. **UI**: 색 값 직접 사용(의미 토큰 대신), 상태를 색만으로 표시, 페이지 헤더·버튼 계층 규칙 위반, 키보드·대비 문제 (docs/design/DESIGN-SYSTEM.md).
 6. **테스트**: 바뀐 동작에 대한 테스트 누락, 특히 학교 간 접근 거부는 양방향으로.
+7. **UI 변경**: `docs/UI_REVIEW.md` 5장 체크리스트 기준으로 본다(화면이 없으면 코드로 볼 수 있는 항목만).
 
 설계·아키텍처 변경은 `docs/decisions/` 결정 기록이 있는지 확인한다. 흐름은 `docs/COLLABORATION.md` 5절.
 
