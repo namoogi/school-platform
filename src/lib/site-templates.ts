@@ -27,8 +27,10 @@ const ko = (s: string): LText => ({ ko: s });
 const kb = (k: string, e: string): LText => ({ ko: k, en: e });
 const section = (b: Omit<Extract<Block, { type: 'section' }>, 'type'>): Block => ({ type: 'section', ...b });
 const news = (title: LText, count = 3, style: 'cards' | 'list' = 'cards'): Block => ({ type: 'news_list', title, count, style });
-const contact = (): Content['site'] => ({
+const contact = (visit?: { label: string; href: string }): Content['site'] => ({
   tagline: ko('[학교를 한 줄로 소개하는 말]'), address: ko('[학교 주소]'), footer: ko('[학교 이름] · [대표 전화] · [이메일]'),
+  // 100차: 머리글 오른쪽·바닥글의 주요 행동 단추(학교가 이름과 가는 곳을 바꾼다)
+  ...(visit ? { visit: { label: ko(visit.label), href: visit.href } } : {}),
 });
 const page = (key: string, sort: number, title: LText, blocks: Block[], extra: Partial<Content> = {}): TemplatePage =>
   ({ kind: 'page', key, sort, content: { title, blocks, ...extra } });
@@ -81,7 +83,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'story', version: 3, name: '이야기형', theme: 'ivory', langs: ['ko'],
+    key: 'story', version: 4, name: '이야기형', theme: 'ivory', langs: ['ko'],
     summary: '교육철학과 학교의 하루를 사진과 이야기로 보여 줍니다.',
     fits: ['사립·대안학교', '교육철학으로 알려지는 학교'], firstScreen: '큰 사진 · 교육철학 · 하루 이야기',
     mustHave: ['교육철학', '배움(교육과정)', '입학 문의 방법'],
@@ -94,7 +96,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ template: 'photos', variant: 'mosaic', eyebrow: ko('학교의 사계절'), title: ko('[사진으로 보는 우리 학교]'), items: [
           { title: ko('[사진 이름 1]') }, { title: ko('[사진 이름 2]') }, { title: ko('[사진 이름 3]') }, { title: ko('[사진 이름 4]') }, { title: ko('[사진 이름 5]') }] }),
         news(ko('이야기'), 3),
-      ], { site: contact() }),
+      ], { site: contact({ label: '학교 둘러보기', href: '/p/community' }) }),
       page('philosophy', 1, ko('교육철학'), [
         section({ template: 'quote', variant: 'editorial', title: ko('숲과 마을을 교실로 삼는 우리의 약속'), body: ko('[학교를 세운 마음을 담은 한마디]') }),
         section({ template: 'cards', variant: 'index', title: ko('우리가 소중히 여기는 것'), items: [{ title: ko('[가치 1]'), body: ko('[설명]') }, { title: ko('[가치 2]'), body: ko('[설명]') }, { title: ko('[가치 3]'), body: ko('[설명]') }] }),
@@ -156,7 +158,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'project', version: 4, name: '프로젝트형', theme: 'studio', langs: ['ko'],
+    key: 'project', version: 5, name: '프로젝트형', theme: 'studio', langs: ['ko'],
     summary: '학생 프로젝트와 작품을 사진 묶음으로 보여 주는 PBL 학교용입니다.',
     fits: ['PBL·프로젝트 중심 대안학교', '발표회·전시가 많은 학교'], firstScreen: '프로젝트 소개 · 발표회 소식',
     mustHave: ['배움의 방식(PBL 흐름)', '프로젝트 목록', '학생 작품 공개 허가'],
@@ -170,7 +172,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ template: 'steps', title: ko('배움의 흐름'), items: [{ title: ko('문제 정의'), body: ko('[학생이 질문을 찾는 방법]') }, { title: ko('탐구'), body: ko('[자료·현장·전문가]') }, { title: ko('산출'), body: ko('[만드는 것]') }, { title: ko('나눔·피드백'), body: ko('[발표·전시]') }] }),
         section({ template: 'cards', variant: 'mentors', eyebrow: ko('곁에서 함께 묻는 사람들'), title: ko('마을의 멘토'), items: [1, 2, 3].map(() => ({ title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') })), button: { label: ko('배움의 방식 보기'), href: '/p/how-we-learn' } }),
         news(ko('발표회·전시 소식'), 3),
-      ], { site: contact() }),
+      ], { site: contact({ label: '발표회 보기', href: '/p/projects' }) }),
       page('how-we-learn', 1, ko('배움의 방식'), [
         section({ template: 'media-left', eyebrow: ko('질문에서 세상으로'), title: ko('왜 프로젝트로 배우나요'), body: ko('[학교의 설명]') }),
         section({ template: 'facts', variant: 'curriculum', title: ko('한 학기 흐름'), items: [1, 2, 3, 4].map(() => ({ title: ko('[주차]'), body: ko('[활동]') })) }),
@@ -256,7 +258,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     // 90차: 대표 3종의 유치원(골격 D 그래픽 마스크형) — 둥글게 오린 놀이 사진, 연령별 반, 하루 일과 시간 띠, 학부모 질문
-    key: 'kinder', version: 3, name: '유치원형', theme: 'play', langs: ['ko'],
+    key: 'kinder', version: 4, name: '유치원형', theme: 'play', langs: ['ko'],
     summary: '아이들의 하루와 반, 학부모가 궁금한 것을 사진과 함께 따뜻하게 보여 줍니다.',
     fits: ['유치원·어린이집', '초등 저학년 중심 학교'], firstScreen: '둥근 놀이 사진 · 우리 반 · 하루 일과',
     mustHave: ['연령별 반 안내', '하루 일과', '급식·건강 안내', '입학(입소) 상담 방법'],
@@ -270,7 +272,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         news(ko('알림'), 3),
         section({ template: 'facts', variant: 'faq', title: ko('학부모가 자주 묻는 질문'), items: [{ title: ko('[질문 1]'), body: ko('[답 1]') }, { title: ko('[질문 2]'), body: ko('[답 2]') }] }),
         section({ template: 'cta', title: ko('직접 와서 보세요'), body: ko('[방문 상담 요일·연락처]'), button: { label: ko('상담 안내'), href: '/p/admission' } }),
-      ], { site: contact() }),
+      ], { site: contact({ label: '입학 상담', href: '/p/admission' }) }),
       page('classes', 1, ko('우리 반'), [
         section({ template: 'cards', variant: 'rows', eyebrow: ko('아이의 속도에 맞추어'), title: ko('연령별 반'), items: [
           { title: ko('[반 이름 · 나이 1]'), body: ko('[하루 모습·담임·정원]') }, { title: ko('[반 이름 · 나이 2]'), body: ko('[하루 모습·담임·정원]') }, { title: ko('[반 이름 · 나이 3]'), body: ko('[하루 모습·담임·정원]') }] }),

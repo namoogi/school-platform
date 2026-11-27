@@ -70,6 +70,8 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   const title = pick(site.title, lang, site.default_lang) || site.school;
   const t = (x: Parameters<typeof pick>[0]) => pick(x, lang, site.default_lang);
   const dawn = site.theme === 'dawn';
+  // 100차: 템플릿 키트 디자인(campus·dawn 제외)은 한 줄 머리글(이름 · 메뉴 · 언어 · 주요 행동)과 4칸 바닥글을 쓴다
+  const kit = !dawn && site.theme !== 'campus';
   // 89차: 새벽빛과 템플릿 완성 디자인(ADR 0034)은 학교 이름·메뉴·연락처가 있는 넓은 바닥을 쓴다(학사 기본만 한 줄 바닥)
   const richFooter = site.theme !== 'campus';
   const nav = hidden ? [] : [
@@ -102,7 +104,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             <span><strong>{title}</strong>{t(profile?.tagline) && <small>{t(profile?.tagline)}</small>}</span>
           </Link>
           {/* 42차: 새벽빛은 옛 사이트처럼 메뉴를 머리 한 줄 안에 둔다 */}
-          {dawn && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>}
+          {(dawn || kit) && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>}
           {langList.length > 1 && (dawn
             ? (
               <Suspense fallback={<details className="site-lang-menu"><summary><span lang={lang}>{LANG_LABEL[lang]}</span></summary></details>}>
@@ -117,8 +119,8 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
           {visit && <Link className="site-button site-visit" href={visit.href.startsWith('/') ? link(visit.href) : visit.href}>{t(visit.label)}</Link>}
         </div>
         {nav.length > 0 && <>
-          {!dawn && <nav className="site-wrap site-nav" aria-label={title}>{navList}</nav>}
-          {dawn && (
+          {!dawn && !kit && <nav className="site-wrap site-nav" aria-label={title}>{navList}</nav>}
+          {(dawn || kit) && (
             <Suspense fallback={<details className="site-wrap site-menu"><summary>{siteText('menu', lang)}</summary></details>}>
               <AutoCloseDetails className="site-wrap site-menu" summary={siteText('menu', lang)}>
                 <nav aria-label={`${title} ${siteText('menu', lang)}`}>{navList}</nav>
@@ -147,6 +149,11 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
               {profile?.phone?.length ? <p><a href={`tel:${profile.phone.at(-1)!.replace(/[^0-9+]/g, '')}`} aria-label={`${siteText('call', lang)} ${profile.phone.at(-1)}`}>{profile.phone.at(-1)}</a></p> : null}
               {profile?.facebook && <p><a className="site-link" href={profile.facebook} target="_blank" rel="noopener noreferrer">Facebook<ArrowRight className="link-arrow" size={20} strokeWidth={1.4} aria-hidden="true" /></a></p>}
             </div>
+            {kit && visit && (
+              <div className="site-footer-action">
+                <Link className="site-button" href={visit.href.startsWith('/') ? link(visit.href) : visit.href}>{t(visit.label)}</Link>
+              </div>
+            )}
             <div className="site-footer-note">
               <p>{t(profile?.footer) || `© ${title}`}</p>
               {!preview && <a className="site-footer-staff" href={staffEditHref(site, path)} rel="nofollow" data-testid="staff-edit">{siteText('staff', lang)}</a>}
