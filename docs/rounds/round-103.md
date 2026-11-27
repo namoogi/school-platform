@@ -29,7 +29,7 @@
 - 오류는 이름표(ADR 0039): `err.calcSpecInvalid`, `db.calcRuleCode`, `db.calcRuleSpec`
 
 ## 시험
-- `tests/calc-expr.test.ts` 16개(`test:unit`)
+- `tests/calc-expr.test.ts` 15개(`test:unit`)
   - 검사: 허용 밖 연산·변수, 개수, 깊이, 밴드 순서
   - 가중 평균, 반올림 경계(1.005·79.995·half_even), 3값 논리
   - 드리미: 89.5→A, 79.995→B, 비정규화, 만점 0 영역, P/F 출처 둘·성취도 남김
