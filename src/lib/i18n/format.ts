@@ -102,3 +102,11 @@ export function sameShape(source: string, translated: string): boolean {
   if (depth !== 0) return false;
   return placeholders(source).join(',') === placeholders(translated).join(',');
 }
+
+/**
+ * 날짜·숫자 형식에 쓸 수 있는 언어 코드. 문법이 틀린 코드(예: en-12)는 Intl 이 오류를 던져 화면이 뜨지 않으므로
+ * 그런 코드는 대체 언어로 바꾼다. 문법만 맞으면 Intl 이 알아서 가까운 형식을 고른다.
+ */
+export function safeLocale(lang: string, fallback = 'ko'): string {
+  try { new Intl.DateTimeFormat(lang); return lang; } catch { return fallback; }
+}

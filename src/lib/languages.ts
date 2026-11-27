@@ -2,7 +2,7 @@ import type { Db } from './db';
 import { ValidationError } from './services';
 import { CATALOG, CATALOG_KEYS } from './i18n/catalog';
 import { forgetI18nCache } from './i18n/server';
-import { sameShape } from './i18n/format';
+import { safeLocale, sameShape } from './i18n/format';
 
 /** ADR 0037: 언어·번역 관리(전체 관리자). 쓰기는 DB 명령 함수(app.save_language·app.save_ui_messages)가 권한을 다시 확인한다 */
 export type LanguageRow = { code: string; native_name: string; direction: 'ltr' | 'rtl'; fallback: string | null; active: boolean; sort: number; translated: number };
@@ -17,7 +17,8 @@ export async function listLanguages(db: Db): Promise<{ rows: LanguageRow[]; tota
 
 export async function saveLanguage(db: Db, input: Record<string, unknown>) {
   const code = String(input.code ?? '').trim();
-  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(code)) throw new ValidationError('언어 코드는 BCP 47 꼴입니다(예: en, th, zh-Hant).');
+  // 정규식은 모양만 본다. 날짜·숫자 형식(Intl)이 받지 못하는 코드(예: en-12)도 막는다
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(code) || safeLocale(code, '') !== code) throw new ValidationError('언어 코드는 BCP 47 꼴입니다(예: en, th, zh-Hant).');
   const name = String(input.native_name ?? '').trim();
   if (!name || name.length > 60) throw new ValidationError('언어 이름을 1~60자로 적어 주세요.');
   const direction = input.direction === 'rtl' ? 'rtl' : 'ltr';

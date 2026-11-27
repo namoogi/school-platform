@@ -55,6 +55,7 @@ describe('언어 목록·번역 사전', () => {
 
   it('언어 코드·이름 검사', async () => {
     await expect(asUser(platformId, (db) => lg.saveLanguage(db, { code: 'Vietnamese', native_name: 'x' }))).rejects.toThrow(/BCP 47/);
+    await expect(asUser(platformId, (db) => lg.saveLanguage(db, { code: 'en-12', native_name: 'x' }))).rejects.toThrow(/BCP 47/); // 모양은 맞지만 Intl 이 못 받는 코드
     await expect(asUser(platformId, (db) => lg.saveLanguage(db, { code: 'vi', native_name: '' }))).rejects.toThrow(/이름/);
   });
 });

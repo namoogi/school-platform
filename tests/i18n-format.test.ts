@@ -1,6 +1,6 @@
 /** ADR 0037: 화면 문구 채우기·대체 순서·브라우저 언어 고르기 (DB 없이) */
 import { describe, expect, it } from 'vitest';
-import { fallbackChain, formatMessage, pickFromAcceptLanguage, placeholders, sameShape } from '@/lib/i18n/format';
+import { fallbackChain, formatMessage, pickFromAcceptLanguage, placeholders, safeLocale, sameShape } from '@/lib/i18n/format';
 import { CATALOG } from '@/lib/i18n/catalog';
 import en from '../i18n/en.json';
 
@@ -58,5 +58,14 @@ describe('번역 모양 검사', () => {
     expect(sameShape('화면 형식: {kind}', 'Layout: {kind}')).toBe(true);
     expect(sameShape('화면 형식: {kind}', 'Layout: {type}')).toBe(false);
     expect(sameShape('{n, plural, other {#개}}', '{n, plural, one {# item} other {# items}')).toBe(false);
+  });
+});
+
+describe('형식용 언어(safeLocale)', () => {
+  it('문법이 틀린 코드(en-12)는 대체 언어로 — 날짜 형식이 오류로 화면을 막지 않는다', () => {
+    expect(safeLocale('en')).toBe('en');
+    expect(safeLocale('zh-Hant')).toBe('zh-Hant');
+    expect(safeLocale('en-12')).toBe('ko');
+    expect(() => new Date(0).toLocaleString(safeLocale('en-12'))).not.toThrow();
   });
 });
