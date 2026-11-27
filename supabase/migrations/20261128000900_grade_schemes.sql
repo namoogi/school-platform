@@ -57,7 +57,8 @@ begin
   select id, school_level_id, ordinal into g from public.grade_levels where id = grade_level and school_id = target;
   if g.id is null then raise exception '이 학교의 학년을 찾을 수 없습니다.' using errcode = 'P0002'; end if;
   if g.school_level_id is null then raise exception '학교급에 속한 학년만 반을 만들 수 있습니다.' using errcode = '22023'; end if;
-  select count(*) into pos from public.grade_levels
+  -- 학년의 정체는 서수라, 같은 서수 행이 둘 있어도 한 자리로 센다
+  select count(distinct ordinal) into pos from public.grade_levels
    where school_id = target and school_level_id = g.school_level_id and ordinal <= g.ordinal;
   if pos not between 1 and 12 then raise exception '학년은 1~12 사이입니다.' using errcode = '22023'; end if;
   begin

@@ -96,6 +96,14 @@ describe('학년 체계', () => {
     const aYear = await asUser(A.userId, (db) => pp.addAcademicYear(db, A.schoolId, { label: 'gs-2030', startsOn: '2030-03-01', endsOn: '2031-03-01' }));
     await expect(asUser(A.userId, (db) => pp.addGradeHomeroom(db, A.schoolId, { yearId: aYear, gradeLevelId: bGrade, name: '1반' }))).rejects.toThrow('학년');
     await expect(su.query(`update public.school_profiles set grade_scheme = 'kr'`)).rejects.toThrow();
+    // 같은 서수 학년이 둘 있어도 반의 학년 순번은 한 자리로 센다(중1 중복 → 중2 반은 2학년)
+    await asUser(A.userId, async (db) => {
+      const mid = (await pp.listSchoolLevels(db, A.schoolId)).find((l) => l.code === 'middle')!.id;
+      await f.addGradeLevel(db, A.schoolId, { levelId: mid, code: 'm1dup', label: { ko: '중1 중복' }, ordinal: 7 });
+    });
+    const m2 = (await su.query(`select id from public.grade_levels where school_id = $1 and code = 'm2'`, [A.schoolId])).rows[0].id;
+    const hr = await asUser(A.userId, (db) => pp.addGradeHomeroom(db, A.schoolId, { yearId: aYear, gradeLevelId: m2, name: '중2 1반' }));
+    expect(Number((await su.query(`select grade from public.homerooms where id = $1`, [hr])).rows[0].grade)).toBe(2);
   });
 });
 

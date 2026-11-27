@@ -21,13 +21,18 @@ export function GradeSchemeForm({ current, baseVersion, presets }: { current: Sc
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const res = await fetch('/api/academics', { method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'grade-scheme', scheme, levels, labels: scheme === 'custom' ? labels : {}, base_version: baseVersion }) });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) return setMsg({ text: data.error ?? t('academics.saveFailed'), error: true });
-    setMsg({ text: t('scheme.saved', { levels: data.levels, grades: data.grades }) });
-    router.refresh();
+    try {
+      const res = await fetch('/api/academics', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'grade-scheme', scheme, levels, labels: scheme === 'custom' ? labels : {}, base_version: baseVersion }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return setMsg({ text: data.error ?? t('academics.saveFailed'), error: true });
+      setMsg({ text: t('scheme.saved', { levels: data.levels, grades: data.grades }) });
+      router.refresh();
+    } catch {
+      setMsg({ text: t('academics.saveFailed'), error: true });
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <form className="action-form" onSubmit={save} data-testid="scheme-form">
