@@ -117,6 +117,12 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
   - 그전까지 PR 26개의 `@codex review`에 봇 반응이 **0건**이었다. 막혀 있던 곳은 세 군데다: ① 저장소 Code review 꺼짐 ② 개인 설정 자동 검토 꺼짐 ③ GitHub 앱 권한 갱신 요청 미승인. 셋 다 풀어야 했다. 다시 막히면 이 세 곳부터 본다.
   - 개인 설정을 켜고, GitHub의 ChatGPT Codex Connector 앱에 걸려 있던 권한 갱신 요청을 승인한 뒤(01:57Z) 봇(`chatgpt-codex-connector[bot]`)이 PR #127에 처음으로 검토를 남겼다(01:58Z, P1 1건 → 수용). 이제 PR을 열면 자동 검토되고, `@codex review` 댓글로도 다시 청할 수 있다.
   - 보조 경로: 선생님 쪽 Codex 세션이 GitHub 커넥터로 PR을 읽고 검토 댓글을 직접 남긴다. 첫 줄은 `(Codex 수동 검토 …)`이다. 85차 PR #127에서 P2 2건을 받아 반영했다.
+- 작업 요청 연결 상태(2026-11-27, 99차, 이슈 #143)
+  - 이슈의 `@codex`가 처음 세 번은 "create an environment for this repo" 답만 받았다. Codex 클라우드 환경을 만들고 **환경의 저장소 칸을 이 저장소로 맞춘 뒤** 네 번째 호출에서 👀 반응(착수)이 붙었다. 다시 막히면 환경의 저장소 연결부터 본다.
+  - Codex 클라우드 작업은 끝나도 **PR을 만들지 않고 'Create PR' 단추에서 멈춘다**(이번에는 커밋 `36e70a4`만 남김). 이 한 번의 클릭이 사람 병목이다.
+  - 실제 PR #154는 선생님 Mac의 Codex가 올렸다. PR 본문에 완료 범위·시험 결과·미확인 항목·Claude가 이어 할 일을 적어, Claude가 대화 전달 없이 저장소에서 이어받았다(검토 → 지적 보완 커밋 → 시험 → 병합 → 운영 확인).
+  - 다음 시험(미확인): Claude가 브랜치와 초안 PR을 먼저 만들고 **그 PR 댓글에서 `@codex`로 구현을 청한다**. Codex가 그 PR 브랜치에 바로 올리면 'Create PR' 클릭이 없어진다. 결과를 이 절에 적는다.
+  - Codex 클라우드 환경은 작업 실행 때 Postgres가 꺼져 있어 DB 시험·E2E를 못 돌렸다. 빠진 시험은 받는 Claude 세션이 돌린다.
 - 사용자 1회 설정(85차에 확인한 순서). 그 뒤로는 사람이 중계하지 않는다.
   1. Codex 설정 → Code review → 이 저장소 켜기(Automatic review)
   2. Codex 설정 → Personal preferences → 자동 검토 켜기. 저장소 칸이 'Follow personal preferences'면 이 값을 따른다.

@@ -12,6 +12,9 @@
 ## 공개 저장소 (2026-11-27)
 저장소를 공개로 바꿨다(Actions 무료 시간). 비밀값·실제 연락처·학생 정보를 하드코딩하지 않는다. `npm run check:repo`(CI)가 비밀값 모양·개인 메일·커밋된 `.env`를 막는다. 전환 때 전체 기록 180개 커밋을 검사해 실제 비밀값은 없었다. 이슈 #143에서 `@codex`로 Codex 클라우드에 일을 맡기는 길이 작동한다(👀 반응 = 착수).
 
+## 홈페이지 템플릿 (99차, Codex 협업)
+대표 3종(이야기·프로젝트·유치원)에 Codex가 생성한 예시 사진 22장(`public/site-templates/img/`, 프롬프트·규격 `docs/design/template-photo-manifest.json`)과 쪽마다 다른 배치(홈 + 안쪽 9쪽)가 들어갔다. 판: story 3, project 4, kinder 3. 다음은 골격 B·E와 나머지 5종 사진(16장, `docs/design/template-image-prompts.md`), 새 템플릿(재외 한글학교·기숙형·진로 특성화). Codex에게 맡기는 길은 `docs/COLLABORATION.md` 8절.
+
 ## 학교 이전 (92차, ADR 0035)
 공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
 
