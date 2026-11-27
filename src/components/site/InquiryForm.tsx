@@ -1,5 +1,6 @@
 'use client';
 import { useId, useState } from 'react';
+import { SectionHead } from './SectionHead';
 
 type Lang = 'ko' | 'en' | 'th';
 const L = {
@@ -41,10 +42,8 @@ export function InquiryForm({ slug, lang, page, title, body }: { slug: string | 
   }
   return (
     <section className="sec site-inquiry" data-testid="site-inquiry" aria-labelledby={`${id}-h`}>
-      <div className="sec-copy">
-        <h2 className="site-h2" id={`${id}-h`}>{title || t('send')}</h2>
-        {body && <p>{body}</p>}
-      </div>
+      <SectionHead heading={<h2 className="site-h2" id={`${id}-h`}>{title || t('send')}</h2>}
+        body={body && <p>{body}</p>} />
       <form className="site-inquiry-form" onSubmit={send}>
         <fieldset><legend>{t('kind')}</legend>
           <div className="site-inquiry-kinds">{(['visit', 'consult', 'question'] as const).map((k, i) => (

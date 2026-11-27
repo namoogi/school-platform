@@ -81,7 +81,10 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
     ...(site.has_news ? [{ key: 'news', href: link('/news'), label: siteText('news', lang) }] : []),
     ...(site.stories ? [{ key: 'stories', href: link('/stories'), label: siteText('stories', lang) }] : []),
   ];
-  const visit = !hidden && profile?.visit && t(profile.visit.label) ? profile.visit : null;
+  const fallbackContact = kit && !profile?.phone?.length && !profile?.facebook ? t(profile?.footer) : '';
+  const visit = !hidden && profile?.visit && t(profile.visit.label) ? profile.visit
+    : !hidden && kit && (profile?.phone?.length || profile?.facebook || fallbackContact)
+      ? { label: T.contact, href: '#site-contact' } : null;
   const navList = nav.map((n) => <Link key={n.key} href={n.href} aria-current={n.key === current ? 'page' : undefined}>{n.label}</Link>);
   const langList = langs ?? site.langs;
   const langLinks = langList.map((l) => <Link key={l} href={preview ? preview.langHref(l) : `${sitePath(site, path || '/')}${q(l)}`} aria-current={l === lang ? 'true' : undefined} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link>);
@@ -150,21 +153,24 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
               {t(profile?.tagline) && <p>{t(profile?.tagline)}</p>}
             </div>
             <nav aria-label={siteText('pages', lang)}>
+              {kit && <h3>{siteText('menu', lang)}</h3>}
               <Link href={link('/')}>{siteText('home', lang)}</Link>
               {nav.filter((n) => n.key !== 'home').map((n) => <Link key={n.key} href={n.href}>{n.label}</Link>)}
             </nav>
-            <div className="site-footer-contact">
-              <h3>{siteText('contact', lang)}</h3>
+            <div className="site-footer-contact" id={kit ? 'site-contact' : undefined}>
+              {kit && <h3>{siteText('contact', lang)}</h3>}
+              {fallbackContact && <p>{fallbackContact}</p>}
+              {!kit && t(profile?.address) && <p>{t(profile?.address)}</p>}
               {/* 옛 바닥처럼 마지막 번호(사무실) 하나 */}
               {profile?.phone?.length ? <p><a href={`tel:${profile.phone.at(-1)!.replace(/[^0-9+]/g, '')}`} aria-label={`${siteText('call', lang)} ${profile.phone.at(-1)}`}>{profile.phone.at(-1)}</a></p> : null}
               {profile?.facebook && <p><a className="site-link" href={profile.facebook} target="_blank" rel="noopener noreferrer">Facebook<ArrowRight className="link-arrow" size={20} strokeWidth={1.4} aria-hidden="true" /></a></p>}
             </div>
-            <div className="site-footer-address">
+            {kit && <div className="site-footer-address">
               <h3>{siteText('address', lang)}</h3>
               {t(profile?.address) && <><p>{t(profile?.address)}</p><p><a className="site-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t(profile?.address))}`} target="_blank" rel="noopener noreferrer">{siteText('map', lang)}<ArrowRight className="link-arrow" size={20} strokeWidth={1.4} aria-hidden="true" /></a></p></>}
-            </div>
+            </div>}
             <div className="site-footer-note">
-              <p>{t(profile?.footer) || `© ${title}`}</p>
+              <p>{(fallbackContact ? '' : t(profile?.footer)) || `© ${title}`}</p>
               {!preview && <a className="site-footer-staff" href={staffEditHref(site, path)} rel="nofollow" data-testid="staff-edit">{siteText('staff', lang)}</a>}
             </div>
           </div>

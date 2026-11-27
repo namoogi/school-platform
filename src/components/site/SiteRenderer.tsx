@@ -9,6 +9,8 @@ import { GalleryGrid } from './GalleryGrid';
 import { TagFilter } from './TagFilter';
 import { InquiryForm } from './InquiryForm';
 import { RainbowArc, Ribbon } from './Rainbow';
+import { SectionHead } from './SectionHead';
+import { cardLayout } from './card-layout';
 
 /** 공개 화면 낱말 (블록 안) */
 const W = {
@@ -185,17 +187,16 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         if (!list.length && !ed) return null; // 볼 것이 없으면 방문자에게 보이지 않는다
         return (
           <section className="site-section lb-feature" data-style={b.style} data-testid="news-list">
-            <div className="sec-copy">
+            <SectionHead heading={<>
               {show(b.eyebrow) && <span className="sec-eyebrow">{T(at('eyebrow'), b.eyebrow, '소식 구역 머리말')}</span>}
               {show(b.title) && <h2 className="site-h2">{T(at('title'), b.title, '소식 구역 제목')}</h2>}
-              {show(b.body) && <p className="site-lead">{T(at('body'), b.body, '소식 구역 소개')}</p>}
-              <A className="site-link" to="/news">{w('allNews', lang)}<Arrow /></A>
-            </div>
+            </>} body={show(b.body) && <p className="site-lead">{T(at('body'), b.body, '소식 구역 소개')}</p>}
+              action={<A className="site-link" to="/news">{w('allNews', lang)}<Arrow /></A>} />
             {!list.length && <p className="le-placeholder">공개한 소식이 생기면 최근 {b.count}개가 여기에 보입니다.</p>}
             {list.length > 0 && (b.style === 'list'
               ? <ul className="lb-board">{list.map((n) => (
                   <li key={n.key}><time>{n.published_at?.slice(0, 10)}</time><Link href={link(`/news/${n.key}`)}>{t(n.title)}</Link></li>))}</ul>
-              : <ul className="site-cards story-grid">{list.map((n) => (
+              : <ul className="site-cards story-grid" data-layout="cards" {...cardLayout(list.length)}>{list.map((n) => (
                   <li key={n.key}><Link href={link(`/news/${n.key}`)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {n.cover && <img src={assetUrl(n.cover)} alt="" loading="lazy" />}
@@ -248,7 +249,9 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
               ? <dl className="sec-facts">{items.map((it, k) => <div key={k}><dt>{T(at('items', k, 'title'), it.title, `${k + 1}번 항목`)}</dt><dd>{P(at('items', k, 'body'), it.body, `${k + 1}번 내용`)}</dd></div>)}</dl>
               : b.template === 'steps'
                 ? <ol className="sec-steps">{items.map((it, k) => <li key={k}><span aria-hidden="true">{String(k + 1).padStart(2, '0')}</span><div>{show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}단계 제목`)}</h3>}{P(at('items', k, 'body'), it.body, `${k + 1}단계 글`)}</div></li>)}</ol>
-                : <ul className={b.template === 'photos' ? 'sec-photos' : 'sec-cards'}>{items.map((it, k) => {
+                : <ul className={b.template === 'photos' ? 'sec-photos' : 'sec-cards'}
+                    data-layout={['cards', 'photos'].includes(b.template) && !['rows', 'portfolio', 'feature-filter', 'tiles', 'mosaic'].includes(v ?? '') ? 'cards' : undefined}
+                    {...cardLayout(items.length)}>{items.map((it, k) => {
                     const num = String(k + 1).padStart(2, '0');
                     const pic = (it.asset || (ed && (b.template === 'photos' || b.template === 'cards'))) && v !== 'index' ? photo(at('items', k, 'asset'), it.asset, it.alt, `${k + 1}번 사진`) : null;
                     const inner = b.template === 'photos'
@@ -277,7 +280,8 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         return (
           <section className="sec" data-template={b.template} data-variant={v}>
             {b.template === 'banner' && figure}
-            <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
+            <SectionHead heading={head} body={body} action={!btnAfter && btn}
+              stack={hasPhoto || v === 'daybook'} />
             {(b.template === 'media-left' || b.template === 'media-right') && figure}
             {/* 거르기는 분류를 가진 카드·사진 목록에서만(정보·단계 목록에는 분류 칸이 없음) */}
             {filterable && !ed && itemList && tags.length > 1 && (b.template === 'cards' || b.template === 'photos')

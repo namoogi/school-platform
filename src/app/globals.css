@@ -2240,7 +2240,7 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 
 .site[data-theme="play"]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="media-right"][data-variant="half"] { padding: clamp(20px, 4vw, 48px); background: var(--t-surface); border: 2px solid var(--t-accent-soft); border-radius: var(--t-radius); }
 
-/* 100차: 키트 테마 공통 레이아웃 층. campus·dawn은 위의 전용 규칙을 그대로 쓴다. */
+/* 100차: 키트 공통 레이아웃. campus·dawn에는 선택자·토큰 모두 적용하지 않는다. */
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) {
   --t-space-1: 4px;
   --t-space-2: 8px;
@@ -2252,56 +2252,139 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
   --t-space-8: 80px;
   --t-content: 1200px;
   --t-reading: 720px;
+  --t-card-min: 16rem;
+  --t-page-inset: var(--t-space-6);
   --t-gutter: var(--t-space-6);
   --t-section-y: var(--t-space-8);
 }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-wrap { width: min(var(--t-content), calc(100% - (2 * var(--t-space-6)))); }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header-row { min-height: var(--t-space-8); flex-wrap: nowrap; padding-block: 0; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand { flex: 0 1 260px; min-width: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-wrap { width: min(var(--t-content), calc(100% - 2 * var(--t-page-inset))); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.site-main, .site-header-row, .site-footer-grid) > * { min-width: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header-row { min-height: var(--t-space-8); flex-wrap: nowrap; gap: var(--t-space-5); padding-block: var(--t-space-3); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand { flex: 0 1 20%; min-width: 0; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand span { min-width: 0; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand strong { overflow-wrap: anywhere; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-desktop { margin-left: auto; justify-content: flex-end; gap: var(--t-space-5); overflow: visible; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-desktop { flex: 1; min-width: 0; margin-left: auto; justify-content: flex-end; flex-wrap: wrap; gap: var(--t-space-2) var(--t-space-5); overflow: visible; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-desktop a { white-space: normal; overflow-wrap: anywhere; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit { display: none; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-visit { flex: none; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-main { padding-block: var(--t-space-7) var(--t-space-8); gap: var(--t-space-6); }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks { gap: 0; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry) { padding-block: var(--t-section-y); }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry):nth-child(even) { padding-inline: var(--t-space-6); background: var(--t-accent-soft); border-radius: var(--t-radius); }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="banner"]:first-child { padding-block: 0 var(--t-section-y); background: transparent; }
-/* 구역 머리: 이름표→제목→설명은 왼쪽 8칸, 행동은 오른쪽 3칸 끝에 둔다. */
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--t-space-3) var(--t-gutter); align-items: end; margin-bottom: var(--t-space-6); max-width: none; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :not(.site-button, .site-link) { grid-column: 1 / span 8; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :is(.site-button, .site-link) { grid-column: 10 / -1; grid-row: 1 / span 3; justify-self: end; align-self: end; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .sec-photos, .sec-steps, .site-cards) { width: 100%; align-items: stretch; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: var(--t-gutter); }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) > li { height: 100%; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) > li > a { height: 100%; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.site-visit, .site-langs) { flex: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-main { padding-block: var(--t-space-7) 0; gap: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-head { gap: var(--t-space-3); padding-block: 0 var(--t-space-7); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks { max-width: none; gap: 0; }
+/* 배경만 컨테이너 밖으로 넓힌다. 내용에 padding-inline을 더하지 않아 모든 시작선이 같다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry) { position: relative; isolation: isolate; margin: 0; padding: var(--t-section-y) 0; gap: var(--t-gutter); border: 0; border-radius: 0; background: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry)::before { content: ''; position: absolute; z-index: -1; inset: 0; background: var(--t-band, var(--t-bg)); box-shadow: 0 0 0 100vmax var(--t-band, var(--t-bg)); clip-path: inset(0 -100vmax); pointer-events: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry):nth-child(even) { --t-band: var(--t-accent-soft); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="cta"] { --t-band: var(--t-accent-soft); color: var(--t-ink); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="cta"] :is(h2, p) { color: inherit; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="quote"][data-variant="editorial"] { padding: var(--t-section-y) 0; --t-band: var(--t-accent-soft); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="banner"] { padding: 0; margin-bottom: var(--t-section-y); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="banner"]:not([data-variant="editorial"]):not([data-variant="mask"]) { background: var(--t-accent); border-radius: var(--t-radius); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="banner"]::before { content: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.site-text, .site-figure, .gallery, .site-video, .site-notice) { margin-block: var(--t-space-5); }
+/* 같은 구역 머리: 이름표·제목·설명 8칸, 행동 4칸. 사진 옆 글은 자체 한 열. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy[data-layout="heading"] { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--t-space-3) var(--t-gutter); align-items: end; margin: 0; max-width: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy[data-layout="heading"] > :not(.site-button, .site-link) { grid-column: 1 / span 8; margin: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy[data-layout="heading"] > :is(.site-button, .site-link) { grid-column: 9 / -1; grid-row: 1 / span 3; justify-self: end; align-self: end; margin: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy[data-layout="stack"] { max-width: none; gap: var(--t-space-4); margin: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy p { max-width: var(--t-reading); }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.site-text, .site-head > .site-lead) { max-width: var(--t-reading); }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--t-space-6) var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec[data-template="media-left"], .sec[data-template="media-right"], .sec[data-variant="daybook"]) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec:is([data-template="media-left"], [data-template="media-right"]) { padding: var(--t-section-y) 0; border: 0; border-radius: 0; background: none; }
+/* 카드 수에 맞춘 줄 채움은 아래 data-layout 규칙에서 적용한다. 큰 첫 카드·콜라주·가로 행은 유지한다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards, .sec-facts, .sec-steps) { width: 100%; align-items: stretch; gap: var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec[data-template="cards"], .site-section) :is(.sec-cards, .site-cards),
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-cards.story-grid,
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="steps"][data-variant="index"] .sec-steps,
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="filter"] .sec-photos { grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--t-card-min)), 1fr)); gap: var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"]:is([data-variant="rows"], [data-variant="portfolio"]) .sec-cards { grid-template-columns: 1fr; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"][data-variant="feature-filter"] .sec-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"][data-variant="tiles"] .sec-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) > li { min-width: 0; height: 100%; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) > li > a { height: 100%; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"] .sec-cards img,
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-cards.story-grid img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"] .sec-cards .sec-item-copy { gap: var(--t-space-2); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="mentors"] .sec-cards :is(li, li > a) { grid-template-rows: auto 1fr; align-content: stretch; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="mentors"] .sec-cards li:has(> a) { display: block; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="mentors"] .sec-item-copy { padding: var(--t-space-4) 0; align-content: start; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="rows"] .sec-item-copy,
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="feature-filter"] .sec-cards li:first-child .sec-item-copy { padding: var(--t-space-6); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="feature-filter"] .sec-cards li:first-child img { min-height: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="portfolio"] .sec-cards li { padding-block: var(--t-space-6); gap: var(--t-gutter); }
+/* 링크가 카드 전체를 감싼 경우도 사진·글 행 격자를 유지한다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec:is([data-variant="rows"], [data-variant="portfolio"]) .sec-cards li:has(> a) { display: block; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec:is([data-variant="rows"], [data-variant="portfolio"]) .sec-cards li > a { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; gap: var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="feature-filter"] .sec-cards li:first-child:has(> a) { display: block; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="feature-filter"] .sec-cards li:first-child > a { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: center; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-cards.story-grid a { gap: var(--t-space-3); padding: var(--t-space-5); align-content: start; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="mosaic"] .sec-photos { gap: var(--t-space-4); }
+/* 글은 자르지 않고 최소 줄 높이를 맞춰 제목·소개 시작선과 정보 접근을 함께 보장한다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"]:not([data-variant="rows"]):not([data-variant="portfolio"]):not([data-variant="feature-filter"]) .sec-item-copy h3 { min-block-size: 2lh; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"]:not([data-variant="rows"]):not([data-variant="portfolio"]):not([data-variant="feature-filter"]) .sec-item-copy p { min-block-size: 3lh; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-cards.story-grid b { min-block-size: 2lh; margin: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-cards.story-grid a > span:not(.card-more) { min-block-size: 3lh; }
+/* 보이는 수로 열 수를 고르고, 나머지 항목도 마지막 줄 전체 폭을 나눈다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) ul[data-layout="cards"] { --t-card-columns: 3; --t-card-limit: 4; display: flex; flex-wrap: wrap; width: 100%; gap: var(--t-gutter); align-items: stretch; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) ul[data-layout="cards"][data-columns="1"] { --t-card-columns: 1; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) ul[data-layout="cards"][data-columns="2"] { --t-card-columns: 2; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) ul[data-layout="cards"][data-columns="4"] { --t-card-columns: 4; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) ul[data-layout="cards"] > li { --t-row-columns: min(var(--t-card-columns), var(--t-card-limit)); flex: 1 1 max(min(100%, var(--t-card-min)), calc((100% - (var(--t-row-columns) - 1) * var(--t-gutter)) / var(--t-row-columns))); min-width: 0; height: auto; }
+/* 첫 화면: 글·사진 6칸씩, 행사 카드는 사진 경계 안에 놓는다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--t-gutter); align-items: center; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] .sec-cards { width: calc(100% - 2 * var(--t-space-5)); margin: var(--t-space-5); grid-template-columns: 1fr; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] h2 { font-size: clamp(2rem, 3.4vw, 3.25rem); text-wrap: balance; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] .sec-copy { padding: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="mask"] { gap: var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="mask"] .sec-copy { padding: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"]:not([data-variant="editorial"]):not([data-variant="mask"]) .sec-copy { padding: var(--t-space-7); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="mask"] .sec-photo::before { right: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="mask"] .sec-photo img { box-shadow: var(--t-space-2) var(--t-space-3) 0 var(--t-accent-soft); }
+/* 바닥: 학교 소개 4 / 메뉴 2 / 연락 2 / 주소 4. 링크는 밑줄 대신 초점·hover로 구분. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer { padding-block: var(--t-space-7) var(--t-space-5); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--t-space-6) var(--t-gutter); align-items: start; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-brand { grid-column: span 4; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav { grid-column: span 2; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-contact { grid-column: span 2; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav, .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-contact { grid-column: span 2; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-address { grid-column: span 4; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid :is(nav, p) { gap: var(--t-space-2); overflow-wrap: anywhere; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid h3 { margin: 0 0 var(--t-space-3); color: inherit; font-size: var(--fs-body); }
-
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid a { text-decoration: none; min-height: var(--t-space-7); display: inline-flex; align-items: center; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav { align-content: start; row-gap: var(--t-space-2); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav h3 { margin-bottom: var(--t-space-1); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav a { min-height: var(--t-space-5); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid a:hover { text-decoration: underline; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-note { padding-top: var(--t-space-5); gap: var(--t-space-3); }
 @media (max-width: 900px) {
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) { --t-gutter: var(--t-space-5); --t-section-y: var(--t-space-7); }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header-row { flex-wrap: wrap; padding-block: var(--t-space-3); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) ul[data-layout="cards"] { --t-card-limit: 2; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header-row { flex-wrap: wrap; gap: var(--t-space-3) var(--t-space-5); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand { flex: 1 1 50%; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-desktop { display: none; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit { display: block; border-top: 1px solid var(--t-line); }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > summary { display: flex; align-items: center; min-height: 48px; font-weight: 800; cursor: pointer; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > summary { display: flex; align-items: center; min-height: var(--t-space-7); font-weight: 800; cursor: pointer; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > nav { display: grid; padding-bottom: var(--t-space-4); }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > nav a { display: flex; align-items: center; min-height: 44px; color: var(--t-ink); text-decoration: none; border-top: 1px solid var(--t-line); }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-brand { grid-column: span 6; }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav, .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-contact { grid-column: span 3; }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-address { grid-column: span 6; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > nav a { display: flex; align-items: center; min-height: var(--t-space-7); color: var(--t-ink); text-decoration: none; border-top: 1px solid var(--t-line); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy[data-layout="heading"] { grid-template-columns: 1fr; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy[data-layout="heading"] > :not(.site-button, .site-link),
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy[data-layout="heading"] > :is(.site-button, .site-link) { grid-column: 1; grid-row: auto; justify-self: start; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"],
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="mask"],
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec[data-template="media-left"], .sec[data-template="media-right"], .sec[data-variant="daybook"]) { grid-template-columns: 1fr; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] :is(.sec-copy, .sec-photo, .sec-cards),
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="mask"] :is(.sec-copy, .sec-photo) { grid-column: 1; grid-row: auto; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] .sec-copy { grid-row: 1; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] .sec-photo { grid-row: 2; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] .sec-cards { grid-row: 3; width: 100%; margin: 0; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"][data-variant="editorial"] .sec-photo img { aspect-ratio: 5 / 4; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > :is(.site-footer-brand, nav, .site-footer-contact, .site-footer-address) { grid-column: span 6; }
 }
 @media (max-width: 600px) {
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) { --t-gutter: var(--t-space-4); --t-section-y: var(--t-space-7); }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-wrap { width: min(var(--t-content), calc(100% - (2 * var(--t-space-4)))); }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry):nth-child(even) { padding-inline: var(--t-space-4); }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy { grid-template-columns: 1fr; }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :not(.site-button, .site-link), .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :is(.site-button, .site-link) { grid-column: 1; grid-row: auto; justify-self: start; }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > * { grid-column: 1 / -1; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) { --t-page-inset: var(--t-space-4); --t-gutter: var(--t-space-4); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) ul[data-layout="cards"] { --t-card-limit: 1; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"][data-variant="feature-filter"] .sec-cards,
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"][data-variant="tiles"] .sec-cards { grid-template-columns: 1fr; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="cards"][data-variant="tiles"] .sec-cards li:first-child { grid-column: auto; grid-row: auto; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec:is([data-variant="rows"], [data-variant="portfolio"], [data-variant="feature-filter"]) .sec-cards li,
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec:is([data-variant="rows"], [data-variant="portfolio"], [data-variant="feature-filter"]) .sec-cards li > a { grid-template-columns: 1fr; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"]:not([data-variant="editorial"]):not([data-variant="mask"]) .sec-copy { padding: var(--t-space-5); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > :is(.site-footer-brand, nav, .site-footer-contact, .site-footer-address, .site-footer-note) { grid-column: 1 / -1; }
 }
