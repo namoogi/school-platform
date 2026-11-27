@@ -123,6 +123,12 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
   - 실제 PR #154는 선생님 Mac의 Codex가 올렸다. PR 본문에 완료 범위·시험 결과·미확인 항목·Claude가 이어 할 일을 적어, Claude가 대화 전달 없이 저장소에서 이어받았다(검토 → 지적 보완 커밋 → 시험 → 병합 → 운영 확인).
   - 다음 시험(미확인): Claude가 브랜치와 초안 PR을 먼저 만들고 **그 PR 댓글에서 `@codex`로 구현을 청한다**. Codex가 그 PR 브랜치에 바로 올리면 'Create PR' 클릭이 없어진다. 결과를 이 절에 적는다.
   - Codex 클라우드 환경은 작업 실행 때 Postgres가 꺼져 있어 DB 시험·E2E를 못 돌렸다. 빠진 시험은 받는 Claude 세션이 돌린다.
+- 106차 확인(2026-11-27, PR #159)
+  - **PR 댓글의 `@codex`도 브랜치에 올리지 않는다.** 결과는 Codex 클라우드 작업에만 남고 'Create PR' 단추가 필요하다.
+  - **PR 본문에 `@codex` 글자를 쓰면 그것도 호출로 받아 같은 작업이 두 번 돈다.** 본문에서는 쓰지 않는다.
+  - GitHub 댓글의 Codex 공유 링크(`chatgpt.com/s/cd_…`)는 앱에서 "사용할 수 없습니다"로 열리지 않을 수 있다. chatgpt.com/codex 작업 목록에서 찾는다.
+  - 클라우드 Claude 세션 안의 `codex login --device-auth`는 계정 보안 설정에 따라 막힐 수 있다("장치 코드 인증을 활성화").
+  - 사람 손을 없애는 길(추천): 선생님 Mac에서 `claude remote-control`로 저장소 폴더를 열면, 클라우드 Claude 세션이 그 폴더를 붙여 Mac에 로그인된 Codex CLI를 직접 실행할 수 있다(확인 대기).
 - 사용자 1회 설정(85차에 확인한 순서). 그 뒤로는 사람이 중계하지 않는다.
   1. Codex 설정 → Code review → 이 저장소 켜기(Automatic review)
   2. Codex 설정 → Personal preferences → 자동 검토 켜기. 저장소 칸이 'Follow personal preferences'면 이 값을 따른다.
