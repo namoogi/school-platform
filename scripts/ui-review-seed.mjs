@@ -95,9 +95,9 @@ try {
   let scored = 0;
   for (const offering of offerings) {
     const items = [];
-    for (const [code, title, en, weight] of [['mid', '중간 과제', 'Midterm task', 40], ['final', '기말 프로젝트', 'Final project', 60]]) {
+    for (const [code, title, en, weight, kind] of [['mid', '중간 과제', 'Midterm task', 40, 'assignment'], ['final', '기말 프로젝트', 'Final project', 60, 'project']]) {
       items.push(await v('select app.add_assessment($1, $2, $3) as v', [S, offering, JSON.stringify({
-        code, title: { ko: title, en }, kind: 'summative', axis: 'course',
+        code, title: { ko: title, en }, kind, axis: 'course',
         weight, max_score: 100, grading_period_id: null, competency_item_id: null, scale_id: null })]));
     }
     for (const [n, p] of students.entries()) {

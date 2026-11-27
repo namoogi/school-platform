@@ -62,7 +62,7 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
               <ul className="issue-list" data-testid="assessments">{assessments.map((a) => (
                 <li key={a.id}>
                   <span><strong>{title(a.title)}</strong> <small className="muted">{t('grades.assessmentMeta', { code: a.code, kind: KIND.find((k) => k.value === a.kind)?.label ?? a.kind, w: a.weight })}{a.max_score != null ? t('grades.maxSuffix', { n: a.max_score }) : ''}</small></span>
-                  {ctx.can_grade && !closure && <ActionForm url="/api/grades" action="archive-assessment" extra={{ assessmentId: a.id }} fields={[]} submitLabel={t('common.archive')} successText={t('common.archived')} confirmText={t('grades.archiveConfirm')} />}
+                  {ctx.can_grade && !closure && <ActionForm url="/api/grades" action="archive-assessment" extra={{ assessmentId: a.id }} fields={[]} submitLabel={t('common.archive')} successText={t('common.archived')} confirmText={t('grades.archiveConfirm')} tone="secondary" />}
                 </li>))}</ul>)}
             {ctx.can_grade && !closure && (
               <ActionForm url="/api/grades" action="assessment" extra={{ offeringId: o }} inline submitLabel={t('grades.addAssessment')} successText={t('grades.assessmentAdded')} testId="assessment-form"
