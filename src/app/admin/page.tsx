@@ -75,7 +75,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               modules: (s.modules ?? []).map((k) => moduleName[k] ?? k).join(', '),
               monthly: won(s.monthly_estimate_krw),
               records: <>{s.sources} · {s.documents} · {s.open_questions ? <StatusBadge tone="warning">{s.open_questions}</StatusBadge> : 0}</>,
-              actions: <div className="actions"><EnterSchoolButton schoolId={s.id} /><SchoolActions schoolId={s.id} status={s.status} period={period} /></div>,
+              actions: <div className="actions"><EnterSchoolButton schoolId={s.id} /><SchoolActions schoolId={s.id} schoolName={s.name} status={s.status} period={period} /></div>,
             },
           }))} />
       </section>

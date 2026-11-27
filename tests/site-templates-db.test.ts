@@ -114,3 +114,31 @@ describe('67차 기존 사이트에서 옮기기', () => {
     await expect(asUser(A.userId, (db) => tpl.migratePropose(db, A.schoolId, 'story', 'http://127.0.0.1/', 'x'))).rejects.toThrow(/공개 인터넷/);
   });
 });
+
+describe('87차 주소만 넣고 새 디자인으로 옮기기', () => {
+  it('템플릿 없이 읽으면 맞는 템플릿을 추천하고 템플릿마다 제안을 준다 → 고른 템플릿 시작 + 제안 넣기 = 공개 안 된 시안', async () => {
+    const { crawlSite } = await import('@/lib/site-crawl');
+    const fakeCrawl = (async () => ({ start: 'https://old-mission.example/', skipped: [], pages: [
+      { url: 'https://old-mission.example/', title: '등대학교', text: '우리의 사명\n배움이 닿지 않는 마을에 학교를 세웁니다.\n\n후원 안내\n- 정기 후원: 매달 자동 이체\n- 봉사: 방학 캠프\n- 기도: 기도 편지 신청', images: [] },
+      { url: 'https://old-mission.example/give', title: '후원하기', text: '후원금 사용\n- 교사 생활비: 60%\n- 교재: 40%\n기도 제목을 나눕니다.', images: [] },
+    ] })) as unknown as typeof crawlSite;
+    const pv = await asUser(B.userId, (db) => tpl.migratePropose(db, B.schoolId, '', 'https://old-mission.example/', '등대학교', fakeCrawl));
+    expect(pv.fits[0].key).toBe('mission');
+    expect(pv.template).toBe('mission');
+    expect(pv.fits[0].reasons).toEqual(expect.arrayContaining(['후원']));
+    expect(Object.keys(pv.byTemplate!)).toHaveLength(tpl.SITE_TEMPLATES.length);
+    expect(pv.proposals.map((p) => p.slotId)).toEqual(expect.arrayContaining(['ways']));
+    // 화면이 하는 순서 그대로: 템플릿 시작(없는 쪽만 시안) → 고른 제안 넣기(새 시안 판)
+    const applied = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'mission'));
+    expect(applied.created.map((c) => c.key)).toEqual(expect.arrayContaining(['partner']));
+    const fills = pv.proposals.filter((p) => p.kind !== 'image').map((p) => ({ slotId: p.slotId, value: p.value }));
+    const r = await asUser(B.userId, (db) => tpl.autofillApply(db, B.schoolId, 'mission', fills));
+    const partner = r.result.find((x) => x.page === 'partner')!;
+    expect(partner.version).toBe(2);
+    const entries = await asUser(B.userId, (db) => site.listEntries(db, B.schoolId));
+    expect(entries.filter((e) => e.kind === 'page').every((e) => !e.live_version)).toBe(true);
+  });
+  it('없는 템플릿 키는 읽기 전에 거부, 교사는 막힘은 API(admin)에서', async () => {
+    await expect(asUser(A.userId, (db) => tpl.migratePropose(db, A.schoolId, 'nope', 'https://old.example/', 'x'))).rejects.toThrow();
+  });
+});

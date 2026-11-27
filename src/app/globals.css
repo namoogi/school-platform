@@ -30,6 +30,7 @@
   --shadow-1: 0 0 2px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.10);
   --shadow-2: 0 0 2px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.14);
   --shadow-3: 0 0 8px rgba(0,0,0,.12), 0 14px 28px rgba(0,0,0,.14);
+  --surface-scrim: rgb(15 23 42 / .45); /* 대화상자 뒤 가림막 */
   /* 타입 */
   --font-sans: "Pretendard Variable", "Pretendard GOV", Pretendard, "Campus Sans", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --font-serif: "Campus Serif", "Noto Serif KR", Georgia, serif;
@@ -1730,9 +1731,23 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 
 /* 65차: 홈페이지 템플릿 둘러보기·미리보기 */
 .template-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-.template-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(240px, 320px) 1fr; align-items: start; }
+.template-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); align-items: start; } /* 86차: 미리보기가 먼저(화면·초점 순서 같음) */
 .template-preview { border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+/* 86차: 예시 내용·안내 자리 전환. 누르는 곳은 44px 이상 */
+.template-stage { display: grid; gap: var(--space-3); min-width: 0; }
+.template-page-tabs [aria-current="page"] { color: var(--brand-700); border-bottom-color: var(--brand-600); }
+.template-thumb { display: block; margin: calc(-1 * var(--space-1)) 0 var(--space-2); border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; aspect-ratio: 16 / 10; background: var(--surface-canvas); }
+.template-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+.migrate-fits { border: 0; padding: 0; margin: 0; }
+.migrate-fits legend { font-weight: 650; margin-bottom: var(--space-2); }
+.migrate-fit { display: grid; grid-template-columns: auto auto 1fr; gap: var(--space-3); align-items: center; padding: var(--space-2); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.migrate-fit:has(input:checked) { border-color: var(--brand-600); background: var(--surface-selected); }
+.migrate-fit img { border: 1px solid var(--border-default); border-radius: var(--radius-sm); object-fit: cover; object-position: top left; }
+@media (max-width: 520px) { .migrate-fit { grid-template-columns: auto 1fr; } .migrate-fit img { display: none; } }
+.template-view-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.template-view-bar p { margin: 0; flex: 1 1 240px; }
 @media (max-width: 860px) { .template-layout { grid-template-columns: 1fr; } }
+.template-view-bar .segmented a, .template-page-tabs a { min-height: 44px; display: inline-flex; align-items: center; }
 .issue-list .autofill-item, .autofill-item { display: grid; align-items: start; gap: var(--space-1); padding-block: var(--space-2); border-bottom: 1px solid var(--border-default); }
 .autofill-item textarea { width: 100%; }
 
