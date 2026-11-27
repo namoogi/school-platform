@@ -100,7 +100,17 @@ describe('드리미포털 규칙 표현(회신 2026-11-27)', () => {
   it('계승(포털 정정 ②③): 입력 행이 없을 때만 이전 기록의 P 를 이어받고, 입력 행이 생기면 끊긴다', () => {
     expect(one(85, { entry: { exists: false }, prior: { level: 'P' } })).toEqual({ score: null, passed: null, level: 'P' });
     expect(one(85, { entry: { exists: true, level: null }, prior: { level: 'P' } })).toEqual({ score: 85, passed: null, level: 'B' });
-    expect(one(85, { entry: { exists: true, level: 'p ' }, prior: { level: 'P' } }).level).toBe('B'); // 대소문자·공백 정리는 입력을 만드는 쪽 몫
+    // 읽을 때 정리: ' p ' 도 P(옛 값이 계승으로 들어와도 같은 판정)
+    expect(one(85, { entry: { exists: true, level: ' p ' } }).level).toBe('P');
+    expect(one(85, { entry: { exists: false }, prior: { level: 'p' } }).level).toBe('P');
+  });
+  it('빈 성취도(사고 ④): 빈 글자·공백만은 자료 없음 — 밴드·비교에서 null 로 남고 조용히 통과하지 않는다', () => {
+    for (const blank of ['', '   ', null]) {
+      // 입력 행의 성취도가 비면 P/F 아님 → 점수 잣대
+      expect(one(85, { entry: { exists: true, level: blank } })).toEqual({ score: 85, passed: null, level: 'B' });
+      const s: CalcSpec = { outputs: { passed: { op: '==', args: [{ var: 'entry.level' }, 'A'] }, level: { op: 'band', args: [{ var: 'let.none' }], bands: [[90, 'A']], else: 'E' } }, lets: { none: { var: 'entry.level' } } };
+      expect(evaluate(s, { entry: { exists: true, level: blank } })).toEqual({ score: null, passed: null, level: null });
+    }
   });
   it('band: 하한 큰 순서·빈 값 null·검사', () => {
     expect(checkSpec({ outputs: { level: { op: 'band', args: [1], bands: [[60, 'D'], [90, 'A']] }, score: 1 } }).map((i) => i.message).join()).toMatch(/큰 것부터/);

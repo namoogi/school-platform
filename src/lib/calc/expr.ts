@@ -160,13 +160,24 @@ export function weightedScore(items: Record<string, ItemInput> = {}, normalize =
   return normalize ? sum / wsum : sum / 100;
 }
 
+/**
+ * 성취도 글자는 읽을 때 정리한다: 앞뒤 공백을 빼고 대문자로, 빈 글자는 자료 없음(null).
+ * 입력 쪽에서도 정리하지만 이미 저장된 옛 값(' p ' 등)이 계승 경로로 들어와도 같은 판정을 받게 한다
+ * (드리미포털 회신: '문이 없으면 옆문으로 들어온다', 빈 성취도가 잣대를 조용히 지나간 사고 ④)
+ */
+export function levelOf(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const t = v.trim().toUpperCase();
+  return t ? t : null;
+}
+
 function getVar(path: string, input: CalcInput, lets: Record<string, V>): V {
   if (path.startsWith('let.')) return lets[path.slice(4)] ?? null;
   if (path === 'credits') return input.credits ?? null;
   if (path === 'course.pass_fail') return input.course?.pass_fail ?? false;
   if (path === 'entry.exists') return input.entry?.exists ?? false;
-  if (path === 'entry.level') return input.entry?.level ?? null;
-  if (path === 'prior.level') return input.prior?.level ?? null;
+  if (path === 'entry.level') return levelOf(input.entry?.level);
+  if (path === 'prior.level') return levelOf(input.prior?.level);
   if (path === 'competencies.count') return input.competencies?.length ?? 0;
   if (path.startsWith('attendance.')) {
     const a = input.attendance as Record<string, number | null> | undefined;
