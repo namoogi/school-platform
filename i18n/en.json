@@ -2792,5 +2792,6 @@
   "demo.build": "Create demo school",
   "demo.building": "Creating…",
   "demo.built": "Demo school created: {students} students, {offerings} classes.",
-  "demo.exists": "The demo school already exists (not created again)."
+  "demo.exists": "The demo school already exists (not created again).",
+  "db.gradeLabelsInvalid": "Grade labels must be 1–40 characters per grade position (-3 to 14)."
 }

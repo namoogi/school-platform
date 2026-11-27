@@ -6,6 +6,9 @@ select set_config('request.jwt.claims', '{}', true);
 
 alter table public.school_profiles add column grade_scheme text
   check (grade_scheme is null or grade_scheme in ('kr', 'us', 'custom'));
+-- 커스텀 표기는 학년 행을 고치지 않고 판에 둔다: { "서수": "표기" } (예: {"1":"씨앗반"}). 학년 행은 바꿀 수 없는 기록이라서다.
+alter table public.school_profiles add column grade_labels jsonb not null default '{}'
+  check (jsonb_typeof(grade_labels) = 'object');
 
 -- 반은 학년도·학교급별로 있었고 학년은 학교급 안의 순번(1~12)뿐이었다. 학년 행을 함께 가리켜 정규 서수와 이어 준다(빈 값 = 예전 반).
 alter table public.homerooms add column grade_level_id uuid;
@@ -15,7 +18,7 @@ create index homerooms_grade_level on public.homerooms (school_id, grade_level_i
 
 create or replace function app.set_school_profile(target uuid, p jsonb)
 returns integer language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
-declare v integer; prev text; scheme text;
+declare v integer; prev text; prev_labels jsonb; scheme text; labels jsonb;
 begin
   if not app.is_school_admin(target) then raise exception '학교 관리자만 할 수 있습니다.' using errcode = '42501'; end if;
   perform pg_advisory_xact_lock(hashtext('school-platform:school_profiles'), hashtext(target::text));
@@ -24,14 +27,21 @@ begin
     raise exception '그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.' using errcode = 'P0409';
   end if;
   -- 학년 체계를 보내지 않으면 직전 판 값을 잇는다(관할만 고쳐도 체계가 지워지지 않게)
-  select grade_scheme into prev from public.school_profiles where school_id = target order by version desc limit 1;
+  select grade_scheme, grade_labels into prev, prev_labels from public.school_profiles where school_id = target order by version desc limit 1;
   scheme := case when p ? 'grade_scheme' then nullif(p ->> 'grade_scheme', '') else prev end;
   if scheme is not null and scheme not in ('kr', 'us', 'custom') then
     raise exception '학년 체계는 한국식·미국식·커스텀 중 하나입니다.' using errcode = '22023';
   end if;
-  insert into public.school_profiles(school_id, version, country, sector, accreditation, external_codes, why, grade_scheme)
+  labels := case when p ? 'grade_labels' then p -> 'grade_labels' else coalesce(prev_labels, '{}') end;
+  if jsonb_typeof(labels) <> 'object' or exists (
+       select 1 from jsonb_each(labels) e
+        where e.key !~ '^-?[0-9]{1,2}$' or e.key::int not between -3 and 14
+           or jsonb_typeof(e.value) <> 'string' or length(trim(e.value #>> '{}')) not between 1 and 40) then
+    raise exception '학년 표기는 서수(-3~14)마다 1~40자입니다.' using errcode = '22023';
+  end if;
+  insert into public.school_profiles(school_id, version, country, sector, accreditation, external_codes, why, grade_scheme, grade_labels)
   values (target, v, nullif(upper(p ->> 'country'), ''), nullif(p ->> 'sector', ''), nullif(trim(p ->> 'accreditation'), ''),
-          coalesce(p -> 'external_codes', '{}'), nullif(trim(p ->> 'why'), ''), scheme);
+          coalesce(p -> 'external_codes', '{}'), nullif(trim(p ->> 'why'), ''), scheme, labels);
   return v;
 end $$;
 

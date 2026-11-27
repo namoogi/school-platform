@@ -31,8 +31,8 @@ F1~F6과 학사 화면(71~76차)은 있지만, 새 학교가 학사 시스템을
   | `us` 미국식 | 초등 K~5 · 중등 6~8 · 고등 9~12 | K · Grade 1~12 |
   | `custom` | 한국식 자리에서 시작 | 학교가 학년마다 적은 표기(`grade_levels.label`) |
 
-- 표기는 kr·us면 서수에서 정하고, custom이거나 체계에 없는 서수(PK 등)는 학교가 적은 표기를 쓴다(`src/lib/grade-schemes.ts` `gradeLabel`). 그래서 체계를 바꿔도 학년 행을 고치지 않는다.
-- '학교급·학년 만들기'는 이미 있는 학교급(같은 코드)·학년(같은 코드)은 두고 빠진 것만 더한다. 쓰기는 기존 명령 함수(`app.add_school_level`·`add_grade_level`·`set_school_profile`)만 쓴다(새 쓰기 경로 없음).
+- 표기는 kr·us면 서수에서 정한다. custom은 학교 관할 판의 표기(`grade_labels`, 서수 → 글)를 쓰고, 없으면 학년 행 표기를 쓴다. 체계에 없는 서수(PK 등)는 학년 행 표기다(`src/lib/grade-schemes.ts` `gradeLabel`). 그래서 체계를 바꾸거나 표기를 고쳐도 학년 행(바꿀 수 없는 기록)을 고치지 않는다.
+- 학년의 정체는 **서수**다. '학교급·학년 만들기'는 이미 있는 학교급(같은 코드)과 학년(같은 서수)은 두고 빠진 것만 더한다. 한국식 e1과 미국식 g1은 같은 학년이라 체계를 바꿔도 학년 행이 늘지 않는다(Codex #172 P1). 학교급 경계는 처음 만든 때를 따른다(한국식으로 만든 뒤 미국식으로 바꾸면 6학년은 초등에 남는다). 쓰기는 기존 명령 함수(`app.add_school_level`·`add_grade_level`·`set_school_profile`)만 쓴다(새 쓰기 경로 없음).
 - 반은 학년 행을 가리킨다: `homerooms.grade_level_id`(복합 외래키) + `app.add_grade_homeroom(학교, 학년도, 학년, 이름)`. 학교급·학교급 안 순번은 DB가 학년 행에서 정한다. 옛 반(빈 값)은 그대로 쓴다.
 - 다음에 볼 것(이 ADR 범위, 2단계 이후): 무학년·혼합 연령 학교급, 학년 넘기기 규칙(해마다 한 칸, 졸업 다음 보관, 유급·월반 예외), 수업(개설)이 학년을 가리켜 학기 시작 자동 수강을 학년 단위로.
 
@@ -77,7 +77,7 @@ F1~F6과 학사 화면(71~76차)은 있지만, 새 학교가 학사 시스템을
 | 시연 학교: **앱 라이브러리로 생성(채택)** / 시드 SQL / 시드 스크립트가 표에 직접 | 운영에도 같은 경로로 넣을 수 있고 쓰기 규칙(관리자·409·마감)을 그대로 거침 | 직접 쓰기는 지침 2 경로 밖 |
 
 ## 영향
-- DB: 마이그레이션 `20261128000900_grade_schemes.sql` — `school_profiles.grade_scheme`(빈 값 허용), `homerooms.grade_level_id`(복합 외래키, 빈 값 허용), `app.set_school_profile` 교체(체계 잇기), `app.add_grade_homeroom` 추가. 기존 행·함수 서명은 그대로다.
+- DB: 마이그레이션 `20261128000900_grade_schemes.sql` — `school_profiles.grade_scheme`(빈 값 허용)·`grade_labels`(커스텀 표기, 기본 `{}`), `homerooms.grade_level_id`(복합 외래키, 빈 값 허용), `app.set_school_profile` 교체(체계 잇기), `app.add_grade_homeroom` 추가. 기존 행·함수 서명은 그대로다.
 - 데이터 경계: 새 학교 표 없음. 반 → 학년은 `(grade_level_id, school_id)` 복합 외래키, 다른 학교 학년은 함수가 거부(시험 있음). 학교 ID는 로그인 소속에서.
 - 화면: `/academics` 학교급 카드에 학년 체계 고르기·학년 칩, 전체 관리에 '시연 학교 만들기'.
 - 되돌리기: 열 두 개는 빈 값 허용이라 앱을 되돌려도 남아 있어도 된다. 시연 학교는 정지.

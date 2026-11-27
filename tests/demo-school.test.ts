@@ -56,6 +56,27 @@ describe('학년 체계', () => {
     expect(v.levels.find((l) => l.code === 'middle')!.grades.map((x) => x.label)).toEqual(['씨앗반', '새싹반', '중3']);
   });
 
+  it('체계를 바꿔도 학년 행이 늘지 않고(서수가 정체), 커스텀 표기는 기존 학년에도 판으로 붙는다', async () => {
+    const count = async () => Number((await su.query(`select count(*) n from public.grade_levels where school_id = $1`, [B.schoolId])).rows[0].n);
+    const before = await count();
+    // 미국식으로 만든 학교를 한국식으로: K~12 그대로, 새 학년 없음
+    expect(await asUser(B.userId, (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'kr', levels: ['elementary', 'middle', 'high'] }, 'en'))).toMatchObject({ grades: 0 });
+    expect(await count()).toBe(before);
+    let v = await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'ko'));
+    expect(v.levels.find((l) => l.code === 'high')!.grades.map((x) => x.label)).toEqual(['중3', '고1', '고2', '고3']);
+    // 커스텀으로: 이미 있는 학년(고1 = 서수 10)에도 표기가 붙는다
+    expect(await asUser(B.userId, (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'custom', levels: ['high'], labels: { h1: '열매반' } }, 'en'))).toMatchObject({ grades: 0 });
+    expect(await count()).toBe(before);
+    v = await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'ko'));
+    expect(v.levels.find((l) => l.code === 'high')!.grades.map((x) => x.label)).toContain('열매반');
+    // 관할만 고친 판도 표기를 잇는다
+    await asUser(B.userId, (db) => db.query(`select app.set_school_profile($1, '{"country":"TH"}')`, [B.schoolId]));
+    v = await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'ko'));
+    expect(v.scheme).toBe('custom');
+    expect(v.levels.find((l) => l.code === 'high')!.grades.map((x) => x.label)).toContain('열매반');
+    await expect(asUser(B.userId, (db) => db.query(`select app.set_school_profile($1, '{"grade_labels":{"x":"y"}}')`, [B.schoolId]))).rejects.toThrow('학년 표기');
+  });
+
   it('잘못된 체계·학교급은 거부, 학교 관리자가 아니면 DB가 거부, 다른 학교 학년으로 반을 못 만든다', async () => {
     await expect(asUser(A.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'uk', levels: ['high'] }))).rejects.toThrow();
     await expect(asUser(A.userId, (db) => gs.applyGradeScheme(db, A.schoolId, { scheme: 'kr', levels: [] }))).rejects.toThrow();

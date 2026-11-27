@@ -19,14 +19,15 @@
 - 조사: `docs/research/sis-ux-2026-11.md` — PowerSchool·Infinite Campus·Veracross·Blackbaud·ManageBac·Toddle·Schoology·Google Classroom·나이스 UI·UX(사실/추정/확인 필요, 출처 표). 템플릿 화면·둘러보기 순서 제안.
 - 설계: ADR 0043(학년 체계 모델, 템플릿 5종 묶음 내용, 화면 흐름, 시연 학교 구성, 단계).
 - 마이그레이션 `20261128000900_grade_schemes.sql`
-  - `school_profiles.grade_scheme`(kr·us·custom, 보내지 않으면 직전 값을 이음) — `app.set_school_profile` 교체
+  - `school_profiles.grade_scheme`(kr·us·custom)·`grade_labels`(커스텀 표기, 서수 열쇠). 보내지 않으면 직전 값을 잇는다 — `app.set_school_profile` 교체
+  - Codex #172 P1 반영: 학년은 코드가 아니라 서수로 같은 학년을 찾는다(체계를 바꿔도 학년 행이 늘지 않음), 커스텀 표기는 기존 학년에도 판으로 붙는다
   - `homerooms.grade_level_id`(복합 외래키) + `app.add_grade_homeroom`(학교급·순번은 학년 행에서)
 - `src/lib/grade-schemes.ts`: 체계 기본 구성, `gradeLabel`, `schemeView`, `applyGradeScheme`(빠진 학교급·학년만, 기존 명령 함수만)
 - `src/lib/demo-school.ts` + `POST /api/admin/demo-school`(전체 관리자): 시연 학교 생성(다시 불러도 한 번만)
 - 화면: `/academics` 학교급 카드에 학년 체계 고르기·학년 칩(직접 더하기는 접음), 전체 관리 '시연 학교 만들기'. 이름표 27개(ko·en)
 
 ## 시험
-- `tests/demo-school.test.ts` 6개(ADR 0043 '확인 방법')
+- `tests/demo-school.test.ts` 7개(체계 바꾸기 회귀 포함)(ADR 0043 '확인 방법')
 - 기존 `rls-gate`·`school-move`·`adr0004-step1`·`f1-foundation`·`server-errors`·`i18n-*` 통과
 
 ## 확인하지 못한 것·다음
