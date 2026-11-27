@@ -1,7 +1,7 @@
 import { cookies, headers } from 'next/headers';
 import { asPublic, type Db } from '@/lib/db';
 import { BASE_LANG, CATALOG, type MsgKey } from './catalog';
-import { fallbackChain, formatMessage, pickFromAcceptLanguage, type Vars } from './format';
+import { fallbackChain, formatMessage, pickFromAcceptLanguage, safeLocale, type Vars } from './format';
 
 /**
  * ADR 0037: 화면 언어. 언어 목록·번역 사전은 DB(languages·ui_messages)에서 읽는다.
@@ -9,7 +9,8 @@ import { fallbackChain, formatMessage, pickFromAcceptLanguage, type Vars } from 
  */
 export type Language = { code: string; native_name: string; direction: 'ltr' | 'rtl'; fallback: string | null; active: boolean; sort: number };
 export type Dictionary = Record<string, string>;
-export type I18n = { lang: string; dir: 'ltr' | 'rtl'; languages: Language[]; dict: Dictionary; t: (key: MsgKey, vars?: Vars) => string };
+/** locale: 날짜·숫자 형식용 언어(문법이 틀린 코드면 기준 언어). 화면 형식에는 lang 대신 이것을 쓴다 */
+export type I18n = { lang: string; locale: string; dir: 'ltr' | 'rtl'; languages: Language[]; dict: Dictionary; t: (key: MsgKey, vars?: Vars) => string };
 
 export const LANG_COOKIE = 'lang';
 const TTL = 30_000;
@@ -73,7 +74,7 @@ export async function getI18n(userPref?: string | null): Promise<I18n> {
   const languages = await getLanguages();
   const dict = await getDictionary(lang);
   const dir = languages.find((l) => l.code === lang)?.direction ?? 'ltr';
-  return { lang, dir, languages, dict, t: (key, vars) => formatMessage(dict[key] ?? CATALOG[key] ?? key, vars, lang) };
+  return { lang, locale: safeLocale(lang, BASE_LANG), dir, languages, dict, t: (key, vars) => formatMessage(dict[key] ?? CATALOG[key] ?? key, vars, lang) };
 }
 
 /** 로그인한 사람의 화면 언어 설정(없으면 null). 화면은 loadForPage 안에서 읽어 getI18n 에 넘긴다 */

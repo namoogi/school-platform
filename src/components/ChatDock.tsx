@@ -249,7 +249,7 @@ function NewChat({ scope, q, data, onBack, onDone }: { scope: Scope; q: string; 
 }
 
 function Thread({ id, q, scope, onBack, onChange }: { id: string; q: string; scope: Scope; onBack: () => void; onChange: () => Promise<void> }) {
-  const { t, lang } = useI18n();
+  const { t, locale } = useI18n();
   const [r, setR] = useState<Request | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -291,13 +291,13 @@ function Thread({ id, q, scope, onBack, onChange }: { id: string; q: string; sco
       <ol className="chatdock-feed" ref={feed} aria-live="polite">
         {r.detail && <li className="chatdock-msg" data-author={r.author}><div className="chatdock-msg-head"><b>{t(r.kind === 'decision' ? 'chat.decisionRequest' : 'chat.detail')}</b></div><p>{r.detail}</p></li>}
         {r.messages.map((m) => m.kind === 'status' ? (
-          <li key={m.id} className="chatdock-event muted small-text">{t('chat.statusChange', { when: when(m.created_at, lang), who: m.author === 'user' ? who(m) : t('chat.session'), status: statusLabel(t, m.choice ?? '') })}</li>
+          <li key={m.id} className="chatdock-event muted small-text">{t('chat.statusChange', { when: when(m.created_at, locale), who: m.author === 'user' ? who(m) : t('chat.session'), status: statusLabel(t, m.choice ?? '') })}</li>
         ) : (
           <li key={m.id} className="chatdock-msg" data-author={m.author} data-mine={m.mine || undefined}>
             <div className="chatdock-msg-head">
               <b>{who(m)}</b>
               {KIND.has(m.kind) && <span className="tag">{t(`chat.kind.${m.kind}` as MsgKey)}</span>}
-              <span className="muted num">{when(m.created_at, lang)}</span>
+              <span className="muted num">{when(m.created_at, locale)}</span>
               {m.author === 'user' && m.deliver && <span className="muted small-text">{t(m.delivered_at ? 'chat.delivered' : r.status === 'pending' ? 'chat.afterApproval' : 'chat.waitingDelivery')}</span>}
             </div>
             {m.choice && <p><b>{t('chat.choice', { label: label(m.choice) })}</b></p>}

@@ -39,8 +39,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     done: await flowProgress(db, school.id),
   }), { module: 'intake' });
 
-  const { t, lang } = await getI18n(uiLang);
-  const when = (d: string) => new Date(d).toLocaleString(lang, { timeZone: KST, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const { t, locale } = await getI18n(uiLang);
+  const when = (d: string) => new Date(d).toLocaleString(locale, { timeZone: KST, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const f: Fmt = { t, when };
   const byBox: Record<Box, { id: string }[]> = {
     open: questions.filter((q) => q.status === 'open'),

@@ -34,9 +34,9 @@ export default async function HomePage() {
     license: school.isAdmin ? await licenseInfo(db, school.id) : null,
   }));
 
-  const { t, lang } = await getI18n(uiLang);
-  const fmtDay = (d: Date) => d.toLocaleDateString(lang, { timeZone: KST, month: 'long', day: 'numeric', weekday: 'short' });
-  const fmtTime = (d: string) => new Date(d).toLocaleString(lang, { timeZone: KST, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  const { t, locale } = await getI18n(uiLang);
+  const fmtDay = (d: Date) => d.toLocaleDateString(locale, { timeZone: KST, month: 'long', day: 'numeric', weekday: 'short' });
+  const fmtTime = (d: string) => new Date(d).toLocaleString(locale, { timeZone: KST, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const v = (n: number) => t('common.version', { v: n });
   const how = (d: string) => t(d === 'accepted' ? 'rule.decision.accepted' : 'rule.decision.edited');
   const parsed = sources.filter((s) => s.kind === 'file');
