@@ -62,7 +62,7 @@ export async function exportSchool(db, key) {
 async function exportSnapshot(db, key) {
   const { rows: [school] } = await db.query(
     `select * from public.schools where id::text = $1 or slug = $1`, [key]);
-  if (!school) throw new Error(`학교를 찾을 수 없습니다: ${key}`);
+  if (!school) throw new Error('그 학교를 찾을 수 없습니다(학교 주소 이름 또는 id를 확인하세요).'); // 입력값은 오류에 되풀이하지 않는다(리뷰 규칙 3)
   const id = school.id;
   const tables = /** @type {Record<string, any[]>} */ ({});
   const userIds = new Set();
@@ -160,20 +160,21 @@ export async function sameMigrations(db, bundle) {
   return { onlySource, onlyTarget, same: !onlySource.length && !onlyTarget.length };
 }
 
-/** 순번(비 UUID) 번호 표에서 대상에 이미 같은 번호가 있는지(다른 학교가 사는 셀로 넣을 때 번호가 겹칠 수 있다) */
+/** 순번 번호 칸(식별 칸·nextval 기본값, 기본 키든 아니든)에서 대상에 이미 같은 번호가 있는지. 다른 학교가 사는 셀로 넣을 때 겹칠 수 있다 */
 async function identityCollisions(db, bundle) {
   const hits = [];
   for (const [t, rows] of Object.entries(bundle.tables)) {
-    const { rows: pk } = await db.query(
-      `select a.attname as col, format_type(a.atttypid, a.atttypmod) as type from pg_constraint k
-         join pg_class c on c.oid = k.conrelid join pg_namespace n on n.oid = c.relnamespace
-         join pg_attribute a on a.attrelid = c.oid and a.attnum = k.conkey[1]
-        where k.contype = 'p' and n.nspname = 'public' and c.relname = $1 and array_length(k.conkey, 1) = 1`, [t]);
-    if (!pk.length || pk[0].type === 'uuid') continue;
-    const vals = rows.map((r) => r[pk[0].col]).filter((v) => v != null).map(String);
-    if (!vals.length) continue;
-    const { rows: [{ n }] } = await db.query(`select count(*)::int as n from public.${q(t)} where ${q(pk[0].col)}::text = any($1::text[])`, [vals]);
-    if (n) hits.push(`${t} ${n}행`);
+    const { rows: cols } = await db.query(
+      `select a.attname as col from pg_attribute a join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace
+         left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
+        where n.nspname = 'public' and c.relname = $1 and a.attnum > 0 and not a.attisdropped
+          and (a.attidentity <> '' or pg_get_expr(d.adbin, d.adrelid) like 'nextval(%')`, [t]);
+    for (const { col } of cols) {
+      const vals = rows.map((r) => r[col]).filter((v) => v != null).map(String);
+      if (!vals.length) continue;
+      const { rows: [{ n }] } = await db.query(`select count(*)::int as n from public.${q(t)} where ${q(col)}::text = any($1::text[])`, [vals]);
+      if (n) hits.push(`${t}.${col} ${n}행`);
+    }
   }
   return hits;
 }

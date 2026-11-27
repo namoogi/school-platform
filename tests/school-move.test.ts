@@ -168,7 +168,12 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     const clone = JSON.parse(JSON.stringify(bundle).split(A.schoolId).join(otherId));
     clone.tables.access_log = [{ ...bundle.tables.access_log[0], school_id: otherId }];
     expect(bundle.tables.access_log?.length).toBeGreaterThan(0);
-    await expect(importSchool(dst, clone)).rejects.toThrow(/순번 번호/);
+    await expect(importSchool(dst, clone)).rejects.toThrow(/access_log\.id/);
+    // 기본 키가 아닌 순번 칸(control_requests.no)도 본다
+    const onlyNo = JSON.parse(JSON.stringify(bundle).split(A.schoolId).join(otherId));
+    delete onlyNo.tables.access_log;
+    onlyNo.tables.control_requests = onlyNo.tables.control_requests.map((r: { id: string }) => ({ ...r, id: '00000000-0000-4000-8000-0000000000cc' }));
+    await expect(importSchool(dst, onlyNo)).rejects.toThrow(/control_requests\.no/);
   });
 
   it('같은 학교를 두 번 넣지 않는다', async () => {
