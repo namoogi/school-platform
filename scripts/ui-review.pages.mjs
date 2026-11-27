@@ -18,6 +18,7 @@ export const PAGES = {
   intro: { states: { default: '/intro' } },
   login: { states: { default: '/login' } },
   home: { login: 'admin-a', states: { default: '/home' } },
+  intake: { login: 'admin-a', states: { default: '/intake', chat: '/intake?chat=1' } },
   academics: { login: 'admin-a', states: { default: '/academics' } },
   people: { login: 'admin-a', states: { default: '/people' } },
   courses: { login: 'admin-a', states: { default: '/courses' } },

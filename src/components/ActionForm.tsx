@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useI18n } from './I18nProvider';
 
 /**
  * 71차: 학사 화면 공용 작은 양식. 칸을 모아 { action, ...extra, ...값 }을 JSON으로 보내고, 성공하면 화면을 새로 고친다.
@@ -18,6 +19,7 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
   keep?: boolean;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const init = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? (f.type === 'select' ? f.options?.[0]?.value ?? '' : '')]));
   const [v, setV] = useState<Record<string, string>>(init);
   const [busy, setBusy] = useState(false);
@@ -31,8 +33,8 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
     const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
-    if (!res.ok) return setMsg({ text: data.error ?? '처리하지 못했습니다.', error: true });
-    setMsg({ text: successText ?? '저장했습니다.' });
+    if (!res.ok) return setMsg({ text: data.error ?? t('common.failed'), error: true });
+    setMsg({ text: successText ?? t('common.saved') });
     if (!keep) setV(init);
     router.refresh();
   }

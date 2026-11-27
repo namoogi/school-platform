@@ -2,6 +2,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Upload, X, FileText, Check, AlertCircle } from 'lucide-react';
 import { acceptAttr, checkFiles, describeAccept, formatSize, type FileRules } from '@/lib/file-check';
+import { useI18n } from './I18nProvider';
 
 /**
  * 파일 첨부 공통 부품: 끌어 놓기 · 눌러 고르기(Enter/Space) · 붙여넣기 · 형식·크기 검사 · 진행·취소 · 그림 미리보기.
@@ -30,6 +31,7 @@ export function FileDrop({
   /** 끝났을 때 문구(onFiles가 문자열을 돌려주면 그것을 쓴다) */
   doneText?: string;
 }) {
+  const { t } = useI18n();
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const depth = useRef(0);
@@ -43,8 +45,8 @@ export function FileDrop({
   const [errors, setErrors] = useState<string[]>([]);
   const [status, setStatus] = useState('');
   const rules: FileRules = { accept, maxSize, maxFiles, multiple, typeLabel };
-  const kinds = typeLabel ?? describeAccept(accept);
-  const limits = [kinds !== '모든 형식' ? kinds : null, maxSize ? `${formatSize(maxSize)}까지` : null, multiple ? (maxFiles ? `한 번에 ${maxFiles}개까지` : '여러 개 가능') : null]
+  const kinds = typeLabel ?? (accept?.length ? describeAccept(accept, t) : null);
+  const limits = [kinds, maxSize ? t('file.upTo', { size: formatSize(maxSize, t) }) : null, multiple ? (maxFiles ? t('file.maxPerBatch', { n: maxFiles }) : t('file.multiple')) : null]
     .filter(Boolean).join(' · ');
   const off = disabled || busy;
 
@@ -55,10 +57,10 @@ export function FileDrop({
 
   async function take(list: File[]) {
     if (off || list.length === 0) return;
-    const { accepted, errors: errs } = checkFiles(list, rules);
+    const { accepted, errors: errs } = checkFiles(list, rules, t);
     setErrors(errs);
     if (accepted.length === 0) {
-      setStatus(`올리지 않았습니다. ${errs.join(' ')}`);
+      setStatus(t('file.rejectedAll', { errors: errs.join(' ') }));
       return;
     }
     const next: Item[] = accepted.map((f, i) => ({
@@ -69,16 +71,16 @@ export function FileDrop({
     previews.current = next.flatMap((x) => (x.preview ? [x.preview] : []));
     setItems(next);
     setBusy(true); setRatio(null);
-    setStatus(`${accepted.length}개 파일을 올리는 중입니다.`);
+    setStatus(t('file.uploadingN', { n: accepted.length }));
     const c = new AbortController(); ctrl.current = c;
     try {
       const result = await onFiles(accepted, { signal: c.signal, progress: (r) => setRatio(Math.max(0, Math.min(1, r))) });
       setItems((xs) => xs.map((x) => ({ ...x, state: 'done' })));
-      setStatus(typeof result === 'string' ? result : (doneText ?? `${accepted.length}개 파일을 올렸습니다.`));
+      setStatus(typeof result === 'string' ? result : (doneText ?? t('file.uploadedN', { n: accepted.length })));
     } catch (e) {
       const aborted = (e as Error)?.name === 'AbortError';
       setItems((xs) => xs.map((x) => ({ ...x, state: 'error' })));
-      const msg = aborted ? '올리기를 취소했습니다.' : ((e as Error)?.message || '올리지 못했습니다. 다시 시도해 주세요.');
+      const msg = aborted ? t('file.cancelled') : ((e as Error)?.message || t('file.failed'));
       if (!aborted) setErrors((xs) => [...xs, msg]);
       setStatus(msg);
     } finally {
@@ -107,14 +109,14 @@ export function FileDrop({
       >
         <Upload className="file-drop-icon" size={compact ? 18 : 24} aria-hidden="true" />
         <div className="file-drop-text" aria-hidden="true">
-          <strong>{over ? '여기에 놓으세요' : compact ? '끌어 놓거나' : '파일을 여기에 끌어 놓거나'}</strong>
-          {!compact && <span>붙여넣기(Ctrl+V)도 됩니다</span>}
+          <strong>{over ? t('file.dropHere') : compact ? t('file.dragShort') : t('file.dragLong')}</strong>
+          {!compact && <span>{t('file.pasteOk')}</span>}
         </div>
         <button
           type="button" className="btn btn-secondary btn-sm file-drop-button" disabled={off}
           aria-labelledby={`${id}-label ${id}-btn`} aria-describedby={`${hintId} ${statusId}`}
           onClick={() => input.current?.click()}
-        ><span id={`${id}-btn`}>{buttonLabel ?? (multiple ? '파일 고르기' : '파일 고르기')}</span></button>
+        ><span id={`${id}-btn`}>{buttonLabel ?? (multiple ? t('file.choose') : t('file.chooseOne'))}</span></button>
         <input
           ref={input} type="file" hidden tabIndex={-1} multiple={multiple} accept={acceptAttr(accept)} disabled={off}
           data-testid={inputTestId} onChange={(e) => take(Array.from(e.target.files ?? []))}
@@ -124,29 +126,29 @@ export function FileDrop({
 
       {busy && (
         <div className="file-drop-progress">
-          <div className="progress" role="progressbar" aria-label={`${label} 올리는 중`}
+          <div className="progress" role="progressbar" aria-label={t('file.uploadingLabel', { label })}
             aria-valuemin={0} aria-valuemax={100} aria-valuenow={ratio === null ? undefined : Math.round(ratio * 100)}
             data-indeterminate={ratio === null || undefined}>
             <div className="progress-fill" style={ratio === null ? undefined : { width: `${ratio * 100}%` }} />
           </div>
-          <span className="fine num">{ratio === null ? '올리는 중…' : `${Math.round(ratio * 100)}%`}</span>
+          <span className="fine num">{ratio === null ? t('file.uploading') : `${Math.round(ratio * 100)}%`}</span>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => ctrl.current?.abort()}>
-            <X size={14} aria-hidden="true" /> 취소
+            <X size={14} aria-hidden="true" /> {t('common.cancel')}
           </button>
         </div>
       )}
 
       {items.length > 0 && (
-        <ul className="file-drop-list" aria-label="고른 파일">
+        <ul className="file-drop-list" aria-label={t('file.list')}>
           {items.map((it) => (
             <li key={it.key} data-state={it.state}>
               {it.preview ? <img src={it.preview} alt="" className="file-drop-thumb" /> : <FileText size={18} aria-hidden="true" className="file-drop-thumb-icon" />}
               <span className="file-drop-name">{it.name}</span>
-              <span className="fine num">{formatSize(it.size)}</span>
+              <span className="fine num">{formatSize(it.size, t)}</span>
               <span className="file-drop-state">
-                {it.state === 'done' && <><Check size={14} aria-hidden="true" /> 올림</>}
-                {it.state === 'error' && <><AlertCircle size={14} aria-hidden="true" /> 실패</>}
-                {it.state === 'busy' && '올리는 중'}
+                {it.state === 'done' && <><Check size={14} aria-hidden="true" /> {t('file.state.done')}</>}
+                {it.state === 'error' && <><AlertCircle size={14} aria-hidden="true" /> {t('file.state.error')}</>}
+                {it.state === 'busy' && t('file.state.busy')}
               </span>
             </li>
           ))}
@@ -155,7 +157,7 @@ export function FileDrop({
 
       {errors.length > 0 && (
         <ul className="field-error file-drop-errors" data-testid={testId ? `${testId}-errors` : undefined}>
-          {errors.map((e, i) => <li key={i}><AlertCircle size={14} aria-hidden="true" /> <span className="sr-only">오류: </span>{e}</li>)}
+          {errors.map((e, i) => <li key={i}><AlertCircle size={14} aria-hidden="true" /> <span className="sr-only">{t('file.errorPrefix')}</span>{e}</li>)}
         </ul>
       )}
       <p className="sr-only" id={statusId} role="status" aria-live="polite">{status}</p>
