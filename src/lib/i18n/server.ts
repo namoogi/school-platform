@@ -55,8 +55,8 @@ export async function getDictionary(lang: string): Promise<Dictionary> {
   return dict;
 }
 
-/** 화면 언어 정하기: 사용자 설정 → 쿠키 → 브라우저 언어 → 한국어. 꺼진 언어·없는 언어는 건너뛴다 */
-export async function resolveLang(userPref?: string | null): Promise<string> {
+/** 화면 언어 정하기: 사용자 설정 → 쿠키 → 학교 기본 언어 → 브라우저 언어 → 한국어. 꺼진 언어·없는 언어는 건너뛴다 */
+export async function resolveLang(userPref?: string | null, schoolLang?: string | null): Promise<string> {
   const langs = (await getLanguages()).filter((l) => l.active);
   const ok = (c?: string | null) => (c && langs.some((l) => l.code === c) ? c : null);
   const fromUser = ok(userPref);
@@ -64,12 +64,14 @@ export async function resolveLang(userPref?: string | null): Promise<string> {
   const store = await cookies();
   const fromCookie = ok(store.get(LANG_COOKIE)?.value);
   if (fromCookie) return fromCookie;
+  const fromSchool = ok(schoolLang);
+  if (fromSchool) return fromSchool;
   const fromBrowser = pickFromAcceptLanguage((await headers()).get('accept-language'), langs.map((l) => l.code));
   return fromBrowser ?? BASE_LANG;
 }
 
-export async function getI18n(userPref?: string | null): Promise<I18n> {
-  const lang = await resolveLang(userPref);
+export async function getI18n(userPref?: string | null, schoolLang?: string | null): Promise<I18n> {
+  const lang = await resolveLang(userPref, schoolLang);
   const languages = await getLanguages();
   const dict = await getDictionary(lang);
   const dir = languages.find((l) => l.code === lang)?.direction ?? 'ltr';
