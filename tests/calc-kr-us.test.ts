@@ -143,3 +143,20 @@ describe('모집단: 평점 평균(GPA)', () => {
 });
 
 function roundTo(x: number) { return Math.round(x * 100) / 100; }
+
+describe('척도 견본과 계산식 견본은 같은 구간이다(Codex #166 P1: 마감은 척도 판 band_for 로 등급을 굳힌다)', () => {
+  // 짝: 계산식 견본 → 척도 견본. 보충 이수 없음·P/F 아님일 때 원점수 0~100 모두 같은 등급이어야 한다
+  const PAIRS: [string, string][] = [
+    ['kr_high_common', 'kr_achievement'], ['kr_high_elective', 'kr_elective'], ['kr_high_science_lab', 'kr_science_lab'],
+    ['kr_high_arts_pe', 'kr_arts_pe'], ['kr_middle', 'kr_elective'], ['kr_middle_arts_pe', 'kr_arts_pe'],
+    ['us_letter_plus_minus', 'us_plus_minus'], ['us_letter_pf', 'us_letter'],
+  ];
+  it.each(PAIRS)('%s ↔ %s', async (calc, scale) => {
+    const { SCALE_PRESETS } = await import('@/lib/grading');
+    const bands = SCALE_PRESETS[scale].bands;
+    const bandFor = (x: number) => bands.filter((b) => b.min != null && x >= b.min).sort((a, b) => b.min! - a.min!)[0]?.code ?? null;
+    for (let x = 0; x <= 100; x++) {
+      expect([x, run(calc, { items: { a: { score: x, max: 100, weight: 100 } }, attendance: { rate: 1 } }).level]).toEqual([x, bandFor(x)]);
+    }
+  });
+});

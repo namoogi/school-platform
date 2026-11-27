@@ -15,7 +15,8 @@
      - 한국: `kr_high_common`, `kr_high_elective`, `kr_high_science_lab`, `kr_high_arts_pe`, `kr_middle`, `kr_middle_arts_pe`
      - 미국: `us_letter_plus_minus`
      - 0040의 6개와 합쳐 13개다.
-   - 척도 견본 2개: `kr_abc`(체육·예술·과탐실험 A·B·C), `us_plus_minus`(± 글자 성적, 4.0 평점)
+   - 척도 견본 4개: `kr_elective`(선택·중학교 A–E, 40 기준 없음), `kr_arts_pe`(체육·예술 A·B·C), `kr_science_lab`(과탐실험 A·B·C, 40 미만 I), `us_plus_minus`(± 글자 성적, 4.0 평점)
+   - 계산식 견본과 척도 견본은 짝으로 고른다. 마감이 척도 판으로 등급을 굳히기 때문이다. 짝마다 0~100점에서 같은 등급인지 시험으로 확인한다.
    - 경계값은 시험 `tests/calc-expr.test.ts`·`tests/calc-kr-us.test.ts`로 고정한다.
    - 견본마다 원문 근거(기재요령 쪽, 미국 출처)를 `note`와 조사 문서에 적는다.
 2. **이수 보충을 입력으로 받는다**: `support.achievement`(최소 성취수준 보장지도 이수), `support.attendance`(과목 출석 미달 추가학습 이수).

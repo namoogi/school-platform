@@ -38,11 +38,13 @@
 ## 3. 가까운 기본판 고르기
 | 학교가 닮은 것 | 계산식 견본 | 척도 견본 |
 | --- | --- | --- |
-| 한국 고등 공통 / 선택 / 과탐실험 / 체육·예술 | `kr_high_common` / `kr_high_elective` / `kr_high_science_lab` / `kr_high_arts_pe` | `kr_achievement`, `kr_abc` |
-| 한국 중학교 / 중학교 체육·예술 | `kr_middle` / `kr_middle_arts_pe` | `kr_achievement`, `kr_abc` |
+| 한국 고등 공통 / 선택 / 과탐실험 / 체육·예술 | `kr_high_common` / `kr_high_elective` / `kr_high_science_lab` / `kr_high_arts_pe` | 공통 `kr_achievement` · 선택 `kr_elective` · 과탐실험 `kr_science_lab` · 체육·예술 `kr_arts_pe` |
+| 한국 중학교 / 중학교 체육·예술 | `kr_middle` / `kr_middle_arts_pe` | `kr_elective` / `kr_arts_pe` |
 | 드리미학교 방식(두 번 반올림, P/F 출처 둘) | `rounded_twice_bands` | `kr_achievement` |
 | 미국 A–F / ± | `us_letter_pf` / `us_letter_plus_minus` | `us_letter`, `us_plus_minus` |
 | 프로젝트 통과형 · 역량 도달형 · 가중 평균 · 동료 평가 혼합 | `pass_fail_project` · `competency_mastery` · `weighted_average` · `peer_teacher_mix` | `pass_fail` |
+
+- **척도와 계산식은 같은 구간으로 짝지어 고른다.** 지금 수업 마감은 척도 판(`app.band_for`)으로 등급을 굳힌다. 짝이 어긋나면 계산식이 I(미이수)라고 해도 마감에서 C·이수가 된다. 견본 짝은 시험 `tests/calc-kr-us.test.ts`가 0~100점 전부로 맞춰 본다. 학교 사본을 고칠 때도 둘을 함께 새 판으로 쓴다.
 
 견본 목록과 식은 `GET /api/calc-rules`(`presets`)로 본다. 근거는 `docs/research/kr-us-grading-2026-11.md`, `docs/research/dreamy-calc-rules-2026-11.md`.
 

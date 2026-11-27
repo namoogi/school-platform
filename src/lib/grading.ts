@@ -28,11 +28,26 @@ export const SCALE_PRESETS: Record<string, { kind: 'letter' | 'level' | 'pass_fa
       { code: 'F', label: { en: 'F', ko: 'F' }, min: 0, points: 0, earns_credit: false },
     ],
   },
-  kr_abc: {
-    kind: 'letter', why: '한국 체육·예술(80/60)·과학탐구실험(80/60/40) A·B·C — 2026 기재요령 별표 9. 분할점은 학교가 고쳐 새 판으로',
+  kr_elective: {
+    kind: 'letter', why: '한국 고등 선택과목·중학교 A–E(90/80/70/60, 60 미만 E — 40 기준 없음) — 2026 기재요령 별표 9. 공통과목은 kr_achievement(40 미만 I)',
+    bands: [
+      { code: 'A', label: { ko: 'A', en: 'A' }, min: 90 }, { code: 'B', label: { ko: 'B', en: 'B' }, min: 80 },
+      { code: 'C', label: { ko: 'C', en: 'C' }, min: 70 }, { code: 'D', label: { ko: 'D', en: 'D' }, min: 60 },
+      { code: 'E', label: { ko: 'E', en: 'E' }, min: 0 },
+    ],
+  },
+  kr_arts_pe: {
+    kind: 'letter', why: '한국 체육·예술 A·B·C(80/60, 60 미만 C) — 2026 기재요령 별표 9. 과학탐구실험은 kr_science_lab(40 미만 I)',
     bands: [
       { code: 'A', label: { ko: 'A', en: 'A' }, min: 80 }, { code: 'B', label: { ko: 'B', en: 'B' }, min: 60 },
-      { code: 'C', label: { ko: 'C', en: 'C' }, min: 0 }, { code: 'I', label: { ko: '미이수', en: 'Incomplete' }, min: null, earns_credit: false },
+      { code: 'C', label: { ko: 'C', en: 'C' }, min: 0 },
+    ],
+  },
+  kr_science_lab: {
+    kind: 'letter', why: '한국 고등 과학탐구실험 A·B·C(80/60/40), 40 미만 미이수 I(최소 성취수준 보장지도 이수 시 C) — 2026 기재요령 별표 9',
+    bands: [
+      { code: 'A', label: { ko: 'A', en: 'A' }, min: 80 }, { code: 'B', label: { ko: 'B', en: 'B' }, min: 60 },
+      { code: 'C', label: { ko: 'C', en: 'C' }, min: 40 }, { code: 'I', label: { ko: '미이수', en: 'Incomplete' }, min: 0, earns_credit: false },
     ],
   },
   us_plus_minus: {

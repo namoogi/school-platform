@@ -25,7 +25,8 @@
   - `rankGrades`(5등급 누적 10/34/66/90/100, 반올림 인원, 경계 동점 중간석차, 5명 이하 미산출, 동점자 처리 값)
   - `subjectMean`, `populationStdev`, `levelDistribution`
   - `gpa`(학점 가중, P·NP 제외, 가중은 학교가 넘김, F에는 가중 없음), `US_POINTS_PLUS_MINUS`
-- 척도 견본 `kr_abc`, `us_plus_minus`(`src/lib/grading.ts`, 이름표 ko·en)
+- 척도 견본 `kr_elective`·`kr_arts_pe`·`kr_science_lab`·`us_plus_minus`(`src/lib/grading.ts`, 이름표 ko·en)
+  - Codex 지적: 과탐실험과 체육·예술이 한 척도를 쓰면 40 미만이 C·이수로 굳는다. 그래서 척도를 나누고, 계산식과 짝지은 척도가 0~100점에서 같은 등급인지 시험한다.
 - 문서
   - 조사: `docs/research/kr-us-grading-2026-11.md`(사실·관행·판단 구분, 쪽수·출처)
   - 절차: `docs/agents/grade-intake.md`(받기 → 매핑표 → 견본 → 학교 사본 → 미리 계산 → 확정)
