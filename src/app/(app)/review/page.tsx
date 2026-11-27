@@ -6,19 +6,24 @@ import { EmptyState, LEARNING_STEPS, StatusBadge, Steps } from '@/components/ui'
 import { PeriodTable } from '@/components/PeriodTable';
 import { ReviewClient } from './ReviewClient';
 import { TriageKeys } from './TriageKeys';
+import { getI18n, userLang } from '@/lib/i18n/server';
+import type { Translate } from '@/lib/i18n/base';
 
 export const dynamic = 'force-dynamic';
 
 type Box = 'open' | 'answered' | 'superseded' | 'rules';
 type Q = Question & { answered_at: string | null };
-const BOXES: { key: Box; label: string; icon: LucideIcon }[] = [
-  { key: 'open', label: '확인 대기', icon: Inbox },
-  { key: 'answered', label: '답변함', icon: CheckCheck },
-  { key: 'superseded', label: '새 자료로 대체됨', icon: Archive },
-  { key: 'rules', label: '확정한 판', icon: FileStack },
+// 함 이름은 사전의 review.box.<함>
+const BOXES: { key: Box; icon: LucideIcon }[] = [
+  { key: 'open', icon: Inbox },
+  { key: 'answered', icon: CheckCheck },
+  { key: 'superseded', icon: Archive },
+  { key: 'rules', icon: FileStack },
 ];
+// 화면 언어 t·날짜 형식을 아래 부품에 한 번에 넘긴다. 시간대는 아직 서울 고정
+type Fmt = { t: Translate; when: (d: string) => string };
 const KST = 'Asia/Seoul';
-const when = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: KST, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const how = (t: Translate, d: string) => t(d === 'accepted' ? 'rule.decision.accepted' : 'rule.decision.edited');
 
 /**
  * 관리자 확인 (25차, ADR 0006 3단 작업함): 함 → 목록 → 상세.
@@ -27,12 +32,16 @@ const when = (d: string) => new Date(d).toLocaleString('ko-KR', { timeZone: KST,
  */
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ box?: string; id?: string }> }) {
   const sp = await searchParams;
-  const { questions, rules, school, done } = await loadForPage(async ({ db, school }) => ({
+  const { questions, rules, school, done, uiLang } = await loadForPage(async ({ db, school }) => ({
+    uiLang: await userLang(db),
     questions: await listQuestions(db, school.id),
     rules: await listRules(db, school.id),
     done: await flowProgress(db, school.id),
   }), { module: 'intake' });
 
+  const { t, locale } = await getI18n(uiLang);
+  const when = (d: string) => new Date(d).toLocaleString(locale, { timeZone: KST, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const f: Fmt = { t, when };
   const byBox: Record<Box, { id: string }[]> = {
     open: questions.filter((q) => q.status === 'open'),
     answered: questions.filter((q) => q.status === 'answered'),
@@ -50,32 +59,32 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     <div className="triage" data-testid="triage">
       <header className="triage-head">
         <div>
-          <h1>관리자 확인</h1>
-          <p className="fine">자료에서 추정한 내용과 근거를 보고 확정합니다. 확정은 새 판으로 쌓이고 이전 판과 발행본은 그대로 남습니다.</p>
+          <h1>{t('steps.review')}</h1>
+          <p className="fine">{t('review.lead')}</p>
         </div>
         <Steps current="review" done={done} items={LEARNING_STEPS} />
       </header>
 
-      <nav className="triage-boxes" aria-label="확인 함">
+      <nav className="triage-boxes" aria-label={t('review.boxes')}>
         {BOXES.map((b) => (
           <Link key={b.key} href={href(b.key)} className="triage-box" aria-current={b.key === box ? 'page' : undefined}>
-            <b.icon size={18} aria-hidden="true" /><span>{b.label}</span><span className="triage-count">{byBox[b.key].length}</span>
+            <b.icon size={18} aria-hidden="true" /><span>{t(`review.box.${b.key}`)}</span><span className="triage-count">{byBox[b.key].length}</span>
           </Link>
         ))}
-        <p className="triage-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> 위·아래 이동</p>
+        <p className="triage-keys" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> {t('review.keys')}</p>
       </nav>
 
-      <section className="triage-list" aria-label={`${BOXES.find((b) => b.key === box)!.label} 목록`}>
+      <section className="triage-list" aria-label={t('review.listOf', { box: t(`review.box.${box}`) })}>
         <ul>
           {box === 'rules'
             ? rules.map((r) => (
               <li key={r.id}>
                 <Link href={href(box, r.id)} className="triage-item" aria-current={r.id === selectedId ? 'true' : undefined}>
                   <span className="triage-item-top">
-                    <StatusBadge tone={r === current ? 'success' : 'neutral'}>{r === current ? '사용 중' : '이전 판'}</StatusBadge>
+                    <StatusBadge tone={r === current ? 'success' : 'neutral'}>{t(r === current ? 'common.inUse' : 'common.previousVersion')}</StatusBadge>
                     <span className="triage-time">{when(r.confirmed_at)}</span>
                   </span>
-                  <span className="triage-item-title">{r.version}판 · {r.decision === 'accepted' ? '분석 결과 확인' : '관리자 수정'}</span>
+                  <span className="triage-item-title">{t('review.ruleItem', { v: r.version, how: how(t, r.decision) })}</span>
                   <span className="triage-item-sub">{r.value.periods.map((p) => p.label).join(' · ')}</span>
                 </Link>
               </li>))
@@ -83,41 +92,41 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
               <li key={q.id}>
                 <Link href={href(box, q.id)} className="triage-item" aria-current={q.id === selectedId ? 'true' : undefined}>
                   <span className="triage-item-top">
-                    <QuestionBadge q={q} />
+                    <QuestionBadge q={q} t={t} />
                     <span className="triage-time">{when(q.created_at)}</span>
                   </span>
-                  <span className="triage-item-title">{q.differs_from_rule_id ? '새 자료가 확정 규칙과 다릅니다' : '학기와 평가 기간의 관계'}</span>
-                  <span className="triage-item-sub">근거 {q.evidence.length}행{q.issues.length ? ` · 확인할 점 ${q.issues.length}개` : ''}</span>
+                  <span className="triage-item-title">{t(q.differs_from_rule_id ? 'review.q.differs' : 'review.q.relation')}</span>
+                  <span className="triage-item-sub">{t('review.q.sub', { n: q.evidence.length })}{q.issues.length ? t('review.q.issues', { n: q.issues.length }) : ''}</span>
                 </Link>
               </li>))}
         </ul>
         {list.length === 0 && (
-          <p className="triage-empty">{box === 'open' ? '확인할 질문이 없습니다.' : box === 'rules' ? '아직 확정한 판이 없습니다.' : '이 함은 비어 있습니다.'}</p>
+          <p className="triage-empty">{t(box === 'open' ? 'review.emptyOpen' : box === 'rules' ? 'review.emptyRules' : 'review.emptyBox')}</p>
         )}
       </section>
 
-      <section className="triage-detail" aria-label="상세">
+      <section className="triage-detail" aria-label={t('review.detail')}>
         {box === 'rules'
-          ? <RuleDetail rule={rules.find((r) => r.id === selectedId)} current={current} canPublish={school.isAdmin && school.modules.includes('records')} />
-          : <QuestionDetail q={(list as Q[]).find((q) => q.id === selectedId)} rules={rules} current={current} canConfirm={school.isAdmin} box={box} />}
+          ? <RuleDetail f={f} rule={rules.find((r) => r.id === selectedId)} current={current} canPublish={school.isAdmin && school.modules.includes('records')} />
+          : <QuestionDetail f={f} q={(list as Q[]).find((q) => q.id === selectedId)} rules={rules} current={current} canConfirm={school.isAdmin} box={box} />}
       </section>
       <TriageKeys hrefs={ids} current={selectedId ? href(box, selectedId) : null} />
     </div>
   );
 }
 
-function QuestionBadge({ q }: { q: Q }) {
-  if (q.status === 'open') return <StatusBadge tone={q.differs_from_rule_id ? 'danger' : 'warning'}>{q.differs_from_rule_id ? '충돌' : '확인 대기'}</StatusBadge>;
-  if (q.status === 'answered') return <StatusBadge tone="success">답변함</StatusBadge>;
-  return <StatusBadge>대체됨</StatusBadge>;
+function QuestionBadge({ q, t }: { q: Q; t: Translate }) {
+  if (q.status === 'open') return <StatusBadge tone={q.differs_from_rule_id ? 'danger' : 'warning'}>{t(q.differs_from_rule_id ? 'review.badge.conflict' : 'review.box.open')}</StatusBadge>;
+  if (q.status === 'answered') return <StatusBadge tone="success">{t('review.box.answered')}</StatusBadge>;
+  return <StatusBadge>{t('review.badge.superseded')}</StatusBadge>;
 }
 
-function QuestionDetail({ q, rules, current, canConfirm, box }: { q?: Q; rules: Rule[]; current?: Rule; canConfirm: boolean; box: Box }) {
+function QuestionDetail({ f: { t, when }, q, rules, current, canConfirm, box }: { f: Fmt; q?: Q; rules: Rule[]; current?: Rule; canConfirm: boolean; box: Box }) {
   if (!q) {
     return (
       <div className="triage-pad" data-testid="question">
-        <EmptyState title={box === 'open' ? '확인할 질문이 없습니다' : '고른 질문이 없습니다'} action={<Link className="btn btn-secondary" href="/intake">자료 첨부로</Link>}>
-          {current ? '확정한 규칙이 현재 자료와 일치합니다. 자료를 더 올리면 다시 분석합니다.' : '학사력이나 평가 자료를 먼저 첨부해 주세요.'}
+        <EmptyState title={t(box === 'open' ? 'review.noOpenTitle' : 'review.noPickTitle')} action={<Link className="btn btn-secondary" href="/intake">{t('review.toIntake')}</Link>}>
+          {t(current ? 'review.matches' : 'review.uploadFirst')}
         </EmptyState>
       </div>
     );
@@ -126,8 +135,8 @@ function QuestionDetail({ q, rules, current, canConfirm, box }: { q?: Q; rules: 
   return (
     <div className="triage-pad">
       <div className="triage-detail-head">
-        <p className="fine">질문 · {when(q.created_at)} 열림{q.answered_at ? ` · ${when(q.answered_at)} ${q.status === 'answered' ? '답변' : '대체'}` : ''}</p>
-        <QuestionBadge q={q} />
+        <p className="fine">{t('review.openedAt', { when: when(q.created_at) })}{q.answered_at ? t(q.status === 'answered' ? 'review.answeredAt' : 'review.supersededAt', { when: when(q.answered_at) }) : ''}</p>
+        <QuestionBadge q={q} t={t} />
       </div>
       {q.status === 'open' ? (
         <div className="triage-compare">
@@ -135,48 +144,54 @@ function QuestionDetail({ q, rules, current, canConfirm, box }: { q?: Q; rules: 
             <ReviewClient question={JSON.parse(JSON.stringify(q))} currentVersion={current?.version ?? null} canConfirm={canConfirm} />
           </section>
           <section className="card triage-current" aria-labelledby="cur-title">
-            <h2 id="cur-title">지금 확정된 규칙</h2>
+            <h2 id="cur-title">{t('review.currentRule')}</h2>
             {current
-              ? <div data-testid={`rule-v${current.version}`}><p className="fine">{current.version}판 · {when(current.confirmed_at)} 확정 · 이후 자료 추가로 바뀌지 않습니다.</p><PeriodTable value={current.value} /></div>
-              : <p className="muted">아직 확정한 규칙이 없습니다. 이 질문에 답하면 1판이 됩니다.</p>}
+              ? <div data-testid={`rule-v${current.version}`}><p className="fine">{t('review.currentMeta', { v: current.version, when: when(current.confirmed_at) })}</p><PeriodTable value={current.value} /></div>
+              : <p className="muted">{t('review.noRuleYet')}</p>}
           </section>
         </div>
       ) : (
         <section className="card" data-testid="question">
-          <h2>학기와 평가 기간의 관계</h2>
+          <h2>{t('review.q.relation')}</h2>
           <p className="question-text" data-testid="prompt">{q.prompt}</p>
-          <h3 className="section-title">당시 추정 결과</h3>
+          <h3 className="section-title">{t('review.proposalThen')}</h3>
           <PeriodTable value={q.proposal} />
           <details className="evidence" data-testid="evidence">
-            <summary>추정 근거 · {q.evidence.length}행</summary>
-            <ul>{q.evidence.map((e, i) => <li key={i}><span className="file">{e.file_name}</span> <span className="tag">{e.location ?? `${e.row_number}행`}</span> {e.claim}</li>)}</ul>
+            <summary>{t('review.evidence', { n: q.evidence.length })}</summary>
+            <ul>{q.evidence.map((e, i) => <li key={i}><span className="file">{e.file_name}</span> <span className="tag">{e.location ?? t('review.rowN', { n: e.row_number })}</span> {e.claim}</li>)}</ul>
           </details>
           {q.status === 'answered' && result && (
-            <p className="notice">이 질문의 답으로 <Link href={`/review?box=rules&id=${result.id}`}>{result.version}판</Link>을 확정했습니다 ({result.decision === 'accepted' ? '분석 결과 확인' : '관리자 수정'}).</p>
+            <p className="notice"><AnsweredWith t={t} href={`/review?box=rules&id=${result.id}`} v={result.version} how={how(t, result.decision)} /></p>
           )}
-          {q.status === 'superseded' && <p className="notice">자료가 바뀌어 새 질문으로 대체됐습니다. 이 질문으로는 확정하지 않았습니다.</p>}
+          {q.status === 'superseded' && <p className="notice">{t('review.supersededNote')}</p>}
         </section>
       )}
     </div>
   );
 }
 
-function RuleDetail({ rule, current, canPublish }: { rule?: Rule; current?: Rule; canPublish: boolean }) {
+/** 문장 속 링크: 번역문의 {version} 자리에 판 링크를 끼운다(언어마다 어순이 달라 문장을 쪼개지 않는다) */
+function AnsweredWith({ t, href, v, how: h }: { t: Translate; href: string; v: number; how: string }) {
+  const [before, after = ''] = t('review.answeredWith', { how: h }).split('{version}');
+  return <>{before}<Link href={href}>{t('common.version', { v })}</Link>{after}</>;
+}
+
+function RuleDetail({ f: { t, when }, rule, current, canPublish }: { f: Fmt; rule?: Rule; current?: Rule; canPublish: boolean }) {
   if (!rule) {
-    return <div className="triage-pad"><EmptyState title="확정한 판이 없습니다">확인 대기 질문에 답하면 첫 판이 만들어집니다.</EmptyState></div>;
+    return <div className="triage-pad"><EmptyState title={t('review.noRulesTitle')}>{t('review.noRulesBody')}</EmptyState></div>;
   }
   return (
     <div className="triage-pad">
       <section className="card rule" data-testid={`rule-v${rule.version}`}>
         <div className="between">
-          <h2>확정한 학기 규칙 · {rule.version}판</h2>
-          <StatusBadge tone={rule === current ? 'success' : 'neutral'}>{rule === current ? '사용 중' : '이전 판'}</StatusBadge>
+          <h2>{t('review.ruleTitle', { v: rule.version })}</h2>
+          <StatusBadge tone={rule === current ? 'success' : 'neutral'}>{t(rule === current ? 'common.inUse' : 'common.previousVersion')}</StatusBadge>
         </div>
-        <p className="fine">{when(rule.confirmed_at)} 확정 · {rule.decision === 'accepted' ? '분석 결과 확인' : '관리자 수정'} · 근거 행 {rule.evidence.length}개 · 이후 자료 추가로 바뀌지 않습니다.</p>
+        <p className="fine">{t('review.ruleMeta', { when: when(rule.confirmed_at), how: how(t, rule.decision), n: rule.evidence.length })}</p>
         <PeriodTable value={rule.value} />
-        {rule.rationale && <p className="rationale"><strong>수정 근거</strong> {rule.rationale}</p>}
-        {rule.question_id && <p className="fine"><Link href={`/review?box=answered&id=${rule.question_id}`}>이 판을 만든 질문 보기</Link></p>}
-        {rule === current && canPublish && <Link className="btn btn-primary" href="/documents">이 규칙으로 문서 발행</Link>}
+        {rule.rationale && <p className="rationale"><strong>{t('review.rationale')}</strong> {rule.rationale}</p>}
+        {rule.question_id && <p className="fine"><Link href={`/review?box=answered&id=${rule.question_id}`}>{t('review.ruleQuestion')}</Link></p>}
+        {rule === current && canPublish && <Link className="btn btn-primary" href="/documents">{t('review.publish')}</Link>}
       </section>
     </div>
   );

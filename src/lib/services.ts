@@ -98,7 +98,12 @@ export async function currentSchool(db: Db, preferredId?: string | null): Promis
     throw new NotFoundError('소속 학교가 없습니다.');
   }
   if (row.status === 'suspended' && !account.is_platform_admin) {
-    if (await movedAway(row)) throw new MovedSchoolError('이 학교는 새 주소로 옮겼습니다.');
+    // 열린 소속 학교가 없고, 옮겨 간 학교가 하나라도 있으면 새 주소 안내가 먼저다(Codex P2)
+    const { rows: [mv] } = await db.query(
+      `select exists(select 1 from public.memberships m join lateral (select state from public.school_placements p
+          where p.school_id = m.school_id order by version desc limit 1) pl on true
+        where m.user_id = app.uid() and pl.state = 'moved') as any`);
+    if ((await movedAway(row)) || mv.any) throw new MovedSchoolError('이 학교는 새 주소로 옮겼습니다.');
     throw new ValidationError('이용이 중지된 학교입니다. 전체 관리자에게 문의하세요.');
   }
   const role = (row.role as School['role']) ?? null;
