@@ -25,11 +25,12 @@ export const SECTION_LABEL: Record<SectionTemplate, string> = {
  */
 export const SECTION_VARIANTS = ['split', 'portrait', 'index', 'moments', 'overview', 'emblem', 'rows', 'questions', 'aside', 'faq', 'prep', 'half',
   // 90차: 템플릿 골격(docs/design/homepage-commercial-plan.md 3절)
-  'editorial', 'mosaic', 'mask', 'filter', 'timeline', 'tiles'] as const;
+  'editorial', 'mosaic', 'mask', 'filter', 'timeline', 'tiles', 'curriculum', 'mentors', 'feature-filter', 'portfolio', 'daybook'] as const;
 export type SectionVariant = (typeof SECTION_VARIANTS)[number];
 export const VARIANT_LABEL: Record<SectionVariant, string> = {
   split: '두 단(제목 | 글)', portrait: '대표 사진(무지개 호)', index: '번호 상자', moments: '사진 셋(번호 이름표)', overview: '사진 + 정보 줄',
   emblem: '작은 로고 + 글', rows: '사진–글 줄', questions: '제목 | 질문 목록', aside: '제목 | 목록', faq: '제목 | 접는 질문', prep: '안내 상자 + 포스터', half: '반 폭',
+  curriculum: '과정 비교표', mentors: '멘토 소개', 'feature-filter': '대표 프로젝트 + 분류', portfolio: '작품 기록 목록 + 분류', daybook: '하루 수첩',
   editorial: '글 | 사진 반반 + 겹친 카드', mosaic: '큰·작은 사진 콜라주', mask: '둥글게 오린 사진', filter: '분류로 거르기', timeline: '시간 띠(하루 일과)', tiles: '크기가 다른 색 타일',
 };
 /** 90차: tag = 분류(분류로 거르기 모양에서 단추가 됨, 예: 과학·예술) */

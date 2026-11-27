@@ -220,6 +220,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
           ? <A className="site-button" to={b.button.href}>{T(at('button', 'label'), b.button.label, '단추 이름')}<Arrow /></A>
           : null;
         const items = b.items ?? [];
+        const filterable = v === 'filter' || v === 'feature-filter' || v === 'portfolio';
         const body = show(b.body) ? P(at('body'), b.body, b.template === 'quote' ? '문장' : '구역 글') : null;
         if (b.template === 'quote') return (
           <figure className="sec sec-quote" data-template="quote" data-variant={v}><blockquote>{body}</blockquote>{show(b.title) && <figcaption>{T(at('title'), b.title, '말한 사람')}</figcaption>}</figure>
@@ -241,7 +242,9 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                   <summary>{T(at('items', k, 'title'), it.title, `${k + 1}번 질문`)}<Plus size={20} strokeWidth={1.4} aria-hidden="true" /></summary>
                   {P(at('items', k, 'body'), it.body, `${k + 1}번 답`)}
                 </details>))}</div>
-            : asFacts
+            : asFacts && v === 'curriculum'
+              ? <table className="sec-curriculum"><caption className="sr-only">{t(b.title)}</caption><tbody>{items.map((it, k) => <tr key={k}><th scope="row">{T(at('items', k, 'title'), it.title, `${k + 1}번 항목`)}</th><td>{P(at('items', k, 'body'), it.body, `${k + 1}번 내용`)}</td></tr>)}</tbody></table>
+              : asFacts
               ? <dl className="sec-facts">{items.map((it, k) => <div key={k}><dt>{T(at('items', k, 'title'), it.title, `${k + 1}번 항목`)}</dt><dd>{P(at('items', k, 'body'), it.body, `${k + 1}번 내용`)}</dd></div>)}</dl>
               : b.template === 'steps'
                 ? <ol className="sec-steps">{items.map((it, k) => <li key={k}><span aria-hidden="true">{String(k + 1).padStart(2, '0')}</span><div>{show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}단계 제목`)}</h3>}{P(at('items', k, 'body'), it.body, `${k + 1}단계 글`)}</div></li>)}</ol>
@@ -251,7 +254,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                     const inner = b.template === 'photos'
                       ? <>
                           {pic}
-                          {(t(it.tag) || (ed && v === 'filter')) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
+                          {(t(it.tag) || (ed && filterable)) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
                           {show(it.title) && <span>{T(at('items', k, 'title'), it.title, `${k + 1}번 사진 이름`)}</span>}
                           {v === 'moments' && <span className="sec-label">{num}{(t(it.body) || ed) && <> · {T(at('items', k, 'body'), it.body, `${k + 1}번 이름표`)}</>}<Arrow /></span>}
                         </>
@@ -259,7 +262,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                           {pic}
                           {v === 'index' && <span className="sec-index">{num}</span>}
                           <div className="sec-item-copy">
-                            {(t(it.tag) || (ed && v === 'filter')) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
+                            {(t(it.tag) || (ed && filterable)) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
                             {show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}번 카드 제목`)}</h3>}
                             {show(it.body) ? P(at('items', k, 'body'), it.body, `${k + 1}번 카드 글`) : null}
                             {v === 'rows' && it.href && <span className="site-link">{w('more', lang)}<Arrow /></span>}
@@ -277,8 +280,8 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
             {(b.template === 'media-left' || b.template === 'media-right') && figure}
             {/* 거르기는 분류를 가진 카드·사진 목록에서만(정보·단계 목록에는 분류 칸이 없음) */}
-            {v === 'filter' && !ed && itemList && tags.length > 1 && (b.template === 'cards' || b.template === 'photos')
-              ? <TagFilter tags={tags} allLabel={w('all', lang)} label={w('byTag', lang)}>{itemList}</TagFilter>
+            {filterable && !ed && itemList && tags.length > 1 && (b.template === 'cards' || b.template === 'photos')
+              ? <TagFilter key={JSON.stringify([v, tags])} tags={tags} allLabel={w('all', lang)} label={w('byTag', lang)}>{itemList}</TagFilter>
               : itemList}
             {btnAfter && btn}
           </section>

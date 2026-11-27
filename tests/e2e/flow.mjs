@@ -1662,6 +1662,33 @@ try {
     await h.waitForURL(/page=projects/);
     assert.match(await h.textContent('[data-testid=template-live]'), /마을 하천 지도/);
     await shot(h, '89-template-live.png');
+    // #143: client-side page navigation must clear the previous page's filter and hidden DOM state.
+    await h.click('.site-nav a:has-text("학생 작품")');
+    await h.locator('.sec-filter-bar button', { hasText: '예술' }).press('Enter');
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 2);
+    await h.click('.site-nav a:has-text("프로젝트")');
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 3);
+    assert.equal(await h.getAttribute('.sec-filter-bar button:first-child', 'aria-pressed'), 'true');
+    await h.locator('.sec-filter-bar button', { hasText: '3~4학년' }).click();
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
+    assert.match(await h.locator('.sec-filter li:visible').innerText(), /학교 텃밭 장터/);
+    await h.locator('.site-nav a', { hasText: /^홈$/ }).click();
+    await h.getByRole('link', { name: /새 학기 학부모 설명회 안내/ }).click();
+    await h.waitForURL(/news=open-day/);
+    assert.match(await h.locator('h1').innerText(), /새 학기 학부모 설명회 안내/);
+    await h.getByRole('link', { name: '소식 목록', exact: true }).click();
+    await h.waitForURL(/news=all/);
+    assert.equal(await h.locator('.lb-board li').count(), 3);
+    await h.goto(`${BASE}/templates/kinder?page=admission`);
+    await h.locator('[data-testid=site-inquiry] input[name=name]').fill('가상 방문자');
+    await h.locator('[data-testid=site-inquiry] input[name=contact]').fill('visitor@example.org');
+    await h.locator('[data-testid=site-inquiry] input[name=consent]').check();
+    const sent = [];
+    h.on('request', (request) => { if (request.url().endsWith('/api/site/inquiry')) sent.push(request.url()); });
+    await h.getByTestId('site-inquiry-send').click();
+    await h.getByRole('status').filter({ hasText: '실제로 보내지지 않습니다' }).waitFor();
+    assert.equal(sent.length, 0, '템플릿 미리보기는 개인정보를 서버로 보내지 않음');
+
     await h.goto(`${BASE}/site/templates`);
     await shot(h, '65-templates.png');
     await h.click('[data-testid=template-open-story]');
