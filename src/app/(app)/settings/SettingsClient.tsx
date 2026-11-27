@@ -1,4 +1,5 @@
 'use client';
+import { Field } from '@/components/Field';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Invitation, License, Member, Module } from '@/lib/admin';
@@ -144,13 +145,13 @@ export function PortalAccountsPanel({ accounts, people }: { accounts: PortalRow[
           <label className="radio"><input type="radio" name="portal-kind" checked={kind === 'student'} onChange={() => setKind('student')} />{t('portalAcc.student')}</label>
           <label className="radio"><input type="radio" name="portal-kind" checked={kind === 'guardian'} onChange={() => setKind('guardian')} />{t('portalAcc.guardian')}</label>
         </div></fieldset>
-        <label>{t(kind === 'student' ? 'common.student' : 'portalAcc.guardianPerson')}
-          <select value={personId} onChange={(e) => setPersonId(e.target.value)} required aria-label={t('req.person')}>
+        <Field label={t(kind === 'student' ? 'common.student' : 'portalAcc.guardianPerson')} required>
+          <select value={personId} onChange={(e) => setPersonId(e.target.value)}>
             <option value="">{t('req.choose')}</option>
             {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-        </label>
-        <label>{t('portalAcc.email')}<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="family@example.org" /></label>
+        </Field>
+        <Field label={t('portalAcc.email')} required><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="family@example.org" /></Field>
         {kind === 'student' && (
           <>
             <label className="radio"><input type="checkbox" checked={under} onChange={(e) => setUnder(e.target.checked)} />{t('portalAcc.underAge')}</label>

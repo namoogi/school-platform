@@ -93,3 +93,26 @@ describe('입력값은 번역하지 않는다 (Codex 지적, #157)', () => {
     expect(new ValidationError('err.upload.fileMax', { name: '학생' }).message).toBe('학생: 파일별 최대 2MB입니다.');
   });
 });
+
+describe('편집기 칸 이름 (104차)', () => {
+  it('공개 렌더러가 넘기는 한국어 칸 이름을 관리 화면 언어로 바꾸고, 번호가 든 이름도 맞춘다', async () => {
+    const { fieldLabel } = await import('@/lib/site-labels');
+    const { formatMessage } = await import('@/lib/i18n/format');
+    const tEn = (k: MsgKey, v?: Record<string, string | number>) => formatMessage(enDict[k], v, 'en');
+    expect(fieldLabel(tEn, '머리 링크 이름')).toBe('Header link label');
+    expect(fieldLabel(tEn, '3번 카드 제목')).toBe('Card 3 title');
+    expect(fieldLabel(tEn, '모르는 칸')).toBe('모르는 칸');
+  });
+
+  it('공개 렌더러의 편집 칸 이름은 모두 이름표가 있다(렌더러에 새 칸을 더하면 여기서 알려 준다)', async () => {
+    const { fieldLabel } = await import('@/lib/site-labels');
+    const { formatMessage } = await import('@/lib/i18n/format');
+    const tEn = (k: MsgKey, v?: Record<string, string | number>) => formatMessage(enDict[k], v, 'en');
+    const src = fs.readFileSync(path.resolve(__dirname, '..', 'src', 'components', 'site', 'SiteRenderer.tsx'), 'utf8');
+    const literal = [...src.matchAll(/, '([^'\n]*[가-힣][^'\n]*)'(?:, (?:true|false))?\)/g), ...src.matchAll(/label: '([^'\n]*[가-힣][^'\n]*)'/g)].map((m) => m[1]);
+    const numbered = [...src.matchAll(/`\$\{[a-z] \+ 1\}([^`]*)`/g)].map((m) => `1${m[1]}`);
+    expect(literal.length + numbered.length).toBeGreaterThan(30); // 찾는 식이 칸 이름을 실제로 잡는지
+    const missing = [...literal, ...numbered].filter((l) => fieldLabel(tEn, l) === l);
+    expect(missing).toEqual([]);
+  });
+});

@@ -91,7 +91,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
           {data.roster.length === 0 ? <p className="muted">{t('courses.noRoster')}</p> : (
             <ul className="issue-list" data-testid="roster">{data.roster.map((r) => (
               <li key={r.person_id}><span>{r.name} <StatusBadge tone={r.status === 'enrolled' ? 'success' : 'neutral'}>{['enrolled', 'applied', 'withdrawn', 'rejected'].includes(r.status) ? tk('course.enr', r.status) : r.status}</StatusBadge></span>
-                {(sel.status === 'open' || sel.status === 'active') && r.status === 'enrolled' && <ActionForm url="/api/courses" action="enroll" extra={{ offeringId: sel.id, personId: r.person_id, status: 'withdrawn', revision: sel.revision }} fields={[]} submitLabel={t('courses.withdraw')} successText={t('courses.withdrawn')} />}
+                {(sel.status === 'open' || sel.status === 'active') && r.status === 'enrolled' && <ActionForm url="/api/courses" action="enroll" extra={{ offeringId: sel.id, personId: r.person_id, status: 'withdrawn', revision: sel.revision }} fields={[]} submitLabel={t('courses.withdraw')} successText={t('courses.withdrawn')} tone="secondary" />}
               </li>))}</ul>)}
           {(sel.status === 'open' || sel.status === 'active') ? (data.candidates.length
             ? <ActionForm url="/api/courses" action="enroll" extra={{ offeringId: sel.id, revision: sel.revision }} inline submitLabel={t('courses.addStudent')} successText={t('courses.studentAdded')} testId="enroll-student"
