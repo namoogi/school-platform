@@ -7,7 +7,7 @@
   "src/app/(app)/documents/[id]/page.tsx": 15,
   "src/app/(app)/documents/page.tsx": 16,
   "src/app/(app)/grades/page.tsx": 41,
-  "src/app/(app)/home/page.tsx": 44,
+  "src/app/(app)/home/page.tsx": 45,
   "src/app/(app)/intake/IntakeClient.tsx": 28,
   "src/app/(app)/intake/page.tsx": 5,
   "src/app/(app)/locked/page.tsx": 5,
