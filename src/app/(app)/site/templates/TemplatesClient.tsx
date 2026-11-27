@@ -3,23 +3,41 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field } from '@/components/Field';
 
-/** 65차(ADR 0031): 템플릿 적용 — 없는 쪽만 시안으로 만들고, 이미 있는 쪽은 건너뛴다 */
-export function ApplyTemplate({ templateKey, name, existing }: { templateKey: string; name: string; existing: string[] }) {
+/** 사이트 설정 요약(디자인 함께 바꾸기 안내에 씀) */
+export type SiteState = { exists: boolean; open: boolean; theme: string | null; themeName: string | null };
+
+/** 89차(ADR 0034): '디자인도 함께 바꾸기' 고르기 — 홈페이지가 열려 있으면 바로 보인다는 것을 알리고 기본은 끔 */
+function DesignChoice({ site, designName, value, onChange }: { site: SiteState; designName: string; value: boolean; onChange: (v: boolean) => void }) {
+  if (!site.exists) return <p className="fine">화면 모양 ‘{designName}’은 홈페이지 설정(주소)을 정한 뒤 설정에서 고를 수 있습니다.</p>;
+  return (
+    <div className="stack">
+      <label className="radio"><input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} data-testid="template-design" /> 화면 모양도 ‘{designName}’ 디자인으로 바꾸기</label>
+      <p className="fine">{site.open
+        ? `홈페이지가 열려 있어, 바꾸면 방문자 화면의 모양(색·글꼴)이 바로 바뀝니다. 지금 모양: ${site.themeName ?? site.theme}. 설정에서 언제든 되돌릴 수 있습니다.`
+        : `지금 모양: ${site.themeName ?? site.theme}. 설정에서 언제든 바꿀 수 있습니다.`}</p>
+    </div>
+  );
+}
+
+/** 65차(ADR 0031): 템플릿 적용 — 없는 쪽만 시안으로 만들고, 이미 있는 쪽은 건너뛴다. 89차: 디자인(화면 모양)도 함께 */
+export function ApplyTemplate({ templateKey, name, existing, site, designName }: { templateKey: string; name: string; existing: string[]; site: SiteState; designName: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [design, setDesign] = useState(site.exists && !site.open);
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   async function apply() {
     setBusy(true); setMsg(null);
-    const res = await fetch('/api/site/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: templateKey }) });
+    const res = await fetch('/api/site/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: templateKey, design }) });
     const body = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) return setMsg({ text: body.error ?? '적용하지 못했습니다.', error: true });
-    setMsg({ text: `시안 쪽 ${body.created.length}개를 만들었습니다${body.skipped.length ? ` (이미 있는 ${body.skipped.join('·')}는 그대로 둠)` : ''}. 공개 전에 내용을 채워 주세요.` });
+    setMsg({ text: `시안 쪽 ${body.created.length}개를 만들었습니다${body.skipped.length ? ` (이미 있는 ${body.skipped.join('·')}는 그대로 둠)` : ''}${body.design === 'applied' ? `. 화면 모양을 ‘${designName}’으로 바꿨습니다` : ''}. 공개 전에 내용을 채워 주세요.` });
     router.refresh();
   }
   return (
     <div className="stack">
       {existing.length > 0 && <p className="fine">이미 있는 쪽({existing.join('·')})은 건드리지 않고 나머지 쪽만 만듭니다.</p>}
+      <DesignChoice site={site} designName={designName} value={design} onChange={setDesign} />
       <div className="form-actions">
         <button type="button" className="btn btn-primary" onClick={apply} disabled={busy} data-testid="template-apply">‘{name}’으로 시작하기</button>
       </div>
@@ -206,7 +224,7 @@ export function MigratePanel({ templateKey }: { templateKey: string }) {
  * '새 디자인으로 옮기기' = 템플릿 시작(없는 쪽만 시안) + 고른 제안 넣기(새 시안 판). 기존 두 경로(/api/site/templates, autofill/apply)를 차례로 쓴다.
  * 공개하지 않는다. 그림을 새로 그리는 일은 학교 AI(Codex 등)가 작업 토큰으로 한다(아래 '학교 AI에게 맡길 글').
  */
-export function MigrateStart({ templates }: { templates: { key: string; name: string; summary: string }[] }) {
+export function MigrateStart({ templates, site }: { templates: { key: string; name: string; summary: string; designName: string }[]; site: SiteState }) {
   const router = useRouter();
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
@@ -216,6 +234,7 @@ export function MigrateStart({ templates }: { templates: { key: string; name: st
   const [edit, setEdit] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ text: string; error?: boolean; done?: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [design, setDesign] = useState(site.exists && !site.open);
   const post = async (path: string, body: unknown) => {
     const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({}));
@@ -244,14 +263,14 @@ export function MigrateStart({ templates }: { templates: { key: string; name: st
     if (!res || !tp) return;
     setBusy(true); setMsg(null);
     try {
-      const applied = await post('/api/site/templates', { key });
+      const applied = await post('/api/site/templates', { key, design });
       const fills = tp.proposals.filter((p) => pick[p.slotId] && p.kind !== 'image').map((p) => ({ slotId: p.slotId, value: typeof p.value === 'string' ? (edit[p.slotId] ?? p.value) : p.value }));
       let n = 0;
       if (fills.length) {
         const body = await post('/api/site/templates/autofill/apply', { key, fills });
         n = (body.result as { filled: string[] }[]).reduce((a, x) => a + x.filled.length, 0);
       }
-      setMsg({ done: true, text: `‘${name}’ 디자인으로 시안 쪽 ${applied.created.length}개를 만들고 옛 사이트 내용으로 ${n}칸을 채웠습니다${applied.skipped.length ? ` (이미 있는 ${applied.skipped.join('·')} 쪽은 그대로 둠)` : ''}. 아직 공개되지 않았습니다.` });
+      setMsg({ done: true, text: `‘${name}’ 디자인으로 시안 쪽 ${applied.created.length}개를 만들고 옛 사이트 내용으로 ${n}칸을 채웠습니다${applied.skipped.length ? ` (이미 있는 ${applied.skipped.join('·')} 쪽은 그대로 둠)` : ''}${applied.design === 'applied' ? '. 화면 모양도 바꿨습니다' : ''}. 아직 공개되지 않았습니다.` });
       router.refresh();
     } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
     finally { setBusy(false); }
@@ -305,6 +324,7 @@ export function MigrateStart({ templates }: { templates: { key: string; name: st
           )}
           {remaining.length > 0 && <p className="fine">옮기지 않는 칸: {remaining.map((u) => u.label).join(' · ')} — 옮긴 뒤 직접 쓰거나 학교 AI에게 맡깁니다.</p>}
           {res.images.length > 0 && <p className="fine">옛 사이트 그림 {res.images.length}장은 옮긴 뒤 ‘{name}’ 미리보기 아래 ‘기존 홈페이지에서 옮기기’에서 골라 가져옵니다.</p>}
+          <DesignChoice site={site} designName={templates.find((x) => x.key === key)?.designName ?? key} value={design} onChange={setDesign} />
           <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy} onClick={move} data-testid="migrate-start-move">‘{name}’ 디자인으로 옮기기</button></div>
           <details data-testid="migrate-agent">
             <summary>학교 AI(Codex·Claude Code)에게 맡길 글</summary>

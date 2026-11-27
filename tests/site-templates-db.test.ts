@@ -39,7 +39,7 @@ describe('템플릿 적용', () => {
       expect(e).toMatchObject({ live_version: null, latest_version: 1, status: 'draft' });
     }
     const home = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, r.created[0].id));
-    expect(home.versions[0].note).toBe('템플릿 알림 중심형 v1');
+    expect(home.versions[0].note).toBe('템플릿 알림 중심형 v2');
     expect(home.versions[0].content.site?.footer?.ko).toContain('[학교 이름]');
   });
 
@@ -73,7 +73,7 @@ describe('66차 학교 자료로 빈 칸 채우기', () => {
     expect(by.about).toMatchObject({ version: null, kept: ['goals'] }); // 학교가 먼저 쓴 소개 쪽(템플릿 블록 없음)은 그대로
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const home = entries.find((e) => e.key === 'home')!;
-    expect(home).toMatchObject({ live_version: null, meta: { template: 'notice@1' } });
+    expect(home).toMatchObject({ live_version: null, meta: { template: 'notice@2' } });
     const v = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, home.id));
     expect(v.versions[0].content.site?.address).toEqual({ ko: '경기도 예시시 꿈마을로 12' });
     expect(v.versions[0].note).toContain('자료로 빈 칸 채움');
@@ -140,5 +140,30 @@ describe('87차 주소만 넣고 새 디자인으로 옮기기', () => {
   });
   it('없는 템플릿 키는 읽기 전에 거부, 교사는 막힘은 API(admin)에서', async () => {
     await expect(asUser(A.userId, (db) => tpl.migratePropose(db, A.schoolId, 'nope', 'https://old.example/', 'x'))).rejects.toThrow();
+  });
+});
+
+describe('89차 템플릿 = 완성 디자인(ADR 0034)', () => {
+  it('design이면 학교 화면 모양이 템플릿 디자인으로 바뀌고, 설정이 없으면 no-settings, 다른 학교는 그대로', async () => {
+    // 설정 없는 학교: 쪽만 만들고 모양은 못 바꿈
+    await su.query('delete from public.site_settings where school_id = any($1)', [[A.schoolId, B.schoolId]]);
+    const none = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'project', { design: true }));
+    expect(none.design).toBe('no-settings');
+    await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'design-a', langs: ['ko'], default_lang: 'ko', theme: 'campus', site_title: { ko: 'A' }, is_open: false }));
+    await asUser(B.userId, (db) => site.saveSettings(db, B.schoolId, { public_slug: 'design-b', langs: ['ko'], default_lang: 'ko', theme: 'campus', site_title: { ko: 'B' }, is_open: false }));
+    const r = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'project', { design: true }));
+    expect(r.design).toBe('applied');
+    expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('studio');
+    expect((await asUser(B.userId, (db) => site.getSettings(db, B.schoolId)))!.theme).toBe('campus');
+    // design을 주지 않으면 모양은 그대로
+    const kept = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'mission'));
+    expect(kept.design).toBe('kept');
+    expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('studio');
+  });
+  it('설정 저장은 목록에 있는 모양만 받고, 모르는 값은 학사 기본으로', async () => {
+    await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'design-a', langs: ['ko'], default_lang: 'ko', theme: 'horizon', site_title: { ko: 'A' }, is_open: false }));
+    expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('horizon');
+    await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'design-a', langs: ['ko'], default_lang: 'ko', theme: 'nope', site_title: { ko: 'A' }, is_open: false }));
+    expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('campus');
   });
 });

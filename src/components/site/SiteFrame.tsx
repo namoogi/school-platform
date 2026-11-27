@@ -58,16 +58,20 @@ export function sitePath(site: PublicSite, path: string) {
  * theme="dawn"(새벽빛 매거진, 31차)은 같은 틀에 로고·소개 한 줄·방문 단추·바닥 정보를 더하고 CSS로 잡지 모양을 입힌다.
  * hidden(숨은 쪽, 예: 후원자 /friends)은 학교 메뉴를 보이지 않는다 — 학교 쪽에서 숨은 쪽으로 이끌지 않고, 숨은 쪽에서도 학교 메뉴로 흐름을 섞지 않는다.
  */
-export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden = false, brandHref = '/', langs, children }: {
+export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden = false, brandHref = '/', langs, preview, children }: {
   site: PublicSite; lang: Lang; current: string; path: string; profile?: SiteProfile; assetUrl?: (id: string) => string;
+  /** 89차: 템플릿 전체 화면 미리보기 — 사이트 안 링크·언어 링크를 미리보기 주소로 바꾸고 교직원 링크는 숨긴다 */
+  preview?: { link: (path: string) => string; langHref: (l: Lang) => string };
   hidden?: boolean; /** 학교 이름 링크가 가는 곳(숨은 쪽 묶음이면 그 첫 쪽) */ brandHref?: string;
   /** 언어 고르기에 보일 언어(숨은 쪽은 그 쪽에 글이 있는 언어만) */ langs?: Lang[]; children: React.ReactNode;
 }) {
-  const link = siteLinker(site, lang);
+  const link = preview?.link ?? siteLinker(site, lang);
   const q = (l: Lang) => (l === site.default_lang ? '' : `?lang=${l}`);
   const title = pick(site.title, lang, site.default_lang) || site.school;
   const t = (x: Parameters<typeof pick>[0]) => pick(x, lang, site.default_lang);
   const dawn = site.theme === 'dawn';
+  // 89차: 새벽빛과 템플릿 완성 디자인(ADR 0034)은 학교 이름·메뉴·연락처가 있는 넓은 바닥을 쓴다(학사 기본만 한 줄 바닥)
+  const richFooter = site.theme !== 'campus';
   const nav = hidden ? [] : [
     ...(dawn ? [] : [{ key: 'home', href: link('/'), label: siteText('home', lang) }]),
     ...site.nav.map((n) => ({ key: `p:${n.key}`, href: link(`/p/${n.key}`), label: pick(n.title, lang, site.default_lang) })),
@@ -77,7 +81,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   const visit = !hidden && profile?.visit && t(profile.visit.label) ? profile.visit : null;
   const navList = nav.map((n) => <Link key={n.key} href={n.href} aria-current={n.key === current ? 'page' : undefined}>{n.label}</Link>);
   const langList = langs ?? site.langs;
-  const langLinks = langList.map((l) => <Link key={l} href={`${sitePath(site, path || '/')}${q(l)}`} aria-current={l === lang ? 'true' : undefined} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link>);
+  const langLinks = langList.map((l) => <Link key={l} href={preview ? preview.langHref(l) : `${sitePath(site, path || '/')}${q(l)}`} aria-current={l === lang ? 'true' : undefined} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link>);
   return (
     <div className="site" data-theme={site.theme} data-hidden={hidden || undefined} lang={lang}>
       <a className="skip-link" href="#site-main">{siteText('skip', lang)}</a>
@@ -125,7 +129,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
       </header>
       <main id="site-main" className="site-wrap site-main">{children}</main>
       <footer className="site-footer">
-        {dawn && !hidden ? (
+        {richFooter && !hidden ? (
           <div className="site-wrap site-footer-grid">
             <div className="site-footer-brand">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -135,7 +139,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             </div>
             <nav aria-label={siteText('pages', lang)}>
               <Link href={link('/')}>{siteText('home', lang)}</Link>
-              {nav.map((n) => <Link key={n.key} href={n.href}>{n.label}</Link>)}
+              {nav.filter((n) => n.key !== 'home').map((n) => <Link key={n.key} href={n.href}>{n.label}</Link>)}
             </nav>
             <div className="site-footer-contact">
               {t(profile?.address) && <p>{t(profile?.address)}</p>}
@@ -145,7 +149,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             </div>
             <div className="site-footer-note">
               <p>{t(profile?.footer) || `© ${title}`}</p>
-              <a className="site-footer-staff" href={staffEditHref(site, path)} rel="nofollow" data-testid="staff-edit">{siteText('staff', lang)}</a>
+              {!preview && <a className="site-footer-staff" href={staffEditHref(site, path)} rel="nofollow" data-testid="staff-edit">{siteText('staff', lang)}</a>}
             </div>
           </div>
         ) : <div className="site-wrap">© {site.school} · <a className="site-footer-inline" href={staffEditHref(site, path)} rel="nofollow" data-testid="staff-edit">{siteText('staff', lang)}</a></div>}

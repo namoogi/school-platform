@@ -2,8 +2,8 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
-import { placeholders, samplePages, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
-import { validateContent } from '@/lib/site';
+import { placeholders, sampleAssetUrl, samplePages, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
+import { isSiteTheme, validateContent } from '@/lib/site';
 
 describe('템플릿 예시 내용', () => {
   it('모든 템플릿에 예시가 있고, 채운 뒤 안내 자리 [ ]가 남지 않으며 블록 검사를 통과한다', () => {
@@ -39,5 +39,24 @@ describe('템플릿 예시 내용', () => {
   });
   it('모든 템플릿에 썸네일이 있다(npm run templates:thumbs)', () => {
     for (const t of SITE_TEMPLATES) expect(existsSync(`public/site-templates/${t.key}.jpg`), t.key).toBe(true);
+  });
+  it('89차: 모든 템플릿 디자인이 화면 모양 목록에 있고, 이야기형만 새벽빛을 쓴다', () => {
+    for (const t of SITE_TEMPLATES) expect(isSiteTheme(t.theme), t.key).toBe(true);
+    expect(new Set(SITE_TEMPLATES.map((t) => t.theme)).size).toBe(SITE_TEMPLATES.length);
+    expect(SITE_TEMPLATES.filter((t) => t.theme === 'dawn').map((t) => t.key)).toEqual(['story']);
+  });
+  it('89차: 예시 그림이 실제 칸에 놓이고 그림 파일이 있다', () => {
+    for (const t of SITE_TEMPLATES) {
+      const pages = samplePages(t);
+      for (const img of TEMPLATE_SAMPLES[t.key].images ?? []) {
+        const [pg, ...path] = img.at;
+        let node: unknown = pages[String(pg)];
+        for (const k of path) node = (node as Record<string | number, unknown>)?.[k];
+        expect(typeof node, `${t.key}: ${img.name}`).toBe('string');
+        const url = sampleAssetUrl(node as string);
+        expect(url, img.name).toMatch(new RegExp(`/site-templates/img/${img.name}\\.(svg|jpg)$`));
+        expect(existsSync(`public${url}`), url).toBe(true);
+      }
+    }
   });
 });
