@@ -19,10 +19,12 @@
 ```bash
 mkdir -p .school-move
 SOURCE_DATABASE_URL=<원본> node scripts/school-move.mjs export <학교 주소 이름> .school-move/<학교>.json
-TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs import .school-move/<학교>.json
+TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs import .school-move/<학교>.json --status active
 SOURCE_DATABASE_URL=<원본> TARGET_DATABASE_URL=<대상> node scripts/school-move.mjs verify .school-move/<학교>.json
 ```
 - 넣기는 그 학교가 아직 없는 자리에만 한다.
+  - 원본·대상의 마이그레이션 목록이 양쪽으로 똑같아야 넣는다. 대상에만 있는 마이그레이션도 거부한다.
+  - 1-3에서 원본을 '이용 중지'로 두었으므로, 대상에서 열 상태를 `--status active`(또는 `trial`)로 정한다. 정하지 않으면 이용 중지 묶음은 넣지 않는다.
   - 트리거·외래키 검사를 잠시 끄고 넣는다(pg_dump와 같은 방식).
   - 같은 트랜잭션에서 고아 연결을 검사하고, 하나라도 있으면 모두 되돌린다.
 - 확인은 학교 표마다 행 수와 내용 지문(md5)을 비교한다.
@@ -34,7 +36,9 @@ SOURCE_DATABASE_URL=<원본> TARGET_DATABASE_URL=<대상> node scripts/school-mo
 ## 3. 파일·접속 옮기기
 - R2 파일
   - 같은 버킷을 계속 쓰면 할 일이 없다.
-  - 버킷을 바꾸면 접두어 `schools/<학교 id>/`를 그대로 복사한다.
+  - 버킷을 바꾸면 `node scripts/school-move.mjs keys .school-move/<학교>.json`이 내놓는 객체 키를 하나씩 그대로 복사한다.
+    - 지금 키는 `s/<학교 id>/<sha256>`이다(43차 이후).
+    - 예전 자료는 `sha256/<sha256>`일 수 있다. 같은 키를 다른 학교가 함께 쓸 수 있으므로 원본에서 지우지 않는다.
 - 앱 연결
   - 전용형: 그 학교 요청이 대상 DB로 가도록 학교 → DB 연결을 바꾼다. 셀 연결 표는 ADR 0019 단계 D이고 아직 없다.
   - 독립형: 같은 앱을 학교 환경에 배포하고 `DATABASE_URL`만 대상으로 둔다.

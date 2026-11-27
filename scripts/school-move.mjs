@@ -1,14 +1,15 @@
 // 학교 한 곳 꺼내기·넣기·확인 (ADR 0035: 공용 기본 + 언제든 전용·독립으로 옮길 수 있게)
 // 사용
 //   SOURCE_DATABASE_URL=... node scripts/school-move.mjs export <학교 주소 이름|id> <묶음 파일>
-//   TARGET_DATABASE_URL=... node scripts/school-move.mjs import <묶음 파일>
+//   TARGET_DATABASE_URL=... node scripts/school-move.mjs import <묶음 파일> [--status active|trial]
+//   node scripts/school-move.mjs keys <묶음 파일>   (버킷을 바꿀 때 복사할 R2 객체 키 목록)
 //   SOURCE_DATABASE_URL=... TARGET_DATABASE_URL=... node scripts/school-move.mjs verify <묶음 파일>
 // - 묶음 파일에는 그 학교의 모든 기록(학생·교직원 개인정보 포함)이 들어 있다. 저장소에 커밋하지 않고(.school-move/ 는 무시됨),
 //   옮긴 뒤 지운다. 운영 DB 주소·비밀번호는 환경 변수로만 받고 출력하지 않는다.
 // - 넣기는 '그 학교가 아직 없는' 대상 DB에만 한다(같은 마이그레이션을 적용한 빈 프로젝트 또는 셀).
 //   트리거·외래키 검사를 잠시 끄고(session_replication_role = replica, pg_dump 와 같은 방식) 넣은 뒤,
 //   같은 트랜잭션에서 외래키 고아 행을 직접 검사해 하나라도 있으면 모두 되돌린다.
-// - 파일(R2)은 학교별 접두어 `schools/<학교 id>/`를 그대로 복사한다(이 도구 밖, docs/SCHOOL-MOVE.md).
+// - 파일(R2): 버킷을 바꿀 때는 `keys` 가 내놓는 객체 키를 그대로 복사한다(이 도구 밖, docs/SCHOOL-MOVE.md).
 import fs from 'node:fs';
 import pg from 'pg';
 
@@ -140,11 +141,28 @@ export async function orphanForeignKeys(db) {
   return bad;
 }
 
-export async function importSchool(db, bundle) {
+/** 원본·대상의 마이그레이션 목록이 양쪽으로 똑같아야 넣는다(대상에만 있는 마이그레이션이 새 학교 표를 더했을 수 있다) */
+export async function sameMigrations(db, bundle) {
+  const { rows } = await db.query('select name from _migrations.applied order by name');
+  const target = rows.map((r) => r.name);
+  const onlySource = bundle.migrations.filter((m) => !target.includes(m));
+  const onlyTarget = target.filter((m) => !bundle.migrations.includes(m));
+  return { onlySource, onlyTarget, same: !onlySource.length && !onlyTarget.length };
+}
+
+/** status: 넣은 뒤 학교 상태. 옮기는 동안 원본을 '이용 중지'로 두므로, 대상에서 열 상태를 넣을 때 정한다 */
+export async function importSchool(db, bundle, { status } = {}) {
   if (bundle.format !== 'school-move/1') throw new Error('묶음 형식이 다릅니다.');
-  const { rows: applied } = await db.query('select name from _migrations.applied order by name');
-  const missing = bundle.migrations.filter((m) => !applied.some((a) => a.name === m));
-  if (missing.length) throw new Error(`대상 DB에 마이그레이션 ${missing.length}개가 빠져 있습니다. 같은 판까지 올린 뒤 넣으세요.`);
+  const m = await sameMigrations(db, bundle);
+  if (m.onlySource.length) throw new Error(`대상 DB에 마이그레이션 ${m.onlySource.length}개가 빠져 있습니다. 같은 판까지 올린 뒤 넣으세요.`);
+  if (m.onlyTarget.length) throw new Error(`대상 DB에만 있는 마이그레이션 ${m.onlyTarget.length}개가 있습니다. 원본을 같은 판까지 올린 뒤 다시 꺼내세요.`);
+  const school = { ...bundle.school };
+  if (status) {
+    if (!['trial', 'active', 'suspended'].includes(status)) throw new Error('상태는 trial·active·suspended 중 하나입니다.');
+    school.status = status;
+  } else if (school.status === 'suspended') {
+    throw new Error("묶음의 학교가 '이용 중지' 상태입니다. 대상에서 열 상태를 --status active(또는 trial)로 정해 주세요.");
+  }
   const { rowCount: exists } = await db.query('select 1 from public.schools where id = $1', [bundle.school_id]);
   if (exists) throw new Error('대상 DB에 이미 그 학교가 있습니다. 넣기는 빈 자리에만 합니다.');
   await db.query('begin');
@@ -152,7 +170,7 @@ export async function importSchool(db, bundle) {
     await db.query('set local session_replication_role = replica');
     await insertRows(db, 'public', 'baselines', bundle.baselines, { onConflictNothing: true });
     await insertRows(db, 'private', 'app_users', bundle.users, { onConflictNothing: true });
-    await insertRows(db, 'public', 'schools', [bundle.school]);
+    await insertRows(db, 'public', 'schools', [school]);
     const counts = {};
     for (const [t, rows] of Object.entries(bundle.tables)) counts[t] = await insertRows(db, 'public', t, rows);
     await db.query('set local session_replication_role = origin');
@@ -172,6 +190,13 @@ export async function importSchool(db, bundle) {
     await db.query('rollback');
     throw e;
   }
+}
+
+/** 묶음 행에 적힌 R2 객체 키(중복 제거) */
+export function objectKeys(bundle) {
+  const keys = new Set();
+  for (const rows of Object.values(bundle.tables)) for (const r of rows) if (typeof r.object_key === 'string' && r.object_key) keys.add(r.object_key);
+  return [...keys].sort();
 }
 
 /** 두 DB에서 그 학교의 표마다 행 수와 내용 지문(md5)을 비교한다 */
@@ -213,9 +238,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       await db.end();
     } else if (cmd === 'import' && a1) {
       const db = await connect('TARGET_DATABASE_URL');
-      const counts = await importSchool(db, JSON.parse(fs.readFileSync(a1, 'utf8')));
+      const si = process.argv.indexOf('--status');
+      const counts = await importSchool(db, JSON.parse(fs.readFileSync(a1, 'utf8')), { status: si > 0 ? process.argv[si + 1] : undefined });
       console.log(`넣음: 표 ${Object.keys(counts).length}개, 행 ${Object.values(counts).reduce((n, v) => n + v, 0)}개`);
       await db.end();
+    } else if (cmd === 'keys' && a1) {
+      // 버킷을 바꿀 때 복사할 R2 객체 키(묶음 행에 적힌 그대로. 's/<학교 id>/…'와 예전 'sha256/…'이 섞여 있을 수 있다)
+      const b = JSON.parse(fs.readFileSync(a1, 'utf8'));
+      for (const k of objectKeys(b)) console.log(k);
     } else if (cmd === 'verify' && a1) {
       const bundle = JSON.parse(fs.readFileSync(a1, 'utf8'));
       const [s, d] = [await connect('SOURCE_DATABASE_URL'), await connect('TARGET_DATABASE_URL')];
@@ -225,7 +255,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       await s.end(); await d.end();
       if (diffs.length || orphans.length) process.exit(1);
     } else {
-      console.error('사용: export <학교> <파일> | import <파일> | verify <묶음 파일> (docs/SCHOOL-MOVE.md)');
+      console.error('사용: export <학교> <파일> | import <파일> [--status active] | keys <파일> | verify <묶음 파일> (docs/SCHOOL-MOVE.md)');
       process.exit(2);
     }
   } catch (e) {

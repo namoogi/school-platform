@@ -150,6 +150,13 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     await expect(dst.query('update public.offering_closures set reason = $1', ['몰래 고침'])).rejects.toThrow();
   });
 
+  it('이용 중지 묶음은 상태를 정해야 넣고, 마이그레이션 목록이 한쪽이라도 다르면 넣지 않는다', async () => {
+    const bundle = await exportSchool(su, A.schoolId);
+    await expect(importSchool(dst, { ...bundle, school: { ...bundle.school, status: 'suspended' } })).rejects.toThrow(/--status/);
+    await expect(importSchool(dst, { ...bundle, migrations: bundle.migrations.slice(0, -1) })).rejects.toThrow(/대상 DB에만 있는/);
+    await expect(importSchool(dst, { ...bundle, migrations: [...bundle.migrations, '29991231000000_future.sql'] })).rejects.toThrow(/빠져 있습니다/);
+  });
+
   it('같은 학교를 두 번 넣지 않는다', async () => {
     const bundle = await exportSchool(su, A.schoolId);
     await expect(importSchool(dst, bundle)).rejects.toThrow(/이미 그 학교/);
