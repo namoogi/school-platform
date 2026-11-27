@@ -1772,7 +1772,9 @@ try {
     await h.waitForSelector('[data-testid=site-settings] [role=status]:has-text("저장했습니다")');
     // 유치원형 시작(없는 쪽만 시안) → 입학 쪽 공개(같은 출처 API, 사람 관리자 권한)
     const applied = await h.evaluate(async () => (await fetch('/api/site/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'kinder' }) })).json());
-    const adm = applied.created.find((c) => c.key === 'admission');
+    // 107차: 앞 단계(65차)의 이야기형에도 입학 쪽(신청 칸 포함)이 있어 유치원형은 건너뛸 수 있다 → 이미 있는 입학 쪽을 쓴다
+    const adm = applied.created.find((c) => c.key === 'admission')
+      ?? (await h.evaluate(async () => (await (await fetch('/api/site/entries')).json()))).find((e) => e.kind === 'page' && e.key === 'admission');
     assert.ok(adm, '입학 쪽 시안');
     assert.equal(await h.evaluate(async (id) => (await fetch(`/api/site/entries/${id}/publish`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, adm.id), 200);
     // 방문자(로그인 없음)
