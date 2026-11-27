@@ -1,6 +1,6 @@
 import { loadForPage } from '@/lib/page';
 import { accessLog, licenseInfo, members, statements } from '@/lib/admin';
-import { LINK_KINDS, listLinks } from '@/lib/devlinks';
+import { listLinks } from '@/lib/devlinks';
 import { LicenseForm, MembersPanel, PortalAccountsPanel } from './SettingsClient';
 import { listPortalAccounts } from '@/lib/portal';
 import { listPeople } from '@/lib/people';
@@ -65,7 +65,7 @@ export default async function SettingsPage() {
           <p className="fine">{t('settings.devLinksNote')}</p>
           {links.length === 0 ? <p className="muted">{t('settings.noDevLinks')}</p> : (
             <ul className="sources">{links.map((l) => (
-              <li key={l.id}><div><strong>{l.label}</strong><small>{LINK_KINDS[l.kind].label} · <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a></small></div></li>
+              <li key={l.id}><div><strong>{l.label}</strong><small>{t(`devlink.kind.${l.kind}` as MsgKey)} · <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a></small></div></li>
             ))}</ul>)}
         </section>
         <section className="card stack" data-testid="baseline-offers">

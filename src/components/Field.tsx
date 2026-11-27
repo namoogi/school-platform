@@ -1,6 +1,7 @@
 'use client';
 import { cloneElement, isValidElement, useId } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { useI18n } from './I18nProvider';
 
 /**
  * 입력 한 칸: 위쪽 라벨 · 필수 표시 · 도움말 · 오류 · 글자 수. 규칙: docs/design/DESIGN-SYSTEM.md '입력·파일 첨부'.
@@ -23,6 +24,7 @@ export function Field({ label, required, optional, hint, error, count, children,
   testId?: string;
 }) {
   const auto = useId();
+  const { t } = useI18n();
   const childProps = (isValidElement(children) ? children.props : {}) as Record<string, unknown>;
   const id = (childProps.id as string | undefined) ?? auto;
   const hintId = hint ? `${id}-hint` : undefined;
@@ -45,14 +47,14 @@ export function Field({ label, required, optional, hint, error, count, children,
         <label htmlFor={id} className="field-label">
           {label}
           {required && <span className="field-req" aria-hidden="true"> *</span>}
-          {required && <span className="sr-only"> (필수)</span>}
-          {optional && !required && <span className="field-opt"> (선택)</span>}
+          {required && <span className="sr-only">{t('field.required')}</span>}
+          {optional && !required && <span className="field-opt">{t('field.optional')}</span>}
         </label>
         {count && <span id={countId} className="field-count num" data-over={over || undefined} aria-live="polite">{count.value}/{count.max}</span>}
       </div>
       {control}
       {hint && <p id={hintId} className="field-hint">{hint}</p>}
-      {error && <p id={errId} className="field-error"><AlertCircle size={14} aria-hidden="true" /> <span className="sr-only">오류: </span>{error}</p>}
+      {error && <p id={errId} className="field-error"><AlertCircle size={14} aria-hidden="true" /> <span className="sr-only">{t('file.errorPrefix')}</span>{error}</p>}
     </div>
   );
 }

@@ -41,4 +41,7 @@ export const PAGES = {
   control: { login: 'platform', states: { default: '/admin/control' } },
   baseline: { login: 'platform', states: { default: '/admin/baseline' } },
   admin: { login: 'platform', states: { default: '/admin' } },
+  usage: { login: 'platform', states: { default: '/admin/usage' } },
+  integrations: { login: 'platform', states: { default: '/admin/integrations' } },
+  design: { login: 'platform', states: { default: '/admin/design' } },
 };
