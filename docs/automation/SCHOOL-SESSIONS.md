@@ -48,4 +48,5 @@
 | `session_013RZyUqUFVPBGjdxpiXsrU2` 학교 자율 편집 개발 | ADR 0011 1단계 실시간 화면 편집 | adr-0011 |
 | `session_013RZyUoGcTChpSHJuksgDH3` 외부 작업 토큰 + 동화 PDF | ADR 0012 토큰·PDF, ADR 0013 학교 AI 작업 공간(콘텐츠) | adr-0012 |
 | `session_013RZyUqmXotCXgQK1a22bDW` 옛 사이트 (선생님 Mac VS Code) | 옛 rungarunsuksa 코드·설명서·넘겨주기 판 | — |
-| `session_013RZyUomAv7AE6YjhpHp6Kc` 자동 개발(매시간) | QUEUE.md 자동 허용 항목, PR까지 | — |
+| `session_013RZyUomAv7AE6YjhpHp6Kc` 자동 개발(매시간) | QUEUE.md UI 점검(85차~)·자동 허용 항목, PR까지 | — |
+| `session_013RZyUom6xS67hpTPYHpecQ` 학교 홈페이지 기능·템플릿 (2026-11-27) | 홈페이지 모듈 기능 개선, 새 템플릿 제작(ADR 0008·0011·0031). CI + Codex 선별 뒤 병합까지 | adr-0031 |
