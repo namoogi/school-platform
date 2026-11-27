@@ -45,6 +45,15 @@ describe('계산식 판', () => {
     await expect(asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'too_big', spec: big, base_version: 0 }))).rejects.toThrow(/계산식을 고쳐 주세요/);
   });
 
+  it('견본마다 DB 에 저장했다 읽어도 같은 결과(jsonb 칸 순서 바뀜, 106차)', async () => {
+    const { evaluate } = await import('@/lib/calc/expr');
+    const input = { items: { a: { score: 39.4, max: 100, weight: 60 }, b: { score: 91, max: 100, weight: 40 } }, attendance: { rate: 0.7 }, support: { achievement: true }, course: { pass_fail: false } };
+    for (const [code, { spec }] of Object.entries(PRESETS)) {
+      const { rows: [r] } = await su.query('select $1::jsonb as s', [JSON.stringify(spec)]);
+      expect([code, evaluate(r.s, input)]).toEqual([code, evaluate(spec, input)]);
+    }
+  });
+
   it('모양이 틀린 식은 저장하지 않는다(DB 에 닿기 전)', async () => {
     await expect(asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'bad_rule', spec: { outputs: { score: { op: 'eval' } } }, base_version: 0 })))
       .rejects.toThrow(/계산식을 고쳐 주세요/);
