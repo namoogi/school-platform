@@ -1,6 +1,6 @@
 import type { Db } from './db';
 import { ValidationError } from './services';
-import { checkSpec, evaluate, type CalcInput, type CalcOutput, type CalcSpec } from './calc/expr';
+import { checkSpec, evaluate, sanitizeInput, type CalcOutput, type CalcSpec } from './calc/expr';
 
 /** ADR 0040: 학교 계산식 판 읽기·저장·미리 계산 */
 export type CalcRule = { code: string; version: number; title: Record<string, string>; spec: CalcSpec; why: string | null; created_at: string };
@@ -38,8 +38,9 @@ export function previewCalc(spec: unknown, samples: unknown): { issues: ReturnTy
   return {
     issues,
     results: list.map((s, i) => {
-      const o = (s && typeof s === 'object' ? s : {}) as CalcInput & { label?: string };
-      return { label: typeof o.label === 'string' ? o.label.slice(0, 40) : `#${i + 1}`, ...evaluate(spec as CalcSpec, o) };
+      const o = (s && typeof s === 'object' && !Array.isArray(s) ? s : {}) as { label?: unknown };
+      // 견본 모양이 틀려도(예: items: null) 500 이 아니라 '자료 없음'으로 계산한다(sanitizeInput)
+      return { label: typeof o.label === 'string' ? o.label.slice(0, 40) : `#${i + 1}`, ...evaluate(spec as CalcSpec, sanitizeInput(o)) };
     }),
   };
 }

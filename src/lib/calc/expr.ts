@@ -157,7 +157,7 @@ export function weightedScore(items: Record<string, ItemInput> = {}, normalize =
     sum += pct * it.weight; wsum += it.weight; any = true;
   }
   if (!any) return null;
-  return normalize ? sum / wsum : sum / 100;
+  return normalize ? (wsum > 0 ? sum / wsum : null) : sum / 100;
 }
 
 /**
@@ -194,7 +194,38 @@ function getVar(path: string, input: CalcInput, lets: Record<string, V>): V {
   return null;
 }
 
-export function evaluate(spec: CalcSpec, input: CalcInput): CalcOutput {
+const finite = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+const strOrNull = (x: unknown): string | null => (typeof x === 'string' ? x : null);
+
+/** 입력 모양 정리: 미리 계산 견본처럼 밖에서 온 JSON 이 모양이 틀려도 계산이 터지지 않게, 틀린 칸은 '자료 없음'으로 둔다 */
+export function sanitizeInput(raw: unknown): CalcInput {
+  const r = isObj(raw) ? raw : {};
+  const out: CalcInput = {};
+  if (isObj(r.items)) {
+    out.items = {};
+    for (const [k, v] of Object.entries(r.items).slice(0, 100)) {
+      if (!isObj(v)) continue;
+      out.items[k] = {
+        score: finite(v.score), max: finite(v.max), weight: finite(v.weight) ?? 0,
+        ...(typeof v.submitted === 'boolean' ? { submitted: v.submitted } : {}),
+      } as ItemInput;
+    }
+  }
+  if (isObj(r.attendance)) {
+    const a = r.attendance;
+    out.attendance = { rate: finite(a.rate), ...(finite(a.present_days) != null ? { present_days: a.present_days as number } : {}), ...(finite(a.absent_days) != null ? { absent_days: a.absent_days as number } : {}) };
+  }
+  if (Array.isArray(r.competencies)) out.competencies = r.competencies.filter((c): c is string => typeof c === 'string').slice(0, 200);
+  if (finite(r.credits) != null) out.credits = r.credits as number;
+  if (isObj(r.course) && typeof r.course.pass_fail === 'boolean') out.course = { pass_fail: r.course.pass_fail };
+  if (isObj(r.entry)) out.entry = { exists: r.entry.exists === true, level: strOrNull(r.entry.level) };
+  if (isObj(r.prior)) out.prior = { level: strOrNull(r.prior.level) };
+  return out;
+}
+
+export function evaluate(spec: CalcSpec, rawInput: CalcInput): CalcOutput {
+  const input = sanitizeInput(rawInput);
   const lets: Record<string, V> = {};
   const ev = (e: Expr): V => {
     if (e === null || typeof e !== 'object') return e as V;
@@ -204,15 +235,20 @@ export function evaluate(spec: CalcSpec, input: CalcInput): CalcOutput {
     switch (e.op) {
       case '+': case '*': case 'sum': {
         const xs = vals().map(num);
-        if (e.op === 'sum') { const ok = xs.filter((x): x is number => x != null); return ok.length ? ok.reduce((p, c) => p + c, 0) : null; }
-        if (xs.some((x) => x == null)) return null;
+        // 자료 없음은 1급 값(ADR 0040 4절): 하나라도 없으면 null. 건너뛰려면 식에 coalesce 를 쓴다
+        if (xs.some((x) => x == null) || !xs.length) return null;
+        if (e.op === 'sum') return xs.reduce((p, c) => p! + c!, 0)!;
         return e.op === '*' ? xs.reduce((p, c) => p! * c!, 1)! : xs.reduce((p, c) => p! + c!, 0)!;
       }
       case '-': { const [x, y] = vals().map(num); return x == null || y == null ? null : x - y; }
       case '/': { const [x, y] = vals().map(num); return x == null || y == null || y === 0 ? null : x / y; }
       case 'abs': { const x = num(ev(a[0])); return x == null ? null : Math.abs(x); }
-      case 'min': case 'max': { const xs = vals().map(num).filter((x): x is number => x != null); return xs.length ? (e.op === 'min' ? Math.min(...xs) : Math.max(...xs)) : null; }
-      case 'avg': { const xs = vals().map(num).filter((x): x is number => x != null); return xs.length ? xs.reduce((p, c) => p + c, 0) / xs.length : null; }
+      case 'min': case 'max': case 'avg': {
+        const xs = vals().map(num);
+        if (!xs.length || xs.some((x) => x == null)) return null;
+        const ns = xs as number[];
+        return e.op === 'min' ? Math.min(...ns) : e.op === 'max' ? Math.max(...ns) : ns.reduce((p, c) => p + c, 0) / ns.length;
+      }
       case 'count': return vals().filter((v) => v !== null && v !== false).length;
       case '>=': case '>': case '<=': case '<': {
         const [x, y] = vals().map(num); if (x == null || y == null) return null;

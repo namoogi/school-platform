@@ -1,6 +1,6 @@
 /** ADR 0040: 계산식 판의 식 — 검사·계산·빈 값·반올림 경계·견본 (DB 없이) */
 import { describe, expect, it } from 'vitest';
-import { checkSpec, evaluate, PRESETS, roundBy, weightedScore, type CalcSpec } from '@/lib/calc/expr';
+import { checkSpec, evaluate, PRESETS, roundBy, weightedScore, sanitizeInput, type CalcSpec } from '@/lib/calc/expr';
 
 describe('검사', () => {
   it('견본은 모두 통과', () => {
@@ -135,5 +135,29 @@ describe('한국식 A–E · 미국식 A–D·F (E 와 F 는 같은 맨 아래 �
     expect(at(us, 75, { course: { pass_fail: true } })).toEqual({ score: null, passed: true, level: 'P' });
     expect(at(us, 40, { course: { pass_fail: true } })).toEqual({ score: null, passed: false, level: 'NP' });
     expect(at(us, 95, { entry: { exists: true, level: 'np' } })).toEqual({ score: null, passed: false, level: 'NP' });
+  });
+});
+
+describe('Codex 지적(1801f25): 자료 없음은 합·평균·최소·최대에서도 null, 견본 모양이 틀려도 터지지 않음', () => {
+  const out = (e: object, input: object = {}) => evaluate({ outputs: { score: e } } as CalcSpec, input).score;
+  it('sum·avg·min·max 는 하나라도 없으면 null, 건너뛰려면 coalesce', () => {
+    const rate = { op: '*', args: [{ var: 'attendance.rate' }, 100] };
+    expect(out({ op: 'sum', args: [rate, 60] })).toBeNull();
+    expect(out({ op: 'avg', args: [rate, 60] })).toBeNull();
+    expect(out({ op: 'min', args: [rate, 60] })).toBeNull();
+    expect(out({ op: 'max', args: [rate, 60] })).toBeNull();
+    expect(out({ op: 'sum', args: [{ op: 'coalesce', args: [rate, 0] }, 60] })).toBe(60);
+    expect(out({ op: 'avg', args: [rate, 60] }, { attendance: { rate: 0.8 } })).toBe(70);
+  });
+  it('모양이 틀린 입력은 자료 없음으로 계산한다', () => {
+    const ws = { outputs: { score: { op: 'weighted_score' }, level: { op: 'count_levels', in: ['M'] } } } as CalcSpec;
+    for (const bad of [{ items: null }, { items: [1, 2] }, { items: { a: null } }, { competencies: 'M' }, { attendance: 'x' }, null, 'x']) {
+      expect(() => evaluate(ws, bad as never)).not.toThrow();
+    }
+    expect(evaluate(ws, { items: null, competencies: 'M' } as never)).toEqual({ score: null, passed: null, level: '0' });
+    expect(sanitizeInput({ items: { a: { score: '90', weight: 50 } } })).toEqual({ items: { a: { score: null, max: null, weight: 50 } } });
+  });
+  it('만점이 모두 0 이하이면 정규화 가중 평균은 NaN 이 아니라 null', () => {
+    expect(out({ op: 'weighted_score' }, { items: { a: { score: 3, max: 0, weight: 50 } } })).toBeNull();
   });
 });
