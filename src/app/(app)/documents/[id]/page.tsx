@@ -17,7 +17,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
     throw e;
   }
   const { doc, school, uiLang } = data;
-  const { t, locale } = await getI18n(uiLang);
+  const { t, locale } = await getI18n(uiLang, school.locale);
   const s = doc.snapshot;
   const intact = verifySnapshot(doc);
   return (

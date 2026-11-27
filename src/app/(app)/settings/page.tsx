@@ -28,7 +28,7 @@ export default async function SettingsPage() {
     baseline: await schoolBaseline(db, school.id),
     offers: await baselineOffers(db, school.id),
   }), { admin: true });
-  const { t, locale } = await getI18n(uiLang);
+  const { t, locale } = await getI18n(uiLang, school.locale);
   const fmt = (d: string) => new Date(d).toLocaleString(locale, { timeZone: 'Asia/Seoul' });
   const won = (n: number) => t('common.won', { n: n.toLocaleString(locale) });
   const action = (a: string) => (`log.action.${a}` in CATALOG ? t(`log.action.${a}` as MsgKey) : a);

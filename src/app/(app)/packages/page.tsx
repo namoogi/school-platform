@@ -18,7 +18,7 @@ export default async function PackagesPage() {
     for (const p of packages) if (p.valid) previews[p.code] = previewPackage(await packageSpecs(db, school.id, p.code, p.version));
     return { packages, previews, defs, uiLang: await userLang(db) };
   }, { module: 'records' });
-  const { t, lang } = await getI18n(uiLang);
+  const { t, lang } = await getI18n(uiLang, school.locale);
   const KIND = Object.fromEntries(DEF_KINDS.map((k) => [k, t(`def.kind.${k}` as MsgKey)]));
   return (
     <>

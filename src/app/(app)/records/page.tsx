@@ -33,8 +33,8 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
       schoolDocs: await documentsOf(db, school.id, null), reports: await countReports(db, school.id),
     };
   }, { module: 'records', admin: true });
-  const { people, person, years, closures, docs, external, quals, schoolDocs, reports, uiLang } = data;
-  const { t, lang, locale } = await getI18n(uiLang);
+  const { people, person, years, closures, docs, external, quals, schoolDocs, reports, uiLang, school } = data;
+  const { t, lang, locale } = await getI18n(uiLang, school.locale);
   const FORMAT = Object.fromEntries(FORMATS.map((f) => [f, t(`rec.format.${f}` as MsgKey)]));
   const REPORTS = REPORT_CODES.map((value) => ({ value, label: t(`rec.report.${value}` as MsgKey) }));
   const yesNo = [{ value: 'no', label: t('common.no') }, { value: 'yes', label: t('common.yes') }];

@@ -30,7 +30,7 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
   }, { module: 'records' });
   const { school, scales, policy, ctx, assessments, students, results, narratives, closure, uiLang } = data;
   const admin = school.isAdmin;
-  const { t, lang, locale } = await getI18n(uiLang);
+  const { t, lang, locale } = await getI18n(uiLang, school.locale);
   const tk = (prefix: string, v: string) => t(`${prefix}.${v}` as MsgKey);
   const KIND = KINDS.map((value) => ({ value, label: tk('grade.kind', value) }));
   const name = Object.fromEntries(students.map((s) => [s.person_id, s.name]));

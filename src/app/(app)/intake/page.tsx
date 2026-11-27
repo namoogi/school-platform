@@ -5,13 +5,13 @@ import { IntakeClient } from './IntakeClient';
 import { getI18n, userLang } from '@/lib/i18n/server';
 
 export default async function IntakePage() {
-  const { sources, question, done, uiLang } = await loadForPage(async ({ db, school }) => ({
+  const { sources, question, done, uiLang, school } = await loadForPage(async ({ db, school }) => ({
     uiLang: await userLang(db),
     sources: await listSources(db, school.id),
     question: await openQuestion(db, school.id),
     done: await flowProgress(db, school.id),
   }), { module: 'intake' });
-  const { t } = await getI18n(uiLang);
+  const { t } = await getI18n(uiLang, school.locale);
   return (
     <>
       <PageHeader title={t('steps.intake')} crumbs={[{ label: t('intake.crumb') }, { label: t('steps.intake') }]}

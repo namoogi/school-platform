@@ -39,7 +39,7 @@ export async function POST(req: Request) {
         return { id: await awardQualification(db, school.id, {
           // 자격 이름은 입력한 사람의 화면 언어 칸에 둔다(클라이언트가 보낸 언어를 믿지 않고 서버가 판정, ADR 0037).
           // 영어 화면에서 넣은 이름이 ko 칸에 들어가 영어 학업 기록에 빠지지 않게 한다
-          personId: b.personId, kind: txt(b.kind), title: { [await resolveLang(await userLang(db))]: txt(b.title) }, awardedOn: txt(b.awardedOn) || undefined,
+          personId: b.personId, kind: txt(b.kind), title: { [await resolveLang(await userLang(db), school.locale)]: txt(b.title) }, awardedOn: txt(b.awardedOn) || undefined,
           requirements: min !== undefined && Number.isFinite(min) ? { min_credits: min } : {},
         }) };
       }
