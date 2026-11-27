@@ -93,3 +93,13 @@ export const LEARNING_STEPS: StepItem[] = [
   { key: 'review', labelKey: 'steps.review', href: '/review' },
   { key: 'documents', labelKey: 'steps.documents', href: '/documents' },
 ];
+
+/**
+ * ADR 0037: 번역문 속 자리({link} 등)에 링크·강조 같은 요소를 끼운다.
+ * 언어마다 어순이 달라 문장을 앞·뒤로 쪼개 옮기지 않고, 한 문장을 옮긴 뒤 자리에서 나눈다.
+ * 예: withLink(t('people.needLevel'), <Link href="/academics">…</Link>)
+ */
+export function withLink(text: string, node: React.ReactNode, slot = 'link'): React.ReactNode {
+  const [before, after = ''] = text.split(`{${slot}}`);
+  return <>{before}{node}{after}</>;
+}

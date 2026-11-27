@@ -30,7 +30,7 @@ const fresh = entries.filter(([k]) => {
 });
 if (!fresh.length) { console.log('더할 이름표가 없습니다.'); process.exit(0); }
 
-const q = (s) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+const q = (s) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
 const block = `  // ${section}\n` + fresh.map(([k, ko]) => `  ${q(k)}: ${q(ko)},\n`).join('');
 const end = catalog.lastIndexOf('} as const;');
 catalog = catalog.slice(0, end) + block + catalog.slice(end);
