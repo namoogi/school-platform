@@ -48,10 +48,14 @@ language sql stable security definer set search_path = pg_catalog, public, pg_te
 $$;
 
 -- 템플릿 판 모양 검사: 학교 화면이 이 모양을 믿고 그리므로 낼 때 막는다(Codex #180)
-create or replace function private.academic_template_ok(title jsonb, m jsonb) returns boolean
+create or replace function private.academic_template_ok(title jsonb, summary jsonb, m jsonb) returns boolean
 language sql immutable set search_path = pg_catalog, public, pg_temp as $$
   select coalesce(
+    -- 제목·설명: 언어 코드 → 비지 않은 글(화면이 그대로 그린다)
     jsonb_typeof(title) = 'object' and jsonb_typeof(title -> 'ko') = 'string'
+    and not exists (select 1 from jsonb_each(title) e where e.key !~ '^[a-z]{2}$' or jsonb_typeof(e.value) <> 'string' or length(trim(e.value #>> '{}')) not between 1 and 120)
+    and jsonb_typeof(summary) = 'object'
+    and not exists (select 1 from jsonb_each(summary) e where e.key !~ '^[a-z]{2}$' or jsonb_typeof(e.value) <> 'string' or length(trim(e.value #>> '{}')) not between 1 and 500)
     and jsonb_typeof(m) = 'object'
     and m ->> 'grade_scheme' in ('kr', 'us', 'custom')
     and jsonb_typeof(m -> 'levels') = 'array' and jsonb_array_length(m -> 'levels') between 1 and 3
@@ -59,7 +63,9 @@ language sql immutable set search_path = pg_catalog, public, pg_temp as $$
     and jsonb_typeof(m -> 'periods') = 'array' and jsonb_array_length(m -> 'periods') between 1 and 12
     and not exists (select 1 from jsonb_array_elements(m -> 'periods') e
                      where jsonb_typeof(e -> 'id') <> 'string' or jsonb_typeof(e -> 'label') <> 'string'
-                        or e ->> 'id' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,40}$' or length(trim(e ->> 'label')) not between 1 and 60)
+                        or e ->> 'id' !~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,39}$' or length(trim(e ->> 'label')) not between 1 and 60)
+    -- 학기 열쇠는 겹치지 않는다(학기 구조 판 검사 validatePeriodValue 와 같음)
+    and (select count(distinct e ->> 'id') from jsonb_array_elements(m -> 'periods') e) = jsonb_array_length(m -> 'periods')
     and jsonb_typeof(m -> 'scales') = 'array'
     -- 척도: 미리 만든 척도 이름(src/lib/grading.ts SCALE_PRESETS 와 같은 목록) 또는 종류 + 띠 1~30개(코드·표기·하한)
     and not exists (select 1 from jsonb_array_elements(m -> 'scales') e
@@ -70,8 +76,10 @@ language sql immutable set search_path = pg_catalog, public, pg_temp as $$
                               and e ->> 'kind' in ('letter', 'level', 'pass_fail', 'percent', 'points')
                               and jsonb_typeof(e -> 'bands') = 'array' and jsonb_array_length(e -> 'bands') between 1 and 30
                               and not exists (select 1 from jsonb_array_elements(e -> 'bands') b
-                                               where jsonb_typeof(b) <> 'object' or jsonb_typeof(b -> 'code') <> 'string' or length(b ->> 'code') not between 1 and 10
-                                                  or jsonb_typeof(b -> 'label') <> 'object' or b -> 'label' = '{}'::jsonb
+                                               -- 척도 쓰기(app.save_scale 띠 코드, grading.ts ltext 표기)와 같은 규칙
+                                               where jsonb_typeof(b) <> 'object' or coalesce(b ->> 'code', '') !~ '^[A-Za-z0-9+\-]{1,8}$'
+                                                  or jsonb_typeof(b -> 'label') <> 'object'
+                                                  or not exists (select 1 from jsonb_each(b -> 'label') l where l.key ~ '^[a-z]{2}$' and jsonb_typeof(l.value) = 'string' and length(trim(l.value #>> '{}')) > 0)
                                                   or jsonb_typeof(b -> 'min') not in ('number', 'null')))))
     and m ->> 'attendance' in ('day', 'period', 'day_period')
     and jsonb_typeof(m -> 'calc_samples') = 'array'
@@ -82,9 +90,9 @@ language sql immutable set search_path = pg_catalog, public, pg_temp as $$
     and not exists (select 1 from jsonb_array_elements(m -> 'hide') e where e #>> '{}' not in ('rank', 'gpa', 'rank_grade', 'period_attendance') or jsonb_typeof(e) <> 'string'),
     false)
 $$;
-revoke all on function private.academic_template_ok(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function private.academic_template_ok(jsonb, jsonb, jsonb) from public, anon, authenticated;
 -- 시드 5종도 같은 검사를 지난다(표 제약)
-alter table public.academic_templates add constraint academic_templates_shape check (private.academic_template_ok(title, manifest));
+alter table public.academic_templates add constraint academic_templates_shape check (private.academic_template_ok(title, summary, manifest));
 
 -- 관제가 템플릿 새 판을 낸다(지침 10: 보고 고친 판, 낡으면 409). 학교 사본은 바뀌지 않는다
 create or replace function app.publish_academic_template(p jsonb)
@@ -94,7 +102,7 @@ begin
   if not app.is_platform_admin() then raise exception '전체 관리자만 템플릿을 냅니다.' using errcode = '42501'; end if;
   if coalesce(k, '') !~ '^[a-z][a-z0-9_]{1,40}$' then raise exception '템플릿 키가 올바르지 않습니다.' using errcode = '22023'; end if;
   if not (p ? 'base_version') then raise exception '보고 고친 판 번호(base_version)를 함께 보내 주세요.' using errcode = '22023'; end if;
-  if not private.academic_template_ok(p -> 'title', p -> 'manifest') then
+  if not private.academic_template_ok(p -> 'title', coalesce(p -> 'summary', '{}'), p -> 'manifest') then
     raise exception '템플릿 내용이 올바르지 않습니다(학년 체계·학교급·학기·척도·출결 단위·서식·숨길 구획).' using errcode = '22023';
   end if;
   perform pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext(k));

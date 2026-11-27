@@ -111,6 +111,11 @@ describe('학사 관리 템플릿', () => {
     await expect(bad({ ...ok, scales: [{ code: 'x', preset: 'unknown' }] })).rejects.toThrow('템플릿 내용');
     await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [] }] })).rejects.toThrow('템플릿 내용');
     await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'A' }] }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'TOOLONGCD', label: { ko: 'A' }, min: 0 }] }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'A', label: { korean: 'A' }, min: 0 }] }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, periods: [{ id: 's1', label: 'A' }, { id: 's1', label: 'B' }], scales: [] })).rejects.toThrow('템플릿 내용');
+    await expect(asUser(platformId, (db) => db.query(`select app.publish_academic_template($1)`, [JSON.stringify({
+      key: 'us_k12', base_version: 2, title: { ko: 'x' }, summary: { ko: { text: 'x' } }, manifest: { ...ok, scales: [] } })]))).rejects.toThrow('템플릿 내용');
     expect((await asUser(B.userId, (db) => at.listTemplates(db))).find((t) => t.key === 'us_k12')!.version).toBe(2);
     // SCALE_PRESETS 와 DB 검사 목록이 같아야 한다(한쪽만 늘면 템플릿이 막히거나 적용이 깨짐)
     const { SCALE_PRESETS } = await import('@/lib/grading');
@@ -118,5 +123,17 @@ describe('학사 관리 템플릿', () => {
     for (const k of Object.keys(SCALE_PRESETS)) expect(fn).toContain(`'${k}'`);
     // 템플릿 판은 고칠 수 없다
     await expect(su.query(`update public.academic_templates set why = 'x'`)).rejects.toThrow();
+  });
+  it('낼 수 있는 판은 학교에 실제로 적용된다(경계 값: 8자 띠 코드, 영어만 있는 표기, 학기 3개, 직접 정한 척도)', async () => {
+    const manifest = { grade_scheme: 'custom', levels: ['middle'], periods: [{ id: 'q1', label: 'Q1' }, { id: 'q2', label: 'Q2' }, { id: 'q3', label: 'Q3' }],
+      scales: [{ code: 'edge_scale', kind: 'level', why: 'edge', bands: [{ code: 'ABCDEFG+', label: { en: 'Top' }, min: 80 }, { code: 'B', label: { en: 'Rest' }, min: null }] }],
+      calc_samples: [], attendance: 'day', outputs: ['en_record'], hide: ['gpa'] };
+    await asUser(platformId, (db) => db.query(`select app.publish_academic_template($1)`, [JSON.stringify({
+      key: 'edge_case', base_version: 0, title: { ko: '경계', en: 'Edge' }, summary: { en: 'edge' }, manifest })]));
+    const fresh = (await su.query(`select id from public.schools where slug = 'school-a'`)).rows[0].id;
+    expect(fresh).toBe(A.schoolId);
+    const r = await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'edge_case', base_version: await ver(A) }));
+    expect(r.made.scales).toEqual(['edge_scale']);
+    expect(await asUser(A.userId, (db) => at.schoolTemplate(db, A.schoolId))).toMatchObject({ key: 'edge_case', version: 1 });
   });
 });
