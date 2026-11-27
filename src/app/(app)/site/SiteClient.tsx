@@ -5,7 +5,7 @@ import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, Plus, Trash2 } from 'lucide-react';
-import { BLOCK_LABEL, KIND_LABEL, PHOTO_CONSENT, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings } from '@/lib/site-shared';
+import { BLOCK_LABEL, KIND_LABEL, PHOTO_CONSENT, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
 
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -87,8 +87,8 @@ export function SiteSettingsForm({ initial, schoolName, saved = false }: { initi
         </label>
       ))}
       <label>화면 모양
-        <select value={s.theme} onChange={(e) => setS({ ...s, theme: e.target.value as 'campus' | 'dawn' })} data-testid="site-theme">
-          <option value="campus">학사 기본</option><option value="dawn">새벽빛 매거진</option>
+        <select value={s.theme} onChange={(e) => setS({ ...s, theme: e.target.value as SiteTheme })} data-testid="site-theme">
+          {SITE_THEMES.map((x) => <option key={x.key} value={x.key}>{x.name} — {x.note}</option>)}
         </select>
       </label>
       <label className="radio"><input type="checkbox" checked={s.is_open} onChange={(e) => setS({ ...s, is_open: e.target.checked })} /> 홈페이지 열기 (방문자가 공개한 판을 볼 수 있음)</label>

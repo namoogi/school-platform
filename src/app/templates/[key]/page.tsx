@@ -1,0 +1,73 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { requireUser } from '@/lib/auth';
+import { LANG_LABEL, SITE_THEMES, type Lang, type PublicSite } from '@/lib/site';
+import { SITE_TEMPLATES } from '@/lib/site-templates';
+import { samplePages, sampleAssetUrl, sampleNews, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
+import { SiteFrame } from '@/components/site/SiteFrame';
+import { PageHead, SiteBlocks, type NewsItem } from '@/components/site/SiteRenderer';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * 89차(ADR 0034): 템플릿 전체 화면 미리보기 — 관리 화면 밖에서 방문자가 볼 모습 그대로(디자인·메뉴·바닥).
+ * 내용은 가상 학교 예시(또는 안내 자리)이고 DB를 읽지 않는다. 로그인한 사람만 본다.
+ */
+export default async function TemplateLive({ params, searchParams }: {
+  params: Promise<{ key: string }>; searchParams: Promise<{ page?: string; lang?: string; view?: string; thumb?: string }>;
+}) {
+  await requireUser();
+  const { key } = await params;
+  const sp = await searchParams;
+  const t = SITE_TEMPLATES.find((x) => x.key === key);
+  if (!t) notFound();
+  const sample = TEMPLATE_SAMPLES[t.key];
+  const view = sp.view === 'guide' || !sample ? 'guide' : 'sample';
+  const pages = view === 'sample' ? samplePages(t) : Object.fromEntries(t.pages.map((p) => [p.key, p.content]));
+  const pg = t.pages.find((p) => p.key === sp.page) ?? t.pages[0];
+  const lang = (t.langs as string[]).includes(sp.lang ?? '') ? (sp.lang as Lang) : (t.langs[0] as Lang);
+  const fallback = t.langs[0] as Lang;
+  const href = (o: { page?: string; lang?: string; view?: string }) =>
+    `/templates/${t.key}?page=${o.page ?? pg.key}&lang=${o.lang ?? lang}${(o.view ?? view) === 'guide' ? '&view=guide' : ''}`;
+  const home = pages.home;
+  const site: PublicSite = {
+    slug: `template-${t.key}`, school: view === 'sample' ? sample.school : '[학교 이름]', default_lang: fallback, langs: t.langs as Lang[], theme: t.theme,
+    title: home.title, stories: false, has_news: false,
+    nav: t.pages.filter((p) => p.key !== 'home').map((p) => ({ key: p.key, title: pages[p.key].title })),
+  };
+  const link = (path: string) => {
+    if (path === '/' || path === '') return href({ page: 'home' });
+    const m = /^\/p\/([a-z0-9-]+)/.exec(path);
+    return m && t.pages.some((p) => p.key === m[1]) ? href({ page: m[1] }) : '#';
+  };
+  const news: NewsItem[] = view === 'sample' ? sampleNews() : [];
+  const content = pages[pg.key];
+  const design = SITE_THEMES.find((x) => x.key === t.theme);
+  return (
+    <>
+      {!sp.thumb && <nav className="template-live-bar" aria-label="템플릿 미리보기">
+        <Link href="/site/templates">← 템플릿 둘러보기</Link>
+        <strong>{t.name}</strong><span className="muted">디자인: {design?.name}</span>
+        {sample && <span className="segmented" role="group" aria-label="미리보기 내용">
+          <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined}>예시 내용</Link>
+          <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined}>안내 자리</Link>
+        </span>}
+        <Link className="btn btn-primary btn-sm" href={`/site/templates/${t.key}`} data-testid="template-live-start">이 디자인으로 시작</Link>
+      </nav>}
+      {view === 'sample' && !sp.thumb && <p className="template-live-note">지어낸 가상 학교 ‘{sample.school}’의 예시입니다. {t.langs.length > 1 ? `언어: ${t.langs.map((l) => LANG_LABEL[l as Lang]).join('·')}` : ''}</p>}
+      <SiteFrame site={site} lang={lang} current={pg.key === 'home' ? 'home' : `p:${pg.key}`} path={pg.key === 'home' ? '/' : `/p/${pg.key}`}
+        profile={home.site} assetUrl={sampleAssetUrl} preview={{ link, langHref: (l) => href({ lang: l }) }}>
+        <div data-testid="template-live">
+          <PageHead content={content} lang={lang} fallback={fallback} asset={sampleAssetUrl} link={link} />
+          <SiteBlocks content={content} lang={lang} fallback={fallback} assetUrl={sampleAssetUrl} link={link} news={news} />
+        </div>
+      </SiteFrame>
+    </>
+  );
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ key: string }> }) {
+  const { key } = await params;
+  const t = SITE_TEMPLATES.find((x) => x.key === key);
+  return { title: t ? `템플릿 미리보기 · ${t.name}` : '템플릿 미리보기' };
+}
