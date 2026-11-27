@@ -33,17 +33,6 @@ export default async function TemplatePreview({ params, searchParams }: { params
       <PageHeader title={`템플릿: ${t.name}`} crumbs={[{ label: '학교 홈페이지', href: '/site' }, { label: '템플릿', href: '/site/templates' }, { label: t.name }]}
         description={t.summary} />
       <div className="template-layout">
-        <aside className="card stack" aria-label="템플릿 정보">
-          {t.langs.length > 1 && <p className="fine">언어: {t.langs.map((l) => <Link key={l} href={href({ lang: l })} aria-current={l === lang ? 'true' : undefined} style={{ marginRight: 8 }}>{LANG_LABEL[l as Lang]}</Link>)}</p>}
-          <p className="fine">쪽 {t.pages.length}개: {t.pages.map((p) => p.key === 'home' ? '/' : `/p/${p.key}`).join(' · ')}</p>
-          <h2>이 쪽에서 채울 칸</h2>
-          {slots.length === 0 ? <p className="muted">없음</p> : <ul className="issue-list">{slots.map((s) => <li key={s.id}><span><strong>{s.label}</strong> <small className="muted">{s.hint}</small></span></li>)}</ul>}
-          <h2>꼭 알릴 정보</h2>
-          <ul className="issue-list">{t.mustHave.map((m) => <li key={m}>{m}</li>)}</ul>
-          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={t.name} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} />
-            : <p className="muted">템플릿 적용은 학교 관리자가 합니다.</p>}
-
-        </aside>
         <section className="template-stage" aria-label="미리보기">
           {/* 86차(사용자 지시): 미리보기에서 쪽마다 바로 넘겨 본다 — 쪽 탭을 미리보기 바로 위에 둔다 */}
           <nav className="tabs template-page-tabs" aria-label="템플릿 쪽">
@@ -66,6 +55,17 @@ export default async function TemplatePreview({ params, searchParams }: { params
             </main>
           </div>
         </section>
+        <aside className="card stack" aria-label="템플릿 정보">
+          {t.langs.length > 1 && <p className="fine">언어: {t.langs.map((l) => <Link key={l} href={href({ lang: l })} aria-current={l === lang ? 'true' : undefined} style={{ marginRight: 8 }}>{LANG_LABEL[l as Lang]}</Link>)}</p>}
+          <p className="fine">쪽 {t.pages.length}개: {t.pages.map((p) => p.key === 'home' ? '/' : `/p/${p.key}`).join(' · ')}</p>
+          <h2>이 쪽에서 채울 칸</h2>
+          {slots.length === 0 ? <p className="muted">없음</p> : <ul className="issue-list">{slots.map((s) => <li key={s.id}><span><strong>{s.label}</strong> <small className="muted">{s.hint}</small></span></li>)}</ul>}
+          <h2>꼭 알릴 정보</h2>
+          <ul className="issue-list">{t.mustHave.map((m) => <li key={m}>{m}</li>)}</ul>
+          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={t.name} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} />
+            : <p className="muted">템플릿 적용은 학교 관리자가 합니다.</p>}
+
+        </aside>
       </div>
       {school.isAdmin && t.pages.some((p) => pages.includes(p.key)) && <div className="settings-grid"><div className="card"><AutofillPanel templateKey={t.key} /></div><div className="card"><MigratePanel templateKey={t.key} /></div></div>}
     </>
