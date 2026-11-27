@@ -2411,3 +2411,13 @@ label.check input { margin-top: 0.25em; }
 .setup-list [aria-current="step"] .dot { border-color: var(--brand-600); color: var(--brand-700); }
 .tpl-confirm { display: grid; gap: var(--space-2); }
 .tpl-confirm > span { display: block; }
+
+/* 37차 후속 2: 손가락 기기 누르는 대상 44px — 파일 끝에 두고 특이성을 높여, 화면별 작은 높이 규칙(.btn-sm 28px,
+   .le-bar 32px, .item-meta select 24px 등)보다 항상 이긴다. 모양(글자 크기·여백)은 그대로, 누르는 높이만 올린다.
+   공개 홈페이지(.site)는 테마 세션 몫이라 빼되, 그 위에 얹는 화면 편집 도구(.le-*)는 넣는다. 시안(.pv-root)은 제외 */
+@media (pointer: coarse) {
+  html body :is(button, .btn, .btn-sm, .small, .link-button, select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])):not(.pv-root *):not(.site *),
+  html body :is(.le-bar, .le-switch, .le-note, .le-picker, .le-guide) :is(button, .btn, select, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])),
+  html body .le-grip { min-height: 44px; }
+  html body .le-bar :is(.btn-sm, button), html body .le-grip { min-width: 44px; }
+}

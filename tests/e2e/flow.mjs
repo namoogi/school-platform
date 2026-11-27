@@ -2087,8 +2087,13 @@ try {
     await shot(p, '81-lab-detail.png');
     await ctx.close();
   });
-  await step('37차 후속: 손가락 기기 — 분석형 전체 관리에서도 입력·표 행 select 44px, 필수 칸은 * 표시', async () => {
+  await step('37차 후속: 손가락 기기 — 전체 관리·연구소·자료 첨부·화면 편집의 입력과 단추가 모두 44px, 필수 칸은 * 표시', async () => {
     const { devices } = require('playwright');
+    // 화면에 보이는 입력·단추 중 44px 미만(화면 편집 막대 포함, 공개 홈페이지 본문 .site 의 테마 요소는 제외)
+    const under44 = (page) => page.evaluate(() => [...document.querySelectorAll('main :is(button, .btn, select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file]))')]
+      .filter((e) => (!e.closest('.site') || e.closest('.le-bar, .le-switch, .le-note, .le-picker, .le-guide')) && !e.closest('.pv-root'))
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.height < 43.5; })
+      .map((e) => `${e.tagName}.${(e.className || '').toString().split(' ')[0]}「${(e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 10)}」:${Math.round(e.getBoundingClientRect().height)}`));
     const ctx = await browser.newContext({ ...devices['iPhone 13'] });
     const p = await ctx.newPage();
     await p.goto(`${BASE}/login`);
@@ -2096,13 +2101,30 @@ try {
     await p.fill('input[name=password]', 'demo-pass-p');
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
-    const small = await p.evaluate(() => [...document.querySelectorAll('main select, main input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), main textarea')]
-      .filter((e) => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height < 44).map((e) => `${e.tagName}:${Math.round(e.getBoundingClientRect().height)}`));
-    assert.deepEqual(small, [], `44px 미만 입력: ${small.join(' ')}`);
-    assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, '390px 가로 넘침');
+    for (const path of ['/admin', '/admin/lab']) {
+      await p.goto(`${BASE}${path}`);
+      await p.locator('main').waitFor();
+      const small = await under44(p);
+      assert.deepEqual(small, [], `${path} 44px 미만: ${small.join(' ')}`);
+      assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${path} 390px 가로 넘침`);
+    }
     await p.goto(`${BASE}/admin/languages`);
     await p.locator('[data-testid=language-form] .field-req').first().waitFor();
     await ctx.close();
+    // 학교 관리자: 자료 첨부(FileDrop 단추)와 화면 편집(구역 막대)
+    const ctxA = await browser.newContext({ ...devices['iPhone 13'] });
+    const a2 = await ctxA.newPage();
+    await login(a2, 'admin-a@school-a.test', 'demo-pass-a');
+    await a2.goto(`${BASE}/intake`);
+    await a2.waitForSelector('[data-testid=dropzone][data-ready]');
+    assert.deepEqual(await under44(a2), [], '자료 첨부 44px 미만');
+    await a2.goto(`${BASE}/site?box=page`);
+    await a2.locator('[data-testid=row-live-edit]').first().click();
+    await a2.waitForURL(/\/site\/edit\/[0-9a-f-]{36}$/);
+    await a2.locator('[data-testid=live-editor] .le-bar').first().waitFor();
+    const smallEd = await under44(a2);
+    assert.deepEqual(smallEd, [], `화면 편집 44px 미만: ${smallEd.join(' ')}`);
+    await ctxA.close();
   });
 
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
