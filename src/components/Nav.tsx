@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { Gauge, Building2, CalendarRange, Users, BookOpen, ClipboardCheck, GraduationCap, CalendarCheck, ScrollText, Layers, MessagesSquare, FileText, FlaskConical, Globe, House, Link2, MessageSquareWarning, Package, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
 
 // 레일 아이콘 (lucide, ISC 라이선스). 장식용이라 화면낭독기에는 숨기고 이름 글자를 함께 보인다.
@@ -18,8 +19,18 @@ export function Nav({ groups }: { groups: NavGroup[] }) {
   const all = groups.flatMap((g) => g.items);
   // 가장 길게 맞는 주소 하나만 현재 항목으로 (예: /admin/lab 에서 /admin 은 현재가 아님)
   const current = all.filter((i) => path === i.href || path.startsWith(i.href + '/')).sort((a, b) => b.href.length - a.href.length)[0];
+  // 마지막 입력이 마우스인지 키보드인지 적어 둔다: 마우스면 가리킨 항목, 키보드면 초점 항목의 이름 풍선만 띄운다(globals.css)
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const set = (v: 'pointer' | 'keyboard') => { if (ref.current && ref.current.dataset.input !== v) ref.current.dataset.input = v; };
+    const onPointer = () => set('pointer');
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Tab' || e.key.startsWith('Arrow')) set('keyboard'); };
+    window.addEventListener('pointermove', onPointer, { passive: true });
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('pointermove', onPointer); window.removeEventListener('keydown', onKey); };
+  }, []);
   return (
-    <nav aria-label="주 메뉴">
+    <nav aria-label="주 메뉴" ref={ref} data-input="pointer">
       {groups.map((g) => (
         <div key={g.label} className="nav-group">
           {groups.length > 1 && <div className="menu-label">{g.label}</div>}

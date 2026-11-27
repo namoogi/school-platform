@@ -751,8 +751,10 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
   font-size: var(--fs-caption); font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .12s;
 }
 .app[data-ui="analytics"] .nav-item:hover::after, .app[data-ui="analytics"] .nav-item:focus-visible::after { opacity: 1; }
-/* 90차: 마우스가 메뉴 위에 있으면 가리킨 항목의 풍선만 띄운다(키보드 초점이 남은 다른 항목 풍선과 겹치지 않게) */
-.app[data-ui="analytics"] .sidebar:hover .nav-item:not(:hover)::after { opacity: 0; }
+/* 이름 풍선은 마지막 입력 방식에 따라 하나만: 마우스면 가리킨 항목(남아 있는 키보드 초점 풍선은 숨김),
+   키보드면 초점 항목(멈춰 있는 마우스 아래 항목 풍선은 숨김). nav[data-input]은 Nav.tsx가 적는다 */
+.app[data-ui="analytics"] nav[data-input="pointer"] .nav-item:not(:hover)::after { opacity: 0; }
+.app[data-ui="analytics"] nav[data-input="keyboard"] .nav-item:not(:focus-visible)::after { opacity: 0; }
 .app[data-ui="analytics"] .nav-item .count-badge { right: 8px; top: 2px; }
 .app[data-ui="analytics"] .sidebar { overflow: visible; }
 .app[data-ui="analytics"] .content { padding: var(--space-5) var(--space-6) var(--space-10); }
