@@ -2091,5 +2091,8 @@
   "db.m301": "A corrected report's reference date must match the first version.",
   "db.m302": "Only platform admins change languages.",
   "db.m303": "Only platform admins change translations.",
-  "db.m305": "Only platform admins set isolation tiers."
+  "db.m305": "Only platform admins set isolation tiers.",
+  "err.calcSpecInvalid": "Please fix the formula ({count} problems, first at: {path}). Preview shows the full list.",
+  "db.calcRuleCode": "A formula name starts with a lowercase letter and uses only lowercase letters, digits and underscores.",
+  "db.calcRuleSpec": "A formula needs an outputs section."
 }
