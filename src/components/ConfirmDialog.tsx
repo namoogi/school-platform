@@ -27,9 +27,12 @@ export function ConfirmDialog({ open, options, onAnswer, returnFocus }: {
   const cancelRef = useRef<HTMLButtonElement>(null);
   if (!options) return null;
   const { title, description, confirmLabel, cancelLabel = '취소', tone = 'danger' } = options;
+  // 화면 형식·명암 토큰(data-ui·data-mode)은 .app에 걸려 있다. body로 띄우면 :root의 밝은 기본 토큰을 받으므로
+  // 연 버튼이 속한 .app(없으면 첫 .app) 안에 띄워 지금 테마를 그대로 쓴다(85차, Codex P2)
+  const container = returnFocus?.closest<HTMLElement>('.app') ?? (typeof document !== 'undefined' ? document.querySelector<HTMLElement>('.app') : null) ?? undefined;
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onAnswer(false); }}>
-      <Dialog.Portal>
+      <Dialog.Portal container={container}>
         <Dialog.Overlay className={s.overlay} />
         <Dialog.Content className={s.dialog} role="alertdialog" data-testid="confirm-dialog"
           onOpenAutoFocus={(e) => { e.preventDefault(); cancelRef.current?.focus(); }}
