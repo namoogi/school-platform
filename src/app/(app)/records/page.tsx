@@ -49,7 +49,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
         description={t('rec.lead')}
         meta={<><span>{t('rec.metaPeople', { n: people.length })}</span><span>{t('rec.metaSchoolDocs', { n: schoolDocs.length })}</span><span>{t('rec.metaReports', { n: latestReports.length })}</span></>} />
       <div className="people-layout">
-        <section className="card stack">
+        <section className="card stack" data-testid="record-student">
           <h2>{t('rec.students')}</h2>
           <form className="row-wrap" action="/records">
             <label>{t('common.student')}<select name="p" defaultValue={person?.id ?? ''}><option value="">{t('rec.pick')}</option>{people.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
