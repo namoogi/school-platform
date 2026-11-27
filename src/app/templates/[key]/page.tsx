@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
+import { asUser } from '@/lib/db';
+import { getI18n, userLang } from '@/lib/i18n/server';
 import { LANG_LABEL, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages, sampleAssetUrl, sampleNews, sampleNewsPage, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
@@ -16,7 +18,8 @@ export const dynamic = 'force-dynamic';
 export default async function TemplateLive({ params, searchParams }: {
   params: Promise<{ key: string }>; searchParams: Promise<{ page?: string; lang?: string; view?: string; thumb?: string; news?: string }>;
 }) {
-  await requireUser();
+  const userId = await requireUser();
+  const { t: tr } = await getI18n(await asUser(userId, userLang));
   const { key } = await params;
   const sp = await searchParams;
   const t = SITE_TEMPLATES.find((x) => x.key === key);
@@ -48,16 +51,16 @@ export default async function TemplateLive({ params, searchParams }: {
   const design = SITE_THEMES.find((x) => x.key === t.theme);
   return (
     <>
-      {!sp.thumb && <nav className="template-live-bar" aria-label="템플릿 미리보기">
-        <Link href="/site/templates">← 템플릿 둘러보기</Link>
-        <strong>{t.name}</strong><span className="muted">디자인: {design?.name}</span>
-        {sample && <span className="segmented" role="group" aria-label="미리보기 내용">
-          <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined}>예시 내용</Link>
-          <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined}>안내 자리</Link>
+      {!sp.thumb && <nav className="template-live-bar" aria-label={tr('site.tpl.live.label')}>
+        <Link href="/site/templates">{tr('site.tpl.live.back')}</Link>
+        <strong>{t.name}</strong><span className="muted">{tr('site.tpl.live.design', { name: design?.name ?? t.theme })}</span>
+        {sample && <span className="segmented" role="group" aria-label={tr('site.tpl.view.label')}>
+          <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined}>{tr('site.tpl.view.sample')}</Link>
+          <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined}>{tr('site.tpl.view.guide')}</Link>
         </span>}
-        <Link className="btn btn-primary btn-sm" href={`/site/templates/${t.key}`} data-testid="template-live-start">이 디자인으로 시작</Link>
+        <Link className="btn btn-primary btn-sm" href={`/site/templates/${t.key}`} data-testid="template-live-start">{tr('site.tpl.live.start')}</Link>
       </nav>}
-      {view === 'sample' && !sp.thumb && <p className="template-live-note">지어낸 가상 학교 ‘{sample.school}’의 예시입니다. {t.langs.length > 1 ? `언어: ${t.langs.map((l) => LANG_LABEL[l as Lang]).join('·')}` : ''}</p>}
+      {view === 'sample' && !sp.thumb && <p className="template-live-note">{tr('site.tpl.live.sampleNote', { school: sample.school })} {t.langs.length > 1 ? `${tr('site.tpl.detail.langs')} ${t.langs.map((l) => LANG_LABEL[l as Lang]).join('·')}` : ''}</p>}
       <SiteFrame site={site} lang={lang} current={pg.key === 'home' ? 'home' : `p:${pg.key}`} path={pg.key === 'home' ? '/' : `/p/${pg.key}`}
         profile={home.site} assetUrl={sampleAssetUrl} preview={{ link, langHref: (l) => href({ lang: l }) }}>
         <div data-testid="template-live">
@@ -72,5 +75,6 @@ export default async function TemplateLive({ params, searchParams }: {
 export async function generateMetadata({ params }: { params: Promise<{ key: string }> }) {
   const { key } = await params;
   const t = SITE_TEMPLATES.find((x) => x.key === key);
-  return { title: t ? `템플릿 미리보기 · ${t.name}` : '템플릿 미리보기' };
+  const { t: tr } = await getI18n();
+  return { title: t ? tr('site.tpl.live.metaTitle', { name: t.name }) : tr('site.tpl.live.label') };
 }
