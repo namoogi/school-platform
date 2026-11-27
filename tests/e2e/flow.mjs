@@ -1562,7 +1562,7 @@ try {
     await login(a, 'admin-a@school-a.test', 'demo-pass-a');
     await a.goto(`${BASE}/settings`);
     const form = a.locator('[data-testid=portal-account-form]');
-    await form.locator('select[aria-label="사람"]').selectOption({ label: 'E2E 열람 학생' });
+    await form.locator('.field select').first().selectOption({ label: 'E2E 열람 학생' });
     await form.locator('input[type=email]').fill('e2e-student@family.test');
     await form.locator('label:has-text("동의 연령 미만") input').check();
     await form.locator('button[type=submit]').click();
@@ -1606,7 +1606,7 @@ try {
     await login(a, 'admin-a@school-a.test', 'demo-pass-a');
     await a.goto(`${BASE}/settings`);
     const form = a.locator('[data-testid=portal-account-form]');
-    await form.locator('select[aria-label="사람"]').selectOption({ label: 'E2E 요청 학생' });
+    await form.locator('.field select').first().selectOption({ label: 'E2E 요청 학생' });
     await form.locator('input[type=email]').fill('e2e-request@family.test');
     await form.locator('button[type=submit]').click();
     await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 요청 학생' }).waitFor();
@@ -1752,7 +1752,6 @@ try {
     const text = ['우리가 소중히 여기는 가치', '- 질문: 스스로 묻고 탐구한다', '- 공동체: 서로 돌본다', '- 나눔: 배운 것을 마을과 나눈다', '',
       '하루 일과', '아침 산책으로 하루를 열고 오전에는 탐구 수업, 오후에는 프로젝트를 합니다.'].join('\n');
     await panel.locator('[data-testid=autofill-files]').setInputFiles({ name: 'E2E-소개서.txt', mimeType: 'text/plain', buffer: Buffer.from(text) });
-    await panel.locator('[data-testid=autofill-read]').click();
     await panel.locator('[data-testid=autofill-proposals] li', { hasText: '소중히 여기는 것' }).waitFor();
     await shot(h, '66-autofill.png');
     await panel.locator('[data-testid=autofill-apply]').click();
@@ -2075,6 +2074,24 @@ try {
     await shot(p, '81-lab-detail.png');
     await ctx.close();
   });
+  await step('37차 후속: 손가락 기기 — 분석형 전체 관리에서도 입력·표 행 select 44px, 필수 칸은 * 표시', async () => {
+    const { devices } = require('playwright');
+    const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    const small = await p.evaluate(() => [...document.querySelectorAll('main select, main input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), main textarea')]
+      .filter((e) => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().height < 44).map((e) => `${e.tagName}:${Math.round(e.getBoundingClientRect().height)}`));
+    assert.deepEqual(small, [], `44px 미만 입력: ${small.join(' ')}`);
+    assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, '390px 가로 넘침');
+    await p.goto(`${BASE}/admin/languages`);
+    await p.locator('[data-testid=language-form] .field-req').first().waitFor();
+    await ctx.close();
+  });
+
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

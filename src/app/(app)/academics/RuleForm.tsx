@@ -1,4 +1,5 @@
 'use client';
+import { Field } from '@/components/Field';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
@@ -23,8 +24,8 @@ export function RuleForm({ baseVersion, current }: { baseVersion: number; curren
   }
   return (
     <form className="action-form" onSubmit={save} data-testid="rule-form">
-      <label>{t('academics.termsLabel')}<textarea rows={4} value={lines} onChange={(e) => setLines(e.target.value)} required /></label>
-      <label>{t('academics.reason')}<input value={why} onChange={(e) => setWhy(e.target.value)} required placeholder={t('academics.reasonPlaceholder')} /></label>
+      <Field label={t('academics.termsLabel')} required><textarea rows={4} value={lines} onChange={(e) => setLines(e.target.value)} /></Field>
+      <Field label={t('academics.reason')} required><input value={why} onChange={(e) => setWhy(e.target.value)} placeholder={t('academics.reasonPlaceholder')} /></Field>
       <div className="form-actions"><button type="submit" className="btn btn-primary">{baseVersion ? t('academics.saveNewVersion') : t('academics.setStructure')}</button></div>
       {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}</p>}
     </form>

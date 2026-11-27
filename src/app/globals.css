@@ -348,9 +348,11 @@ input[aria-invalid="true"]:not(.pv-root *), select[aria-invalid="true"], textare
 input[aria-invalid="true"]:focus, select[aria-invalid="true"]:focus, textarea[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--danger-bg); }
 
 /* Field: 라벨 · 필수 · 도움말 · 오류 · 글자 수 (src/components/Field.tsx) */
-.field { display: grid; gap: 6px; min-width: 0; }
-.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
-label.field-label { display: inline; font-weight: 600; font-size: var(--fs-body); }
+.field { position: relative; display: grid; gap: 6px; min-width: 0; }
+label.field-wrap:not(.pv-root *) { display: grid; gap: 6px; font-weight: 400; }
+.field-label { font-weight: 600; font-size: var(--fs-body); }
+.field:has(> .field-count) .field-label { padding-right: 4.5em; }
+.field-count { position: absolute; top: 2px; right: 0; }
 .field-req { color: var(--danger-fg); }
 .field-opt { color: var(--text-muted); font-weight: 400; font-size: var(--fs-body-sm); }
 .field-hint { margin: 0; color: var(--text-muted); font-size: var(--fs-body-sm); line-height: var(--lh-body-sm); font-weight: 400; }
@@ -369,8 +371,15 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
 
 /* 터치 기기: 입력·버튼 44px (분석형의 34px 밀도도 손가락에는 44px) */
 @media (pointer: coarse) {
-  .app, :root { --control-h: 44px; }
+  /* 분석형(34px)·촘촘히(32px)보다 특이성을 높여 손가락 기기에서는 항상 44px */
+  :root, html .app.app, html .app.app[data-ui], html [data-density][data-density] { --control-h: 44px; }
   label:has(> input[type=checkbox]):not(.pv-root *), label:has(> input[type=radio]):not(.pv-root *), label.switch-row { min-height: 44px; }
+  /* 라벨로 감싸지 않은 체크·라디오(표·카드 안)는 상자를 24px로(WCAG 2.5.8 최소 대상) */
+  input[type=checkbox]:not(.pv-root *):not(.switch), input[type=radio]:not(.pv-root *) { width: 24px; height: 24px; }
+  input.switch { width: 46px; height: 28px; background: radial-gradient(circle at 12px 50%, var(--text-muted) 8px, transparent 8.5px), var(--surface-subtle); }
+  input.switch:checked { background: radial-gradient(circle at calc(100% - 12px) 50%, var(--text-on-brand) 8px, transparent 8.5px), var(--action-primary-bg); }
+  /* 표 안 작은 select(행 동작)도 손가락 기기에서는 컨트롤 높이로 */
+  html .actions select, html select.small, html input.small { min-height: var(--control-h); }
 }
 .choices { border: 0; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
 .choices legend { font-weight: 600; margin-bottom: var(--space-1); }
