@@ -52,6 +52,7 @@ export function setSchoolProfile(db: Db, schoolId: string, input: Record<string,
     external_codes: plainObj(input.external_codes), why: str(input.why),
     ...(input.grade_scheme !== undefined ? { grade_scheme: str(input.grade_scheme) } : {}),
     ...(input.grade_labels !== undefined ? { grade_labels: plainObj(input.grade_labels) } : {}),
+    ...(input.template_key !== undefined ? { template_key: str(input.template_key), template_version: input.template_version ?? null } : {}),
     ...(input.base_version != null ? { base_version: Number(input.base_version) } : {}),
   })]);
 }
