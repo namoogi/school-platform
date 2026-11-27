@@ -35,7 +35,7 @@ export default async function UsagePage() {
 
       <section className="card">
         <div className="card-header"><h2>{t('usage.bySchool')}</h2><span className="fine">{t('usage.bySchoolSub')}</span></div>
-        <div className="table-wrap">
+        <div className="table-wrap" tabIndex={0} role="region" aria-label={t('usage.tableAria')}>
           <table className="grid-table" data-testid="usage-table">
             <thead><tr>
               <th scope="col">{t('usage.col.school')}</th><th scope="col" className="num">{t('usage.col.files')}</th><th scope="col" className="num">{t('usage.col.db')}</th><th scope="col" className="num">{t('usage.col.r2')}</th>

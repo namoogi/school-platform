@@ -1525,5 +1525,6 @@
   "design.retry": "Try again",
   "design.choose": "Choose this direction",
   "design.thumbAria": "View {label} full screen",
-  "design.thumbTitle": "{label} thumbnail preview"
+  "design.thumbTitle": "{label} thumbnail preview",
+  "usage.tableAria": "Usage by school table (scroll sideways)"
 }

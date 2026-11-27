@@ -1545,6 +1545,8 @@ export const CATALOG = {
   'design.choose': '이 방향 선택',
   'design.thumbAria': '{label} 전체 화면으로 보기',
   'design.thumbTitle': '{label} 축소 미리보기',
+  // 사용량(추가)
+  'usage.tableAria': '학교별 사용량 표(옆으로 넘겨 보기)',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
