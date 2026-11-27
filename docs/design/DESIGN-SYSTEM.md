@@ -42,11 +42,11 @@ CSS 클래스: `.btn .btn-primary|secondary|ghost|danger .btn-sm`, `.badge[data-
 | 파일 첨부 | **모든 파일 첨부는 `FileDrop`**(`src/components/FileDrop.tsx`). 끌어 놓기 · 눌러 고르기(단추, Enter/Space) · 붙여넣기(Ctrl+V) · 여러 파일 · 형식·크기 검사(`src/lib/file-check.ts`의 `checkFiles`) · 올리는 중 진행 막대와 취소 · 그림 미리보기 · 결과 글자 표시(✓ 올림 / 실패). 상태는 `role=status` aria-live로 읽어 준다. 화면이 `<input type=file>`을 직접 그리지 않는다 |
 | 업로드 진행 | 진행률이 필요하면 `uploadWithProgress`(XHR). `fetch`를 쓰면 `ctx.signal`만 넘겨 취소를 살리고 막대는 '올리는 중'으로 오간다 |
 | 검사 위치 | 브라우저 검사는 안내용이다. 서버 검사(매직 바이트·PDF 검사, PLATFORM-PATTERNS 2)를 대신하지 않는다 |
-| 입력 한 칸 | `Field`(`src/components/Field.tsx`): 위쪽 라벨 · 필수 `*`(+ 화면낭독기 '필수') · 도움말 · 오류(아이콘 + 문장, `aria-invalid`·`aria-describedby`) · 글자 수. 오류는 칸 바로 아래, 색만으로 알리지 않는다 |
+| 입력 한 칸 | `Field`(`src/components/Field.tsx`): 위쪽 라벨 · 필수 `*`(+ 화면낭독기 '필수') · 도움말 · 오류(아이콘 + 문장, `aria-invalid`·`aria-describedby`) · 글자 수. 라벨이 입력을 감싸고(글자 수는 라벨 밖), 오류는 칸 바로 아래, 색만으로 알리지 않는다. **`required` 칸은 `Field`로**(날 `<label>`에 `required`만 두면 화면에 `*`가 없다) |
 | 켜기/끄기 | 즉시 켜지고 꺼지는 설정은 `Switch`(체크박스 + `role=switch`, 손잡이 위치로도 구분). 여러 개 중 고르기는 체크박스, 하나만 고르기는 라디오 |
 | 기본 모양 | 전역 CSS가 select 화살표, 체크(✓ 모양)·라디오(가운데 점), 숫자(스피너 없이 ↑↓ 키·고정폭 숫자), 날짜(흐린 달력 단추, 다크에서 달력 창도 어둡게), 검색(돋보기·지우기)을 의미 토큰으로 그린다. 새 화면은 따로 꾸미지 않아도 된다 |
 | 특이성 | 전역 input·select·textarea 기본 규칙은 `:where()`(특이성 0). 화면별 크기·배치 규칙은 클래스 하나로 이긴다 |
-| 크기 | 입력 높이는 `--control-h`(학사형 40 · 분석형 34). 터치 기기(`pointer: coarse`)는 44px, 체크·스위치 줄도 44px |
+| 크기 | 입력 높이는 `--control-h`(학사형 40 · 분석형 34 · 촘촘히 32). 터치 기기(`pointer: coarse`)는 화면 형식·밀도와 관계없이 44px, 체크·스위치를 감싼 줄도 44px, 라벨 없이 놓인 체크·라디오는 24px(WCAG 2.5.8), 표 행 동작 select도 44px |
 | 초점 | 입력은 주 색 테두리 + 연한 고리, 체크·라디오·스위치는 2px 바깥선 |
 
 ## 도구 (ADR 0005)

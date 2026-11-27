@@ -1,4 +1,5 @@
 'use client';
+import { Field } from '@/components/Field';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
@@ -37,9 +38,9 @@ export function PlacementForm({ schoolId, current }: { schoolId: string; current
           {STATES.map((k) => <option key={k} value={k}>{t(`placement.state.${k}` as MsgKey)}</option>)}
         </select>
       </label>
-      <label>{t('placement.target')}<input name="target_url" type="url" placeholder="https://" defaultValue={current?.target_url ?? ''} required={state === 'moved' && tier !== 'shared'} /></label>
+      <Field label={t('placement.target')} required={state === 'moved' && tier !== 'shared'}><input name="target_url" type="url" placeholder="https://" defaultValue={current?.target_url ?? ''} /></Field>
       <label>{t('placement.cost')}<input name="monthly_cost_usd" type="number" min="0" step="0.01" defaultValue={current?.monthly_cost_usd ?? ''} /></label>
-      <label>{t('placement.reason')}<input name="reason" required maxLength={2000} /></label>
+      <Field label={t('placement.reason')} required><input name="reason" maxLength={2000} /></Field>
       <button type="submit" className="btn btn-primary">{t('placement.save')}</button>
       {msg && <p role="status" className={msg.error ? 'alert' : 'fine'}>{msg.text}</p>}
     </form>

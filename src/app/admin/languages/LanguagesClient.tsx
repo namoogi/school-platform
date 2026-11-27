@@ -1,4 +1,5 @@
 'use client';
+import { Field } from '@/components/Field';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
@@ -28,8 +29,8 @@ export function LanguageForm({ languages }: { languages: L[] }) {
   return (
     <form className="stack" onSubmit={submit} data-testid="language-form">
       <h2>{t('langAdmin.add')}</h2>
-      <label>{t('langAdmin.code')}<input name="code" required placeholder="vi, zh-Hant, ar" pattern="[a-z]{2,3}(-[A-Za-z0-9]{2,8})*" /></label>
-      <label>{t('langAdmin.name')}<input name="native_name" required maxLength={60} placeholder="Tiếng Việt" /></label>
+      <Field label={t('langAdmin.code')} required><input name="code" placeholder="vi, zh-Hant, ar" pattern="[a-z]{2,3}(-[A-Za-z0-9]{2,8})*" /></Field>
+      <Field label={t('langAdmin.name')} required><input name="native_name" maxLength={60} placeholder="Tiếng Việt" /></Field>
       <label>{t('langAdmin.direction')}
         <select name="direction" defaultValue="ltr"><option value="ltr">{t('langAdmin.ltr')}</option><option value="rtl">{t('langAdmin.rtl')}</option></select>
       </label>
@@ -66,8 +67,7 @@ export function MessagesImport({ languages }: { languages: L[] }) {
         <select value={lang} onChange={(e) => setLang(e.target.value)}>{languages.map((l) => <option key={l.code} value={l.code}>{l.native_name} ({l.code})</option>)}</select>
       </label>
       <p className="fine"><a href={`/api/admin/languages?export=${encodeURIComponent(lang)}`} download={`messages-${lang}.json`}>{t('langAdmin.export')}</a></p>
-      <label>JSON<textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} required aria-describedby="import-hint" /></label>
-      <p className="fine" id="import-hint">{t('langAdmin.importHint')}</p>
+      <Field label="JSON" required hint={t('langAdmin.importHint')}><textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} /></Field>
       <label className="check"><input type="checkbox" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} /> {t('langAdmin.overwrite')}</label>
       <button type="submit" className="btn btn-secondary">{t('langAdmin.import')}</button>
       {msg && <p role="status" className={msg.error ? 'alert' : 'fine'}>{msg.text}</p>}
