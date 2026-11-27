@@ -292,6 +292,26 @@ export const PRESETS: Record<string, { spec: CalcSpec; note: string }> = {
       },
     },
   },
+  us_letter_pf: {
+    note: '미국식 글자 성적 A·B·C·D·F(F는 한국식 E와 같은 맨 아래 등급). 가중 평균 → 정수 반올림 → 90/80/70/60, 그 밖 F. F는 성적 등급이므로 학생 판정 F를 P/F로 읽지 않는다. P/F는 과목 속성이거나 학생 판정이 P·NP일 때만',
+    spec: {
+      lets: {
+        raw: { op: 'round', args: [{ op: 'weighted_score' }], digits: 0 },
+        manual: { op: 'if', args: [{ var: 'entry.exists' }, { var: 'entry.level' }, { var: 'prior.level' }] },
+        manual_pf: { op: 'coalesce', args: [{ op: 'or', args: [
+          { op: '==', args: [{ var: 'let.manual' }, 'P'] }, { op: '==', args: [{ var: 'let.manual' }, 'NP'] },
+        ] }, false] },
+        is_pf: { op: 'or', args: [{ var: 'course.pass_fail' }, { var: 'let.manual_pf' }] },
+        letter: { op: 'band', args: [{ var: 'let.raw' }], bands: [[90, 'A'], [80, 'B'], [70, 'C'], [60, 'D']], else: 'F' },
+      },
+      outputs: {
+        score: { op: 'if', args: [{ var: 'let.is_pf' }, null, { var: 'let.raw' }] },
+        level: { op: 'if', args: [{ var: 'let.manual_pf' }, { var: 'let.manual' },
+          { op: 'if', args: [{ var: 'course.pass_fail' }, { op: 'if', args: [{ op: '>=', args: [{ var: 'let.raw' }, 60] }, 'P', 'NP'] }, { var: 'let.letter' }] }] },
+        passed: { op: 'if', args: [{ var: 'let.manual_pf' }, { op: '==', args: [{ var: 'let.manual' }, 'P'] }, { op: '>=', args: [{ var: 'let.raw' }, 60] }] },
+      },
+    },
+  },
   peer_teacher_mix: {
     note: '동료평가 20% + 교사평가 80%, 둘 중 하나라도 비면 계산하지 않음(null)',
     spec: {

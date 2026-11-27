@@ -18,7 +18,8 @@
 ## 한 일
 - `src/lib/calc/expr.ts`
   - 식 검사(`checkSpec`), 계산(`evaluate`), 반올림(`roundBy`), 가중 평균(`weightedScore`)
-  - 견본 5가지: 가중 평균, 역량 도달, 프로젝트 P/F, 동료·교사 혼합, 드리미 방식
+  - 견본 6가지: 가중 평균, 역량 도달, 프로젝트 P/F, 동료·교사 혼합, 드리미 방식(한국식 A–E), 미국식 A–D·F
+  - 선생님: "한국은 ABCDE, 외국은 ABCDF, E와 F가 같다" → 미국식은 학생 판정 F를 P/F로 읽지 않는다(점수를 지우지 않음)
 - 마이그레이션 `20261128000700_calc_rules.sql`
   - `calc_rules`: 학교·이름·판. 추가만 하고, 학교 구성원만 읽는다.
   - 명령 함수 `app.save_calc_rule`: 학교 관리자만, 409
@@ -29,7 +30,7 @@
 - 오류는 이름표(ADR 0039): `err.calcSpecInvalid`, `db.calcRuleCode`, `db.calcRuleSpec`
 
 ## 시험
-- `tests/calc-expr.test.ts` 15개(`test:unit`)
+- `tests/calc-expr.test.ts` 20개(`test:unit`)
   - 검사: 허용 밖 연산·변수, 개수, 깊이, 밴드 순서
   - 가중 평균, 반올림 경계(1.005·79.995·half_even), 3값 논리
   - 드리미: 89.5→A, 79.995→B, 비정규화, 만점 0 영역, P/F 출처 둘·성취도 남김

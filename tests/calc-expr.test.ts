@@ -116,3 +116,24 @@ describe('드리미포털 규칙 표현(회신 2026-11-27)', () => {
     expect(checkSpec({ outputs: { level: { op: 'band', args: [1], bands: [[60, 'D'], [90, 'A']] }, score: 1 } }).map((i) => i.message).join()).toMatch(/큰 것부터/);
   });
 });
+
+describe('한국식 A–E · 미국식 A–D·F (E 와 F 는 같은 맨 아래 등급)', () => {
+  const kr = PRESETS.rounded_twice_bands.spec;
+  const us = PRESETS.us_letter_pf.spec;
+  const at = (spec: CalcSpec, score: number, extra: object = {}) => evaluate(spec, { items: { a: { score, max: 100, weight: 100 } }, ...extra });
+  it('같은 59점이 한국식은 E, 미국식은 F', () => {
+    expect(at(kr, 59).level).toBe('E');
+    expect(at(us, 59)).toEqual({ score: 59, passed: false, level: 'F' });
+    expect(at(us, 90)).toEqual({ score: 90, passed: true, level: 'A' });
+  });
+  it('미국식: 학생 판정 F 는 성적 등급이라 P/F 로 읽지 않는다(점수를 지우지 않음)', () => {
+    expect(at(us, 55, { entry: { exists: true, level: 'F' } })).toEqual({ score: 55, passed: false, level: 'F' });
+    // 한국식(드리미)은 학생 판정 F 가 P/F 의 미통과 → 원점수를 비운다
+    expect(at(kr, 55, { entry: { exists: true, level: 'F' } })).toEqual({ score: null, passed: null, level: 'F' });
+  });
+  it('미국식 P/F: 과목이 P/F 면 P·NP, 학생 판정 P·NP 는 그대로', () => {
+    expect(at(us, 75, { course: { pass_fail: true } })).toEqual({ score: null, passed: true, level: 'P' });
+    expect(at(us, 40, { course: { pass_fail: true } })).toEqual({ score: null, passed: false, level: 'NP' });
+    expect(at(us, 95, { entry: { exists: true, level: 'np' } })).toEqual({ score: null, passed: false, level: 'NP' });
+  });
+});
