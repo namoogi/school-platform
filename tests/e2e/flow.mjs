@@ -1590,10 +1590,17 @@ try {
     await h.click('[data-testid=site-templates-link]');
     await h.waitForURL(/\/site\/templates$/);
     assert.equal(await h.locator('[data-testid=template-grid] article').count(), 7);
+    assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 7);
+    assert.equal((await h.request.get(`${BASE}/site-templates/story.jpg`)).status(), 200);
     await shot(h, '65-templates.png');
     await h.click('[data-testid=template-open-story]');
     await h.locator('[data-testid=template-preview]').waitFor();
     assert.match(await h.textContent('[data-testid=template-preview]'), /학교의 하루/);
+    // 86차: 기본은 가상 학교 예시 내용 · '안내 자리'로 바꾸면 적용될 그대로
+    assert.match(await h.textContent('[data-testid=template-preview]'), /숲속이야기학교/);
+    await h.click('[data-testid=template-view-guide]');
+    await h.waitForURL(/view=guide/);
+    assert.match(await h.textContent('[data-testid=template-preview]'), /\[학교 이름\]/);
     await h.click('nav[aria-label="템플릿 쪽"] a:has-text("교육철학")');
     await h.waitForURL(/page=philosophy/);
     assert.match(await h.textContent('[data-testid=template-preview]'), /우리가 소중히 여기는 것/);

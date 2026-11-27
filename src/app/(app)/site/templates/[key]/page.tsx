@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
 import { listEntries, LANG_LABEL, type Lang } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
+import { samplePages, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { PageHead } from '@/components/site/load';
 import { PageHeader } from '@/components/ui';
@@ -11,7 +12,7 @@ import { ApplyTemplate, AutofillPanel, MigratePanel } from '../TemplatesClient';
 export const dynamic = 'force-dynamic';
 
 /** 65차: 템플릿 미리보기 — 방문자 화면과 같은 그리기 코드에 템플릿 안내 내용을 넣는다(DB의 학교 자료는 읽지 않음) */
-export default async function TemplatePreview({ params, searchParams }: { params: Promise<{ key: string }>; searchParams: Promise<{ page?: string; lang?: string }> }) {
+export default async function TemplatePreview({ params, searchParams }: { params: Promise<{ key: string }>; searchParams: Promise<{ page?: string; lang?: string; view?: string }> }) {
   const { key } = await params;
   const sp = await searchParams;
   const t = SITE_TEMPLATES.find((x) => x.key === key);
@@ -22,18 +23,19 @@ export default async function TemplatePreview({ params, searchParams }: { params
   const pg = t.pages.find((p) => p.key === sp.page) ?? t.pages[0];
   const lang = (t.langs as string[]).includes(sp.lang ?? '') ? (sp.lang as Lang) : (t.langs[0] as Lang);
   const slots = t.slots.filter((s) => s.page === pg.key);
+  // 86차: 기본은 가상 학교 예시 내용으로 채운 완성 모습, '안내 자리'는 적용하면 들어갈 그대로
+  const view = sp.view === 'guide' || !TEMPLATE_SAMPLES[t.key] ? 'guide' : 'sample';
+  const shown = view === 'sample' ? samplePages(t)[pg.key] : pg.content;
+  const href = (o: { page?: string; lang?: string; view?: string }) =>
+    `/site/templates/${t.key}?page=${o.page ?? pg.key}&lang=${o.lang ?? lang}${(o.view ?? view) === 'guide' ? '&view=guide' : ''}`;
   return (
     <>
       <PageHeader title={`템플릿: ${t.name}`} crumbs={[{ label: '학교 홈페이지', href: '/site' }, { label: '템플릿', href: '/site/templates' }, { label: t.name }]}
         description={t.summary} />
       <div className="template-layout">
         <aside className="card stack" aria-label="템플릿 정보">
-          <h2>쪽</h2>
-          <nav className="stack" aria-label="템플릿 쪽">
-            {t.pages.map((p) => <Link key={p.key} href={`/site/templates/${t.key}?page=${p.key}&lang=${lang}`} aria-current={p.key === pg.key ? 'page' : undefined}>
-              {p.key === 'home' ? '홈' : p.content.title[lang] ?? Object.values(p.content.title)[0]} <small className="muted">/{p.key === 'home' ? '' : `p/${p.key}`}{pages.includes(p.key) ? ' · 이미 있음' : ''}</small></Link>)}
-          </nav>
-          {t.langs.length > 1 && <p className="fine">언어: {t.langs.map((l) => <Link key={l} href={`/site/templates/${t.key}?page=${pg.key}&lang=${l}`} aria-current={l === lang ? 'true' : undefined} style={{ marginRight: 8 }}>{LANG_LABEL[l as Lang]}</Link>)}</p>}
+          {t.langs.length > 1 && <p className="fine">언어: {t.langs.map((l) => <Link key={l} href={href({ lang: l })} aria-current={l === lang ? 'true' : undefined} style={{ marginRight: 8 }}>{LANG_LABEL[l as Lang]}</Link>)}</p>}
+          <p className="fine">쪽 {t.pages.length}개: {t.pages.map((p) => p.key === 'home' ? '/' : `/p/${p.key}`).join(' · ')}</p>
           <h2>이 쪽에서 채울 칸</h2>
           {slots.length === 0 ? <p className="muted">없음</p> : <ul className="issue-list">{slots.map((s) => <li key={s.id}><span><strong>{s.label}</strong> <small className="muted">{s.hint}</small></span></li>)}</ul>}
           <h2>꼭 알릴 정보</h2>
@@ -42,12 +44,28 @@ export default async function TemplatePreview({ params, searchParams }: { params
             : <p className="muted">템플릿 적용은 학교 관리자가 합니다.</p>}
 
         </aside>
-        <div className="site site-preview template-preview" data-theme={t.theme} lang={lang} data-testid="template-preview">
-          <main className="site-wrap site-main">
-            <PageHead content={pg.content} lang={lang} fallback={t.langs[0] as Lang} asset={() => ''} />
-            <SiteBlocks content={pg.content} lang={lang} fallback={t.langs[0] as Lang} assetUrl={() => ''} link={() => '#'} />
-          </main>
-        </div>
+        <section className="template-stage" aria-label="미리보기">
+          {/* 86차(사용자 지시): 미리보기에서 쪽마다 바로 넘겨 본다 — 쪽 탭을 미리보기 바로 위에 둔다 */}
+          <nav className="tabs template-page-tabs" aria-label="템플릿 쪽">
+            {t.pages.map((p) => <Link key={p.key} href={href({ page: p.key })} aria-current={p.key === pg.key ? 'page' : undefined}>
+              {p.key === 'home' ? '홈' : p.content.title[lang] ?? Object.values(p.content.title)[0]}{pages.includes(p.key) ? <small className="muted"> · 이미 있음</small> : null}</Link>)}
+          </nav>
+          {TEMPLATE_SAMPLES[t.key] && <div className="template-view-bar">
+            <nav className="segmented" aria-label="미리보기 내용">
+              <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined} data-testid="template-view-sample">예시 내용</Link>
+              <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined} data-testid="template-view-guide">안내 자리</Link>
+            </nav>
+            <p className="fine muted" data-testid="template-view-note">{view === 'sample'
+              ? `지어낸 가상 학교 '${TEMPLATE_SAMPLES[t.key].school}'로 채운 모습입니다. 시작하면 예시 글이 아니라 [ ] 안내 자리가 들어갑니다.`
+              : '시작하면 학교 쪽에 이대로 들어갑니다. [ ] 자리를 학교 내용으로 바꿔 주세요.'}</p>
+          </div>}
+          <div className="site site-preview template-preview" data-theme={t.theme} lang={lang} data-testid="template-preview" data-view={view}>
+            <main className="site-wrap site-main">
+              <PageHead content={shown} lang={lang} fallback={t.langs[0] as Lang} asset={() => ''} />
+              <SiteBlocks content={shown} lang={lang} fallback={t.langs[0] as Lang} assetUrl={() => ''} link={() => '#'} />
+            </main>
+          </div>
+        </section>
       </div>
       {school.isAdmin && t.pages.some((p) => pages.includes(p.key)) && <div className="settings-grid"><div className="card"><AutofillPanel templateKey={t.key} /></div><div className="card"><MigratePanel templateKey={t.key} /></div></div>}
     </>
