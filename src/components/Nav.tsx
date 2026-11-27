@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useI18n } from './I18nProvider';
-import { Gauge, Building2, Languages, CalendarRange, Users, BookOpen, ClipboardCheck, GraduationCap, CalendarCheck, ScrollText, Layers, MessagesSquare, FileText, FlaskConical, Globe, House, Link2, MessageSquareWarning, Package, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
+import { Gauge, Building2, Languages, Network, CalendarRange, Users, BookOpen, ClipboardCheck, GraduationCap, CalendarCheck, ScrollText, Layers, MessagesSquare, FileText, FlaskConical, Globe, House, Link2, MessageSquareWarning, Package, Palette, Settings, Upload, type LucideIcon } from 'lucide-react';
 
 // 레일 아이콘 (lucide, ISC 라이선스). 장식용이라 화면낭독기에는 숨기고 이름 글자를 함께 보인다.
 const ICONS: Record<string, LucideIcon> = {
   '/home': House, '/intake': Upload, '/site': Globe, '/review': ClipboardCheck, '/academics': CalendarRange, '/people': Users, '/courses': BookOpen, '/grades': GraduationCap, '/attendance': CalendarCheck, '/records': ScrollText, '/documents': FileText, '/packages': Package, '/requests': MessageSquareWarning, '/settings': Settings,
-  '/admin': Building2, '/admin/integrations': Link2, '/admin/control': MessagesSquare, '/admin/usage': Gauge, '/admin/baseline': Layers, '/admin/lab': FlaskConical, '/admin/languages': Languages, '/admin/design': Palette,
+  '/admin': Building2, '/admin/integrations': Link2, '/admin/control': MessagesSquare, '/admin/usage': Gauge, '/admin/baseline': Layers, '/admin/lab': FlaskConical, '/admin/languages': Languages, '/admin/placements': Network, '/admin/design': Palette,
 };
 
 /** label: 레일에 보이는 짧은 이름, title: 화면 이름(마우스 풍선·화면낭독기). 브라우저 기본 title 풍선은 쓰지 않는다 — 우리 풍선과 겹쳐 두 개가 뜨고 늦게 사라진다(90차) */

@@ -9,6 +9,9 @@
 ## 언어 (93차, ADR 0037)
 화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개), 98차 4묶음(설정·/my·/locked) 완료, 남은 한글 줄 819. 셸 밖 화면은 `providerValue(i18n)`로 공급자를 둔다. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db))`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
 
+## 공개 저장소 (2026-11-27)
+저장소를 공개로 바꿨다(Actions 무료 시간). 비밀값·실제 연락처·학생 정보를 하드코딩하지 않는다. `npm run check:repo`(CI)가 비밀값 모양·개인 메일·커밋된 `.env`를 막는다. 전환 때 전체 기록 180개 커밋을 검사해 실제 비밀값은 없었다. 이슈 #143에서 `@codex`로 Codex 클라우드에 일을 맡기는 길이 작동한다(👀 반응 = 착수).
+
 ## 학교 이전 (92차, ADR 0035)
 공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
 
