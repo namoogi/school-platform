@@ -2401,7 +2401,16 @@ label.check input { margin-top: 0.25em; }
 .grade-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); list-style: none; padding: 0; margin: var(--space-1) 0 0; }
 
 /* 110차: 칸이 많은 표는 글자를 꺾지 않고 표 틀 안에서 옆으로 넘긴다(휴대폰 폭에서 한 글자씩 꺾이던 수업 목록) */
-.grid-table.nowrap-cells td { white-space: nowrap; }
+.grid-table.nowrap-cells td, .grid-table.nowrap-cells th { white-space: nowrap; }
+
+/* 113차: 학사 관리 템플릿 — 남은 설정 점검표(세로 목록) */
+.setup-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.setup-list li { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.setup-list .dot { width: 24px; height: 24px; border-radius: var(--radius-full); display: grid; place-items: center; font-size: var(--fs-caption); font-weight: 700; border: 1px solid var(--border-default); background: var(--surface-default); color: var(--text-subtle); }
+.setup-list .done .dot { background: var(--success-bg); border-color: var(--success-border); color: var(--success-fg); }
+.setup-list [aria-current="step"] .dot { border-color: var(--brand-600); color: var(--brand-700); }
+.tpl-confirm { display: grid; gap: var(--space-2); }
+.tpl-confirm > span { display: block; }
 
 /* 37차 후속 2: 손가락 기기 누르는 대상 44px — 파일 끝에 두고 특이성을 높여, 화면별 작은 높이 규칙(.btn-sm 28px,
    .le-bar 32px, .item-meta select 24px 등)보다 항상 이긴다. 모양(글자 크기·여백)은 그대로, 누르는 높이만 올린다.

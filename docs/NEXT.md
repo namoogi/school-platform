@@ -1,4 +1,4 @@
-# 다음 세션 인계 (2026-11-27, 111차 끝)
+# 다음 세션 인계 (2026-11-27, 113차 끝)
 
 새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-91.md`(86~91차: `round-86.md`~`round-90.md`도) → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
@@ -34,7 +34,8 @@
 - 학년 체계: 학교가 한국식(초1~고3)·미국식(K·Grade 1~12)·커스텀을 고르면 학교급·학년을 빠진 것만 만든다(`/academics`, `src/lib/grade-schemes.ts`). 체계는 학교 관할 판 `grade_scheme`, 표기는 서수에서. 반은 학년 행을 가리킨다(`app.add_grade_homeroom`).
 - 시연 학교: 전체 관리 → '시연 학교 만들기'(`POST /api/admin/demo-school`) → `온누리 시연학교 (가상)`(`demo-academy`, 가명 '가상 ○○' 48명, 수업 36·마감·학년도 기록 마감·발행본). 감추려면 정지.
 - 110차: 수업에 학년 칸(빈 값 = 학교급 전체), 학기 시작 자동 수강은 학년 학생만, 마감 판이 있으면 목록에 '마감'.
-- 조사 `docs/research/sis-ux-2026-11.md`. 다음(2단계): 템플릿 5종(한국 일반·한국 대안·미국 K-12·국제·홈스쿨) = 관제 기본판 갈래 + 고르기·비교·사본·점검표 화면, 무학년·학년 넘기기. 관제 확인 대기: 마감한 수업의 수강 상태 쓰기를 막을지.
+- 113차: 학사 관리 템플릿 5종(`/academics/templates`): 관제 표 `academic_templates`(판), 고르면 학교급·학년·학기 구조·척도를 학교 사본으로(있는 것은 그대로), 관할 판에 템플릿 키·판, 남은 설정 점검표, 나란히 비교. 시연 학교는 '한국 일반' 템플릿으로 시작.
+- 조사 `docs/research/sis-ux-2026-11.md`. 다음: 숨길 구획을 성적·기록 화면이 읽기, 템플릿 새 판 → 학교 제안, 학교 AI 맞춤 안내 연결, 무학년·학년 넘기기. 관제 확인 대기: 마감한 수업의 수강 상태 쓰기를 막을지.
 
 ## 공개 저장소 (2026-11-27)
 저장소를 공개로 바꿨다(Actions 무료 시간). 비밀값·실제 연락처·학생 정보를 하드코딩하지 않는다. `npm run check:repo`(CI)가 비밀값 모양·개인 메일·커밋된 `.env`를 막는다. 전환 때 전체 기록 180개 커밋을 검사해 실제 비밀값은 없었다. 이슈 #143에서 `@codex`로 Codex 클라우드에 일을 맡기는 길이 작동한다(👀 반응 = 착수).
@@ -42,8 +43,8 @@
 ## 홈페이지 템플릿 (99차, Codex 협업)
 대표 3종(이야기·프로젝트·유치원)에 Codex가 생성한 예시 사진 22장(`public/site-templates/img/`, 프롬프트·규격 `docs/design/template-photo-manifest.json`)과 쪽마다 다른 배치(홈 + 안쪽 9쪽)가 들어갔다. 판: story 3, project 4, kinder 3. 다음은 골격 B·E와 나머지 5종 사진(16장, `docs/design/template-image-prompts.md`), 새 템플릿(재외 한글학교·기숙형·진로 특성화). Codex에게 맡기는 길은 `docs/COLLABORATION.md` 8절.
 
-## 홈페이지 레이아웃 (106·107차)
-키트 테마에 레이아웃 층(1200px 격자·구역 띠·구역 머리·한 줄 머리글·4칸 바닥글)이 들어갔다(`globals.css` 끝 '100차'·'107차' 주석 블록, `SiteFrame` kit 분기). 107차: 새 구역 모양 5가지(quicklinks·stages·stats·events·voices), 머리글 위 작은 줄, 대표 3종 홈 순서·입학 쪽. 다음: 나머지 5종 템플릿에 적용, 로고 줄. Codex 연결: Mac 폴더는 클라우드 세션에 제공되지 않음(`docs/COLLABORATION.md` 8절) → Claude 구현 + Codex PR 검토.
+## 홈페이지 레이아웃 (106·107·114차)
+키트 테마에 레이아웃 층(1200px 격자·구역 띠·구역 머리·한 줄 머리글·4칸 바닥글)이 들어갔다(`globals.css` 끝 '100차'·'107차' 주석 블록, `SiteFrame` kit 분기). 107차: 새 구역 모양 5가지(quicklinks·stages·stats·events·voices), 머리글 위 작은 줄, 대표 3종 홈 순서·입학 쪽. 114차: 나머지 5종에도 적용(알림 v3·입학 v4·사명 v3·국제 v3·한 쪽 v3). 다음: 5종 예시 사진 16장, 로고 줄. Codex 연결: Mac 폴더는 클라우드 세션에 제공되지 않음(`docs/COLLABORATION.md` 8절) → Claude 구현 + Codex PR 검토.
 
 ## 학교 이전 (92차, ADR 0035)
 공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
