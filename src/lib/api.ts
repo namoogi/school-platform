@@ -88,7 +88,7 @@ export function errorResponse(e: unknown) {
   return NextResponse.json({ error: '처리 중 오류가 발생했습니다.' }, { status: 500 });
 }
 
-function sameOrigin(req: Request) {
+export function sameOrigin(req: Request) {
   const origin = req.headers.get('origin');
   if (!origin) return req.headers.get('sec-fetch-site') !== 'cross-site';
   const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host');

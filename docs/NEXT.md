@@ -6,6 +6,12 @@
 ## 설명 방식 (82차, 꼭 지킬 것)
 선생님께 쓰는 모든 설명은 **핵심 요약 → 왜 필요한가 → 용어 풀이(쉬운 말 + 학교 예시) → 필요하면 도식**. 승인을 구할 때는 바뀌는 것/안 바뀌는 것/되돌릴 수 있는지. AGENTS.md '선생님께 설명할 때'.
 
+## 언어 (93차, ADR 0037)
+화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션.
+
+## 학교 이전 (92차, ADR 0035)
+공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
+
 ## UI 점검 (84차, ADR 0033)
 UI를 바꾸면 `docs/UI_REVIEW.md`: 로컬 서버 → `npm run ui:review -- <페이지>`(캡처·기계 검사) → Codex 점검(선생님 Mac CLI 또는 GitHub 코드 리뷰) → 선별·수정. 색은 `npm run lint:colors`(CI).
 - **85차부터 매시간 자동 개발 세션이 `docs/automation/QUEUE.md` 맨 위 'UI 점검' 표를 한 페이지씩 처리한다.** 화면 판정은 **자체 점검**이고 `통과`가 아니다. 독립 화면 검토(Codex가 스크린샷을 보는 길)는 아직 없다.

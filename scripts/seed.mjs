@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import pg from 'pg';
 import { pgOptions } from './pg-options.mjs';
 import { connectOrExplain } from './db-errors.mjs';
+import { applyPacks } from './i18n-packs.mjs';
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -88,6 +89,9 @@ try {
     `update private.app_users set is_platform_admin = false where is_platform_admin and not (lower(email) = any($1::text[]))
        and email <> 'inspector@onschools.internal'`, [admins]);
   console.log(`전체 관리자 ${admins.length}명` + (demoted ? `, 권한 해제 ${demoted}명` : ''));
+
+  // ADR 0037: 기본 번역 묶음(빈 칸만)
+  await applyPacks(client);
 
   await client.query('commit');
   console.log('예시 데이터 준비 완료');

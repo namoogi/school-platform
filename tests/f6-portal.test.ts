@@ -96,7 +96,8 @@ describe('기존 표 전수 RLS 점검 (지침 9)', () => {
       }
     }
     // 학교 목록·모듈 목록처럼 원래 누구나 보는 표는 여기 적는다(학생 자료 아님)
-    const allowed = new Set(['portal_accounts', 'module_catalog']);
+    // languages·ui_messages: 화면 언어 목록·문구(ADR 0037) — 로그인 화면에서도 읽는 공개 정보, 학생 자료 아님
+    const allowed = new Set(['portal_accounts', 'module_catalog', 'languages', 'ui_messages']);
     expect(seen.filter((x) => !allowed.has(x.split(':')[0]))).toEqual([]);
     // 함수: 구성원 전용 명령은 거부
     await expect(asUser(stuUser, (db) => rec.closeRecordYear(db, A.schoolId, stu, year, { base_version: 1, requestKey: 'f6-stu-try-1', reason: 'x' }))).rejects.toMatchObject({ code: '42501' });
