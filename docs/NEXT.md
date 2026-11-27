@@ -1,4 +1,4 @@
-# 다음 세션 인계 (2026-11-27, 110차 끝)
+# 다음 세션 인계 (2026-11-27, 111차 끝)
 
 새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-91.md`(86~91차: `round-86.md`~`round-90.md`도) → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
@@ -26,6 +26,9 @@
   - 서술 글자 수 한도(글자/byte)
   - 출력 프로필 연결
   - 첫 실습: 드리미학교 성적표 분석
+
+## 출석인정 판정 (111차)
+`app.attendance_days`가 출석인정 사유를 그 날짜에 유효한 코드 판으로만 본다(`docs/rounds/round-111.md`). 코드 판을 읽는 새 SQL은 항상 `[effective_from, effective_to)` 조건을 넣는다.
 
 ## 학사 템플릿·학년 체계·시연 학교 (109차, ADR 0043, 학사 시스템 개발 세션)
 - 학년 체계: 학교가 한국식(초1~고3)·미국식(K·Grade 1~12)·커스텀을 고르면 학교급·학년을 빠진 것만 만든다(`/academics`, `src/lib/grade-schemes.ts`). 체계는 학교 관할 판 `grade_scheme`, 표기는 서수에서. 반은 학년 행을 가리킨다(`app.add_grade_homeroom`).
