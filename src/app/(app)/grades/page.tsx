@@ -39,8 +39,8 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
   const values = Object.fromEntries(results.filter((r) => r.score != null).map((r) => [`${r.assessment_id}:${r.person_id}`, String(r.score)]));
   const note = Object.fromEntries(narratives.filter((n) => n.kind === 'subject_detail').map((n) => [n.person_id, n.body]));
   const totalWeight = course.reduce((a, x) => a + x.weight, 0);
-  // 평가 항목 이름은 데이터의 언어 칸: 화면 언어 → 한국어 → 첫 칸
-  const title = (m: Record<string, string>) => m[lang] ?? m.ko ?? Object.values(m)[0] ?? '';
+  // 평가 항목 이름은 데이터의 언어 칸: 화면 언어 → 한국어 → 영어 → 첫 칸
+  const title = (m: Record<string, string>) => m[lang] ?? m.ko ?? m.en ?? Object.values(m)[0] ?? '';
   const reasonField: FieldSpec[] = closure ? [{ name: 'reason', label: t('grades.correctionReason'), required: true }] : [];
   return (
     <>
