@@ -75,3 +75,8 @@ export async function getI18n(userPref?: string | null): Promise<I18n> {
   const dir = languages.find((l) => l.code === lang)?.direction ?? 'ltr';
   return { lang, dir, languages, dict, t: (key, vars) => formatMessage(dict[key] ?? CATALOG[key] ?? key, vars, lang) };
 }
+
+/** 로그인한 사람의 화면 언어 설정(없으면 null). 화면은 loadForPage 안에서 읽어 getI18n 에 넘긴다 */
+export async function userLang(db: Db): Promise<string | null> {
+  return ((await db.query('select ui_lang from public.user_preferences where user_id = app.uid()')).rows[0]?.ui_lang as string | undefined) ?? null;
+}
