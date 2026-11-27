@@ -34,6 +34,17 @@ describe('계산식 판', () => {
     expect(list.map((r) => [r.code, r.version])).toEqual([['course_score', 2]]);
   });
 
+  it('글자 수는 DB 의 jsonb::text 와 같게 세고, 넘치면 DB 에 닿기 전에 검사 문제로 거부한다(Codex 12b816e P2)', async () => {
+    const { jsonbTextLength, checkSpec } = await import('@/lib/calc/expr');
+    for (const v of [PRESETS.kr_high_common?.spec ?? spec, spec, { outputs: { level: 'A·한글', x: [1, 2.5, true, null, { a: 'b"c' }] } }]) {
+      const { rows: [r] } = await su.query('select length($1::jsonb::text) as n', [JSON.stringify(v)]);
+      expect(jsonbTextLength(v)).toBe(r.n);
+    }
+    const big = { outputs: { level: { op: 'count_levels', in: Array(30).fill('M') }, score: 1 }, lets: Object.fromEntries(Array.from({ length: 500 }, (_, i) => [`v${i}`, 'x'.repeat(40)])) };
+    expect(checkSpec(big).map((i) => i.message).join()).toMatch(/너무 깁니다/);
+    await expect(asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'too_big', spec: big, base_version: 0 }))).rejects.toThrow(/계산식을 고쳐 주세요/);
+  });
+
   it('모양이 틀린 식은 저장하지 않는다(DB 에 닿기 전)', async () => {
     await expect(asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'bad_rule', spec: { outputs: { score: { op: 'eval' } } }, base_version: 0 })))
       .rejects.toThrow(/계산식을 고쳐 주세요/);

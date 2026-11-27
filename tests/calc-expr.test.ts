@@ -161,3 +161,16 @@ describe('Codex 지적(1801f25): 자료 없음은 합·평균·최소·최대에
     expect(out({ op: 'weighted_score' }, { items: { a: { score: 3, max: 0, weight: 50 } } })).toBeNull();
   });
 });
+
+describe('Codex 지적(12b816e): 칸 값의 종류와 모르는 칸', () => {
+  const msgs = (spec: unknown) => checkSpec(spec).map((i) => i.message).join(' | ');
+  it('normalize 는 참거짓만(글자 "false" 는 거부)', () => {
+    expect(msgs({ outputs: { score: { op: 'weighted_score', normalize: 'false' } } })).toMatch(/normalize/);
+    expect(checkSpec({ outputs: { score: { op: 'weighted_score', normalize: false } } })).toEqual([]);
+  });
+  it('식 마디의 모르는 칸은 거부, count_levels in 은 30개·8자 이하', () => {
+    expect(msgs({ outputs: { score: { op: 'abs', args: [1], payload: 'x' } } })).toMatch(/알 수 없는 칸/);
+    expect(msgs({ outputs: { score: { op: 'count_levels', in: Array(31).fill('M') } } })).toMatch(/30개/);
+    expect(msgs({ outputs: { score: { op: 'count_levels', in: ['TOO_LONG_LEVEL'] } } })).toMatch(/1~8자/);
+  });
+});
