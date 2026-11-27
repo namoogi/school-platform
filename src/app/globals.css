@@ -144,6 +144,8 @@ code { font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; background: 
 .sidebar nav { display: flex; flex-direction: column; flex: 1; }
 .menu-label { font-size: var(--fs-caption); line-height: var(--lh-caption); font-weight: 600; color: var(--text-muted); letter-spacing: .02em; padding: 0 var(--space-3) var(--space-1); }
 .sidebar .menu-label { color: var(--rail-ink); font-size: 11px; text-align: center; padding: var(--space-3) var(--space-1) var(--space-1); border-top: 1px solid var(--rail-hover); margin: var(--space-2) var(--space-3) 0; opacity: .8; }
+/* 103차: 좁은 메뉴 막대에서 영어 묶음 이름(Academics 등)이 글자 중간에서 끊기지 않게 — 옆 여백을 줄이고 낱말 단위로만 줄을 바꾼다 */
+.sidebar .menu-label { margin-inline: var(--space-1); padding-inline: 0; letter-spacing: 0; overflow-wrap: normal; word-break: keep-all; hyphens: none; }
 .nav-group { display: grid; gap: 2px; }
 .nav-group:first-child .menu-label { border-top: 0; margin-top: 0; }
 .nav-item {
@@ -1937,6 +1939,11 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
   .price-row { flex-wrap: wrap; }
   .chatdock-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
+/* 언어 전환(93차, ADR 0037): 아이콘과 고르기 상자를 한 줄에. 좁은 화면에서는 아이콘을 빼 위 막대가 화면을 밀지 않게 한다(UI 점검 people, 390px 가로 밀림) */
+label.lang-switch { display: inline-flex; align-items: center; gap: var(--space-1); }
+@media (max-width: 600px) { .lang-switch > svg { display: none; } }
+/* 아주 좁은 화면: 이름은 이미 숨겨져 머리글자 동그라미만 남으므로 빼서 로그아웃이 화면 안에 들어오게 한다 */
+@media (max-width: 440px) { .topbar .account { display: none; } .topbar-right { gap: var(--space-1); } }
 
 /* ══ 89차(ADR 0034): 템플릿 완성 디자인 6종 — 맑은 하늘(clear)·힘찬 시작(bold)·작업실(studio)·등불(lamp)·지평(horizon)·씨앗(seed) ══
    공용 틀(K)은 --t-* 토큰만 쓰고, 테마마다 토큰 값과 몇 가지 모양만 바꾼다. 블록·쪽 구조는 모든 테마가 같다. */
