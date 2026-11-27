@@ -59,7 +59,7 @@ export default async function TemplateLive({ params, searchParams }: {
         profile={home.site} assetUrl={sampleAssetUrl} preview={{ link, langHref: (l) => href({ lang: l }) }}>
         <div data-testid="template-live">
           <PageHead content={content} lang={lang} fallback={fallback} asset={sampleAssetUrl} link={link} />
-          <SiteBlocks content={content} lang={lang} fallback={fallback} assetUrl={sampleAssetUrl} link={link} news={news} />
+          <SiteBlocks content={content} lang={lang} fallback={fallback} assetUrl={sampleAssetUrl} link={link} news={news} inquiry={{ slug: null, open: true, page: pg.key }} />
         </div>
       </SiteFrame>
     </>

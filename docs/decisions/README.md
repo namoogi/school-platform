@@ -38,6 +38,7 @@
 | [0032](0032-ai-by-subscription.md) | AI 작업은 구독 계정으로, 플랫폼 서버의 유료 API 분석은 두지 않는다 | 채택 |
 | [0033](0033-ui-review-loop.md) | UI 점검 루프: Claude 구현 → 기계 검사 → Codex 점검 → Claude 선별·수정 | 채택 |
 | [0034](0034-template-complete-design.md) | 홈페이지 템플릿 = 완성 디자인(색·글꼴·첫 화면 + 쪽 구성), 테마 8종 | 채택 |
+| [0036](0036-site-inquiries.md) | 홈페이지 방문·상담 신청 — 방문자 쓰기는 검사 함수 하나로만(0035는 계층형 백엔드 예약) | 채택 |
 
 상태: 제안 → 검토 중 → 채택 / 기각 / 대체됨(대체한 번호 적기). 채택된 기록은 고치지 않고, 바꿀 때는 새 기록을 만들어 "대체됨"으로 연결한다.
 새 기록은 [TEMPLATE.md](TEMPLATE.md)를 복사해 쓴다. 번호는 만들기 직전에 `ls docs/decisions`로 다음 빈 번호를 확인하고, 겹치면 CI(`npm run check:repo`)가 막는다.

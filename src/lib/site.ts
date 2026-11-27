@@ -151,6 +151,7 @@ function blockOf(x: Record<string, unknown>, at: string): Block {
       }
       return { type: 'video', url };
     }
+    case 'inquiry': return { type: 'inquiry', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, `${at} 안내`, 1000), noText) };
     case 'download': return {
       type: 'download', asset: asset(x.asset, at), label: opt(text(x.label, `${at} 이름`, 120), noText), note: opt(text(x.note, `${at} 설명`, 300), noText),
     };
@@ -257,13 +258,14 @@ export async function saveSettings(db: Db, schoolId: string, input: Record<strin
   const theme = isSiteTheme(input.theme) ? input.theme : 'campus';
   const title = text(input.site_title, '사이트 이름', 120);
   const open = input.is_open === true;
+  const inquiry = input.inquiry_open === true; // 91차: 방문·상담 신청 받기
   try {
     await db.query(
-      `insert into public.site_settings(school_id, public_slug, default_lang, langs, theme, site_title, is_open)
-       values ($1,$2,$3,$4,$5,$6,$7)
+      `insert into public.site_settings(school_id, public_slug, default_lang, langs, theme, site_title, is_open, inquiry_open)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)
        on conflict (school_id) do update set public_slug = excluded.public_slug, default_lang = excluded.default_lang, langs = excluded.langs,
-         theme = excluded.theme, site_title = excluded.site_title, is_open = excluded.is_open, updated_at = now()`,
-      [schoolId, slug, def, langs, theme, JSON.stringify(title), open]);
+         theme = excluded.theme, site_title = excluded.site_title, is_open = excluded.is_open, inquiry_open = excluded.inquiry_open, updated_at = now()`,
+      [schoolId, slug, def, langs, theme, JSON.stringify(title), open, inquiry]);
   } catch (e) { dbError(e); }
   return getSettings(db, schoolId);
 }
@@ -437,6 +439,7 @@ export async function memberAsset(db: Db, schoolId: string, id: string) {
 // ── 방문자 (공개된 판만) ─────────────────────────────────
 export type PublicSite = {
   slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme; title: LText;
+  /** 91차: 방문·상담 신청 받음 */ inquiry_open?: boolean;
   stories: boolean; has_news: boolean; nav: { key: string; title: LText }[];
   /** 47차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
   on_own_host?: boolean;

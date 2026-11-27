@@ -1702,6 +1702,47 @@ try {
     await h.locator('text=자료로 빈 칸 채움').first().waitFor();
     await ctx.close();
   });
+  await step('91차: 방문·상담 신청 — 관리자가 신청 받기를 켜고 유치원형 입학 쪽을 공개 → 방문자가 신청 → 관리자만 목록에서 보고 처리', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.check('[data-testid=site-inquiry-open]');
+    await h.click('text=설정 저장');
+    await h.waitForSelector('[data-testid=site-settings] [role=status]:has-text("저장했습니다")');
+    // 유치원형 시작(없는 쪽만 시안) → 입학 쪽 공개(같은 출처 API, 사람 관리자 권한)
+    const applied = await h.evaluate(async () => (await fetch('/api/site/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'kinder' }) })).json());
+    const adm = applied.created.find((c) => c.key === 'admission');
+    assert.ok(adm, '입학 쪽 시안');
+    assert.equal(await h.evaluate(async (id) => (await fetch(`/api/site/entries/${id}/publish`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, adm.id), 200);
+    // 방문자(로그인 없음)
+    const vctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const v = await vctx.newPage();
+    await v.goto(`${BASE}/s/dreamy-a/p/admission`);
+    const form = v.locator('[data-testid=site-inquiry]');
+    await form.waitFor();
+    await form.locator('input[name=name]').fill('합성 보호자');
+    await form.locator('input[name=contact]').fill('e2e-parent@example.org');
+    await form.locator('textarea[name=message]').fill('견학 날짜를 알고 싶어요');
+    await form.locator('[data-testid=site-inquiry-send]').click(); // 동의 없이: 브라우저 필수 검사로 막힘
+    assert.equal(await form.locator('[role=status]').count(), 0);
+    await form.locator('input[name=consent]').check();
+    await form.locator('[data-testid=site-inquiry-send]').click();
+    await form.locator('[role=status]').waitFor();
+    assert.match(await form.locator('[role=status]').textContent(), /신청을 받았습니다|Thank you|ได้รับแล้ว/); // 학교 기본 언어로 답함
+    await shot(v, '91-inquiry-visitor.png');
+    await vctx.close();
+    // 관리자 목록
+    await h.goto(`${BASE}/site`);
+    assert.match(await h.textContent('[data-testid=site-inquiries-link]'), /새 1건/);
+    await h.click('[data-testid=site-inquiries-link]');
+    await h.locator('[data-testid=inquiries]').waitFor();
+    assert.match(await h.textContent('[data-testid=inquiries]'), /e2e-parent@example.org/);
+    await h.click('[data-testid=inquiry-toggle]');
+    await h.locator('[data-testid=inquiry-toggle][aria-pressed=true]').waitFor();
+    await shot(h, '91-inquiries-admin.png');
+    await ctx.close();
+  });
   await step('87차: 주소만 넣고 새 디자인으로 옮기기 — 둘러보기 위 패널, 내부 주소는 서버가 거부해 화면에 알린다', async () => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const h = await ctx.newPage();

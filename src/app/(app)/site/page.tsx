@@ -26,7 +26,7 @@ const ICON: Record<Box, LucideIcon> = { settings: Settings2, page: FileText, new
  */
 export default async function SiteAdminPage({ searchParams }: { searchParams: Promise<{ box?: string; id?: string; new?: string; saved?: string }> }) {
   const sp = await searchParams;
-  const { school, settings, entries, assets, detail, tokens } = await loadForPage(async ({ db, school }) => {
+  const { school, settings, entries, assets, detail, tokens, newInquiries } = await loadForPage(async ({ db, school }) => {
     const entries = await listEntries(db, school.id);
     const pickId = sp.id && entries.some((e) => e.id === sp.id) ? sp.id : undefined;
     return {
@@ -36,6 +36,8 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
       detail: pickId ? await getEntry(db, school.id, pickId) : null,
       // 34·35차: AI 작업 공간(작업 토큰)은 학교 관리자만 본다(RLS도 관리자만)
       tokens: school.isAdmin && sp.box === 'settings' ? await listAgentTokens(db, school.id) : null,
+      // 91차: 처리하지 않은 방문·상담 신청 수(학교 관리자만, RLS도 관리자만)
+      newInquiries: school.isAdmin ? Number((await db.query(`select count(*) as n from public.site_inquiries where school_id = $1 and status = 'new'`, [school.id])).rows[0].n) : 0,
     };
   }, { module: 'homepage' });
 
@@ -59,6 +61,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
           <p className="fine">고칠 때마다 새 판으로 쌓이고, 방문자에게는 공개한 판만 보입니다. 공개·내림은 학교 관리자가 합니다.</p>
         </div>
         <Link className="btn btn-sm" href="/site/templates" data-testid="site-templates-link">템플릿 둘러보기</Link>
+        {school.isAdmin && <Link className="btn btn-sm" href="/site/inquiries" data-testid="site-inquiries-link">방문·상담 신청{newInquiries ? ` · 새 ${newInquiries}건` : ''}</Link>}
         {publicUrl && (settings!.is_open
           ? <Link className="btn btn-secondary btn-sm" href={publicUrl} target="_blank" data-testid="public-link">공개 홈페이지 열기{ownHost ? ` · ${ownHost}` : ""}</Link>
           : <StatusBadge tone="neutral">홈페이지 닫힘</StatusBadge>)}

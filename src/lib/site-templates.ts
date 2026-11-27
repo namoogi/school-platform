@@ -118,7 +118,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'admissions', version: 2, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
+    key: 'admissions', version: 3, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
     summary: '예비 학부모가 차별점을 보고 문의·견학·지원으로 이어지게 합니다.',
     fits: ['신입생을 모집하는 사립·국제학교'], firstScreen: '차별점 3가지 · 입학 단추',
     mustHave: ['입학 절차', '학비·추가 비용', '자주 묻는 질문', '문의처'],
@@ -140,6 +140,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ template: 'steps', title: kb('입학 절차', 'How to apply'), items: [{ title: ko('문의'), body: ko('[문의 방법]') }, { title: ko('견학·상담'), body: ko('[일정]') }, { title: ko('지원'), body: ko('[서류·전형]') }, { title: ko('결과'), body: ko('[발표·등록]') }] }),
         section({ template: 'facts', title: kb('학비와 비용', 'Tuition & fees'), items: [{ title: ko('[수업료]'), body: ko('[금액·납부]') }, { title: ko('[기타 비용]'), body: ko('[기숙사·급식·체험 등]') }] }),
         section({ template: 'facts', variant: 'faq', title: kb('자주 묻는 질문', 'FAQ'), items: [{ title: ko('[질문]'), body: ko('[답]') }] }),
+        { type: 'inquiry', title: kb('견학·상담 신청', 'Book a visit'), body: ko('[신청 안내 한 줄]') },
         section({ template: 'cta', title: kb('견학 신청', 'Visit us'), body: ko('[연락처·견학 가능 요일]'), button: { label: kb('문의하기', 'Contact'), href: '/p/admissions' } }),
       ]),
     ],
@@ -251,7 +252,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     // 90차: 대표 3종의 유치원(골격 D 그래픽 마스크형) — 둥글게 오린 놀이 사진, 연령별 반, 하루 일과 시간 띠, 학부모 질문
-    key: 'kinder', version: 1, name: '유치원형', theme: 'play', langs: ['ko'],
+    key: 'kinder', version: 2, name: '유치원형', theme: 'play', langs: ['ko'],
     summary: '아이들의 하루와 반, 학부모가 궁금한 것을 사진과 함께 따뜻하게 보여 줍니다.',
     fits: ['유치원·어린이집', '초등 저학년 중심 학교'], firstScreen: '둥근 놀이 사진 · 우리 반 · 하루 일과',
     mustHave: ['연령별 반 안내', '하루 일과', '급식·건강 안내', '입학(입소) 상담 방법'],
@@ -280,6 +281,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       page('admission', 3, ko('입학 안내'), [
         section({ template: 'steps', title: ko('입학(입소) 절차'), items: [{ title: ko('상담'), body: ko('[상담 방법]') }, { title: ko('방문'), body: ko('[둘러보기 일정]') }, { title: ko('신청'), body: ko('[서류]') }, { title: ko('적응'), body: ko('[첫 주 적응 안내]') }] }),
         section({ template: 'facts', title: ko('비용'), items: [{ title: ko('[교육비]'), body: ko('[금액·지원]') }, { title: ko('[기타 비용]'), body: ko('[급식·차량·특별활동]') }] }),
+        // 91차: 방문·상담 신청 칸(학교가 설정에서 '신청 받기'를 켜야 보임)
+        { type: 'inquiry', title: ko('방문·상담 신청'), body: ko('[신청 안내 한 줄]') },
         section({ template: 'cta', title: ko('방문 상담'), body: ko('[연락처·상담 가능 시간]'), button: { label: ko('연락하기'), href: '/p/admission' } }),
       ]),
     ],

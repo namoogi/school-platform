@@ -2112,3 +2112,18 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 /* 90차: 거른 항목 숨기기 — 카드·사진 칸의 display 가 hidden 속성을 덮지 않게 */
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec .sec-filter :is(.sec-photos, .sec-cards) > li[hidden], .site .sec-filter li[hidden] { display: none; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-photos img { border-radius: var(--t-radius); }
+/* 91차(ADR 0036): 방문·상담 신청 칸 — 모든 디자인 공통(색은 각 디자인의 의미 토큰) */
+.site-inquiry { display: grid; gap: var(--space-4); padding: clamp(20px, 4vw, 40px); background: var(--surface-default); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.site-inquiry-form { display: grid; gap: var(--space-3); max-width: 640px; }
+.site-inquiry-form label { display: grid; gap: var(--space-1); font-weight: 600; }
+.site-inquiry-form :is(input:not([type="radio"]):not([type="checkbox"]), textarea) { min-height: 44px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-input, var(--border-default)); border-radius: var(--radius-md); background: var(--surface-default); color: var(--text-default); font: inherit; }
+.site-inquiry-form fieldset { border: 0; padding: 0; margin: 0; }
+.site-inquiry-form legend { font-weight: 600; margin-bottom: var(--space-1); }
+.site-inquiry-kinds { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.site-inquiry-kinds label, .site-inquiry-consent { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; font-weight: 500; }
+.site-inquiry-consent { align-items: flex-start; font-size: var(--fs-body-sm); }
+.site-inquiry-consent input { margin-top: 4px; }
+.site-inquiry-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.site-inquiry-form .site-button { justify-self: start; }
+.site-inquiry-ok { color: var(--success-fg); font-weight: 600; }
+.site-inquiry-error { color: var(--danger-fg); font-weight: 600; }
