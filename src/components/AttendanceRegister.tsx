@@ -40,7 +40,7 @@ export function AttendanceRegister({ day, rows, kinds, reasons, disabled }: { da
   return (
     <form onSubmit={save} className="stack" data-testid="register">
       <div className="row-wrap"><button type="button" className="btn btn-sm" onClick={allPresent}>{t('register.allPresent')}</button></div>
-      <div className="table-wrap"><table className="grid-table">
+      <div className="table-wrap" tabIndex={0} role="region" aria-label={t('nav.attendance')}><table className="grid-table register-table">
         <thead><tr><th scope="col">{t('common.student')}</th><th scope="col">{t('register.col.attendance')}</th><th scope="col">{t('register.col.reason')}</th><th scope="col">{t('register.col.note')}</th></tr></thead>
         <tbody>{rows.map((r) => {
           const x = v[r.person_id];
