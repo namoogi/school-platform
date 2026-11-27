@@ -637,6 +637,8 @@ export const CATALOG = {
   'grade.preset.kr_achievement': '한국 성취평가제 A–E',
   'grade.preset.us_letter': '미국 글자 성적 A–F(GPA 4.0)',
   'grade.preset.pass_fail': '통과·미통과(P/F)',
+  'grade.preset.kr_abc': '한국 A·B·C(체육·예술·과학탐구실험)',
+  'grade.preset.us_plus_minus': '미국 ± 글자 성적(A+…F, GPA 4.0)',
   'grade.attempt.completed': '이수',
   'grade.attempt.failed': '미이수',
   'grade.attempt.incomplete': '미완료',

@@ -15,6 +15,7 @@
  *
  * - course: { pass_fail } (과목 속성으로 P/F 인지)
  * - entry: { exists, level } (이번 평가 입력 행이 있는지, 그 행에 적힌 성취도. 예 'P'·'F'. A~E 과목 안에 P 학생이 섞일 수 있다)
+ * - support: { achievement, attendance } (한국 고등: 최소 성취수준 보장지도·추가학습 이수 여부)
  * - prior: { level } (이미 저장된 기록의 성취도. 드리미는 입력 행이 없을 때만 이 값을 이어받는다 — 포털 정정 2026-11-27 ②③)
  *
  * 빈 값 규칙(3값): null 은 '자료 없음'이고 0점·미달과 다르다(드리미포털 회신 2026-11-27, 사고에서 나온 규칙).
@@ -43,6 +44,8 @@ export type CalcInput = {
   course?: { pass_fail?: boolean };
   entry?: { exists?: boolean; level?: string | null };
   prior?: { level?: string | null };
+  /** 이수 보충(한국 고등): 최소 성취수준 보장지도(achievement)·과목 출석 미달 추가학습(attendance)을 마쳤는지 */
+  support?: { achievement?: boolean; attendance?: boolean };
 };
 export type CalcOutput = { score: number | null; passed: boolean | null; level: string | null };
 
@@ -52,7 +55,7 @@ const BOOL_OPS = new Set(['and', 'or', 'not']);
 const SPECIAL = new Set(['if', 'round', 'weighted_score', 'count_levels', 'missing', 'count', 'coalesce', 'band']);
 export const OPS = [...NUM_OPS, ...CMP_OPS, ...BOOL_OPS, ...SPECIAL];
 const ROUND_MODES = new Set(['half_up', 'half_even', 'floor', 'ceil', 'trunc']);
-const VAR_RE = /^(items\.[a-z0-9][a-z0-9_.-]{0,40}\.(score|weight|max|submitted)|attendance\.(rate|present_days|absent_days)|competencies\.(count)|credits|course\.pass_fail|entry\.(exists|level)|prior\.level|let\.[a-z][a-z0-9_]{0,30})$/;
+const VAR_RE = /^(items\.[a-z0-9][a-z0-9_.-]{0,40}\.(score|weight|max|submitted)|attendance\.(rate|present_days|absent_days)|competencies\.(count)|credits|course\.pass_fail|entry\.(exists|level)|prior\.level|support\.(achievement|attendance)|let\.[a-z][a-z0-9_]{0,30})$/;
 const MAX_NODES = 400;
 const MAX_DEPTH = 24;
 
@@ -192,6 +195,8 @@ function getVar(path: string, input: CalcInput, lets: Record<string, V>): V {
   if (path === 'entry.exists') return input.entry?.exists ?? false;
   if (path === 'entry.level') return levelOf(input.entry?.level);
   if (path === 'prior.level') return levelOf(input.prior?.level);
+  if (path === 'support.achievement') return input.support?.achievement ?? null;
+  if (path === 'support.attendance') return input.support?.attendance ?? null;
   if (path === 'competencies.count') return input.competencies?.length ?? 0;
   if (path.startsWith('attendance.')) {
     const a = input.attendance as Record<string, number | null> | undefined;
@@ -235,6 +240,11 @@ export function sanitizeInput(raw: unknown): CalcInput {
   if (isObj(r.course) && typeof r.course.pass_fail === 'boolean') out.course = { pass_fail: r.course.pass_fail };
   if (isObj(r.entry)) out.entry = { exists: r.entry.exists === true, level: strOrNull(r.entry.level) };
   if (isObj(r.prior)) out.prior = { level: strOrNull(r.prior.level) };
+  if (isObj(r.support)) {
+    out.support = {};
+    if (typeof r.support.achievement === 'boolean') out.support.achievement = r.support.achievement;
+    if (typeof r.support.attendance === 'boolean') out.support.attendance = r.support.attendance;
+  }
   return out;
 }
 
@@ -292,6 +302,81 @@ export function evaluate(spec: CalcSpec, rawInput: CalcInput): CalcOutput {
   const levelV = spec.outputs.level === undefined ? null : ev(spec.outputs.level);
   return { score, passed: tri(passedV), level: levelV == null ? null : String(levelV) };
 }
+
+// ── 국가 기준 견본(ADR 0041). 기본판이고, 학교는 자기 성적표를 분석해 이 중 가까운 것을 골라 고쳐 쓴다 ──
+// 근거: 2026 학교생활기록부 기재요령(고·중) 별표 9, 미국은 흔한 관행(학교·교육구마다 다름). docs/research/kr-us-grading-2026-11.md
+const V = (name: string): Expr => ({ var: name });
+const L = (name: string): Expr => ({ var: `let.${name}` });
+const KR_TOTAL = { op: 'round', args: [{ op: 'weighted_score', normalize: false }], digits: 2 } as Expr; // 환산점수 합계, 소수 셋째 자리 반올림
+const KR_RAW = { op: 'round', args: [L('total')], digits: 0 } as Expr; // 원점수: 합계를 소수 첫째 자리에서 반올림
+const TWO_THIRDS = { op: '/', args: [2, 3] } as Expr;
+const yes = (e: Expr): Expr => ({ op: 'coalesce', args: [e, false] });
+/** 과목 출석률 2/3 이상, 미달이면 추가학습 이수로 이수 처리(고등 2025 입학생부터) */
+const KR_ATT_OK = { op: 'or', args: [{ op: '>=', args: [V('attendance.rate'), TWO_THIRDS] }, yes(V('support.attendance'))] } as Expr;
+const band = (bands: [number, string][], otherwise: string | undefined): Expr => ({ op: 'band', args: [L('raw')], bands, ...(otherwise ? { else: otherwise } : {}) });
+const KR_AE: [number, string][] = [[90, 'A'], [80, 'B'], [70, 'C'], [60, 'D']];
+/** 교양처럼 과목이 P 이면 원점수를 비우고 P */
+const krPf = (score: Expr, level: Expr) => ({
+  score: { op: 'if', args: [V('course.pass_fail'), null, score] } as Expr,
+  level: { op: 'if', args: [V('course.pass_fail'), 'P', level] } as Expr,
+});
+/** 공통과목(40% 미도달은 최소 성취수준 보장지도를 마쳐야 이수, 그때 맨 아래 등급) */
+const krFloor40 = (bands: [number, string][], bottom: string): CalcSpec => ({
+  lets: { total: KR_TOTAL, raw: KR_RAW, reached: { op: '>=', args: [L('raw'), 40] } },
+  outputs: {
+    ...krPf(L('raw'), { op: 'if', args: [L('reached'), band([...bands, [40, bottom]], undefined), { op: 'if', args: [yes(V('support.achievement')), bottom, 'I'] }] }),
+    passed: { op: 'and', args: [KR_ATT_OK, { op: 'or', args: [L('reached'), yes(V('support.achievement'))] }] },
+  },
+});
+const krPlain = (bands: [number, string][], bottom: string, withCredit: boolean): CalcSpec => ({
+  lets: { total: KR_TOTAL, raw: KR_RAW },
+  outputs: { ...krPf(L('raw'), band(bands, bottom)), ...(withCredit ? { passed: KR_ATT_OK } : {}) },
+});
+const US_PM: [number, string][] = [[97, 'A+'], [93, 'A'], [90, 'A-'], [87, 'B+'], [83, 'B'], [80, 'B-'], [77, 'C+'], [73, 'C'], [70, 'C-'], [67, 'D+'], [63, 'D'], [60, 'D-']];
+
+export const KR_US_PRESETS: Record<string, { spec: CalcSpec; note: string }> = {
+  kr_high_common: {
+    note: '한국 고등 공통과목(2026 기재요령): 환산점수 합계 소수 2자리 → 원점수 정수 → A 90·B 80·C 70·D 60·E 40 이상. 40 미만은 최소 성취수준 보장지도를 마치면 E·이수, 아니면 I(미이수). 과목 출석률 2/3 미만은 추가학습을 마쳐야 이수',
+    spec: krFloor40(KR_AE, 'E'),
+  },
+  kr_high_science_lab: {
+    note: '한국 고등 과학탐구실험: A 80·B 60·C 40 이상. 40 미만은 보장지도 이수 시 C, 아니면 I. 출석률 2/3 규칙 같음',
+    spec: krFloor40([[80, 'A'], [60, 'B']], 'C'),
+  },
+  kr_high_elective: {
+    note: '한국 고등 선택과목: A 90·B 80·C 70·D 60, 그 밖 E. 이수는 과목 출석률 2/3(미달이면 추가학습). 과목이 P/F(교양)면 P·원점수 빈칸',
+    spec: krPlain(KR_AE, 'E', true),
+  },
+  kr_high_arts_pe: {
+    note: '한국 고등 체육·예술: A 80·B 60, 그 밖 C. 이수는 과목 출석률 2/3',
+    spec: krPlain([[80, 'A'], [60, 'B']], 'C', true),
+  },
+  kr_middle: {
+    note: '한국 중학교: 원점수로 A 90·B 80·C 70·D 60, 그 밖 E(과목별 이수 판정 없음). 자유학기 과목(과목 P/F)은 P, 원점수·과목평균·수강자수 빈칸',
+    spec: krPlain(KR_AE, 'E', false),
+  },
+  kr_middle_arts_pe: {
+    note: '한국 중학교 체육·예술(음악·미술): A 80·B 60, 그 밖 C. 학생부에는 성취도만 적는다(원점수 표기는 출력 프로필 몫)',
+    spec: krPlain([[80, 'A'], [60, 'B']], 'C', false),
+  },
+  us_letter_plus_minus: {
+    note: '미국식 ± 글자 성적(흔한 표, 학교마다 다름): 97 A+ · 93 A · 90 A- … 60 D-, 그 밖 F. 정규화 가중 평균 → 정수 반올림. 60 이상이면 학점 인정. P/F는 과목 속성·학생 판정 P·NP. 평점(GPA)은 척도 판의 points로 모집단 계산(population.gpa)',
+    spec: {
+      lets: {
+        raw: { op: 'round', args: [{ op: 'weighted_score' }], digits: 0 },
+        manual: { op: 'if', args: [V('entry.exists'), V('entry.level'), V('prior.level')] },
+        manual_pf: yes({ op: 'or', args: [{ op: '==', args: [L('manual'), 'P'] }, { op: '==', args: [L('manual'), 'NP'] }] }),
+        is_pf: { op: 'or', args: [V('course.pass_fail'), L('manual_pf')] },
+      },
+      outputs: {
+        score: { op: 'if', args: [L('is_pf'), null, L('raw')] },
+        level: { op: 'if', args: [L('manual_pf'), L('manual'),
+          { op: 'if', args: [V('course.pass_fail'), { op: 'if', args: [{ op: '>=', args: [L('raw'), 60] }, 'P', 'NP'] }, band(US_PM, 'F')] }] },
+        passed: { op: 'if', args: [L('manual_pf'), { op: '==', args: [L('manual'), 'P'] }, { op: '>=', args: [L('raw'), 60] }] },
+      },
+    },
+  },
+};
 
 // ── 일반형 견본(대안학교에 흔한 방식). 학교가 골라 고쳐 쓴다 ──
 export const PRESETS: Record<string, { spec: CalcSpec; note: string }> = {
@@ -368,5 +453,5 @@ export const PRESETS: Record<string, { spec: CalcSpec; note: string }> = {
       lets: { mix: { op: '+', args: [{ op: '*', args: [{ var: 'items.peer.score' }, 0.2] }, { op: '*', args: [{ var: 'items.teacher.score' }, 0.8] }] } },
       outputs: { score: { op: 'round', args: [{ var: 'let.mix' }], digits: 1 }, passed: { op: '>=', args: [{ var: 'let.mix' }, 60] } },
     },
-  },
+  },  ...KR_US_PRESETS,
 };

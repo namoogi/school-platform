@@ -28,6 +28,19 @@ export const SCALE_PRESETS: Record<string, { kind: 'letter' | 'level' | 'pass_fa
       { code: 'F', label: { en: 'F', ko: 'F' }, min: 0, points: 0, earns_credit: false },
     ],
   },
+  kr_abc: {
+    kind: 'letter', why: '한국 체육·예술(80/60)·과학탐구실험(80/60/40) A·B·C — 2026 기재요령 별표 9. 분할점은 학교가 고쳐 새 판으로',
+    bands: [
+      { code: 'A', label: { ko: 'A', en: 'A' }, min: 80 }, { code: 'B', label: { ko: 'B', en: 'B' }, min: 60 },
+      { code: 'C', label: { ko: 'C', en: 'C' }, min: 0 }, { code: 'I', label: { ko: '미이수', en: 'Incomplete' }, min: null, earns_credit: false },
+    ],
+  },
+  us_plus_minus: {
+    kind: 'letter', why: '미국 ± 글자 성적과 4.0 평점(A- 3.7·B+ 3.3 …, College Board BigFuture 표). 분할점·A+ 평점은 학교마다 다름',
+    bands: ([['A+', 97, 4], ['A', 93, 4], ['A-', 90, 3.7], ['B+', 87, 3.3], ['B', 83, 3], ['B-', 80, 2.7], ['C+', 77, 2.3], ['C', 73, 2], ['C-', 70, 1.7], ['D+', 67, 1.3], ['D', 63, 1], ['D-', 60, 0.7]] as const)
+      .map(([code, min, points]) => ({ code, label: { en: code, ko: code }, min, points } as Band))
+      .concat([{ code: 'F', label: { en: 'F', ko: 'F' }, min: 0, points: 0, earns_credit: false }]),
+  },
   pass_fail: {
     kind: 'pass_fail', why: 'P/F — 통과 기준은 학교가 정함(기본 60)',
     bands: [{ code: 'P', label: { en: 'Pass', ko: '통과' }, min: 60 }, { code: 'F', label: { en: 'Fail', ko: '미통과' }, min: 0, earns_credit: false }],
