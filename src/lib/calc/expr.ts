@@ -325,7 +325,8 @@ const krFloor40 = (bands: [number, string][], bottom: string): CalcSpec => ({
   lets: { total: KR_TOTAL, raw: KR_RAW, reached: { op: '>=', args: [L('raw'), 40] } },
   outputs: {
     ...krPf(L('raw'), { op: 'if', args: [L('reached'), band([...bands, [40, bottom]], undefined), { op: 'if', args: [yes(V('support.achievement')), bottom, 'I'] }] }),
-    passed: { op: 'and', args: [KR_ATT_OK, { op: 'or', args: [L('reached'), yes(V('support.achievement'))] }] },
+    // 보충 이수는 '40 미만이 확인된' 학생에게만 쓴다. 점수가 없으면(reached = null) 이수 여부도 null(Codex #166 P2)
+    passed: { op: 'and', args: [KR_ATT_OK, { op: 'if', args: [L('reached'), true, yes(V('support.achievement'))] }] },
   },
 });
 const krPlain = (bands: [number, string][], bottom: string, withCredit: boolean): CalcSpec => ({

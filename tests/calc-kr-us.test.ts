@@ -28,6 +28,11 @@ describe('한국 고등 공통과목(kr_high_common)', () => {
     expect(run('kr_high_common', two(93, 93, { attendance: { rate: 0.6 } }))).toEqual({ score: 93, passed: false, level: 'A' });
     expect(run('kr_high_common', two(93, 93, { attendance: { rate: 0.6 }, support: { attendance: true } })).passed).toBe(true);
   });
+  it('점수가 없으면 보충 이수가 있어도 이수 여부는 null(Codex #166 P2)', () => {
+    for (const code of ['kr_high_common', 'kr_high_science_lab']) {
+      expect(run(code, { attendance: { rate: 1 }, support: { achievement: true } })).toEqual({ score: null, passed: null, level: null });
+    }
+  });
   it('출석 자료가 없으면 이수 여부는 null(통과로 접지 않음)', () => {
     expect(run('kr_high_common', { items: two(80, 80).items }).passed).toBeNull();
   });
