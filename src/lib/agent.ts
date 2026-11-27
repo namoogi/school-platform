@@ -32,11 +32,11 @@ export const AGENT_PERMS = { read: '읽기', upload: '파일 올리기', create:
 export type AgentPerm = keyof typeof AGENT_PERMS;
 const KEY_RE = /^[a-z0-9][a-z0-9-]{0,59}$/;
 function kindOf(v: string): AgentEntryKind {
-  if (!(ENTRY_KINDS as readonly string[]).includes(v)) throw new NotFoundError('항목 종류는 story·page·news 입니다.');
+  if (!(ENTRY_KINDS as readonly string[]).includes(v)) throw new NotFoundError('err.agent.kind');
   return v as AgentEntryKind;
 }
 function keyOf(v: string) {
-  if (!KEY_RE.test(v)) throw new ValidationError('주소 이름이 올바르지 않습니다.');
+  if (!KEY_RE.test(v)) throw new ValidationError('db.badSlug');
   return v;
 }
 export type AgentEntry = { kind: AgentEntryKind; key: string; meta: Record<string, string>; live_version: number | null; latest: { version: number; content: Content; note: string | null } };
@@ -86,7 +86,7 @@ export async function agentCreateEntry(db: Db, token: string, kind: string, inpu
 /** 38차: 항목 정보(동화: virtue·character·text_in_image)·순서. edit 권한 */
 export async function agentUpdateMeta(db: Db, token: string, kind: string, key: string, input: Record<string, unknown>) {
   const sort = input.sort == null ? null : Number(input.sort);
-  if (sort !== null && (!Number.isInteger(sort) || sort < 0 || sort > 9999)) throw new ValidationError('순서는 0~9999 정수입니다.');
+  if (sort !== null && (!Number.isInteger(sort) || sort < 0 || sort > 9999)) throw new ValidationError('err.agent.order');
   return one<Record<string, unknown>>(db, 'select agent.update_meta($1, $2, $3, $4, $5) as r',
     [token, kindOf(kind), keyOf(key), JSON.stringify(input.meta && typeof input.meta === 'object' ? input.meta : {}), sort]);
 }
@@ -105,11 +105,11 @@ export type EditOp =
   | { op: 'hide'; index: number } | { op: 'set'; path: EditPath; value: unknown };
 export async function agentEditOps(db: Db, token: string, kind: string, key: string, input: Record<string, unknown>) {
   const ops = Array.isArray(input.ops) ? (input.ops as EditOp[]) : null;
-  if (!ops || !ops.length || ops.length > 100) throw new ValidationError('ops 는 1~100개 연산 배열이어야 합니다.');
+  if (!ops || !ops.length || ops.length > 100) throw new ValidationError('err.agent.ops');
   const cur = await agentEntry(db, token, kind, key);
   let c: Content = cur.latest.content;
   const idx = (v: unknown, n: number, at: string) => {
-    if (!Number.isInteger(v) || (v as number) < 0 || (v as number) >= n) throw new ValidationError(`${at}: 블록 번호가 범위 밖입니다(0~${n - 1}).`);
+    if (!Number.isInteger(v) || (v as number) < 0 || (v as number) >= n) throw new ValidationError('err.agent.blockRange', { at, max: n - 1 });
     return v as number;
   };
   ops.forEach((o, i) => {
@@ -121,11 +121,11 @@ export async function agentEditOps(db: Db, token: string, kind: string, key: str
       case 'hide': c = toggleHidden(c, idx(o.index, c.blocks.length, at)); break;
       case 'set': {
         if (!Array.isArray(o.path) || !o.path.length || o.path.some((p) => typeof p !== 'string' && typeof p !== 'number') || ['__proto__', 'constructor', 'prototype'].some((b) => o.path.includes(b))) {
-          throw new ValidationError(`${at}: path 가 올바르지 않습니다.`);
+          throw new ValidationError('err.agent.path', { at });
         }
         c = setAt(c, o.path, o.value); break;
       }
-      default: throw new ValidationError(`${at}: 알 수 없는 연산입니다(move·insert·remove·hide·set).`);
+      default: throw new ValidationError('err.agent.unknownOp', { at });
     }
   });
   return agentSaveEntry(db, token, kind, key, { content: c, note: input.note ?? `구조 바꾸기 ${ops.length}건`, base_version: input.base_version });
@@ -137,7 +137,7 @@ export async function agentEditOps(db: Db, token: string, kind: string, key: str
  */
 export async function agentPublish(db: Db, token: string, kind: string, key: string, input: Record<string, unknown>) {
   const v = input.version == null ? null : Number(input.version);
-  if (v !== null && (!Number.isInteger(v) || v < 1)) throw new ValidationError('공개할 판 번호가 올바르지 않습니다.');
+  if (v !== null && (!Number.isInteger(v) || v < 1)) throw new ValidationError('err.agent.publishVersion');
   return one<{ key: string; version: number; published: true }>(db, 'select agent.publish_entry($1, $2, $3, $4) as r', [token, kindOf(kind), keyOf(key), v]);
 }
 export const agentUnpublish = (db: Db, token: string, kind: string, key: string) =>
@@ -195,7 +195,7 @@ export async function createAgentToken(db: Db, schoolId: string, input: Record<s
   const keys = [...new Set(legacyKey ? [legacyKey] : list(input.keys))];
   // 36차 이름(draft)도 받는다
   const perms = input.perms === undefined ? ['read', 'upload', 'edit'] : [...new Set(list(input.perms).map((p) => (p === 'draft' ? 'edit' : p)))];
-  if (keys.some((k) => !KEY_RE.test(k))) throw new ValidationError('주소 이름이 올바르지 않습니다.');
+  if (keys.some((k) => !KEY_RE.test(k))) throw new ValidationError('db.badSlug');
   const kind = (typeof input.agent_kind === 'string' && input.agent_kind in AGENT_KINDS ? input.agent_kind : 'codex') as AgentKind;
   const { rows: [r] } = await db.query<{ token: string }>('select app.create_agent_token($1, $2, $3, $4, $5, $6, $7) as token',
     [schoolId, label, days, kinds, keys.length ? keys : null, perms, kind]);
@@ -206,13 +206,13 @@ export async function createAgentToken(db: Db, schoolId: string, input: Record<s
 function parseDays(v: unknown): number | null {
   if (v === null || v === 'none' || v === 0 || v === '0') return null;
   const d = Number(v);
-  if (!AGENT_DAYS.includes(d as 7)) throw new ValidationError('기한은 7·30·90·365일 또는 무기한입니다.');
+  if (!AGENT_DAYS.includes(d as 7)) throw new ValidationError('db.tokenTerm');
   return d;
 }
 
 /** 38차: 기한 연장(토큰 값 그대로). 남은 기한 끝부터 늘린다. 폐기한 토큰은 안 된다 */
 export async function extendAgentToken(db: Db, schoolId: string, id: string, input: Record<string, unknown>) {
-  if (!isUuid(id)) throw new NotFoundError('토큰을 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new NotFoundError('err.tokenNotFound');
   const { rows: [r] } = await db.query<{ e: string | null }>('select app.extend_agent_token($1, $2, $3) as e', [schoolId, id, parseDays('days' in input ? input.days : 365)]);
   return { expires_at: r.e };
 }
@@ -235,7 +235,7 @@ export function tokenAlerts<T extends { expires_at: string | null; revoked_at: s
 }
 
 export async function revokeAgentToken(db: Db, schoolId: string, id: string) {
-  if (!isUuid(id)) throw new NotFoundError('토큰을 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new NotFoundError('err.tokenNotFound');
   await db.query('select app.revoke_agent_token($1, $2)', [schoolId, id]);
   return { ok: true };
 }

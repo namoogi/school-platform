@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { asAgent, type Db } from './db';
-import { errorResponse } from './api';
+import { errorResponse, fail } from './api';
 import { AGENT_TOKEN_RE } from './agent';
 import { SESSION_COOKIE } from './auth';
 
@@ -13,10 +13,10 @@ import { SESSION_COOKIE } from './auth';
  */
 export async function handleAgent(req: Request, fn: (db: Db, token: string) => Promise<unknown>) {
   const token = req.headers.get('x-agent-token') ?? '';
-  if (!AGENT_TOKEN_RE.test(token)) return NextResponse.json({ error: '작업 토큰(x-agent-token)이 필요합니다.' }, { status: 401 });
+  if (!AGENT_TOKEN_RE.test(token)) return fail(401, 'err.agentTokenRequired');
   const cookie = req.headers.get('cookie') ?? '';
   if (cookie.split(';').some((c) => c.trim().startsWith(`${SESSION_COOKIE}=`))) {
-    return NextResponse.json({ error: '작업 토큰 요청에는 로그인 쿠키를 함께 보내지 않습니다.' }, { status: 400 });
+    return fail(400, 'err.agentNoCookie');
   }
   try {
     const result = await asAgent((db) => fn(db, token), { session: agentHeader(req, 'x-agent-session', 80), operator: agentHeader(req, 'x-agent-operator', 120) });
@@ -24,7 +24,7 @@ export async function handleAgent(req: Request, fn: (db: Db, token: string) => P
   } catch (e) {
     if ((e as { code?: string })?.code === '28000') return NextResponse.json({ error: (e as Error).message }, { status: 401 });
     // 함수가 없거나 권한 밖(공개·설정 등)인 호출
-    if ((e as { code?: string })?.code === '42883') return NextResponse.json({ error: '작업 토큰으로 할 수 없는 일입니다.' }, { status: 403 });
+    if ((e as { code?: string })?.code === '42883') return fail(403, 'err.agentNotAllowed');
     return errorResponse(e);
   }
 }

@@ -18,9 +18,9 @@ export async function listLanguages(db: Db): Promise<{ rows: LanguageRow[]; tota
 export async function saveLanguage(db: Db, input: Record<string, unknown>) {
   const code = String(input.code ?? '').trim();
   // 정규식은 모양만 본다. 날짜·숫자 형식(Intl)이 받지 못하는 코드(예: en-12)도 막는다
-  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(code) || safeLocale(code, '') !== code) throw new ValidationError('언어 코드는 BCP 47 꼴입니다(예: en, th, zh-Hant).');
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(code) || safeLocale(code, '') !== code) throw new ValidationError('err.lang.code');
   const name = String(input.native_name ?? '').trim();
-  if (!name || name.length > 60) throw new ValidationError('언어 이름을 1~60자로 적어 주세요.');
+  if (!name || name.length > 60) throw new ValidationError('err.lang.name');
   const direction = input.direction === 'rtl' ? 'rtl' : 'ltr';
   const fallback = input.fallback ? String(input.fallback) : null;
   const { rows: [r] } = await db.query('select app.save_language($1) as code', [JSON.stringify({
@@ -32,8 +32,8 @@ export async function saveLanguage(db: Db, input: Record<string, unknown>) {
 
 /** 번역 넣기. 목록에 없는 이름표는 받지 않는다(오타가 사전에 쌓이지 않게) */
 export async function saveMessages(db: Db, lang: unknown, messages: unknown, overwrite: unknown) {
-  if (typeof lang !== 'string' || !lang) throw new ValidationError('언어를 골라 주세요.');
-  if (!messages || typeof messages !== 'object' || Array.isArray(messages)) throw new ValidationError('번역은 {"이름표": "번역"} 꼴의 JSON입니다.');
+  if (typeof lang !== 'string' || !lang) throw new ValidationError('err.lang.pick');
+  if (!messages || typeof messages !== 'object' || Array.isArray(messages)) throw new ValidationError('err.lang.json');
   const known = new Set<string>(CATALOG_KEYS);
   const entries = Object.entries(messages as Record<string, unknown>);
   const unknown = entries.filter(([k]) => !known.has(k)).length;

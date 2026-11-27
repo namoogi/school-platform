@@ -22,21 +22,21 @@ export type ProposalVersion = {
 };
 
 const uuid = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError('err.whatNotFound', { what });
   return v;
 };
 const optUuid = (v: unknown, what: string) => (v == null || v === '' ? null : uuid(v, what));
 const day = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new ValidationError(`${what}를 YYYY-MM-DD 형식으로 넣어 주세요.`);
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) throw new ValidationError('err.whatDate', { what });
   return v;
 };
 const optDay = (v: unknown, what: string) => (v == null || v === '' ? null : day(v, what));
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const ltext = (v: unknown, what: string): LText => {
-  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new ValidationError(`${what} 표기가 필요합니다.`);
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new ValidationError('err.whatLabelRequired', { what });
   const out: LText = {};
   for (const [k, s] of Object.entries(v)) if (/^[a-z]{2}$/.test(k) && typeof s === 'string' && s.trim()) out[k] = s.trim().slice(0, 120);
-  if (!Object.keys(out).length) throw new ValidationError(`${what} 표기가 필요합니다.`);
+  if (!Object.keys(out).length) throw new ValidationError('err.whatLabelRequired', { what });
   return out;
 };
 const plainObj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
@@ -61,7 +61,7 @@ export async function schoolProfile(db: Db, schoolId: string) {
 // ── 학년 ─────────────────────────────────────────────────
 export function addGradeLevel(db: Db, schoolId: string, input: { levelId?: unknown; code?: unknown; label?: unknown; ordinal?: unknown; sortOrder?: unknown }) {
   const ord = Number(input.ordinal);
-  if (!Number.isInteger(ord)) throw new ValidationError('정규 서수는 정수입니다(PK=-1, K=0, 1~12).');
+  if (!Number.isInteger(ord)) throw new ValidationError('err.found.ordinal');
   return one<string>(db, 'select app.add_grade_level($1, $2, $3, $4, $5, $6) as v',
     [schoolId, optUuid(input.levelId, '학교급'), str(input.code), JSON.stringify(ltext(input.label, '학년')), ord,
      Number.isInteger(input.sortOrder) ? input.sortOrder : null]);
@@ -93,7 +93,7 @@ export async function termTree(db: Db, schoolId: string, yearId: unknown): Promi
 // ── 수업일 달력 ──────────────────────────────────────────
 export type CalendarDayInput = { day: string; kind?: 'instructional' | 'holiday' | 'non_instructional' | 'event'; half_day?: boolean; label?: string };
 export function setCalendarDays(db: Db, schoolId: string, yearId: unknown, days: unknown) {
-  if (!Array.isArray(days)) throw new ValidationError('수업일은 배열로 넣습니다.');
+  if (!Array.isArray(days)) throw new ValidationError('err.found.daysArray');
   const list = days.map((d: CalendarDayInput) => ({ day: day(d?.day, '날짜'), kind: d?.kind ?? 'instructional', half_day: d?.half_day === true, label: d?.label ?? null }));
   return one<number>(db, 'select app.set_calendar_days($1, $2, $3) as v', [schoolId, uuid(yearId, '학년도'), JSON.stringify(list)]);
 }
@@ -108,7 +108,7 @@ export async function instructionalDays(db: Db, schoolId: string, from: unknown,
 // ── 코드 목록 (E1) ───────────────────────────────────────
 /** 학교가 가진 코드(학교 생성 때 기본판에서 복제한 사본 + 학교가 더한 값). 기준일에 유효한 것만 — ADR 0027 */
 export async function codes(db: Db, schoolId: string, listKey: string, on?: string): Promise<Code[]> {
-  if (!/^[a-z][a-z0-9_]{1,40}$/.test(listKey)) throw new ValidationError('목록 열쇠가 올바르지 않습니다.');
+  if (!/^[a-z][a-z0-9_]{1,40}$/.test(listKey)) throw new ValidationError('err.found.listKey');
   const at = on ? day(on, '기준일') : null;
   return (await db.query<Code>(
     `select distinct on (code) id, school_id, list_key, code, label, sort_order, attrs, maps_to, effective_from::text, effective_to::text, prior_code_id, why
@@ -200,14 +200,14 @@ export function proposeCourse(db: Db, schoolId: string, input: Record<string, un
 }
 export function saveCourseProposal(db: Db, schoolId: string, proposalId: unknown, input: Record<string, unknown>) {
   const base = Number(input.base_version ?? input.baseVersion);
-  if (!Number.isInteger(base) || base < 1) throw new ValidationError('base_version(보고 고친 판)이 필요합니다.');
+  if (!Number.isInteger(base) || base < 1) throw new ValidationError('err.baseVersion');
   return one<number>(db, 'select app.save_course_proposal($1, $2, $3) as v',
     [schoolId, uuid(proposalId, '수업 제안'), JSON.stringify({ ...proposalBody(input), base_version: base })]);
 }
 export async function courseProposal(db: Db, schoolId: string, proposalId: unknown) {
   const id = uuid(proposalId, '수업 제안');
   const { rows: [p] } = await db.query('select id, proposer_person_id, created_at from public.course_proposals where id = $1 and school_id = $2', [id, schoolId]);
-  if (!p) throw new NotFoundError('수업 제안을 찾을 수 없습니다.');
+  if (!p) throw new NotFoundError('err.found.proposalNotFound');
   const { rows: versions } = await db.query<ProposalVersion>(
     'select version, title, purpose, plan, mentor_person_id, term_id, status, note from public.course_proposal_versions where proposal_id = $1 order by version desc', [id]);
   return { ...p, latest: versions[0], versions };

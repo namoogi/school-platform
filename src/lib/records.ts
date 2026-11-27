@@ -30,11 +30,11 @@ export type Issue = { level: 'info' | 'question'; where: string; message: string
 export type RecordClosure = { id: string; version: number; previous_id: string | null; reason: string | null; academic_year_id: string; snapshot: Snapshot; closed_at: string };
 
 const uuid = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError('err.whatNotFound', { what });
   return v;
 };
 const rk = (v: unknown) => {
-  if (typeof v !== 'string' || !/^[A-Za-z0-9_.:-]{8,80}$/.test(v)) throw new ValidationError('요청 키(requestKey)가 필요합니다.');
+  if (typeof v !== 'string' || !/^[A-Za-z0-9_.:-]{8,80}$/.test(v)) throw new ValidationError('err.grade.requestKey');
   return v;
 };
 const num = (v: unknown) => (v == null ? null : Number(v));
@@ -42,7 +42,7 @@ const num = (v: unknown) => (v == null ? null : Number(v));
 // ── 학년도 기록 마감 판 ──────────────────────────────────
 export async function closeRecordYear(db: Db, schoolId: string, personId: unknown, yearId: unknown, input: { base_version?: unknown; reason?: unknown; requestKey?: unknown }) {
   const base = Number(input.base_version);
-  if (!Number.isInteger(base) || base < 0) throw new ValidationError('base_version(보고 고친 판)이 필요합니다.');
+  if (!Number.isInteger(base) || base < 0) throw new ValidationError('err.baseVersion');
   const { rows: [r] } = await db.query('select app.close_record_year($1, $2, $3, $4) as v', [schoolId, uuid(personId, '학생'), uuid(yearId, '학년도'),
     JSON.stringify({ base_version: base, reason: typeof input.reason === 'string' ? input.reason : '', request_key: rk(input.requestKey) })]);
   return r.v as { id: string; version: number; repeated: boolean };
@@ -64,7 +64,7 @@ async function profileSettings(db: Db, schoolId: string, code: string | undefine
   const { rows: [p] } = await db.query(
     `select p.id, v.version, v.settings from public.output_profiles p join public.output_profile_versions v on v.profile_id = p.id
       where p.school_id = $1 and p.code = $2 order by v.version desc limit 1`, [schoolId, code]);
-  if (!p) throw new NotFoundError('출력 프로필을 찾을 수 없습니다.');
+  if (!p) throw new NotFoundError('err.rec.profileNotFound');
   return p as { id: string; version: number; settings: Record<string, unknown> };
 }
 
@@ -256,7 +256,7 @@ export async function publishRecordDocument(db: Db, schoolId: string, input: { f
     secrets = [sch.name];
   } else {
     const closures = await recordClosures(db, schoolId, uuid(input.personId, '학생'));
-    if (!closures.length) throw new ValidationError('학년도 기록 마감 판이 없습니다. 먼저 마감해 주세요.');
+    if (!closures.length) throw new ValidationError('err.rec.noClose');
     closureIds = closures.map((c) => c.id);
     const snaps = closures.map((c) => c.snapshot);
     out = input.format === 'us_transcript' ? renderUsTranscript(snaps, prof.settings)
@@ -283,7 +283,7 @@ export async function recordDocument(db: Db, schoolId: string, id: unknown) {
     `select id, format, person_id, lang, blind, content, issues, content_sha256, published_at,
             (select coalesce(array_agg(closure_id), '{}') from public.record_document_sources s where s.document_id = d.id) as closure_ids
        from public.record_documents d where d.school_id = $1 and d.id = $2`, [schoolId, uuid(id, '발행본')]);
-  if (!d) throw new NotFoundError('발행본을 찾을 수 없습니다.');
+  if (!d) throw new NotFoundError('err.rec.docNotFound');
   return d;
 }
 /** 내용 무결성: 저장한 해시와 다시 계산한 해시가 같은지(DB가 jsonb 문자열로 계산한 값과 비교) */

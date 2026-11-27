@@ -7,13 +7,13 @@ import { isUuid, NotFoundError, ValidationError } from './services';
  */
 type LText = Record<string, string>;
 const uuid = (v: unknown, what: string) => {
-  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError(`${what}을(를) 찾을 수 없습니다.`);
+  if (typeof v !== 'string' || !isUuid(v)) throw new NotFoundError('err.whatNotFound', { what });
   return v;
 };
 
 export async function addExternalResult(db: Db, schoolId: string, i: { personId: unknown; issuer: string; exam: string; title?: LText; satOn: string;
   result: { grade?: string; score?: number; components?: Record<string, unknown> }; source?: string; correctsId?: string; reason?: string }) {
-  if (!i.result || (i.result.grade == null && i.result.score == null)) throw new ValidationError('등급이나 점수가 필요합니다.');
+  if (!i.result || (i.result.grade == null && i.result.score == null)) throw new ValidationError('err.qual.score');
   const { rows: [r] } = await db.query('select app.add_external_result($1, $2) as v', [schoolId, JSON.stringify({
     person_id: uuid(i.personId, '학생'), issuer_code: i.issuer, exam_code: i.exam, title: i.title ?? {}, sat_on: i.satOn, result: i.result,
     source: i.source ?? null, corrects_id: i.correctsId ?? null, reason: i.reason ?? null,

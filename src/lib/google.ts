@@ -1,3 +1,5 @@
+import type { MsgKey } from './i18n/catalog';
+import type { Vars } from './i18n/format';
 import { asSystem } from './db';
 
 /**
@@ -20,12 +22,12 @@ type SupabaseUser = {
 
 export type ExternalLoginResult =
   | { ok: true; userId: string; joined: number }
-  | { ok: false; status: number; error: string };
+  | { ok: false; status: number; error: MsgKey; vars?: Vars };
 
 export async function loginWithSupabaseToken(accessToken: string, fetchImpl: typeof fetch = fetch): Promise<ExternalLoginResult> {
   const cfg = supabaseAuthConfig();
-  if (!cfg) return { ok: false, status: 503, error: 'Google 로그인이 아직 설정되지 않았습니다.' };
-  if (!accessToken || accessToken.length > 8192) return { ok: false, status: 400, error: '로그인 정보가 없습니다.' };
+  if (!cfg) return { ok: false, status: 503, error: 'err.google.notConfigured' };
+  if (!accessToken || accessToken.length > 8192) return { ok: false, status: 400, error: 'err.google.noToken' };
 
   let user: SupabaseUser;
   try {
@@ -33,14 +35,14 @@ export async function loginWithSupabaseToken(accessToken: string, fetchImpl: typ
       headers: { apikey: cfg.key, Authorization: `Bearer ${accessToken}` },
       cache: 'no-store',
     });
-    if (!res.ok) return { ok: false, status: 401, error: '로그인 정보를 확인하지 못했습니다. 다시 시도해 주세요.' };
+    if (!res.ok) return { ok: false, status: 401, error: 'err.google.badToken' };
     user = (await res.json()) as SupabaseUser;
   } catch {
-    return { ok: false, status: 502, error: '로그인 서버에 연결하지 못했습니다.' };
+    return { ok: false, status: 502, error: 'err.google.unreachable' };
   }
   const email = user.email?.trim().toLowerCase();
-  if (!user.id || !email) return { ok: false, status: 401, error: '계정 이메일을 확인하지 못했습니다.' };
-  if (!user.email_confirmed_at) return { ok: false, status: 403, error: '이메일 인증이 끝나지 않은 계정입니다.' };
+  if (!user.id || !email) return { ok: false, status: 401, error: 'err.google.noEmail' };
+  if (!user.email_confirmed_at) return { ok: false, status: 403, error: 'err.google.unconfirmed' };
   const display = (user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0]).slice(0, 80);
 
   return asSystem(async (db) => {
@@ -51,7 +53,7 @@ export async function loginWithSupabaseToken(accessToken: string, fetchImpl: typ
         [user.id, email]);
       if (account?.auth_subject && account.auth_subject !== user.id) {
         await db.query('rollback');
-        return { ok: false as const, status: 403, error: '이 이메일은 다른 로그인 계정과 이미 연결돼 있습니다. 관리자에게 문의하세요.' };
+        return { ok: false as const, status: 403, error: 'err.google.linkedElsewhere' };
       }
       const { rows: pending } = await db.query(
         `select id, school_id, role from public.invitations
@@ -61,7 +63,7 @@ export async function loginWithSupabaseToken(accessToken: string, fetchImpl: typ
         `select id, school_id from public.portal_accounts where email = $1 and user_id is null and ends_on is null for update`, [email]);
       if (!account && !pending.length && !portal.length) {
         await db.query('rollback');
-        return { ok: false as const, status: 403, error: `초대되지 않은 계정입니다 (${email}). 학교 관리자에게 초대를 요청하세요.` };
+        return { ok: false as const, status: 403, error: 'err.google.notInvited', vars: { email } };
       }
       if (!account) {
         ({ rows: [account] } = await db.query(

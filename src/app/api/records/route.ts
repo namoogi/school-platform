@@ -13,21 +13,21 @@ const txt = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
-    const b = await req.json().catch(() => { throw new ValidationError('요청 형식이 올바르지 않습니다.'); });
+    const b = await req.json().catch(() => { throw new ValidationError('err.badRequest'); });
     switch (b?.action) {
       case 'close-year': {
         const base = Number(b.bases?.[b.yearId] ?? 0);
         return await closeRecordYear(db, school.id, b.personId, b.yearId, { base_version: base, reason: txt(b.reason), requestKey: b.requestKey });
       }
       case 'publish': {
-        if (!FORMATS.includes(b.format)) throw new ValidationError('알 수 없는 발행 형식입니다.');
+        if (!FORMATS.includes(b.format)) throw new ValidationError('err.rec.format');
         const r = await publishRecordDocument(db, school.id, { format: b.format, personId: b.format === 'us_school_profile' ? undefined : b.personId, blind: b.blind === 'yes' });
         return { id: r.id, issues: r.issues.length };
       }
       case 'disclose': return { id: await recordDisclosure(db, school.id, { documentId: b.documentId, recipient: txt(b.recipient), purpose: txt(b.purpose), basis: txt(b.basis) || undefined }) };
       case 'external': {
         const score = b.score === '' || b.score == null ? undefined : Number(b.score);
-        if (score !== undefined && !Number.isFinite(score)) throw new ValidationError('점수는 숫자입니다.');
+        if (score !== undefined && !Number.isFinite(score)) throw new ValidationError('err.grade.score');
         return { id: await addExternalResult(db, school.id, {
           personId: b.personId, issuer: txt(b.issuer), exam: txt(b.exam), title: txt(b.title) ? { en: txt(b.title) } : {}, satOn: txt(b.satOn),
           result: { ...(txt(b.grade) ? { grade: txt(b.grade) } : {}), ...(score !== undefined ? { score } : {}) }, source: txt(b.source) || undefined,
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       case 'count-report': return await closeCountReport(db, school.id, {
         code: txt(b.code), asOf: txt(b.asOf), base_version: Number(b.bases?.[txt(b.code)] ?? 0), reason: txt(b.reason) || undefined, requestKey: String(b.requestKey ?? ''),
       });
-      default: throw new ValidationError('알 수 없는 작업입니다.');
+      default: throw new ValidationError('err.unknownAction');
     }
   }, { module: 'records' });
 }

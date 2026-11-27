@@ -9,18 +9,18 @@ import { definePeriodRule, latestPeriodRule } from '@/lib/academics';
  */
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
-    const b = await req.json().catch(() => { throw new ValidationError('요청 형식이 올바르지 않습니다.'); });
+    const b = await req.json().catch(() => { throw new ValidationError('err.badRequest'); });
     switch (b?.action) {
       case 'level': return { id: await addSchoolLevel(db, school.id, { code: b.code, name: b.name, sortOrder: Number.isInteger(b.sortOrder) ? b.sortOrder : 0 }) };
       case 'year': return { id: await addAcademicYear(db, school.id, { label: b.label, startsOn: b.startsOn, endsOn: b.endsOn }) };
       case 'rule': return definePeriodRule(db, school.id, { periods: b.periods, rationale: b.rationale, base_version: b.base_version });
       case 'terms': {
         const rule = await latestPeriodRule(db, school.id);
-        if (!rule) throw new ValidationError('학기 구조를 먼저 정해 주세요.');
+        if (!rule) throw new ValidationError('err.acad.structureFirst');
         return { created: await createTermsFromRule(db, school.id, b.yearId, rule.id), rule_version: rule.version };
       }
       case 'term-dates': await setTermDates(db, school.id, b.termId, b.startsOn, b.endsOn); return { ok: true };
-      default: throw new ValidationError('알 수 없는 작업입니다.');
+      default: throw new ValidationError('err.unknownAction');
     }
   }, { module: 'records', admin: true });
 }

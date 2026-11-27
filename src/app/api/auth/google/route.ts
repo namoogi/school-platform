@@ -1,3 +1,4 @@
+import { fail } from '@/lib/api';
 import { NextResponse } from 'next/server';
 import { loginWithSupabaseToken } from '@/lib/google';
 import { SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth';
@@ -6,10 +7,10 @@ import { SESSION_COOKIE, sessionCookieOptions, signSession } from '@/lib/auth';
 export async function POST(req: Request) {
   const origin = req.headers.get('origin');
   const host = req.headers.get('x-forwarded-host') ?? req.headers.get('host');
-  if (origin && new URL(origin).host !== host) return NextResponse.json({ error: '허용되지 않은 요청 출처입니다.' }, { status: 403 });
+  if (origin && new URL(origin).host !== host) return fail(403, 'err.badOrigin');
   const body = await req.json().catch(() => ({}));
   const result = await loginWithSupabaseToken(typeof body?.access_token === 'string' ? body.access_token : '');
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+  if (!result.ok) return fail(result.status, result.error, {}, result.vars);
   const res = NextResponse.json({ ok: true, joined: result.joined });
   res.cookies.set(SESSION_COOKIE, await signSession(result.userId), sessionCookieOptions());
   return res;

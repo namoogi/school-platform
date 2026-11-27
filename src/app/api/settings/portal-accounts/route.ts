@@ -5,7 +5,7 @@ import { addPortalAccount } from '@/lib/portal';
 /** 62차(ADR 0029): 학생·보호자 열람 계정 만들기. body: { kind, personId, email, underConsentAge?, consentBasis?, consentNote? } */
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
-    const b = await req.json().catch(() => { throw new ValidationError('요청 형식이 올바르지 않습니다.'); });
+    const b = await req.json().catch(() => { throw new ValidationError('err.badRequest'); });
     return { id: await addPortalAccount(db, school.id, b ?? {}) };
   }, { admin: true });
 }

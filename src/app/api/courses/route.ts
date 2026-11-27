@@ -9,7 +9,7 @@ import { setSubjectLabel } from '@/lib/grading';
  */
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
-    const b = await req.json().catch(() => { throw new ValidationError('요청 형식이 올바르지 않습니다.'); });
+    const b = await req.json().catch(() => { throw new ValidationError('err.badRequest'); });
     switch (b?.action) {
       case 'subject': return { id: await addSubject(db, school.id, { code: b.code, name: b.name, levelId: b.levelId || null }) };
       case 'label': return { version: await setSubjectLabel(db, school.id, b.subjectId, { purpose: b.purpose, label: { ...(b.ko ? { ko: b.ko } : {}), ...(b.en ? { en: b.en } : {}), ...(b.th ? { th: b.th } : {}) }, why: b.why, base_version: Number(b.bases?.[b.purpose || 'all'] ?? 0) }) };
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       case 'approve': await approve(db, school.id, b.offeringId, b.revision); return { ok: true };
       case 'close-applications': return { enrolled: await closeApplications(db, school.id, b.offeringId, b.revision) };
       case 'enroll': return { revision: await setEnrollment(db, school.id, b.offeringId, b.personId, b.status ?? 'enrolled', b.revision) };
-      default: throw new ValidationError('알 수 없는 작업입니다.');
+      default: throw new ValidationError('err.unknownAction');
     }
   }, { module: 'records' });
 }

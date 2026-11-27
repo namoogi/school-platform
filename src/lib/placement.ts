@@ -50,18 +50,18 @@ export async function myMovedSchools(db: Db): Promise<{ name: string; locale: st
 }
 
 export async function setPlacement(db: Db, schoolId: unknown, input: Record<string, unknown>) {
-  if (typeof schoolId !== 'string' || !/^[0-9a-f-]{36}$/i.test(schoolId)) throw new ValidationError('학교를 골라 주세요.');
+  if (typeof schoolId !== 'string' || !/^[0-9a-f-]{36}$/i.test(schoolId)) throw new ValidationError('err.pickSchool');
   const tier = input.tier as Tier;
-  if (!TIERS.includes(tier)) throw new ValidationError('격리 등급이 올바르지 않습니다.');
+  if (!TIERS.includes(tier)) throw new ValidationError('err.place.tier');
   const state = (tier === 'shared' ? 'active' : input.state) as PlacementState;
-  if (!STATES.includes(state)) throw new ValidationError('진행 상태가 올바르지 않습니다.');
+  if (!STATES.includes(state)) throw new ValidationError('err.place.status');
   const target = typeof input.target_url === 'string' ? input.target_url.trim() : '';
-  if (state === 'moved' && !target) throw new ValidationError('옮긴 주소(https://…)를 적어 주세요.');
-  if (target && !/^https:\/\/[a-z0-9.-]+(\/.*)?$/.test(target)) throw new ValidationError('주소는 https:// 로 시작하는 소문자 주소여야 합니다.');
+  if (state === 'moved' && !target) throw new ValidationError('err.place.movedUrl');
+  if (target && !/^https:\/\/[a-z0-9.-]+(\/.*)?$/.test(target)) throw new ValidationError('err.place.urlForm');
   const reason = typeof input.reason === 'string' ? input.reason.trim() : '';
-  if (!reason) throw new ValidationError('바꾸는 이유를 적어 주세요(이력에 남습니다).');
+  if (!reason) throw new ValidationError('err.place.reason');
   const cost = input.monthly_cost_usd === '' || input.monthly_cost_usd == null ? null : Number(input.monthly_cost_usd);
-  if (cost != null && (!Number.isFinite(cost) || cost < 0)) throw new ValidationError('월 원가는 0 이상의 숫자입니다.');
+  if (cost != null && (!Number.isFinite(cost) || cost < 0)) throw new ValidationError('err.place.cost');
   const { rows: [r] } = await db.query('select app.set_school_placement($1, $2) as v', [schoolId, JSON.stringify({
     tier, state, target_url: target || null, reason, monthly_cost_usd: cost, base_version: Number(input.base_version ?? 0),
   })]);

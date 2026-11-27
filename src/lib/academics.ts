@@ -18,8 +18,8 @@ export async function latestPeriodRule(db: Db, schoolId: string): Promise<RuleSu
 export async function definePeriodRule(db: Db, schoolId: string, input: { periods?: unknown; rationale?: unknown; base_version?: unknown }) {
   const value = validatePeriodValue({ periods: input.periods });
   const rationale = typeof input.rationale === 'string' ? input.rationale.trim() : '';
-  if (!rationale) throw new ValidationError('학기 구조를 정한 근거(예: 학교 학사 규정)를 적어 주세요.');
-  if (rationale.length > 1000) throw new ValidationError('근거는 1000자 이내로 적어 주세요.');
+  if (!rationale) throw new ValidationError('err.acad.reason');
+  if (rationale.length > 1000) throw new ValidationError('err.acad.reason1000');
   const cur = await latestPeriodRule(db, schoolId);
   const base = Number(input.base_version ?? 0);
   if ((cur?.version ?? 0) !== base) throw Object.assign(new Error('그 사이 새 판이 생겼습니다. 새로 고친 뒤 다시 정해 주세요.'), { code: 'P0409' });
@@ -32,7 +32,7 @@ export async function definePeriodRule(db: Db, schoolId: string, input: { period
 
 export type EnrollmentOfPerson = { id: string; level: string; level_name: string; status: string; starts_on: string; ends_on: string | null; note: string | null };
 export async function personEnrollments(db: Db, schoolId: string, personId: unknown): Promise<EnrollmentOfPerson[]> {
-  if (typeof personId !== 'string' || !isUuid(personId)) throw new NotFoundError('사람을 찾을 수 없습니다.');
+  if (typeof personId !== 'string' || !isUuid(personId)) throw new NotFoundError('db.personNotFound');
   return (await db.query<EnrollmentOfPerson>(
     `select e.id, l.code as level, l.name as level_name, e.status, to_char(e.starts_on, 'YYYY-MM-DD') as starts_on, to_char(e.ends_on, 'YYYY-MM-DD') as ends_on, e.note
        from public.enrollments_school e join public.school_levels l on l.id = e.school_level_id

@@ -15,6 +15,6 @@ export function handleChat(req: Request, fn: (db: Db, scope: ChatScope) => Promi
 export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
   const { ValidationError } = await import('./services');
   const b = await req.json().catch(() => null);
-  if (!b || typeof b !== 'object') throw new ValidationError('요청 형식이 올바르지 않습니다.');
+  if (!b || typeof b !== 'object') throw new ValidationError('err.badRequest');
   return b as Record<string, unknown>;
 }
