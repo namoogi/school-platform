@@ -2793,6 +2793,8 @@ export const CATALOG = {
   'db.calcRuleNotFound': '계산식 판을 찾을 수 없습니다.',
   'db.offeringGraders': '이 수업을 맡은 교사나 학교 관리자만 할 수 있습니다.',
   'db.notEnrolled': '이 수업을 수강 중인 학생이 아닙니다.',
+  // 마감 연결 (108차, ADR 0042)
+  'db.calcScoreDigits': '계산 결과 점수는 소수 둘째 자리까지입니다. 식에 반올림(round)을 넣어 주세요.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

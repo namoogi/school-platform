@@ -162,8 +162,15 @@ begin
       end if;
       lv := r ->> 'level';
       if lv is not null and lv !~ '^[A-Za-z0-9+\-]{1,8}$' then raise exception '계산 결과의 등급은 영문·숫자 8자 이하입니다.' using errcode = '22023'; end if;
-      raw := round((r ->> 'score')::numeric, 2); fin := raw;
-      st := case (r ->> 'passed') when 'true' then 'completed' when 'false' then 'failed' else 'incomplete' end;
+      -- 얼린 값으로 다시 계산했을 때 똑같아야 하므로 몰래 반올림하지 않는다. 소수 셋째 자리 이하가 있으면 식에 round 를 적게 한다(Codex #169 P2)
+      if (r ->> 'score') is not null and (r ->> 'score')::numeric <> round((r ->> 'score')::numeric, 2) then
+        raise exception '계산 결과 점수는 소수 둘째 자리까지입니다. 식에 반올림(round)을 넣어 주세요.' using errcode = '22023';
+      end if;
+      raw := (r ->> 'score')::numeric; fin := raw;
+      -- 이수 판정 칸(passed)이 없는 식(중학교처럼 과목 이수 판정이 없는 학교)은 점수나 등급이 있으면 이수, 없으면 미완료(Codex #169 P1).
+      -- passed 칸이 있는데 값이 null 이면(자료 없음) 미완료다
+      st := case when not (c_spec -> 'outputs') ? 'passed' then case when raw is not null or lv is not null then 'completed' else 'incomplete' end
+                 when (r ->> 'passed') = 'true' then 'completed' when (r ->> 'passed') = 'false' then 'failed' else 'incomplete' end;
       band := case when lv is not null then jsonb_build_object('code', lv) end;
     else
       -- 계산식 없이 마감(이전 동작): 과목 총괄 축 가중 원점수 Σ(점수/만점×가중) / Σ가중 × 100. 빠진 결과가 있으면 미완료

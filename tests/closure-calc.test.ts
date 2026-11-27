@@ -166,4 +166,17 @@ describe('계산식으로 마감', () => {
     const c = await asUser(A.userId, (db) => g.offeringClosure(db, A.schoolId, offering));
     expect(c).toMatchObject({ version: 3, calc_code: null, calc_version: null });
   });
+
+  it('이수 판정 칸이 없는 식(중학교)은 점수·등급이 있으면 이수, 소수 셋째 자리 이하 점수는 거부(Codex #169)', async () => {
+    await asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'kr_mid', spec: PRESETS.kr_middle.spec, base_version: 0 }));
+    const r = await asUser(A.userId, (db) => g.closeOffering(db, A.schoolId, offering, { base_version: 3, reason: '중학교 식', requestKey: 'calc-mid-0001', calcCode: 'kr_mid' }));
+    expect(r.version).toBe(4);
+    const c = await asUser(A.userId, (db) => g.offeringClosure(db, A.schoolId, offering));
+    const by = Object.fromEntries(c!.results.map((x) => [x.person_id, x]));
+    expect(by[st[0]]).toMatchObject({ level_code: 'A', attempt_status: 'completed', credits_earned: 4, in_stats: true });
+    expect(by[st[2]]).toMatchObject({ final_score: 76, level_code: 'C', attempt_status: 'completed' });
+    expect(c!.stats.n).toBe(3);
+    await asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'third', spec: { outputs: { score: { op: '/', args: [1, 3] } } }, base_version: 0 }));
+    await expect(asUser(A.userId, (db) => g.closeOffering(db, A.schoolId, offering, { base_version: 4, reason: 'x', requestKey: 'calc-third-0001', calcCode: 'third' }))).rejects.toThrow('소수 둘째 자리');
+  });
 });

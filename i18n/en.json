@@ -2759,5 +2759,6 @@
   "db.calcResultMissing": "Some students have no calculated result. Please recalculate.",
   "db.calcRuleNotFound": "Formula version not found.",
   "db.offeringGraders": "Only this course's teachers or a school admin can do this.",
-  "db.notEnrolled": "This student is not enrolled in the course."
+  "db.notEnrolled": "This student is not enrolled in the course.",
+  "db.calcScoreDigits": "Calculated scores may have at most two decimal places. Add round to the formula."
 }

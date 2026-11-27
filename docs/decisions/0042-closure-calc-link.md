@@ -30,8 +30,9 @@
    - 거부하는 경우: 빠진 학생(409), 수강하지 않는 학생, 틀린 모양·등급 글자.
    - 결과 해석
      - 등급 = 식의 `level`
-     - 이수: `passed` 참은 completed(학점 인정), 거짓은 failed, null은 incomplete
-     - 원점수·최종 점수 = 식의 `score`(소수 둘째 자리)
+     - 이수: `passed` 참은 completed(학점 인정), 거짓은 failed, null(자료 없음)은 incomplete
+     - 식에 `passed` 칸이 없으면(중학교처럼 과목 이수 판정이 없는 학교) 점수나 등급이 있을 때 completed, 없으면 incomplete다.
+     - 원점수·최종 점수 = 식의 `score`. 몰래 반올림하지 않는다. 소수 셋째 자리 이하가 있으면 거부하고, 식에 `round`를 적게 한다. 얼린 식과 입력으로 다시 계산했을 때 값이 똑같아야 하기 때문이다.
    - 마감 판에 `calc_code`·`calc_version`·`calc_spec`, 결과 행에 `calc_input`을 얼린다.
    - 계산식 없이 마감하면 이전 동작(척도)이다.
 4. **중간값 계산 순서는 서로 가리키는 관계로 정한다**(`letOrder`).
