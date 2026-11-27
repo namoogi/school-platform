@@ -111,8 +111,12 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
 
 - Claude가 올리는 요청 첫 줄에 `(Claude 관제 세션 작성)` 또는 `(Claude 자동 실행 작성)`을 적어, 사용자 계정 이름이지만 누가 썼는지 구분한다.
 - 한 주제에 Codex 요청은 하나만 열어 둔다(중복 실행 방지). 24시간 응답이 없으면 사용자에게 보고한다.
-- **선별(85차)**: Codex 리뷰의 지적마다 `docs/UI_REVIEW.md` 4-4와 같은 판정(수용·기각·보류)을 내린다. 그 PR에 답글 하나로 남긴다(표: 번호 · 판정 · 근거 한 줄 · 고친 커밋). 수용한 것은 같은 PR에서 고친다. 보류는 선생님께 선택지로 올린다. Codex 지적을 그대로 다 받지 않는다. 규약(AGENTS.md·DESIGN-SYSTEM)과 부딪치면 규약이 이긴다.
-- 연결 상태: 사용자 Codex 계정에 GitHub가 연결돼 있다(2026-11-27 사용자 확인). 85차 PR에서 `@codex review`로 첫 시험을 했다.
+- **선별(85차)**: Codex 리뷰의 지적마다 수용·기각·보류 중 하나로 판정한다. 그 PR에 답글 하나로 남긴다(표: 번호 · 판정 · 근거 한 줄 · 고친 커밋). 수용한 것은 같은 PR에서 고친다. 보류는 선생님께 선택지로 올린다. Codex 지적을 그대로 다 받지 않는다. 규약(AGENTS.md·DESIGN-SYSTEM)과 부딪치면 규약이 이긴다.
+  - **판정 근거는 지적의 종류에 따라 다르다.** 코드 리뷰 지적(데이터 경계·보존·비밀·마이그레이션·테스트 등)은 AGENTS.md 규칙과 코드·테스트로 판정한다. 화면으로 입증할 수 없어도 수용할 수 있다. 화면 근거 조건("체크리스트 항목에 근거가 있고 화면에서 확인된다")은 UI 시각 점검 지적(`docs/UI_REVIEW.md` 4-4)에만 쓴다.
+- 연결 상태(2026-11-27, 85차)
+  - 그전까지 PR 26개의 `@codex review`에 봇 반응이 **0건**이었다. 저장소 Code review와 개인 설정의 자동 검토가 꺼져 있었다. 선생님이 둘 다 켰다.
+  - 그 뒤에도 봇(`@codex review`) 반응은 아직 없다. GitHub의 ChatGPT Codex Connector 앱에 'Permission updates requested'(권한 갱신 요청)가 떠 있다. 원인으로 확정하지는 않았다.
+  - 대신 쓰는 길(작동 확인): 선생님 쪽 Codex 세션이 GitHub 커넥터로 PR을 읽고 검토 댓글을 직접 남긴다. 첫 줄은 `(Codex 수동 검토 …)`이다. 85차 PR #127에서 P2 2건을 받아 반영했다.
 - 사용자 1회 설정: Codex Code review를 이 저장소에 켜기, Codex 환경(Environment) 하나 만들기. 그 뒤로는 사람이 중계하지 않는다.
 - 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
 
