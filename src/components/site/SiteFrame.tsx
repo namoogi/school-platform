@@ -16,6 +16,8 @@ const T = {
   stories: { ko: '성품 동화', en: 'Character Stories', th: 'นิทานคุณธรรม' }, lang: { ko: '언어', en: 'Language', th: 'ภาษา' },
   menu: { ko: '메뉴', en: 'Menu', th: 'เมนู' }, skip: { ko: '본문으로 건너뛰기', en: 'Skip to content', th: 'ข้ามไปยังเนื้อหา' },
   call: { ko: '전화', en: 'Phone', th: 'โทร' }, pages: { ko: '페이지', en: 'Pages', th: 'หน้า' },
+  contact: { ko: '연락', en: 'Contact', th: 'ติดต่อ' }, address: { ko: '찾아오는 길', en: 'Find us', th: 'ที่อยู่' },
+  map: { ko: '지도에서 보기', en: 'View on map', th: 'ดูบนแผนที่' },
   staff: { ko: '교직원 로그인', en: 'Staff sign-in', th: 'เข้าสู่ระบบบุคลากร' },
 } as const;
 export const siteText = (k: keyof typeof T, lang: Lang) => T[k][lang];
@@ -70,6 +72,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   const title = pick(site.title, lang, site.default_lang) || site.school;
   const t = (x: Parameters<typeof pick>[0]) => pick(x, lang, site.default_lang);
   const dawn = site.theme === 'dawn';
+  const kit = site.theme !== 'campus' && !dawn;
   // 89차: 새벽빛과 템플릿 완성 디자인(ADR 0034)은 학교 이름·메뉴·연락처가 있는 넓은 바닥을 쓴다(학사 기본만 한 줄 바닥)
   const richFooter = site.theme !== 'campus';
   const nav = hidden ? [] : [
@@ -101,8 +104,10 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             {profile?.logo && assetUrl && <img src={assetUrl(profile.logo)} alt="" width={52} height={52} />}
             <span><strong>{title}</strong>{t(profile?.tagline) && <small>{t(profile?.tagline)}</small>}</span>
           </Link>
-          {/* 42차: 새벽빛은 옛 사이트처럼 메뉴를 머리 한 줄 안에 둔다 */}
-          {dawn && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>}
+          {/* 100차: 키트 테마는 학교 이름·메뉴·행동을 한 줄에 두고 휴대폰에서 메뉴를 접는다. 새벽빛은 기존 배치를 유지한다. */}
+          {nav.length > 0 && (dawn
+            ? <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>
+            : kit ? <nav className="site-nav site-nav-inline site-nav-desktop" aria-label={title}>{navList}</nav> : null)}
           {langList.length > 1 && (dawn
             ? (
               <Suspense fallback={<details className="site-lang-menu"><summary><span lang={lang}>{LANG_LABEL[lang]}</span></summary></details>}>
@@ -117,7 +122,14 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
           {visit && <Link className="site-button site-visit" href={visit.href.startsWith('/') ? link(visit.href) : visit.href}>{t(visit.label)}</Link>}
         </div>
         {nav.length > 0 && <>
-          {!dawn && <nav className="site-wrap site-nav" aria-label={title}>{navList}</nav>}
+          {kit && (
+            <Suspense fallback={<details className="site-wrap site-menu site-menu-kit"><summary>{siteText('menu', lang)}</summary></details>}>
+              <AutoCloseDetails className="site-wrap site-menu site-menu-kit" summary={siteText('menu', lang)}>
+                <nav aria-label={`${title} ${siteText('menu', lang)}`}>{navList}</nav>
+              </AutoCloseDetails>
+            </Suspense>
+          )}
+          {!dawn && !kit && <nav className="site-wrap site-nav" aria-label={title}>{navList}</nav>}
           {dawn && (
             <Suspense fallback={<details className="site-wrap site-menu"><summary>{siteText('menu', lang)}</summary></details>}>
               <AutoCloseDetails className="site-wrap site-menu" summary={siteText('menu', lang)}>
@@ -142,10 +154,14 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
               {nav.filter((n) => n.key !== 'home').map((n) => <Link key={n.key} href={n.href}>{n.label}</Link>)}
             </nav>
             <div className="site-footer-contact">
-              {t(profile?.address) && <p>{t(profile?.address)}</p>}
+              <h3>{siteText('contact', lang)}</h3>
               {/* 옛 바닥처럼 마지막 번호(사무실) 하나 */}
               {profile?.phone?.length ? <p><a href={`tel:${profile.phone.at(-1)!.replace(/[^0-9+]/g, '')}`} aria-label={`${siteText('call', lang)} ${profile.phone.at(-1)}`}>{profile.phone.at(-1)}</a></p> : null}
               {profile?.facebook && <p><a className="site-link" href={profile.facebook} target="_blank" rel="noopener noreferrer">Facebook<ArrowRight className="link-arrow" size={20} strokeWidth={1.4} aria-hidden="true" /></a></p>}
+            </div>
+            <div className="site-footer-address">
+              <h3>{siteText('address', lang)}</h3>
+              {t(profile?.address) && <><p>{t(profile?.address)}</p><p><a className="site-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t(profile?.address))}`} target="_blank" rel="noopener noreferrer">{siteText('map', lang)}<ArrowRight className="link-arrow" size={20} strokeWidth={1.4} aria-hidden="true" /></a></p></>}
             </div>
             <div className="site-footer-note">
               <p>{t(profile?.footer) || `© ${title}`}</p>

@@ -2239,3 +2239,69 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .site:is([data-theme="ivory"], [data-theme="studio"], [data-theme="play"]):not([data-theme="campus"]):not([data-theme="dawn"]) .sec-faq summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-2); }
 
 .site[data-theme="play"]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="media-right"][data-variant="half"] { padding: clamp(20px, 4vw, 48px); background: var(--t-surface); border: 2px solid var(--t-accent-soft); border-radius: var(--t-radius); }
+
+/* 100차: 키트 테마 공통 레이아웃 층. campus·dawn은 위의 전용 규칙을 그대로 쓴다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) {
+  --t-space-1: 4px;
+  --t-space-2: 8px;
+  --t-space-3: 12px;
+  --t-space-4: 16px;
+  --t-space-5: 24px;
+  --t-space-6: 32px;
+  --t-space-7: 48px;
+  --t-space-8: 80px;
+  --t-content: 1200px;
+  --t-reading: 720px;
+  --t-gutter: var(--t-space-6);
+  --t-section-y: var(--t-space-8);
+}
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-wrap { width: min(var(--t-content), calc(100% - (2 * var(--t-space-6)))); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header-row { min-height: var(--t-space-8); flex-wrap: nowrap; padding-block: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand { flex: 0 1 260px; min-width: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand span { min-width: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-brand strong { overflow-wrap: anywhere; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-desktop { margin-left: auto; justify-content: flex-end; gap: var(--t-space-5); overflow: visible; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit { display: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-visit { flex: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-main { padding-block: var(--t-space-7) var(--t-space-8); gap: var(--t-space-6); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks { gap: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry) { padding-block: var(--t-section-y); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry):nth-child(even) { padding-inline: var(--t-space-6); background: var(--t-accent-soft); border-radius: var(--t-radius); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="banner"]:first-child { padding-block: 0 var(--t-section-y); background: transparent; }
+/* 구역 머리: 이름표→제목→설명은 왼쪽 8칸, 행동은 오른쪽 3칸 끝에 둔다. */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--t-space-3) var(--t-gutter); align-items: end; margin-bottom: var(--t-space-6); max-width: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :not(.site-button, .site-link) { grid-column: 1 / span 8; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :is(.site-button, .site-link) { grid-column: 10 / -1; grid-row: 1 / span 3; justify-self: end; align-self: end; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .sec-photos, .sec-steps, .site-cards) { width: 100%; align-items: stretch; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) > li { height: 100%; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) > li > a { height: 100%; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.site-text, .site-head > .site-lead) { max-width: var(--t-reading); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--t-space-6) var(--t-gutter); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-brand { grid-column: span 4; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav { grid-column: span 2; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-contact { grid-column: span 2; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-address { grid-column: span 4; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid h3 { margin: 0 0 var(--t-space-3); color: inherit; font-size: var(--fs-body); }
+
+@media (max-width: 900px) {
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) { --t-gutter: var(--t-space-5); --t-section-y: var(--t-space-7); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header-row { flex-wrap: wrap; padding-block: var(--t-space-3); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-desktop { display: none; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit { display: block; border-top: 1px solid var(--t-line); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > summary { display: flex; align-items: center; min-height: 48px; font-weight: 800; cursor: pointer; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > nav { display: grid; padding-bottom: var(--t-space-4); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-kit > nav a { display: flex; align-items: center; min-height: 44px; color: var(--t-ink); text-decoration: none; border-top: 1px solid var(--t-line); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-brand { grid-column: span 6; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav, .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-contact { grid-column: span 3; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-address { grid-column: span 6; }
+}
+@media (max-width: 600px) {
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) { --t-gutter: var(--t-space-4); --t-section-y: var(--t-space-7); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-wrap { width: min(var(--t-content), calc(100% - (2 * var(--t-space-4)))); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > :is(.sec, .site-section, .site-inquiry):nth-child(even) { padding-inline: var(--t-space-4); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy { grid-template-columns: 1fr; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :not(.site-button, .site-link), .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec:not([data-template="banner"]), .site-section) > .sec-copy > :is(.site-button, .site-link) { grid-column: 1; grid-row: auto; justify-self: start; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > * { grid-column: 1 / -1; }
+}
