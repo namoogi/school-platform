@@ -30,7 +30,7 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
   }, { module: 'records' });
   const { school, scales, policy, ctx, assessments, students, results, narratives, closure, uiLang } = data;
   const admin = school.isAdmin;
-  const { t, lang } = await getI18n(uiLang);
+  const { t, lang, locale } = await getI18n(uiLang);
   const tk = (prefix: string, v: string) => t(`${prefix}.${v}` as MsgKey);
   const KIND = KINDS.map((value) => ({ value, label: tk('grade.kind', value) }));
   const name = Object.fromEntries(students.map((s) => [s.person_id, s.name]));
@@ -87,7 +87,7 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
             <h2>{t('grades.closing')}</h2>
             {closure ? (
               <>
-                <p className="fine">{t('grades.closureMeta', { v: closure.version, when: new Date(closure.closed_at).toLocaleString(lang), policy: closure.policy_version ? t('common.version', { v: closure.policy_version }) : t('common.default') })}{closure.scale_version ? t('grades.scaleSuffix', { v: closure.scale_version }) : ''}{closure.reason ? t('grades.reasonSuffix', { reason: closure.reason }) : ''}</p>
+                <p className="fine">{t('grades.closureMeta', { v: closure.version, when: new Date(closure.closed_at).toLocaleString(locale), policy: closure.policy_version ? t('common.version', { v: closure.policy_version }) : t('common.default') })}{closure.scale_version ? t('grades.scaleSuffix', { v: closure.scale_version }) : ''}{closure.reason ? t('grades.reasonSuffix', { reason: closure.reason }) : ''}</p>
                 <p className="fine">{t('grades.stats', { n: closure.stats.n, mean: closure.stats.mean ?? '-', sd: closure.stats.sd ?? '-' })}</p>
                 <div className="table-wrap"><table className="grid-table" data-testid="closure-results">
                   <thead><tr><th scope="col">{t('common.student')}</th><th scope="col">{t('grades.col.raw')}</th><th scope="col">{t('grades.col.final')}</th><th scope="col">{t('grades.col.level')}</th><th scope="col">{t('grades.col.status')}</th><th scope="col">{t('grades.col.credits')}</th></tr></thead>
