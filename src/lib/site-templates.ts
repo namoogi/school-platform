@@ -27,20 +27,22 @@ const ko = (s: string): LText => ({ ko: s });
 const kb = (k: string, e: string): LText => ({ ko: k, en: e });
 const section = (b: Omit<Extract<Block, { type: 'section' }>, 'type'>): Block => ({ type: 'section', ...b });
 const news = (title: LText, count = 3, style: 'cards' | 'list' = 'cards'): Block => ({ type: 'news_list', title, count, style });
-const contact = (visit?: { label: string; href: string }): Content['site'] => ({
+const contact = (visit?: { label: string; href: string; en?: string }): Content['site'] => ({
   tagline: ko('[학교를 한 줄로 소개하는 말]'), address: ko('[학교 주소]'), footer: ko('[학교 이름] · [대표 전화] · [이메일]'),
   // 100차: 머리글 오른쪽·바닥글의 주요 행동 단추(학교가 이름과 가는 곳을 바꾼다)
-  ...(visit ? { visit: { label: ko(visit.label), href: visit.href } } : {}),
+  ...(visit ? { visit: { label: visit.en ? kb(visit.label, visit.en) : ko(visit.label), href: visit.href } } : {}),
 });
 // 107차: 학교 홈페이지 공통 구역(docs/design/school-site-ia.md 6절, template-reference-board.md 3절)
-const quicklinks = (links: [string, string][], p: string): Block => section({ template: 'cards', variant: 'quicklinks', title: ko('바로 가기'),
-  items: links.map(([title, href], i) => ({ title: ko(title), body: ko(`[${p} 바로가기 설명 ${i + 1}]`), href })) });
-const stats = (p: string, n = 4): Block => section({ template: 'facts', variant: 'stats', eyebrow: ko('숫자로 보는 학교'), title: ko(`[${p} 숫자 띠 제목]`),
-  items: Array.from({ length: n }, (_, i) => ({ title: ko(`[${p} 숫자 ${i + 1}]`), body: ko(`[${p} 숫자 ${i + 1} 설명]`) })) });
-const events = (p: string, title: string): Block => section({ template: 'cards', variant: 'events', eyebrow: ko('다가오는 일정'), title: ko(title),
-  items: [1, 2, 3].map((i) => ({ tag: ko(`[${p} 행사 ${i} 날짜]`), title: ko(`[${p} 행사 ${i}]`), body: ko(`[${p} 행사 ${i} 안내]`) })) });
-const voices = (p: string, title: string): Block => section({ template: 'cards', variant: 'voices', eyebrow: ko('함께하는 사람들의 목소리'), title: ko(title),
-  body: ko('[공개에 동의한 분의 말만 싣습니다]'), items: [1, 2, 3].map((i) => ({ title: ko(`[${p} 말한 사람 ${i}]`), body: ko(`[${p} 목소리 ${i}]`) })) });
+// 112차: 두 언어 템플릿(ko·en)은 e(영어 접두)를 주면 고정 문구·안내 자리를 영어로도 만든다(Codex 검토)
+const L = (k: string, en?: string): LText => (en === undefined ? ko(k) : kb(k, en));
+const quicklinks = (links: [string, string, string?][], p: string, e?: string): Block => section({ template: 'cards', variant: 'quicklinks', title: L('바로 가기', e && 'Quick links'),
+  items: links.map(([title, href, titleEn], i) => ({ title: L(title, e && titleEn), body: L(`[${p} 바로가기 설명 ${i + 1}]`, e && `[${e} quick link ${i + 1}]`), href })) });
+const stats = (p: string, n = 4, e?: string): Block => section({ template: 'facts', variant: 'stats', eyebrow: L('숫자로 보는 학교', e && 'At a glance'), title: L(`[${p} 숫자 띠 제목]`, e && `[${e} stats title]`),
+  items: Array.from({ length: n }, (_, i) => ({ title: L(`[${p} 숫자 ${i + 1}]`, e && `[${e} number ${i + 1}]`), body: L(`[${p} 숫자 ${i + 1} 설명]`, e && `[${e} number ${i + 1} label]`) })) });
+const events = (p: string, title: string, e?: string, titleEn?: string): Block => section({ template: 'cards', variant: 'events', eyebrow: L('다가오는 일정', e && 'Coming up'), title: L(title, e && titleEn),
+  items: [1, 2, 3].map((i) => ({ tag: L(`[${p} 행사 ${i} 날짜]`, e && `[${e} event ${i} date]`), title: L(`[${p} 행사 ${i}]`, e && `[${e} event ${i}]`), body: L(`[${p} 행사 ${i} 안내]`, e && `[${e} event ${i} note]`) })) });
+const voices = (p: string, title: string, e?: string, titleEn?: string): Block => section({ template: 'cards', variant: 'voices', eyebrow: L('함께하는 사람들의 목소리', e && 'Voices'), title: L(title, e && titleEn),
+  body: L('[공개에 동의한 분의 말만 싣습니다]', e && '[Only words shared with consent]'), items: [1, 2, 3].map((i) => ({ title: L(`[${p} 말한 사람 ${i}]`, e && `[${e} speaker ${i}]`), body: L(`[${p} 목소리 ${i}]`, e && `[${e} voice ${i}]`) })) });
 const admissionPage = (p: string, sort: number): TemplatePage => page('admission', sort, ko('입학 안내'), [
   section({ template: 'steps', eyebrow: ko('처음 만나는 길'), title: ko('입학 절차'), items: [
     { title: ko('문의'), body: ko(`[${p} 문의 방법]`) }, { title: ko('견학·상담'), body: ko(`[${p} 견학 일정]`) }, { title: ko('지원'), body: ko(`[${p} 지원 서류·면담]`) }, { title: ko('입학'), body: ko(`[${p} 결과·등록]`) }] }),
@@ -163,14 +165,14 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     pages: [
       page('home', 0, kb('[학교 이름]', '[School name]'), [
         section({ template: 'banner', title: kb('[우리 학교를 고르는 이유 한 문장]', '[Why families choose us]'), button: { label: kb('입학 안내', 'Admissions'), href: '/p/admissions' } }),
-        quicklinks([['왜 우리 학교인가', '/p/why'], ['교육과정', '/p/curriculum'], ['입학 안내', '/p/admissions'], ['소식', '/news']], '입학'),
+        quicklinks([['왜 우리 학교인가', '/p/why', 'Why us'], ['교육과정', '/p/curriculum', 'Curriculum'], ['입학 안내', '/p/admissions', 'Admissions'], ['소식', '/news', 'News']], '입학', 'Admissions'),
         section({ template: 'cards', title: kb('무엇이 다른가요', 'What makes us different'), items: [
           { title: ko('[차별점 1]'), body: ko('[근거가 되는 사실 한 줄]') }, { title: ko('[차별점 2]'), body: ko('[근거]') }, { title: ko('[차별점 3]'), body: ko('[근거]') }] }),
-        stats('입학'),
-        voices('입학', '학부모·졸업생 이야기'),
-        events('입학', '입학 설명회 일정'),
+        stats('입학', 4, 'Admissions'),
+        voices('입학', '학부모·졸업생 이야기', 'Admissions', 'Parents and graduates'),
+        events('입학', '입학 설명회 일정', 'Admissions', 'Open days'),
         news(kb('소식', 'News'), 3),
-      ], { site: contact({ label: '입학 상담', href: '/p/admissions' }) }),
+      ], { site: contact({ label: '입학 상담', href: '/p/admissions', en: 'Book a visit' }) }),
       page('why', 1, kb('왜 우리 학교인가', 'Why us'), [
         section({ template: 'media-left', title: ko('[졸업생·학부모 이야기]'), body: ko('[실제 이야기 — 이름은 허락받은 경우만]') }),
         section({ template: 'facts', variant: 'stats', title: ko('숫자로 보는 학교'), items: [{ title: ko('[학생 수]'), body: ko('[설명]') }, { title: ko('[교사 1인당 학생]'), body: ko('[설명]') }] }),
@@ -246,13 +248,13 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     pages: [
       page('home', 0, kb('[학교 이름]', '[School name]'), [
         section({ template: 'banner', title: kb('[학교의 사명 한 문장]', '[Our mission]'), button: { label: kb('함께하기', 'Get involved'), href: '/p/partner' } }),
-        quicklinks([['사명과 신앙', '/p/mission'], ['함께하기', '/p/partner'], ['후원금 쓰임', '/p/partner'], ['소식·기도 제목', '/news']], '사명'),
+        quicklinks([['사명과 신앙', '/p/mission', 'Mission & faith'], ['함께하기', '/p/partner', 'Partner with us'], ['후원금 쓰임', '/p/partner', 'Use of funds'], ['소식·기도 제목', '/news', 'News & prayer']], '사명', 'Mission'),
         section({ template: 'media-right', title: ko('[이 학교가 섬기는 아이들과 마을]'), body: ko('[누구를, 어디에서, 왜]') }),
-        stats('사명'),
-        events('사명', '기도·방문 일정'),
-        voices('사명', '함께하는 분들의 이야기'),
+        stats('사명', 4, 'Mission'),
+        events('사명', '기도·방문 일정', 'Mission', 'Prayer & visit dates'),
+        voices('사명', '함께하는 분들의 이야기', 'Mission', 'Voices of our partners'),
         news(kb('소식·기도 제목', 'News & prayer'), 3),
-      ], { site: contact({ label: '후원하기', href: '/p/partner' }) }),
+      ], { site: contact({ label: '후원하기', href: '/p/partner', en: 'Give' }) }),
       page('mission', 1, kb('사명과 신앙', 'Mission & faith'), [
         section({ template: 'quote', body: ko('[사명 선언문]') }),
         section({ template: 'facts', title: ko('우리가 믿는 것'), items: [{ title: ko('[고백 1]'), body: ko('[설명]') }] }),
