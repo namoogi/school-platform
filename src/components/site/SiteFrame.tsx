@@ -97,6 +97,18 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
         </nav>
       )}
       <header className="site-header">
+        {/* 107차: 머리글 위 작은 줄(주소·전화·언어) — 템플릿 키트 디자인만 */}
+        {kit && (t(profile?.address) || profile?.phone?.length || langList.length > 1) && (
+          <div className="site-topbar">
+            <div className="site-wrap site-topbar-row">
+              <p>
+                {t(profile?.address) && <span>{t(profile?.address)}</span>}
+                {profile?.phone?.length ? <a href={`tel:${profile.phone.at(-1)!.replace(/[^0-9+]/g, '')}`} aria-label={`${siteText('call', lang)} ${profile.phone.at(-1)}`}>{profile.phone.at(-1)}</a> : null}
+              </p>
+              {langList.length > 1 && <nav className="site-langs" aria-label={siteText('lang', lang)}>{langLinks}</nav>}
+            </div>
+          </div>
+        )}
         <div className="site-wrap site-header-row">
           <Link href={link(brandHref)} className="site-brand">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -105,7 +117,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
           </Link>
           {/* 42차: 새벽빛은 옛 사이트처럼 메뉴를 머리 한 줄 안에 둔다 */}
           {(dawn || kit) && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>}
-          {langList.length > 1 && (dawn
+          {langList.length > 1 && !kit && (dawn
             ? (
               <Suspense fallback={<details className="site-lang-menu"><summary><span lang={lang}>{LANG_LABEL[lang]}</span></summary></details>}>
                 {/* 언어를 바꾸거나 다른 곳을 누르면 저절로 닫힌다 */}

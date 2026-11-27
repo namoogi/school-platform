@@ -32,6 +32,23 @@ const contact = (visit?: { label: string; href: string }): Content['site'] => ({
   // 100차: 머리글 오른쪽·바닥글의 주요 행동 단추(학교가 이름과 가는 곳을 바꾼다)
   ...(visit ? { visit: { label: ko(visit.label), href: visit.href } } : {}),
 });
+// 107차: 학교 홈페이지 공통 구역(docs/design/school-site-ia.md 6절, template-reference-board.md 3절)
+const quicklinks = (links: [string, string][], p: string): Block => section({ template: 'cards', variant: 'quicklinks', title: ko('바로 가기'),
+  items: links.map(([title, href], i) => ({ title: ko(title), body: ko(`[${p} 바로가기 설명 ${i + 1}]`), href })) });
+const stats = (p: string, n = 4): Block => section({ template: 'facts', variant: 'stats', eyebrow: ko('숫자로 보는 학교'), title: ko(`[${p} 숫자 띠 제목]`),
+  items: Array.from({ length: n }, (_, i) => ({ title: ko(`[${p} 숫자 ${i + 1}]`), body: ko(`[${p} 숫자 ${i + 1} 설명]`) })) });
+const events = (p: string, title: string): Block => section({ template: 'cards', variant: 'events', eyebrow: ko('다가오는 일정'), title: ko(title),
+  items: [1, 2, 3].map((i) => ({ tag: ko(`[${p} 행사 ${i} 날짜]`), title: ko(`[${p} 행사 ${i}]`), body: ko(`[${p} 행사 ${i} 안내]`) })) });
+const voices = (p: string, title: string): Block => section({ template: 'cards', variant: 'voices', eyebrow: ko('함께하는 사람들의 목소리'), title: ko(title),
+  body: ko('[공개에 동의한 분의 말만 싣습니다]'), items: [1, 2, 3].map((i) => ({ title: ko(`[${p} 말한 사람 ${i}]`), body: ko(`[${p} 목소리 ${i}]`) })) });
+const admissionPage = (p: string, sort: number): TemplatePage => page('admission', sort, ko('입학 안내'), [
+  section({ template: 'steps', eyebrow: ko('처음 만나는 길'), title: ko('입학 절차'), items: [
+    { title: ko('문의'), body: ko(`[${p} 문의 방법]`) }, { title: ko('견학·상담'), body: ko(`[${p} 견학 일정]`) }, { title: ko('지원'), body: ko(`[${p} 지원 서류·면담]`) }, { title: ko('입학'), body: ko(`[${p} 결과·등록]`) }] }),
+  section({ template: 'facts', variant: 'curriculum', title: ko('학비와 비용'), items: [{ title: ko(`[${p} 수업료]`), body: ko(`[${p} 수업료 안내]`) }, { title: ko(`[${p} 기타 비용]`), body: ko(`[${p} 기타 비용 안내]`) }] }),
+  section({ template: 'facts', variant: 'faq', title: ko('자주 묻는 질문'), items: [1, 2, 3].map((i) => ({ title: ko(`[${p} 질문 ${i}]`), body: ko(`[${p} 답 ${i}]`) })) }),
+  { type: 'inquiry', title: ko('견학·상담 신청'), body: ko(`[${p} 신청 안내]`) },
+  section({ template: 'media-left', eyebrow: ko('첫걸음'), title: ko('새로 온 학생의 첫 달'), body: ko(`[${p} 첫걸음 이야기]`) }),
+]);
 const page = (key: string, sort: number, title: LText, blocks: Block[], extra: Partial<Content> = {}): TemplatePage =>
   ({ kind: 'page', key, sort, content: { title, blocks, ...extra } });
 const slot = (id: string, pg: string, path: (string | number)[], kind: SlotKind, label: string, hint: string, clues: string[]): Slot =>
@@ -83,7 +100,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'story', version: 4, name: '이야기형', theme: 'ivory', langs: ['ko'],
+    key: 'story', version: 5, name: '이야기형', theme: 'ivory', langs: ['ko'],
     summary: '교육철학과 학교의 하루를 사진과 이야기로 보여 줍니다.',
     fits: ['사립·대안학교', '교육철학으로 알려지는 학교'], firstScreen: '큰 사진 · 교육철학 · 하루 이야기',
     mustHave: ['교육철학', '배움(교육과정)', '입학 문의 방법'],
@@ -92,11 +109,15 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         // 90차 골격 A(편집형 반반): 글 | 사진, 사진 위에 겹친 '다가오는 행사' 카드
         section({ template: 'banner', variant: 'editorial', title: ko('[학교가 믿는 것을 한 문장으로]'), body: ko('[학교를 처음 만나는 분께 드리는 두 문장]'), button: { label: ko('교육철학 보기'), href: '/p/philosophy' },
           items: [{ title: ko('[다가오는 행사 — 예: 5월 12일 학교 여는 날]'), body: ko('[행사 한 줄 안내]'), href: '/p/community' }] }),
+        quicklinks([['교육철학', '/p/philosophy'], ['학교의 하루', '/p/community'], ['입학 안내', '/p/admission'], ['소식', '/news']], '이야기'),
         section({ template: 'media-right', eyebrow: ko('학교의 하루'), title: ko('[아침부터 저녁까지, 우리 학교의 하루]'), body: ko('[하루 흐름을 이야기처럼]') }),
         section({ template: 'photos', variant: 'mosaic', eyebrow: ko('학교의 사계절'), title: ko('[사진으로 보는 우리 학교]'), items: [
           { title: ko('[사진 이름 1]') }, { title: ko('[사진 이름 2]') }, { title: ko('[사진 이름 3]') }, { title: ko('[사진 이름 4]') }, { title: ko('[사진 이름 5]') }] }),
+        stats('이야기'),
+        events('이야기', '함께 만나는 날'),
+        voices('이야기', '숲속에서 자란 시간'),
         news(ko('이야기'), 3),
-      ], { site: contact({ label: '학교 둘러보기', href: '/p/community' }) }),
+      ], { site: contact({ label: '입학 상담', href: '/p/admission' }) }),
       page('philosophy', 1, ko('교육철학'), [
         section({ template: 'quote', variant: 'editorial', title: ko('숲과 마을을 교실로 삼는 우리의 약속'), body: ko('[학교를 세운 마음을 담은 한마디]') }),
         section({ template: 'cards', variant: 'index', title: ko('우리가 소중히 여기는 것'), items: [{ title: ko('[가치 1]'), body: ko('[설명]') }, { title: ko('[가치 2]'), body: ko('[설명]') }, { title: ko('[가치 3]'), body: ko('[설명]') }] }),
@@ -110,16 +131,20 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       page('community', 3, ko('공동체'), [
         section({ template: 'media-right', eyebrow: ko('학교 밖으로 이어지는 배움'), title: ko('함께 만드는 학교'), body: ko('[학부모·교사·학생이 함께하는 방식]') }),
         section({ template: 'steps', variant: 'timeline', title: ko('함께 만나는 날'), items: [1, 2, 3].map(() => ({ title: ko('[공동체 일정]'), body: ko('[공동체 활동]') })) }),
-        section({ template: 'cta', title: ko('학교가 궁금하신가요?'), body: ko('[견학·상담 안내]') }),
+        section({ template: 'cta', title: ko('학교가 궁금하신가요?'), body: ko('[견학·상담 안내]'), button: { label: ko('입학 안내'), href: '/p/admission' } }),
       ]),
+      admissionPage('이야기', 4),
     ],
     slots: [
       ...commonSlots(),
       slot('belief', 'home', ['blocks', 0, 'title'], 'text', '학교가 믿는 것', '한 문장', ['교육철학', '설립 이념', '믿음', 'philosophy', 'belief']),
       slot('hero-photo', 'home', ['blocks', 0, 'asset'], 'image', '첫 화면 큰 사진', '학교 전경이나 수업 장면(가로 사진)', ['전경', '캠퍼스', 'campus']),
-      slot('day', 'home', ['blocks', 1, 'body'], 'text', '학교의 하루', '하루 흐름', ['하루', '일과', '시간표', 'daily', 'schedule']),
+      slot('day', 'home', ['blocks', 2, 'body'], 'text', '학교의 하루', '하루 흐름', ['하루', '일과', '시간표', 'daily', 'schedule']),
       slot('values', 'philosophy', ['blocks', 1, 'items'], 'list', '소중히 여기는 것', '가치 3개', ['가치', '핵심', '인재상', 'values']),
       slot('method', 'learning', ['blocks', 0, 'body'], 'text', '배움의 방식', '수업 방식', ['수업', '교육과정', '배움', 'curriculum', 'learning']),
+      slot('process', 'admission', ['blocks', 0, 'items'], 'list', '입학 절차', '문의→견학→지원→입학', ['입학', '전형', '모집', '원서', 'admission', 'apply']),
+      slot('fees', 'admission', ['blocks', 1, 'items'], 'list', '학비와 비용', '금액은 자료 그대로', ['학비', '수업료', '등록금', '비용', 'tuition', 'fee']),
+      slot('faq', 'admission', ['blocks', 2, 'items'], 'list', '자주 묻는 질문', '질문과 답', ['질문', 'FAQ', '문의']),
     ],
   },
   {
@@ -158,21 +183,24 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'project', version: 5, name: '프로젝트형', theme: 'studio', langs: ['ko'],
+    key: 'project', version: 6, name: '프로젝트형', theme: 'studio', langs: ['ko'],
     summary: '학생 프로젝트와 작품을 사진 묶음으로 보여 주는 PBL 학교용입니다.',
     fits: ['PBL·프로젝트 중심 대안학교', '발표회·전시가 많은 학교'], firstScreen: '프로젝트 소개 · 발표회 소식',
     mustHave: ['배움의 방식(PBL 흐름)', '프로젝트 목록', '학생 작품 공개 허가'],
     pages: [
       page('home', 0, ko('[학교 이름]'), [
         section({ template: 'banner', title: ko('[문제를 찾고, 탐구하고, 만들어 나눕니다]'), button: { label: ko('프로젝트 보기'), href: '/p/projects' } }),
+        quicklinks([['배움의 방식', '/p/how-we-learn'], ['프로젝트', '/p/projects'], ['학생 작품', '/p/works'], ['입학 안내', '/p/admission']], '프로젝트'),
         // 90차 골격 C(작품 갤러리형): 분야로 거르는 학생 작품 — 공개 허가 받은 작품만
         section({ template: 'photos', variant: 'filter', eyebrow: ko('학생 작품'), title: ko('[이번 학기 결과물]'), body: ko('[학생·보호자 공개 허가를 받은 작품만 싣습니다]'), items: [
           { title: ko('[작품 이름 1]'), tag: ko('[분야 1]') }, { title: ko('[작품 이름 2]'), tag: ko('[분야 2]') }, { title: ko('[작품 이름 3]'), tag: ko('[분야 3]') },
           { title: ko('[작품 이름 4]'), tag: ko('[분야 1]') }, { title: ko('[작품 이름 5]'), tag: ko('[분야 2]') }, { title: ko('[작품 이름 6]'), tag: ko('[분야 3]') }] }),
         section({ template: 'steps', title: ko('배움의 흐름'), items: [{ title: ko('문제 정의'), body: ko('[학생이 질문을 찾는 방법]') }, { title: ko('탐구'), body: ko('[자료·현장·전문가]') }, { title: ko('산출'), body: ko('[만드는 것]') }, { title: ko('나눔·피드백'), body: ko('[발표·전시]') }] }),
+        stats('프로젝트'),
         section({ template: 'cards', variant: 'mentors', eyebrow: ko('곁에서 함께 묻는 사람들'), title: ko('마을의 멘토'), items: [1, 2, 3].map(() => ({ title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') })), button: { label: ko('배움의 방식 보기'), href: '/p/how-we-learn' } }),
+        events('프로젝트', '발표회·전시 일정'),
         news(ko('발표회·전시 소식'), 3),
-      ], { site: contact({ label: '발표회 보기', href: '/p/projects' }) }),
+      ], { site: contact({ label: '입학 안내', href: '/p/admission' }) }),
       page('how-we-learn', 1, ko('배움의 방식'), [
         section({ template: 'media-left', eyebrow: ko('질문에서 세상으로'), title: ko('왜 프로젝트로 배우나요'), body: ko('[학교의 설명]') }),
         section({ template: 'facts', variant: 'curriculum', title: ko('한 학기 흐름'), items: [1, 2, 3, 4].map(() => ({ title: ko('[주차]'), body: ko('[활동]') })) }),
@@ -185,13 +213,17 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       page('works', 3, ko('학생 작품'), [
         section({ template: 'cards', variant: 'portfolio', eyebrow: ko('작은 시도, 새로운 발견'), title: ko('학생 작품 아카이브'), body: ko('[학생·보호자 공개 허가를 받은 작품만 올립니다]'), items: [1, 2, 3, 4, 5, 6].map((n) => ({ title: ko(`[작품 이름 ${n}]`), tag: ko(`[분야 ${(n - 1) % 3 + 1}]`), body: ko(`[작품 설명 ${n}]`) })) }),
       ]),
+      admissionPage('프로젝트', 4),
     ],
     slots: [
       ...commonSlots(),
-      slot('flow', 'home', ['blocks', 2, 'items'], 'list', '배움의 흐름', '문제 정의→탐구→산출→피드백', ['PBL', '프로젝트', '탐구', '수업 흐름']),
+      slot('flow', 'home', ['blocks', 3, 'items'], 'list', '배움의 흐름', '문제 정의→탐구→산출→피드백', ['PBL', '프로젝트', '탐구', '수업 흐름']),
       slot('why-pbl', 'how-we-learn', ['blocks', 0, 'body'], 'text', '왜 프로젝트로 배우나', '학교의 설명', ['교육철학', '프로젝트 수업', 'PBL']),
       slot('project-list', 'projects', ['blocks', 0, 'items'], 'list', '프로젝트 목록', '이름·질문·결과물', ['프로젝트', '주제', '발표회', 'project']),
       slot('works-photos', 'works', ['blocks', 0, 'items'], 'image', '학생 작품 사진', '공개 허가 받은 사진', ['작품', '전시', 'portfolio']),
+      slot('process', 'admission', ['blocks', 0, 'items'], 'list', '입학 절차', '문의→견학→지원→입학', ['입학', '전형', '모집', '원서', 'admission', 'apply']),
+      slot('fees', 'admission', ['blocks', 1, 'items'], 'list', '학비와 비용', '금액은 자료 그대로', ['학비', '수업료', '등록금', '비용', 'tuition', 'fee']),
+      slot('faq', 'admission', ['blocks', 2, 'items'], 'list', '자주 묻는 질문', '질문과 답', ['질문', 'FAQ', '문의']),
     ],
   },
   {
@@ -258,18 +290,21 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     // 90차: 대표 3종의 유치원(골격 D 그래픽 마스크형) — 둥글게 오린 놀이 사진, 연령별 반, 하루 일과 시간 띠, 학부모 질문
-    key: 'kinder', version: 4, name: '유치원형', theme: 'play', langs: ['ko'],
+    key: 'kinder', version: 5, name: '유치원형', theme: 'play', langs: ['ko'],
     summary: '아이들의 하루와 반, 학부모가 궁금한 것을 사진과 함께 따뜻하게 보여 줍니다.',
     fits: ['유치원·어린이집', '초등 저학년 중심 학교'], firstScreen: '둥근 놀이 사진 · 우리 반 · 하루 일과',
     mustHave: ['연령별 반 안내', '하루 일과', '급식·건강 안내', '입학(입소) 상담 방법'],
     pages: [
       page('home', 0, ko('[유치원 이름]'), [
         section({ template: 'banner', variant: 'mask', title: ko('[아이들이 웃으며 자라는 곳]'), body: ko('[처음 오신 가정께 드리는 두 문장]'), button: { label: ko('방문 상담'), href: '/p/admission' } }),
-        section({ template: 'cards', eyebrow: ko('우리 반'), title: ko('나이에 맞춘 반'), items: [
+        quicklinks([['우리 반', '/p/classes'], ['하루와 건강', '/p/daily'], ['입학 안내', '/p/admission'], ['알림', '/news']], '유치원'),
+        section({ template: 'cards', variant: 'stages', eyebrow: ko('우리 반'), title: ko('나이에 맞춘 반'), items: [
           { title: ko('[반 이름 · 나이 1]'), body: ko('[반 한 줄 소개]'), href: '/p/classes' }, { title: ko('[반 이름 · 나이 2]'), body: ko('[반 한 줄 소개]'), href: '/p/classes' }, { title: ko('[반 이름 · 나이 3]'), body: ko('[반 한 줄 소개]'), href: '/p/classes' }] }),
         section({ template: 'steps', variant: 'timeline', eyebrow: ko('하루 일과'), title: ko('[아이들의 하루]'), items: [
           { title: ko('[시간 1]'), body: ko('[활동 1]') }, { title: ko('[시간 2]'), body: ko('[활동 2]') }, { title: ko('[시간 3]'), body: ko('[활동 3]') }, { title: ko('[시간 4]'), body: ko('[활동 4]') }] }),
+        events('유치원', '이번 달 행사'),
         news(ko('알림'), 3),
+        voices('유치원', '학부모 이야기'),
         section({ template: 'facts', variant: 'faq', title: ko('학부모가 자주 묻는 질문'), items: [{ title: ko('[질문 1]'), body: ko('[답 1]') }, { title: ko('[질문 2]'), body: ko('[답 2]') }] }),
         section({ template: 'cta', title: ko('직접 와서 보세요'), body: ko('[방문 상담 요일·연락처]'), button: { label: ko('상담 안내'), href: '/p/admission' } }),
       ], { site: contact({ label: '입학 상담', href: '/p/admission' }) }),
@@ -296,7 +331,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     slots: [
       ...commonSlots(),
       slot('hero-photo', 'home', ['blocks', 0, 'asset'], 'image', '첫 화면 놀이 사진', '아이들이 노는 장면(얼굴은 보호자 허락이 있을 때만)', ['놀이', '교실', 'playground']),
-      slot('classes', 'home', ['blocks', 1, 'items'], 'list', '우리 반', '반 이름·나이·한 줄 소개', ['반', '연령', '만 3세', '만 4세', '만 5세', 'class']),
+      slot('classes', 'home', ['blocks', 2, 'items'], 'list', '우리 반', '반 이름·나이·한 줄 소개', ['반', '연령', '만 3세', '만 4세', '만 5세', 'class']),
       slot('day', 'daily', ['blocks', 0, 'items'], 'list', '하루 일과', '시간과 활동', ['일과', '하루', '시간표', 'daily', 'schedule']),
       slot('meals', 'daily', ['blocks', 1, 'body'], 'text', '급식과 건강', '급식·간식·건강 안내', ['급식', '간식', '식단', '건강', 'meal']),
       slot('process', 'admission', ['blocks', 0, 'items'], 'list', '입학 절차', '상담→방문→신청→적응', ['입학', '입소', '모집', '원서', 'admission']),

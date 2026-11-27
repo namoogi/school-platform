@@ -128,7 +128,8 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
   - **PR 본문에 `@codex` 글자를 쓰면 그것도 호출로 받아 같은 작업이 두 번 돈다.** 본문에서는 쓰지 않는다.
   - GitHub 댓글의 Codex 공유 링크(`chatgpt.com/s/cd_…`)는 앱에서 "사용할 수 없습니다"로 열리지 않을 수 있다. chatgpt.com/codex 작업 목록에서 찾는다.
   - 클라우드 Claude 세션 안의 `codex login --device-auth`는 계정 보안 설정에 따라 막힐 수 있다("장치 코드 인증을 활성화").
-  - 사람 손을 없애는 길(추천): 선생님 Mac에서 `claude remote-control`로 저장소 폴더를 열면, 클라우드 Claude 세션이 그 폴더를 붙여 Mac에 로그인된 Codex CLI를 직접 실행할 수 있다(확인 대기).
+  - Mac 폴더 연결 시험(2026-11-27): Claude 데스크톱 앱 Remote Control에 저장소 폴더(홈 바로 아래 새 복제본 포함)를 넣어도 클라우드 세션 목록에 'not_available'(이유 표시 없음)로만 보였다. `claude remote-control`(터미널)은 클라우드 세션에 폴더를 내주지 않는다. → 지금은 **Claude 구현 + Codex PR 자동 검토**로 운영한다. 앱 업데이트 뒤 다시 시험한다.
+  - PR을 병합하기 전에 Codex 자동 검토가 끝났는지 본다(106차에 검토 전에 병합해 후속 PR #167이 필요했다).
 - 사용자 1회 설정(85차에 확인한 순서). 그 뒤로는 사람이 중계하지 않는다.
   1. Codex 설정 → Code review → 이 저장소 켜기(Automatic review)
   2. Codex 설정 → Personal preferences → 자동 검토 켜기. 저장소 칸이 'Follow personal preferences'면 이 값을 따른다.

@@ -47,7 +47,7 @@ describe('템플릿 적용', () => {
     const again = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'notice'));
     expect(again.created).toEqual([]);
     const story = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'story'));
-    expect(story.created.map((c) => c.key)).toEqual(['philosophy', 'learning', 'community']);
+    expect(story.created.map((c) => c.key)).toEqual(['philosophy', 'learning', 'community', 'admission']);
     expect(story.skipped).toEqual(['home']);
     expect((await asUser(B.userId, (db) => site.listEntries(db, B.schoolId))).length).toBe(0);
     const b = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'international'));
