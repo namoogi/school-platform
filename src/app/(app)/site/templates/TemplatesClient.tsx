@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Field } from '@/components/Field';
 
 /** 65차(ADR 0031): 템플릿 적용 — 없는 쪽만 시안으로 만들고, 이미 있는 쪽은 건너뛴다 */
 export function ApplyTemplate({ templateKey, name, existing }: { templateKey: string; name: string; existing: string[] }) {
@@ -255,13 +256,15 @@ export function MigrateStart({ templates }: { templates: { key: string; name: st
     } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
     finally { setBusy(false); }
   }
+  // 남은 일 = 제안이 없던 칸 + 제안했지만 고르지 않은 칸(옮기기에서 빠짐)
+  const remaining = tp ? [...tp.unfilled, ...tp.proposals.filter((p) => p.kind !== 'image' && !pick[p.slotId]).map((p) => ({ id: p.slotId, label: p.label, hint: '옛 사이트에서 찾았지만 옮기지 않음 — 확인 필요' }))] : [];
   const agentText = res && tp ? [
     `우리 학교 홈페이지를 '${name}' 템플릿(새 디자인)으로 옮기는 중입니다. 옛 사이트: ${res.start}`,
     `학교 관리자가 'AI 작업 공간'에서 발급한 작업 토큰(종류 page, 권한 read·upload·edit)으로만 일하고, 공개하지 마세요(사람이 확인 뒤 공개합니다).`,
     `안내: 저장소 문서 docs/agents/site-migrate.md 와 docs/agents/README.md(API).`,
     '',
     '할 일',
-    ...(tp.unfilled.length ? [`1. 아직 못 채운 칸을 옛 사이트(${res.pages.length}쪽 읽음)에서 찾아 채운 새 판을 저장: ${tp.unfilled.map((u) => `${u.label}(${u.hint})`).join(', ')}`] : ['1. 채운 칸을 옛 사이트와 대조해 틀린 곳을 고친 새 판을 저장']),
+    ...(remaining.length ? [`1. 아직 못 채운 칸을 옛 사이트(${res.pages.length}쪽 읽음)에서 찾아 채운 새 판을 저장: ${remaining.map((u) => `${u.label}(${u.hint})`).join(', ')}`] : ['1. 채운 칸을 옛 사이트와 대조해 틀린 곳을 고친 새 판을 저장']),
     ...(tp.imageSlots.length ? [`2. 사진 칸: ${tp.imageSlots.map((s) => `${s.label}(${s.page} 쪽)`).join(', ')} — 옛 사이트 사진 가운데 학교가 권리를 가진 것을 쓰거나, 실제 사람 얼굴이 없는 삽화를 만들어 POST /api/agent/assets 로 올리고 그 쪽 새 판에 넣기`] : []),
     `${tp.imageSlots.length ? 3 : 2}. 남은 [ ] 안내 자리 목록과 확인이 필요한 사실(학비·날짜·연락처)을 사람에게 보고`,
   ].join('\n') : '';
@@ -269,9 +272,11 @@ export function MigrateStart({ templates }: { templates: { key: string; name: st
     <section className="card stack" data-testid="migrate-start" aria-labelledby="migrate-start-title">
       <h2 id="migrate-start-title">기존 홈페이지를 새 디자인으로 옮기기</h2>
       <p className="fine">지금 쓰는 홈페이지 주소를 넣으면 같은 사이트의 공개된 쪽을 8개까지 읽고(robots.txt를 따름), 내용에 맞는 템플릿을 추천합니다. 템플릿을 바꿔 볼 수 있고, 확인한 내용만 새 디자인의 시안으로 옮깁니다. 공개는 직접 합니다.</p>
-      <form className="row-wrap" onSubmit={read}>
-        <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://our-school.example" aria-label="기존 홈페이지 주소" required data-testid="migrate-start-url" />
-        <button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-start-read">{busy && !res ? '읽는 중…' : '읽고 추천받기'}</button>
+      <form className="stack" onSubmit={read}>
+        <Field label="기존 홈페이지 주소" required hint="https:// 로 시작하는 학교 홈페이지 첫 쪽 주소">
+          <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://our-school.example" data-testid="migrate-start-url" />
+        </Field>
+        <div className="form-actions"><button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-start-read">{busy && !res ? '읽는 중…' : '읽고 추천받기'}</button></div>
       </form>
       {res && tp && (
         <div className="stack">
@@ -298,7 +303,7 @@ export function MigrateStart({ templates }: { templates: { key: string; name: st
               </li>
             ))}</ul>
           )}
-          {tp.unfilled.length > 0 && <p className="fine">못 찾은 칸: {tp.unfilled.map((u) => u.label).join(' · ')} — 옮긴 뒤 직접 쓰거나 학교 AI에게 맡깁니다.</p>}
+          {remaining.length > 0 && <p className="fine">옮기지 않는 칸: {remaining.map((u) => u.label).join(' · ')} — 옮긴 뒤 직접 쓰거나 학교 AI에게 맡깁니다.</p>}
           {res.images.length > 0 && <p className="fine">옛 사이트 그림 {res.images.length}장은 옮긴 뒤 ‘{name}’ 미리보기 아래 ‘기존 홈페이지에서 옮기기’에서 골라 가져옵니다.</p>}
           <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy} onClick={move} data-testid="migrate-start-move">‘{name}’ 디자인으로 옮기기</button></div>
           <details data-testid="migrate-agent">
