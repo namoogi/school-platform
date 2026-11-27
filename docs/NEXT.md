@@ -9,7 +9,7 @@
 ## 언어 (93차, ADR 0037)
 화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개), 98차 4묶음(설정·/my·/locked), 100차 5묶음(전체 관리) 완료, 남은 한글 줄 541(대부분 `/site`·템플릿 = 홈페이지 세션 몫). 101차 6묶음(서버 오류 이름표, ADR 0039: 앱 오류 전부 + 자주 나오는 DB 안내 29개) 완료, 102차 6c(DB 고정 문구 301개 영어), 103차(홈페이지 관리·템플릿, 한글 줄 76) 완료. 남은 것은 값이 든 DB 문구와 홈페이지 쪽 오류. 서버 오류는 `new ValidationError('err.이름', { 값 })`로 던진다. 셸 밖 화면은 `providerValue(i18n)`로 공급자를 둔다. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db), school.locale)`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
 
-## 성적 계산 (103·104차, ADR 0040·0041)
+## 성적 계산 (104·105차, ADR 0040·0041)
 - 계산식 판(`calc_rules`, `src/lib/calc/expr.ts`): 학교마다 이수 기준·성적 산출을 선언형 식으로 쓴다. 자료 없음은 3값이다(합·평균도 null).
 - 견본 13개
   - 일반형 6개(드리미 방식 포함, `docs/research/dreamy-calc-rules-2026-11.md`)
