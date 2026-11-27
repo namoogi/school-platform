@@ -6,6 +6,7 @@ import type { EditPath } from '@/lib/site-edit';
 import { isStoryOutline, storyImageAsset } from '@/lib/story-language';
 import { StoryBook } from './StoryBook';
 import { GalleryGrid } from './GalleryGrid';
+import { TagFilter } from './TagFilter';
 import { RainbowArc, Ribbon } from './Rainbow';
 
 /** 공개 화면 낱말 (블록 안) */
@@ -14,7 +15,7 @@ const W = {
   all: { ko: '전체', en: 'All', th: 'ทั้งหมด' }, close: { ko: '닫기', en: 'Close', th: 'ปิด' },
   prevPhoto: { ko: '이전 사진', en: 'Previous photo', th: 'ภาพก่อนหน้า' }, nextPhoto: { ko: '다음 사진', en: 'Next photo', th: 'ภาพถัดไป' },
   photos: { ko: '장', en: ' photos', th: ' ภาพ' }, watch: { ko: '영상 보기', en: 'Watch the video', th: 'ดูวิดีโอ' },
-  allNews: { ko: '소식 모두 보기', en: 'All news', th: 'ข่าวทั้งหมด' }, read: { ko: '읽기', en: 'Read', th: 'อ่าน' },
+  allNews: { ko: '소식 모두 보기', en: 'All news', th: 'ข่าวทั้งหมด' }, byTag: { ko: '분류로 거르기', en: 'Filter by category', th: 'กรองตามหมวด' }, read: { ko: '읽기', en: 'Read', th: 'อ่าน' },
   more: { ko: '더 보기', en: 'Read more', th: 'อ่านเพิ่มเติม' },
   characters: { ko: '장면별 캐릭터', en: 'Characters by scene', th: 'ตัวละครในแต่ละฉาก' },
   scene: { ko: '장면', en: 'Scene', th: 'ฉาก' },
@@ -242,6 +243,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                     const inner = b.template === 'photos'
                       ? <>
                           {pic}
+                          {(t(it.tag) || (ed && v === 'filter')) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
                           {show(it.title) && <span>{T(at('items', k, 'title'), it.title, `${k + 1}번 사진 이름`)}</span>}
                           {v === 'moments' && <span className="sec-label">{num}{(t(it.body) || ed) && <> · {T(at('items', k, 'body'), it.body, `${k + 1}번 이름표`)}</>}<Arrow /></span>}
                         </>
@@ -249,22 +251,26 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                           {pic}
                           {v === 'index' && <span className="sec-index">{num}</span>}
                           <div className="sec-item-copy">
+                            {(t(it.tag) || (ed && v === 'filter')) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
                             {show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}번 카드 제목`)}</h3>}
                             {show(it.body) ? P(at('items', k, 'body'), it.body, `${k + 1}번 카드 글`) : null}
                             {v === 'rows' && it.href && <span className="site-link">{w('more', lang)}<Arrow /></span>}
                           </div>
                           {v === 'index' && <Arrow />}
                         </>;
-                    return <li key={k}>{it.href ? <A to={it.href}>{inner}</A> : inner}</li>;
+                    return <li key={k} data-tag={t(it.tag) || undefined}>{it.href ? <A to={it.href}>{inner}</A> : inner}</li>;
                   })}</ul>;
         /** 항목 뒤에 링크를 두는 모양: 개요, 문의 사무실(전화 아래 Facebook), 한눈에 보기(facts 기본) */
+        const tags = [...new Set(items.map((it) => t(it.tag)).filter(Boolean))] as string[];
         const btnAfter = v === 'overview' || (v === 'half' && items.length > 0) || (b.template === 'facts' && !v && items.length > 0); // 52차: 한눈에 보기도 항목 뒤에
         return (
           <section className="sec" data-template={b.template} data-variant={v}>
             {b.template === 'banner' && figure}
             <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
             {(b.template === 'media-left' || b.template === 'media-right') && figure}
-            {itemList}
+            {v === 'filter' && !ed && itemList && tags.length > 1
+              ? <TagFilter tags={tags} allLabel={w('all', lang)} label={w('byTag', lang)}>{itemList}</TagFilter>
+              : itemList}
             {btnAfter && btn}
           </section>
         );

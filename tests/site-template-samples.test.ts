@@ -40,10 +40,10 @@ describe('템플릿 예시 내용', () => {
   it('모든 템플릿에 썸네일이 있다(npm run templates:thumbs)', () => {
     for (const t of SITE_TEMPLATES) expect(existsSync(`public/site-templates/${t.key}.jpg`), t.key).toBe(true);
   });
-  it('89차: 모든 템플릿 디자인이 화면 모양 목록에 있고, 이야기형만 새벽빛을 쓴다', () => {
+  it('89·90차: 모든 템플릿 디자인이 화면 모양 목록에 있고 서로 다르다(새벽빛은 룽아룬숙사 등 기존 학교용으로 남김)', () => {
     for (const t of SITE_TEMPLATES) expect(isSiteTheme(t.theme), t.key).toBe(true);
     expect(new Set(SITE_TEMPLATES.map((t) => t.theme)).size).toBe(SITE_TEMPLATES.length);
-    expect(SITE_TEMPLATES.filter((t) => t.theme === 'dawn').map((t) => t.key)).toEqual(['story']);
+    expect(SITE_TEMPLATES.filter((t) => t.theme === 'dawn' || t.theme === 'campus')).toEqual([]);
   });
   it('89차: 예시 그림이 실제 칸에 놓이고 그림 파일이 있다', () => {
     for (const t of SITE_TEMPLATES) {
@@ -58,5 +58,12 @@ describe('템플릿 예시 내용', () => {
         expect(existsSync(`public${url}`), url).toBe(true);
       }
     }
+  });
+  it('90차: 대표 3종은 골격(배치)이 서로 다르다 — 편집형·작품 거르기·둥근 오리기', () => {
+    const variants = (key: string) => SITE_TEMPLATES.find((t) => t.key === key)!.pages[0].content.blocks.map((b) => (b.type === 'section' ? b.variant ?? '' : b.type));
+    expect(variants('story')).toContain('editorial');
+    expect(variants('story')).toContain('mosaic');
+    expect(variants('project')).toContain('filter');
+    expect(variants('kinder')).toEqual(expect.arrayContaining(['mask', 'timeline', 'faq']));
   });
 });

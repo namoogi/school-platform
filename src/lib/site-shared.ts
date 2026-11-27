@@ -23,13 +23,17 @@ export const SECTION_LABEL: Record<SectionTemplate, string> = {
  * 42차: 새벽빛(dawn) 구역 모양. 옛 룽아룬숙사 사이트의 고정 구역을 그대로 그리는 모양 이름이다(다른 테마는 무시하고 템플릿대로 그림).
  * 템플릿은 칸(제목·글·사진·항목)을, 모양은 그 칸의 배치를 정한다. 짝이 맞지 않으면 템플릿 기본 모양으로 그린다.
  */
-export const SECTION_VARIANTS = ['split', 'portrait', 'index', 'moments', 'overview', 'emblem', 'rows', 'questions', 'aside', 'faq', 'prep', 'half'] as const;
+export const SECTION_VARIANTS = ['split', 'portrait', 'index', 'moments', 'overview', 'emblem', 'rows', 'questions', 'aside', 'faq', 'prep', 'half',
+  // 90차: 템플릿 골격(docs/design/homepage-commercial-plan.md 3절)
+  'editorial', 'mosaic', 'mask', 'filter', 'timeline', 'tiles'] as const;
 export type SectionVariant = (typeof SECTION_VARIANTS)[number];
 export const VARIANT_LABEL: Record<SectionVariant, string> = {
   split: '두 단(제목 | 글)', portrait: '대표 사진(무지개 호)', index: '번호 상자', moments: '사진 셋(번호 이름표)', overview: '사진 + 정보 줄',
   emblem: '작은 로고 + 글', rows: '사진–글 줄', questions: '제목 | 질문 목록', aside: '제목 | 목록', faq: '제목 | 접는 질문', prep: '안내 상자 + 포스터', half: '반 폭',
+  editorial: '글 | 사진 반반 + 겹친 카드', mosaic: '큰·작은 사진 콜라주', mask: '둥글게 오린 사진', filter: '분류로 거르기', timeline: '시간 띠(하루 일과)', tiles: '크기가 다른 색 타일',
 };
-export type SectionItem = { title?: LText; body?: LText; asset?: string; alt?: LText; href?: string };
+/** 90차: tag = 분류(분류로 거르기 모양에서 단추가 됨, 예: 과학·예술) */
+export type SectionItem = { title?: LText; body?: LText; asset?: string; alt?: LText; href?: string; tag?: LText };
 export type Button = { label: LText; href: string };
 export type GalleryItem = { asset: string; alt?: LText; category?: string; file_name?: string; size_bytes?: number };
 export type GalleryFilter = { key: string; label: LText };
@@ -76,6 +80,8 @@ export const SITE_THEMES = [
   { key: 'lamp', name: '등불', note: '따뜻한 갈색과 명조 제목, 사명·후원 중심' },
   { key: 'horizon', name: '지평', note: '청록과 넓은 사진, 여러 언어 학교' },
   { key: 'seed', name: '씨앗', note: '둥근 모서리와 연두, 작은 모임의 한 쪽 소개' },
+  { key: 'ivory', name: '아이보리 편집', note: '아이보리 바탕·명조 제목·글과 사진 반반, 일반 학교' },
+  { key: 'play', name: '놀이터', note: '복숭아색·노랑, 둥글게 오린 사진, 유치원·저학년' },
 ] as const;
 export type SiteTheme = (typeof SITE_THEMES)[number]['key'];
 export const isSiteTheme = (v: unknown): v is SiteTheme => SITE_THEMES.some((t) => t.key === v);

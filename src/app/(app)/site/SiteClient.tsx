@@ -5,7 +5,7 @@ import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, Plus, Trash2 } from 'lucide-react';
-import { BLOCK_LABEL, KIND_LABEL, PHOTO_CONSENT, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
+import { BLOCK_LABEL, KIND_LABEL, PHOTO_CONSENT, LANG_LABEL, LANGS, SECTION_LABEL, SECTION_TEMPLATES, SECTION_VARIANTS, VARIANT_LABEL, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
 
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -372,6 +372,13 @@ function SectionFields({ b, langs, assets, onUploaded, onChange }: { b: SectionB
         {SECTION_TEMPLATES.map((t) => <option key={t} value={t}>{SECTION_LABEL[t]}</option>)}
       </select>
     </label>
+    {/* 90차: 배치(골격) — 디자인마다 다르게 그려진다 */}
+    <label>배치
+      <select value={b.variant ?? ''} onChange={(e) => onChange({ ...b, variant: (e.target.value || undefined) as SectionBlock['variant'] })} data-testid="section-variant">
+        <option value="">기본</option>
+        {SECTION_VARIANTS.map((v) => <option key={v} value={v}>{VARIANT_LABEL[v]}</option>)}
+      </select>
+    </label>
     <LangFields label="머리말" value={b.eyebrow} langs={langs} onChange={(eyebrow) => onChange({ ...b, eyebrow })} />
     <LangFields label={b.template === 'quote' ? '말한 사람' : '제목'} value={b.title} langs={langs} onChange={(title) => onChange({ ...b, title })} />
     <LangFields label={b.template === 'quote' ? '문장' : '글'} value={b.body} langs={langs} multiline onChange={(body) => onChange({ ...b, body })} />
@@ -384,6 +391,7 @@ function SectionFields({ b, langs, assets, onUploaded, onChange }: { b: SectionB
         <li key={k} className="block-card">
           <LangFields label={`${k + 1}. 제목`} value={it.title} langs={langs} onChange={(title) => setItem(k, { ...it, title })} />
           {b.template !== 'photos' && <LangFields label={`${k + 1}. 글`} value={it.body} langs={langs} multiline onChange={(body) => setItem(k, { ...it, body })} />}
+          {b.variant === 'filter' && <LangFields label={`${k + 1}. 분류(거르기 단추)`} value={it.tag} langs={langs} onChange={(tag) => setItem(k, { ...it, tag })} />}
           {(b.template === 'cards' || b.template === 'photos') && <AssetPick label={`${k + 1}. 사진`} value={it.asset} assets={assets} onUploaded={onUploaded} onChange={(asset) => setItem(k, { ...it, asset: asset || undefined })} />}
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChange({ ...b, items: items.filter((_, j) => j !== k) })}>{k + 1}번 항목 빼기</button>
         </li>))}</ol>
