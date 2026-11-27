@@ -1085,6 +1085,8 @@ try {
     await b.waitForFunction(() => document.activeElement?.textContent === '취소', null, { timeout: 3000 }).catch(() => {});
     assert.equal(await focusedName(), '취소', '처음 포커스');
     await shot(b, '31-confirm-dialog.png');
+    // 대화상자는 화면 형식·명암 토큰을 가진 .app 안에 그린다(#135, 어두운 화면에서도 같은 토큰)
+    assert.ok(await dlg.evaluate((el) => !!el.closest('.app[data-mode]')), '대화상자가 .app 안에 있다');
     // Tab은 대화상자 안에서만 돈다(포커스 가둠)
     await b.keyboard.press('Tab');
     await b.keyboard.press('Tab');
