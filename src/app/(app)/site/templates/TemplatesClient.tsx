@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field } from '@/components/Field';
+import { templateText } from '@/lib/site-labels';
 import { useI18n } from '@/components/I18nProvider';
 
 /** 사이트 설정 요약(디자인 함께 바꾸기 안내에 씀) */
@@ -320,7 +321,7 @@ export function MigrateStart({ templates, site }: { templates: { key: string; na
               <label key={f.key} className="radio migrate-fit">
                 <input type="radio" name="migrate-template" value={f.key} checked={key === f.key} onChange={() => choose(f.key)} data-testid={`migrate-fit-${f.key}`} />
                 <img src={`/site-templates/${f.key}.jpg`} alt="" width={96} height={60} />
-                <span><strong>{f.name}</strong>{i === 0 && <span className="badge" data-tone="success"> {t('cc.recommended')}</span>}<br />
+                <span><strong>{templateText(t, f.key, 'name', f.name)}</strong>{i === 0 && <span className="badge" data-tone="success"> {t('cc.recommended')}</span>}<br />
                   <small className="muted">{t('site.tpl.start.fillable', { n: f.filled })}{f.reasons.length ? t('site.tpl.start.clues', { clues: f.reasons.join(', ') }) : ''} · <a href={`/site/templates/${f.key}`} target="_blank" rel="noreferrer">{t('site.tpl.preview')}</a></small></span>
               </label>
             ))}

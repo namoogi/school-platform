@@ -1,3 +1,4 @@
+import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
@@ -25,8 +26,9 @@ export default async function TemplatePreview({ params, searchParams }: { params
     settings: await getSettings(db, school.id),
   }), { module: 'homepage' });
   const { t: tr } = await getI18n(uiLang, school.locale);
-  const designName = SITE_THEMES.find((x) => x.key === t.theme)?.name ?? t.theme;
-  const siteState = { exists: !!settings, open: !!settings?.is_open, theme: settings?.theme ?? null, themeName: SITE_THEMES.find((x) => x.key === settings?.theme)?.name ?? null };
+  const tplName = templateText(tr, t.key, 'name', t.name);
+  const designName = siteLabel(tr, 'theme', t.theme, SITE_THEMES.find((x) => x.key === t.theme)?.name ?? t.theme);
+  const siteState = { exists: !!settings, open: !!settings?.is_open, theme: settings?.theme ?? null, themeName: settings?.theme ? siteLabel(tr, 'theme', settings.theme, SITE_THEMES.find((x) => x.key === settings.theme)?.name ?? settings.theme) : null };
   const pg = t.pages.find((p) => p.key === sp.page) ?? t.pages[0];
   const lang = (t.langs as string[]).includes(sp.lang ?? '') ? (sp.lang as Lang) : (t.langs[0] as Lang);
   const slots = t.slots.filter((s) => s.page === pg.key);
@@ -37,8 +39,8 @@ export default async function TemplatePreview({ params, searchParams }: { params
     `/site/templates/${t.key}?page=${o.page ?? pg.key}&lang=${o.lang ?? lang}${(o.view ?? view) === 'guide' ? '&view=guide' : ''}`;
   return (
     <>
-      <PageHeader title={tr('site.tpl.detail.title', { name: t.name })} crumbs={[{ label: tr('nav.site.title'), href: '/site' }, { label: tr('site.tpl.crumb'), href: '/site/templates' }, { label: t.name }]}
-        description={tr('site.tpl.detail.description', { summary: t.summary, design: designName })} />
+      <PageHeader title={tr('site.tpl.detail.title', { name: tplName })} crumbs={[{ label: tr('nav.site.title'), href: '/site' }, { label: tr('site.tpl.crumb'), href: '/site/templates' }, { label: tplName }]}
+        description={tr('site.tpl.detail.description', { summary: templateText(tr, t.key, 'summary', t.summary), design: designName })} />
       <div className="template-layout">
         <section className="template-stage" aria-label={tr('site.tpl.preview')}>
           {/* 86차(사용자 지시): 미리보기에서 쪽마다 바로 넘겨 본다 — 쪽 탭을 미리보기 바로 위에 둔다 */}
@@ -70,7 +72,7 @@ export default async function TemplatePreview({ params, searchParams }: { params
           {slots.length === 0 ? <p className="muted">{tr('site.tpl.detail.noSlots')}</p> : <ul className="issue-list">{slots.map((s) => <li key={s.id}><span><strong>{s.label}</strong> <small className="muted">{s.hint}</small></span></li>)}</ul>}
           <h2>{tr('site.tpl.detail.mustHave')}</h2>
           <ul className="issue-list">{t.mustHave.map((m) => <li key={m}>{m}</li>)}</ul>
-          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={t.name} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} site={siteState} designName={designName} />
+          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={tplName} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} site={siteState} designName={designName} />
             : <p className="muted">{tr('site.tpl.detail.adminOnly')}</p>}
 
         </aside>

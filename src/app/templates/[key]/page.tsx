@@ -1,3 +1,4 @@
+import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
@@ -53,7 +54,7 @@ export default async function TemplateLive({ params, searchParams }: {
     <>
       {!sp.thumb && <nav className="template-live-bar" aria-label={tr('site.tpl.live.label')}>
         <Link href="/site/templates">{tr('site.tpl.live.back')}</Link>
-        <strong>{t.name}</strong><span className="muted">{tr('site.tpl.live.design', { name: design?.name ?? t.theme })}</span>
+        <strong>{templateText(tr, t.key, 'name', t.name)}</strong><span className="muted">{tr('site.tpl.live.design', { name: siteLabel(tr, 'theme', t.theme, design?.name ?? t.theme) })}</span>
         {sample && <span className="segmented" role="group" aria-label={tr('site.tpl.view.label')}>
           <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined}>{tr('site.tpl.view.sample')}</Link>
           <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined}>{tr('site.tpl.view.guide')}</Link>
@@ -76,5 +77,5 @@ export async function generateMetadata({ params }: { params: Promise<{ key: stri
   const { key } = await params;
   const t = SITE_TEMPLATES.find((x) => x.key === key);
   const { t: tr } = await getI18n();
-  return { title: t ? tr('site.tpl.live.metaTitle', { name: t.name }) : tr('site.tpl.live.label') };
+  return { title: t ? tr('site.tpl.live.metaTitle', { name: templateText(tr, t.key, 'name', t.name) }) : tr('site.tpl.live.label') };
 }

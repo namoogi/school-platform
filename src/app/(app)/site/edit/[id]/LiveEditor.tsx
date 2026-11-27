@@ -18,6 +18,7 @@ import { PageHead, SiteBlocks, type EditHooks, type NewsItem } from '@/component
 import { SiteFrame } from '@/components/site/SiteFrame';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import { uploadWithProgress } from '@/lib/file-check';
+import { siteLabel } from '@/lib/site-labels';
 import { useI18n } from '@/components/I18nProvider';
 import { withLink } from '@/components/ui';
 
@@ -269,7 +270,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
                 router.push(`/site/edit/${to}`);
               }}>
                 {(['page', 'news', 'story'] as EntryKind[]).map((k) => pages.some((x) => x.kind === k) && (
-                  <optgroup key={k} label={KIND_LABEL[k]}>
+                  <optgroup key={k} label={siteLabel(t, 'kind', k, KIND_LABEL[k])}>
                     {pages.filter((x) => x.kind === k).map((x) => <option key={x.id} value={x.id}>{x.title} · /{x.key}</option>)}
                   </optgroup>))}
               </select>
@@ -281,7 +282,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
           <div className="le-title">
             <h1>{title}</h1>
             <p className="fine">
-              {KIND_LABEL[kind]} · /{entry.key} · {t('site.edit.latestVersion', { v: latest.version })} · {live ? t('site.edit.liveVersion', { v: live.version }) : t('site.edit.notPublished')}{!siteOpen && ` · ${t('site.edit.siteClosed')}`}
+              {siteLabel(t, 'kind', kind, KIND_LABEL[kind])} · /{entry.key} · {t('site.edit.latestVersion', { v: latest.version })} · {live ? t('site.edit.liveVersion', { v: live.version }) : t('site.edit.notPublished')}{!siteOpen && ` · ${t('site.edit.siteClosed')}`}
             </p>
           </div>
           {dirty && <span className="badge" data-tone="warning" data-testid="le-dirty">{t('site.edit.dirty')}</span>}
@@ -533,7 +534,7 @@ function BlockSettings({ i, b, langs, lang, onFocus, typed, change, assets, onAd
     body = <>
       <label>{t('site.edit.settings.shape')}
         <select value={b.template} onChange={(e) => setB({ ...b, template: e.target.value as SectionTemplate })}>
-          {SECTION_TEMPLATES.map((tp) => <option key={tp} value={tp}>{SECTION_LABEL[tp]}</option>)}
+          {SECTION_TEMPLATES.map((tp) => <option key={tp} value={tp}>{siteLabel(t, 'section', tp, SECTION_LABEL[tp])}</option>)}
         </select>
       </label>
       {HAS_ITEMS.includes(b.template) && (
@@ -664,7 +665,7 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
       <FileDrop
         compact label={t('site.edit.picker.upload')} multiple maxFiles={10} onFiles={upload} testId="le-upload" inputTestId="le-upload-input"
         accept={['image/png', 'image/jpeg', 'image/webp', 'image/gif']} typeLabel="PNG·JPG·WEBP·GIF" maxSize={5 * 1024 * 1024}
-        hint={<span data-testid="photo-consent">{PHOTO_CONSENT}</span>}
+        hint={<span data-testid="photo-consent">{t('site.asset.photoConsent')}</span>}
       />
       {assets.length === 0 ? <p className="fine">{t('site.edit.picker.empty')}</p> : (
         <ul className="le-assets" aria-label={t('site.edit.picker.library')}>

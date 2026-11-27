@@ -400,7 +400,7 @@ function SectionFields({ b, langs, assets, onUploaded, onChange }: { b: SectionB
     </label>
     <LangFields label={t('site.section.eyebrow')} value={b.eyebrow} langs={langs} onChange={(eyebrow) => onChange({ ...b, eyebrow })} />
     <LangFields label={b.template === 'quote' ? t('site.section.quoteBy') : t('site.field.title')} value={b.title} langs={langs} onChange={(title) => onChange({ ...b, title })} />
-    <LangFields label={b.template === 'quote' ? t('site.section.quote') : t('site.field.text')} value={b.body} langs={langs} multiline onChange={(body) => onChange({ ...b, body })} />
+    <LangFields label={b.template === 'quote' ? t('site.section.quoteText') : t('site.field.text')} value={b.body} langs={langs} multiline onChange={(body) => onChange({ ...b, body })} />
     {HAS_PHOTO.includes(b.template) && <>
       <AssetPick label={t('site.field.photo')} value={b.asset} assets={assets} onUploaded={onUploaded} onChange={(asset) => onChange({ ...b, asset: asset || undefined })} />
       <LangFields label={t('site.section.photoAlt')} value={b.alt} langs={langs} onChange={(alt) => onChange({ ...b, alt })} />

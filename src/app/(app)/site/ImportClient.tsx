@@ -6,7 +6,7 @@ import { FileArchive, Upload } from 'lucide-react';
 import { FileDrop } from '@/components/FileDrop';
 import { useI18n } from '@/components/I18nProvider';
 import { decideReimport, fillAssets, IMPORT_NOTE, MERGED_MARK, mergeSettings, planImport, refsIn, type ImportPlan, type ReimportDecision } from '@/lib/site-import';
-import { PHOTO_CONSENT, type SiteSettings } from '@/lib/site-shared';
+import { type SiteSettings } from '@/lib/site-shared';
 import { withLink } from '@/components/ui';
 
 /**
@@ -145,7 +145,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
       <p className="fine">{withLink(t('site.import.lead'), { b: <b>{t('site.import.draft')}</b> })}</p>
       <FileDrop
         label={t('site.import.file')} accept={['.zip', 'application/zip', 'application/x-zip-compressed']} typeLabel="ZIP"
-        hint={<>{t('site.import.fileHint')} {PHOTO_CONSENT}</>} disabled={!!step}
+        hint={<>{t('site.import.fileHint')} {t('site.asset.photoConsent')}</>} disabled={!!step}
         onFiles={pick} inputTestId="import-file" testId="import-drop"
       />
       {plan && !done && (
