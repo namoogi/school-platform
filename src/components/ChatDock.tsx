@@ -105,7 +105,7 @@ export function ChatDock({ scope }: { scope: Scope }) {
     <>
       <button type="button" className="btn btn-secondary btn-sm chatdock-open" aria-expanded={open} aria-controls="chatdock"
         onClick={() => setOpen(!open)} title={`사람이 답하거나 확인할 대화 ${count}건`} data-testid="chatdock-open">
-        <MessagesSquare size={16} aria-hidden="true" /> 대화
+        <MessagesSquare size={16} aria-hidden="true" /> <span className="chatdock-label">대화</span>
         {count > 0 ? <><span className="sr-only"> 답 필요 </span><span className="bell-count">{count}</span><span className="sr-only">건</span></> : null}
       </button>
       {open && (

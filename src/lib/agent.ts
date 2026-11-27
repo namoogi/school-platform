@@ -164,16 +164,23 @@ export async function agentUpload(db: Db, token: string, file: { name: string; t
 export type AgentTokenRow = {
   id: string; label: string; kinds: AgentEntryKind[]; keys: string[] | null; perms: AgentPerm[]; agent_kind: AgentKind; created_at: string; expires_at: string | null; revoked_at: string | null;
   last_used_at: string | null; uses: number;
-  /** 최근 한 일 3건 (ADR 0013 활동 기록) */
-  recent: { action: string; created_at: string; detail: Record<string, unknown> }[];
+  /** 최근 한 일 3건 (ADR 0013 활동 기록). 83차: 세션 이름·작업자(자기 신고) */
+  recent: { action: string; created_at: string; detail: Record<string, unknown>; session_label: string | null; operator: string | null }[];
+  /** 83차: 세션·작업자별 횟수(많이 쓴 순 5개) */
+  sessions: { session_label: string | null; operator: string | null; n: number; last: string }[];
 };
 
 export async function listAgentTokens(db: Db, schoolId: string): Promise<AgentTokenRow[]> {
   const { rows } = await db.query<AgentTokenRow>(
     `select t.id, t.label, t.kinds, t.keys, t.perms, t.agent_kind, t.created_at, t.expires_at, t.revoked_at, t.last_used_at,
             (select count(*)::int from public.agent_token_uses u where u.token_id = t.id) as uses,
-            coalesce((select jsonb_agg(jsonb_build_object('action', r.action, 'created_at', r.created_at, 'detail', r.detail) order by r.id desc)
-                      from (select * from public.agent_token_uses u where u.token_id = t.id order by u.id desc limit 3) r), '[]') as recent
+            coalesce((select jsonb_agg(jsonb_build_object('action', r.action, 'created_at', r.created_at, 'detail', r.detail,
+                                                          'session_label', r.session_label, 'operator', r.operator) order by r.id desc)
+                      from (select * from public.agent_token_uses u where u.token_id = t.id order by u.id desc limit 3) r), '[]') as recent,
+            coalesce((select jsonb_agg(jsonb_build_object('session_label', g.session_label, 'operator', g.operator, 'n', g.n, 'last', g.last) order by g.n desc)
+                      from (select u.session_label, u.operator, count(*)::int as n, max(u.created_at) as last from public.agent_token_uses u
+                             where u.token_id = t.id and (u.session_label is not null or u.operator is not null)
+                             group by u.session_label, u.operator order by count(*) desc limit 5) g), '[]') as sessions
        from public.agent_tokens t where t.school_id = $1 order by t.created_at desc limit 50`, [schoolId]);
   return rows;
 }

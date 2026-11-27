@@ -160,7 +160,7 @@ code { font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; background: 
 .sidebar-foot { margin-top: auto; display: grid; gap: var(--space-1); padding-top: var(--space-3); }
 
 .content { grid-column: 2; min-width: 0; padding: var(--space-8) var(--space-8) var(--space-12); }
-.content-inner { max-width: 1280px; margin: 0 auto; display: grid; gap: var(--space-5); }
+.content-inner { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
 .content-narrow { max-width: 880px; }
 main { display: block; }
 
@@ -499,7 +499,7 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
 /* ── 16. 개발·연구소 ───────────────────────────────────── */
 .quick-add { display: flex; gap: var(--space-2); flex-wrap: wrap; background: var(--surface-default); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--space-3); }
 .quick-add input:first-child { flex: 1 1 260px; }
-.quick-add select, .quick-add input[type=date] { width: auto; }
+.quick-add select, .quick-add input[type=date] { width: auto; max-width: 100%; min-width: 0; }
 .items { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-default); }
 .item { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border-subtle); }
 .item:first-child { border-top: 0; }
@@ -543,15 +543,18 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
   .content { padding: var(--space-5) var(--space-5) var(--space-10); }
 }
 @media (max-width: 768px) {
-  .app { grid-template-columns: 1fr; grid-template-rows: var(--topbar-h) auto 1fr; background: var(--surface-canvas); }
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--topbar-h) auto 1fr; background: var(--surface-canvas); }
   .topbar { grid-column: 1; padding: 0 var(--space-4); }
-  .sidebar { grid-column: 1; grid-row: 2; position: static; height: auto; flex-direction: row; overflow-x: auto; padding: 0 var(--space-2); }
+  .sidebar { grid-column: 1; grid-row: 2; position: static; height: auto; flex-direction: row; overflow-x: auto; padding: 0 var(--space-2); min-width: 0; max-width: 100vw; }
   .sidebar nav { flex-direction: row; }
   .brand, .sidebar .menu-label, .sidebar-foot { display: none; }
   .nav-group { display: flex; }
   .nav-item { width: 72px; flex: none; border-left: 0; border-bottom: 4px solid transparent; }
   .nav-item[aria-current="page"] { border-bottom-color: var(--rail-current); }
-  .content { grid-column: 1; padding: var(--space-4); }
+  .content { grid-column: 1; padding: var(--space-4); min-width: 0; }
+  /* 84차: 탭 줄이 넘치면 그 줄만 옆으로 넘긴다(화면 전체가 밀리지 않게) */
+  .tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .tabs > * { flex: none; }
   .account-name { display: none; }
   .evidence li { grid-template-columns: 1fr; gap: var(--space-1); }
 }
@@ -1728,9 +1731,23 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 
 /* 65차: 홈페이지 템플릿 둘러보기·미리보기 */
 .template-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-.template-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(240px, 320px) 1fr; align-items: start; }
+.template-layout { display: grid; gap: var(--space-5); grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); align-items: start; } /* 86차: 미리보기가 먼저(화면·초점 순서 같음) */
 .template-preview { border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+/* 86차: 예시 내용·안내 자리 전환. 누르는 곳은 44px 이상 */
+.template-stage { display: grid; gap: var(--space-3); min-width: 0; }
+.template-page-tabs [aria-current="page"] { color: var(--brand-700); border-bottom-color: var(--brand-600); }
+.template-thumb { display: block; margin: calc(-1 * var(--space-1)) 0 var(--space-2); border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; aspect-ratio: 16 / 10; background: var(--surface-canvas); }
+.template-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+.migrate-fits { border: 0; padding: 0; margin: 0; }
+.migrate-fits legend { font-weight: 650; margin-bottom: var(--space-2); }
+.migrate-fit { display: grid; grid-template-columns: auto auto 1fr; gap: var(--space-3); align-items: center; padding: var(--space-2); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
+.migrate-fit:has(input:checked) { border-color: var(--brand-600); background: var(--surface-selected); }
+.migrate-fit img { border: 1px solid var(--border-default); border-radius: var(--radius-sm); object-fit: cover; object-position: top left; }
+@media (max-width: 520px) { .migrate-fit { grid-template-columns: auto 1fr; } .migrate-fit img { display: none; } }
+.template-view-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.template-view-bar p { margin: 0; flex: 1 1 240px; }
 @media (max-width: 860px) { .template-layout { grid-template-columns: 1fr; } }
+.template-view-bar .segmented a, .template-page-tabs a { min-height: 44px; display: inline-flex; align-items: center; }
 .issue-list .autofill-item, .autofill-item { display: grid; align-items: start; gap: var(--space-1); padding-block: var(--space-2); border-bottom: 1px solid var(--border-default); }
 .autofill-item textarea { width: 100%; }
 
@@ -1877,3 +1894,30 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .rd-tier-no { flex: none; width: 26px; height: 26px; border-radius: var(--radius-full); display: grid; place-items: center; font-weight: 700; font-size: var(--fs-caption); border: 1px solid var(--border-default); }
 @media (max-width: 640px) { .rd-tier { margin-inline: 0 !important; } .rd-step + .rd-step::before { content: none; } .rd-bar { grid-template-columns: 1fr; } }
 .prewrap { white-space: pre-wrap; }
+
+/* 82차: 핵심 요약·왜 필요한가 상자, 용어 풀이(주석) 카드 */
+.rd-summary { border-color: var(--border-focus); background: var(--surface-selected); }
+.rd-summary .rd-callout-tag { color: var(--text-link); }
+.rd-why { border-color: var(--border-default); background: var(--surface-subtle); }
+.rd-why .rd-callout-tag { color: var(--text-subtle); }
+.rd-terms { border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); background: var(--surface-subtle); }
+.rd-terms-title { margin: 0 0 var(--space-2); font-size: var(--fs-body-sm); color: var(--text-muted); }
+.rd-terms dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-2) var(--space-4); }
+.rd-term { border-left: 3px solid var(--border-focus); padding-left: var(--space-3); }
+.rd-term dt { font-weight: 700; }
+.rd-term dd { margin: 0; font-size: var(--fs-body-sm); color: var(--text-subtle); line-height: 1.6; }
+.rd-term-ex { display: block; color: var(--text-muted); font-size: var(--fs-caption); margin-top: var(--space-1); }
+
+/* 84차: 휴대폰 폭 정리(UI 점검 기계 검사에서 가로 스크롤 발견)
+   - 메뉴 줄: 분석형의 툴팁용 .sidebar { overflow: visible } 보다 뒤에 두어 이 줄만 옆으로 넘긴다(화면 전체가 밀리지 않게)
+   - 위 막대: 화면 형식 단추를 숨기고(설정은 넓은 화면에서), 대화 단추는 아이콘만, 학교 이름은 줄임표 */
+@media (max-width: 768px) {
+  .app[data-ui] .sidebar { overflow-x: auto; overflow-y: hidden; }
+}
+@media (max-width: 600px) {
+  .topbar .ui-controls { display: none; }
+  .topbar-right { gap: var(--space-2); }
+  .switcher > summary { max-width: 128px; }
+  .price-row { flex-wrap: wrap; }
+  .chatdock-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}

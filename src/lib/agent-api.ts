@@ -19,7 +19,7 @@ export async function handleAgent(req: Request, fn: (db: Db, token: string) => P
     return NextResponse.json({ error: '작업 토큰 요청에는 로그인 쿠키를 함께 보내지 않습니다.' }, { status: 400 });
   }
   try {
-    const result = await asAgent((db) => fn(db, token));
+    const result = await asAgent((db) => fn(db, token), { session: agentHeader(req, 'x-agent-session', 80), operator: agentHeader(req, 'x-agent-operator', 120) });
     return NextResponse.json(result ?? { ok: true }, { headers: { 'cache-control': 'no-store' } });
   } catch (e) {
     if ((e as { code?: string })?.code === '28000') return NextResponse.json({ error: (e as Error).message }, { status: 401 });
@@ -27,4 +27,17 @@ export async function handleAgent(req: Request, fn: (db: Db, token: string) => P
     if ((e as { code?: string })?.code === '42883') return NextResponse.json({ error: '작업 토큰으로 할 수 없는 일입니다.' }, { status: 403 });
     return errorResponse(e);
   }
+}
+
+/**
+ * 83차: 세션 이름·작업자(이름이나 이메일) 머리. HTTP 머리는 영문만 안전해서 한글은 URL 인코딩(encodeURIComponent)해 보낸다.
+ * 인코딩된 값이면 풀고, 아니면 그대로. 제어 문자는 지우고 길이를 자른다. 검증되지 않은 자기 신고 값이다.
+ */
+export function agentHeader(req: Request, name: string, max: number): string | null {
+  const raw = req.headers.get(name);
+  if (!raw) return null;
+  let v = raw;
+  if (/%[0-9a-f]{2}/i.test(raw)) { try { v = decodeURIComponent(raw); } catch { v = raw; } }
+  v = v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max);
+  return v || null;
 }
