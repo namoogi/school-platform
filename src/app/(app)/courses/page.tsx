@@ -8,6 +8,7 @@ import { PageHeader, StatusBadge } from '@/components/ui';
 import { ActionForm } from '@/components/ActionForm';
 import { getI18n, userLang } from '@/lib/i18n/server';
 import type { MsgKey } from '@/lib/i18n/catalog';
+import { schemeView } from '@/lib/grade-schemes';
 
 // 이름은 사전의 course.trigger.* · course.status.* · course.enr.*
 const TRIGGERS = ['term_start', 'application_close', 'approval'];
@@ -22,15 +23,21 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
     const level = levels.find((l) => l.id === sp.level) ?? levels[0] ?? null;
     const offerings = term && level ? await offeringsOfTerm(db, school.id, term.id, level.id) : [];
     const sel = sp.o && isUuid(sp.o) ? offerings.find((o) => o.id === sp.o) ?? null : null;
+    const uiLang = await userLang(db);
+    // 110차: 학년 표기는 학교의 학년 체계로(ADR 0043)
+    const scheme = await schemeView(db, school.id, uiLang ?? school.locale);
+    const gradeLabels = Object.fromEntries([...scheme.levels.flatMap((l) => l.grades), ...scheme.loose].map((g) => [g.id, g.label]));
+    const levelGrades = level ? scheme.levels.find((l) => l.id === level.id)?.grades ?? [] : [];
     return {
-      terms, levels, term, level, offerings, sel, uiLang: await userLang(db),
+      terms, levels, term, level, offerings, sel, uiLang, gradeLabels, levelGrades,
       subjects: await listSubjects(db, school.id), types: await listCourseTypes(db, school.id), labels: await subjectLabels(db, school.id),
       people: (await listPeople(db, school.id)).map((p) => ({ id: p.id, name: p.name })),
       roster: sel ? await roster(db, school.id, sel.id) : [], staff: sel ? await offeringStaff(db, school.id, sel.id) : [],
       candidates: sel && level ? await levelStudentsOn(db, school.id, level.id, term?.starts_on ?? null) : [],
     };
   }, { module: 'records' });
-  const { terms, levels, term, level, offerings, sel, subjects, types, labels, people, school, uiLang } = data;
+  const { terms, levels, term, level, offerings, sel, subjects, types, labels, people, school, uiLang, gradeLabels, levelGrades } = data;
+  const hasGrades = offerings.some((o) => o.grade_level_id);
   const admin = school.isAdmin;
   const { t } = await getI18n(uiLang, school.locale);
   const tk = (prefix: string, v: string) => t(`${prefix}.${v}` as MsgKey);
@@ -52,17 +59,18 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
           </form>
           <h2>{t('courses.offeredTitle', { term: `${term.year} ${term.label}`, level: level.name })}</h2>
           {offerings.length === 0 ? <p className="muted">{t('courses.noOfferings')}</p> : (
-            <div className="table-wrap"><table className="grid-table"><thead><tr><th>{t('courses.col.subject')}</th><th>{t('courses.col.type')}</th><th>{t('courses.col.section')}</th><th>{t('courses.col.credits')}</th><th>{t('courses.col.status')}</th><th>{t('courses.col.enrolled')}</th></tr></thead>
+            <div className="table-wrap"><table className="grid-table"><thead><tr><th>{t('courses.col.subject')}</th><th>{t('courses.col.type')}</th>{hasGrades && <th>{t('courses.col.grade')}</th>}<th>{t('courses.col.section')}</th><th>{t('courses.col.credits')}</th><th>{t('courses.col.status')}</th><th>{t('courses.col.enrolled')}</th></tr></thead>
               <tbody>{offerings.map((o) => (
                 <tr key={o.id} aria-current={sel?.id === o.id ? 'true' : undefined}>
-                  <td><Link href={q(o.id)}>{o.subject_name}</Link>{o.pass_fail ? <small className="muted"> P/F</small> : null}</td><td>{o.course_type_name}</td><td>{o.section || '-'}</td>
-                  <td>{o.credits}</td><td><StatusBadge tone={o.status === 'active' ? 'success' : o.status === 'cancelled' ? 'danger' : 'neutral'}>{tk('course.status', o.status)}</StatusBadge></td><td>{o.enrolled}{o.capacity ? `/${o.capacity}` : ''}</td>
+                  <td><Link href={q(o.id)}>{o.subject_name}</Link>{o.pass_fail ? <small className="muted"> P/F</small> : null}</td><td>{o.course_type_name}</td>{hasGrades && <td>{o.grade_level_id ? gradeLabels[o.grade_level_id] ?? '-' : t('courses.allGrades')}</td>}<td>{o.section || '-'}</td>
+                  <td>{o.credits}</td><td><StatusBadge tone={o.status === 'active' ? 'success' : o.status === 'cancelled' ? 'danger' : o.status === 'closed' ? 'info' : 'neutral'}>{tk('course.status', o.status)}</StatusBadge></td><td>{o.enrolled}{o.capacity ? `/${o.capacity}` : ''}</td>
                 </tr>))}</tbody></table></div>)}
           {admin && subjects.length > 0 && types.some((ty) => ty.rule_version) && (
             <details><summary>{t('courses.offer')}</summary>
               <ActionForm url="/api/courses" action="offering" extra={{ termId: term.id, levelId: level.id }} inline submitLabel={t('courses.offerSubmit')} successText={t('courses.offered')} testId="offering-form"
                 fields={[{ name: 'subjectId', label: t('courses.col.subject'), type: 'select', options: subjects.map((s) => ({ value: s.id, label: s.name })) },
                   { name: 'typeId', label: t('courses.col.type'), type: 'select', options: types.filter((ty) => ty.rule_version).map((ty) => ({ value: ty.id, label: ty.name })) },
+                  ...(levelGrades.length ? [{ name: 'gradeLevelId', label: t('courses.gradeOptional'), type: 'select' as const, options: [{ value: '', label: t('courses.allGrades') }, ...levelGrades.map((g) => ({ value: g.id, label: g.label }))] }] : []),
                   { name: 'credits', label: t('courses.col.credits'), type: 'number', required: true, defaultValue: '1' }, { name: 'section', label: t('courses.sectionOptional'), placeholder: 'A' },
                   { name: 'capacity', label: t('courses.capacityOptional'), type: 'number' }, { name: 'passFail', label: t('courses.passFail'), type: 'select', options: yesNo }]} />
             </details>)}

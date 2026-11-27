@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       case 'label': return { version: await setSubjectLabel(db, school.id, b.subjectId, { purpose: b.purpose, label: { ...(b.ko ? { ko: b.ko } : {}), ...(b.en ? { en: b.en } : {}), ...(b.th ? { th: b.th } : {}) }, why: b.why, base_version: Number(b.bases?.[b.purpose || 'all'] ?? 0) }) };
       case 'type': return { id: await addCourseType(db, school.id, { code: b.code, name: b.name }) };
       case 'type-rule': return { version: await setCourseTypeRule(db, school.id, b.typeId, { trigger: b.trigger, publishable: b.publishable === 'yes', passFailAllowed: b.passFailAllowed === 'yes', note: b.note }) };
-      case 'offering': return { id: await createOffering(db, school.id, { termId: b.termId, subjectId: b.subjectId, typeId: b.typeId, levelId: b.levelId, credits: b.credits, passFail: b.passFail === 'yes', section: b.section || '', capacity: b.capacity }) };
+      case 'offering': return { id: await createOffering(db, school.id, { termId: b.termId, subjectId: b.subjectId, typeId: b.typeId, levelId: b.levelId, credits: b.credits, passFail: b.passFail === 'yes', section: b.section || '', capacity: b.capacity, gradeLevelId: b.gradeLevelId || null }) };
       case 'staff': await assignStaff(db, school.id, b.offeringId, b.personId, b.role); return { ok: true };
       case 'unstaff': await removeStaff(db, school.id, b.offeringId, b.personId); return { ok: true };
       case 'start-term': return { activated: await startTerm(db, school.id, b.termId) };
