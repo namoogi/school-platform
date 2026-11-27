@@ -66,7 +66,7 @@ npm run ui:review -- lab attendance        # 페이지 이름들(목록: scripts
 | 어디서 | 방법 | 비용 | 화면(스크린샷)을 보나 |
 |---|---|---|---|
 | **선생님 Mac의 Codex CLI** (기본) | 아래 명령. 캡처는 Mac에서 4-1로 하거나 `.ui-review`를 받아 온다 | ChatGPT 요금제 사용량(`codex login` 상태에 따름) | 예 |
-| **Codex GitHub 코드 리뷰** (PR 자동. 2026-11-27 설정을 켰고 봇 반응은 아직 확인 전, 수동 검토 경로는 작동) | Codex 설정에서 이 저장소 코드 리뷰를 켜거나 PR에 `@codex review`. AGENTS.md의 리뷰 규칙을 따른다 | ChatGPT 구독(요금제별 포함 여부는 확인 필요) | 아니오(코드만). 화면 점검은 별도 지시가 필요하고, 클라우드 환경에서 캡처가 되는지는 시험 전 |
+| **Codex GitHub 코드 리뷰** (PR 자동, 2026-11-27 PR #127에서 작동 확인) | Codex 설정에서 이 저장소 코드 리뷰를 켜거나 PR에 `@codex review`. AGENTS.md의 리뷰 규칙을 따른다 | ChatGPT 구독(요금제별 포함 여부는 확인 필요) | 아니오(코드만). 화면 점검은 별도 지시가 필요하고, 클라우드 환경에서 캡처가 되는지는 시험 전 |
 | Codex GitHub Action (`openai/codex-action`) | CI에서 `codex exec` | **OpenAI API 키(사용량 과금)** | 예 |
 
 - 세 번째는 ADR 0032(AI는 구독 계정으로, 유료 API 기본 안 씀)와 부딪친다. 비용 추정과 선생님 확인 없이 쓰지 않는다.

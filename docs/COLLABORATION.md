@@ -115,8 +115,8 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
   - **판정 근거는 지적의 종류에 따라 다르다.** 코드 리뷰 지적(데이터 경계·보존·비밀·마이그레이션·테스트 등)은 AGENTS.md 규칙과 코드·테스트로 판정한다. 화면으로 입증할 수 없어도 수용할 수 있다. 화면 근거 조건("체크리스트 항목에 근거가 있고 화면에서 확인된다")은 UI 시각 점검 지적(`docs/UI_REVIEW.md` 4-4)에만 쓴다.
 - 연결 상태(2026-11-27, 85차)
   - 그전까지 PR 26개의 `@codex review`에 봇 반응이 **0건**이었다. 저장소 Code review와 개인 설정의 자동 검토가 꺼져 있었다. 선생님이 둘 다 켰다.
-  - 그 뒤에도 봇(`@codex review`) 반응은 아직 없다. GitHub의 ChatGPT Codex Connector 앱에 'Permission updates requested'(권한 갱신 요청)가 떠 있다. 원인으로 확정하지는 않았다.
-  - 대신 쓰는 길(작동 확인): 선생님 쪽 Codex 세션이 GitHub 커넥터로 PR을 읽고 검토 댓글을 직접 남긴다. 첫 줄은 `(Codex 수동 검토 …)`이다. 85차 PR #127에서 P2 2건을 받아 반영했다.
+  - 개인 설정까지 켠 뒤 봇(`chatgpt-codex-connector[bot]`)이 PR #127에 처음으로 검토를 남겼다(01:58Z, P1 1건 → 수용). 이제 PR을 열면 자동 검토되고, `@codex review` 댓글로도 다시 청할 수 있다.
+  - 보조 경로: 선생님 쪽 Codex 세션이 GitHub 커넥터로 PR을 읽고 검토 댓글을 직접 남긴다. 첫 줄은 `(Codex 수동 검토 …)`이다. 85차 PR #127에서 P2 2건을 받아 반영했다.
 - 사용자 1회 설정: Codex Code review를 이 저장소에 켜기, Codex 환경(Environment) 하나 만들기. 그 뒤로는 사람이 중계하지 않는다.
 - 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
 
