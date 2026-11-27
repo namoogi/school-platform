@@ -2800,6 +2800,36 @@ export const CATALOG = {
   'db.notEnrolled': '이 수업을 수강 중인 학생이 아닙니다.',
   // 마감 연결 (108차, ADR 0042)
   'db.calcScoreDigits': '계산 결과 점수는 소수 둘째 자리까지입니다. 식에 반올림(round)을 넣어 주세요.',
+  // 109차 학년 체계·시연 학교 (ADR 0043)
+  'scheme.kr': '한국식',
+  'scheme.us': '미국식',
+  'scheme.custom': '커스텀',
+  'scheme.krHint': '초1~초6 · 중1~중3 · 고1~고3',
+  'scheme.usHint': 'K · Grade 1~12 (초 K~5, 중 6~8, 고 9~12)',
+  'scheme.customHint': '학년 이름을 학교가 정함(자리는 한국식)',
+  'scheme.choose': '학년 체계',
+  'scheme.levels': '만들 학교급',
+  'scheme.level.elementary': '초등',
+  'scheme.level.middle': '중등',
+  'scheme.level.high': '고등',
+  'scheme.note': '이미 있는 학교급·학년은 그대로 두고 빠진 것만 더합니다. 체계는 학교 관할 판으로 쌓여 나중에 바꿀 수 있습니다.',
+  'scheme.apply': '학교급·학년 만들기',
+  'scheme.saved': '학교급 {levels}개, 학년 {grades}개를 더했습니다.',
+  'scheme.gradesOf': '{level}의 학년',
+  'scheme.addOther': '다른 학교급 직접 더하기',
+  'err.scheme.unknown': '학년 체계는 한국식·미국식·커스텀 중 하나입니다.',
+  'err.scheme.levels': '만들 학교급을 하나 이상 고르세요.',
+  'db.gradeNotFound': '이 학교의 학년을 찾을 수 없습니다.',
+  'db.gradeNeedsLevel': '학교급에 속한 학년만 반을 만들 수 있습니다.',
+  'db.homeroomDuplicate': '같은 이름의 반이 이미 있습니다.',
+  'demo.title': '시연용 가상 학교',
+  'demo.lead': '초1~고3 가명 학생(성은 모두 \'가상\')으로 학년도·수업·평가·출결·마감·발행본까지 채운 학교를 만듭니다. 실제 사람 정보는 없습니다. 감추려면 학교 상태를 정지로 바꿉니다.',
+  'demo.build': '시연 학교 만들기',
+  'demo.building': '만드는 중…',
+  'demo.built': '시연 학교를 만들었습니다: 학생 {students}명, 수업 {offerings}개.',
+  'demo.exists': '시연 학교가 이미 있습니다(다시 만들지 않음).',
+  // 109차 학년 체계 표기 (ADR 0043)
+  'db.gradeLabelsInvalid': '학년 표기는 서수(-3~14)마다 1~40자입니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

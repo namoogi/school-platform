@@ -2382,3 +2382,11 @@ label.lang-switch { display: inline-flex; align-items: center; gap: var(--space-
 @media (max-width: 760px) {
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="banner"]:not([data-variant]) + .sec[data-variant="quicklinks"]:nth-child(n) { margin-top: calc(-1 * var(--L-section) / 2 - var(--space-6)); }
 }
+
+/* 109차: 학년 체계 고르기 (ADR 0043) */
+.action-form fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
+.action-form legend { font-weight: 600; margin-bottom: var(--space-1); }
+label.check { display: flex; gap: var(--space-2); align-items: flex-start; }
+label.check input { margin-top: 0.25em; }
+.scheme-grades { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: var(--space-2); padding-left: var(--space-5); }
+.grade-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); list-style: none; padding: 0; margin: var(--space-1) 0 0; }

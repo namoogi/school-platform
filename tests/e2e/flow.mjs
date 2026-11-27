@@ -1851,6 +1851,8 @@ try {
     const h = await ctx.newPage();
     await login(h, 'admin-b@school-b.test', 'demo-pass-b');
     await h.goto(`${BASE}/academics`);
+    // 109차: 학년 체계 고르기가 기본, 학교급 직접 더하기는 접혀 있다
+    await h.locator('[data-testid=levels] details summary').click();
     const lv = h.locator('[data-testid=level-form]');
     await lv.locator('label:has-text("이름") input').fill('E2E 중등');
     await lv.locator('label:has-text("코드") input').fill('e2e_mid');
