@@ -111,6 +111,8 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
 
 - Claude가 올리는 요청 첫 줄에 `(Claude 관제 세션 작성)` 또는 `(Claude 자동 실행 작성)`을 적어, 사용자 계정 이름이지만 누가 썼는지 구분한다.
 - 한 주제에 Codex 요청은 하나만 열어 둔다(중복 실행 방지). 24시간 응답이 없으면 사용자에게 보고한다.
+- **선별(85차)**: Codex 리뷰의 지적마다 `docs/UI_REVIEW.md` 4-4와 같은 판정(수용·기각·보류)을 내린다. 그 PR에 답글 하나로 남긴다(표: 번호 · 판정 · 근거 한 줄 · 고친 커밋). 수용한 것은 같은 PR에서 고친다. 보류는 선생님께 선택지로 올린다. Codex 지적을 그대로 다 받지 않는다. 규약(AGENTS.md·DESIGN-SYSTEM)과 부딪치면 규약이 이긴다.
+- 연결 상태: 사용자 Codex 계정에 GitHub가 연결돼 있다(2026-11-27 사용자 확인). 85차 PR에서 `@codex review`로 첫 시험을 했다.
 - 사용자 1회 설정: Codex Code review를 이 저장소에 켜기, Codex 환경(Environment) 하나 만들기. 그 뒤로는 사람이 중계하지 않는다.
 - 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
 
