@@ -33,7 +33,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
         meta={<><span>{t('people.metaPeople', { n: people.length })}</span><span>{t('people.metaEnrolled', { n: Object.keys(enrolled).length })}</span></>} />
       <div className="people-layout">
         <section className="card stack" aria-label={t('people.list')}>
-          <form className="row-wrap" action="/people"><input name="q" defaultValue={q} placeholder={t('people.searchName')} aria-label={t('people.searchName')} /><button className="btn btn-sm" type="submit">{t('common.search')}</button></form>
+          <form className="row-wrap" action="/people"><input name="q" defaultValue={q} placeholder={t('people.searchName')} aria-label={t('people.searchName')} /><button className="btn btn-secondary" type="submit">{t('common.search')}</button></form>
           <ul className="people-list" data-testid="people-list">{shown.map((p) => (
             <li key={p.id}><Link href={`/people?id=${p.id}${q ? `&q=${encodeURIComponent(q)}` : ''}`} aria-current={detail?.person.id === p.id ? 'page' : undefined}>
               <span>{p.name}{p.name_latin ? <small className="muted"> {p.name_latin}</small> : null}</span>

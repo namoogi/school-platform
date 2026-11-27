@@ -2,19 +2,22 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field } from '@/components/Field';
+import { templateText } from '@/lib/site-labels';
+import { useI18n } from '@/components/I18nProvider';
 
 /** 사이트 설정 요약(디자인 함께 바꾸기 안내에 씀) */
 export type SiteState = { exists: boolean; open: boolean; theme: string | null; themeName: string | null };
 
 /** 89차(ADR 0034): '디자인도 함께 바꾸기' 고르기 — 홈페이지가 열려 있으면 바로 보인다는 것을 알리고 기본은 끔 */
 function DesignChoice({ site, designName, value, onChange }: { site: SiteState; designName: string; value: boolean; onChange: (v: boolean) => void }) {
-  if (!site.exists) return <p className="fine">화면 모양 ‘{designName}’은 홈페이지 설정(주소)을 정한 뒤 설정에서 고를 수 있습니다.</p>;
+  const { t } = useI18n();
+  if (!site.exists) return <p className="fine">{t('site.tpl.design.noSite', { name: designName })}</p>;
   return (
     <div className="stack">
-      <label className="radio"><input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} data-testid="template-design" /> 화면 모양도 ‘{designName}’ 디자인으로 바꾸기</label>
+      <label className="radio"><input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} data-testid="template-design" /> {t('site.tpl.design.toggle', { name: designName })}</label>
       <p className="fine">{site.open
-        ? `홈페이지가 열려 있어, 바꾸면 방문자 화면의 모양(색·글꼴)이 바로 바뀝니다. 지금 모양: ${site.themeName ?? site.theme}. 설정에서 언제든 되돌릴 수 있습니다.`
-        : `지금 모양: ${site.themeName ?? site.theme}. 설정에서 언제든 바꿀 수 있습니다.`}</p>
+        ? t('site.tpl.design.openNote', { current: site.themeName ?? site.theme ?? '' })
+        : t('site.tpl.design.closedNote', { current: site.themeName ?? site.theme ?? '' })}</p>
     </div>
   );
 }
@@ -22,6 +25,7 @@ function DesignChoice({ site, designName, value, onChange }: { site: SiteState; 
 /** 65차(ADR 0031): 템플릿 적용 — 없는 쪽만 시안으로 만들고, 이미 있는 쪽은 건너뛴다. 89차: 디자인(화면 모양)도 함께 */
 export function ApplyTemplate({ templateKey, name, existing, site, designName }: { templateKey: string; name: string; existing: string[]; site: SiteState; designName: string }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [design, setDesign] = useState(site.exists && !site.open);
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
@@ -30,18 +34,22 @@ export function ApplyTemplate({ templateKey, name, existing, site, designName }:
     const res = await fetch('/api/site/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: templateKey, design }) });
     const body = await res.json().catch(() => ({}));
     setBusy(false);
-    if (!res.ok) return setMsg({ text: body.error ?? '적용하지 못했습니다.', error: true });
-    setMsg({ text: `시안 쪽 ${body.created.length}개를 만들었습니다${body.skipped.length ? ` (이미 있는 ${body.skipped.join('·')}는 그대로 둠)` : ''}${body.design === 'applied' ? `. 화면 모양을 ‘${designName}’으로 바꿨습니다` : ''}. 공개 전에 내용을 채워 주세요.` });
+    if (!res.ok) return setMsg({ text: body.error ?? t('site.tpl.apply.failed'), error: true });
+    setMsg({ text: t('site.tpl.apply.done', {
+      n: body.created.length,
+      skipped: body.skipped.length ? t('site.tpl.apply.skipped', { pages: body.skipped.join('·') }) : '',
+      design: body.design === 'applied' ? t('site.tpl.apply.designDone', { name: designName }) : '',
+    }) });
     router.refresh();
   }
   return (
     <div className="stack">
-      {existing.length > 0 && <p className="fine">이미 있는 쪽({existing.join('·')})은 건드리지 않고 나머지 쪽만 만듭니다.</p>}
+      {existing.length > 0 && <p className="fine">{t('site.tpl.apply.existing', { pages: existing.join('·') })}</p>}
       <DesignChoice site={site} designName={designName} value={design} onChange={setDesign} />
       <div className="form-actions">
-        <button type="button" className="btn btn-primary" onClick={apply} disabled={busy} data-testid="template-apply">‘{name}’으로 시작하기</button>
+        <button type="button" className="btn btn-primary" onClick={apply} disabled={busy} data-testid="template-apply">{t('site.tpl.apply.start', { name })}</button>
       </div>
-      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && <> <a href="/site?box=page">쪽 목록으로</a></>}</p>}
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && <> <a href="/site?box=page">{t('site.tpl.toPages')}</a></>}</p>}
     </div>
   );
 }
@@ -53,6 +61,7 @@ type ProposeResult = { notes: { file: string; ok: boolean; note: string }[]; pro
 /** 66차(ADR 0031): 학교 자료로 빈 칸 채우기 — 자료 읽기 → 제안 확인·고치기 → 고른 것만 새 시안 판으로. 자료 파일은 저장하지 않는다 */
 export function AutofillPanel({ templateKey }: { templateKey: string }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<ProposeResult | null>(null);
@@ -67,7 +76,7 @@ export function AutofillPanel({ templateKey }: { templateKey: string }) {
     const r = await fetch('/api/site/templates/autofill', { method: 'POST', body: fd });
     const body = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) return setMsg({ text: body.error ?? '자료를 읽지 못했습니다.', error: true });
+    if (!r.ok) return setMsg({ text: body.error ?? t('site.tpl.autofill.readFailed'), error: true });
     setRes(body);
     setPick(Object.fromEntries((body as ProposeResult).proposals.map((p) => [p.slotId, p.confidence === 'high'])));
     setEdit(Object.fromEntries((body as ProposeResult).proposals.filter((p) => typeof p.value === 'string' && p.kind !== 'image').map((p) => [p.slotId, p.value as string])));
@@ -79,41 +88,41 @@ export function AutofillPanel({ templateKey }: { templateKey: string }) {
     const r = await fetch('/api/site/templates/autofill/apply', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: templateKey, fills }) });
     const body = await r.json().catch(() => ({}));
     setBusy(false);
-    if (!r.ok) return setMsg({ text: body.error ?? '넣지 못했습니다.', error: true });
+    if (!r.ok) return setMsg({ text: body.error ?? t('site.tpl.autofill.applyFailed'), error: true });
     const n = (body.result as { filled: string[] }[]).reduce((a, x) => a + x.filled.length, 0);
     const kept = (body.result as { kept: string[] }[]).reduce((a, x) => a + x.kept.length, 0);
-    setMsg({ text: `${n}칸을 채워 새 시안 판을 만들었습니다${kept ? ` (이미 학교가 쓴 ${kept}칸은 그대로)` : ''}. 공개 전에 쪽 목록에서 확인해 주세요.` });
+    setMsg({ text: t('site.tpl.autofill.done', { n, kept: kept ? t('site.tpl.autofill.kept', { n: kept }) : '' }) });
     setRes(null); router.refresh();
   }
   return (
-    <section className="stack" data-testid="autofill-panel" aria-label="학교 자료로 채우기">
-      <h2>학교 자료로 채우기</h2>
-      <p className="fine">학교 소개서·안내문(PDF·DOCX·TXT)을 올리면 칸마다 맞는 부분을 찾아 제안합니다(낱말 단서로 찾는 규칙 기반 1차 배치). 확인한 것만 새 시안 판으로 넣고, 학교가 이미 쓴 칸은 건드리지 않습니다. 사진 칸은 홈페이지에 올린 그림에서 고릅니다.</p>
-      <label>자료 파일<input type="file" multiple accept=".pdf,.docx,.txt,.md" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} data-testid="autofill-files" /></label>
-      <div className="form-actions"><button type="button" className="btn" disabled={busy || !files.length} onClick={read} data-testid="autofill-read">자료 읽기</button></div>
+    <section className="stack" data-testid="autofill-panel" aria-label={t('site.tpl.autofill.title')}>
+      <h2>{t('site.tpl.autofill.title')}</h2>
+      <p className="fine">{t('site.tpl.autofill.intro')}</p>
+      <label>{t('site.tpl.autofill.files')}<input type="file" multiple accept=".pdf,.docx,.txt,.md" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} data-testid="autofill-files" /></label>
+      <div className="form-actions"><button type="button" className="btn" disabled={busy || !files.length} onClick={read} data-testid="autofill-read">{t('site.tpl.autofill.read')}</button></div>
       {res && (
         <div className="stack">
           {res.notes.filter((n) => !n.ok).map((n) => <p key={n.file} className="alert">{n.file}: {n.note}</p>)}
-          {res.missingPages.length > 0 && <p className="fine">아직 없는 쪽({res.missingPages.join('·')})의 칸은 넣지 못합니다. 먼저 템플릿으로 시작하세요.</p>}
-          {res.proposals.length === 0 ? <p className="muted">맞는 부분을 찾지 못했습니다. 칸을 직접 채우거나 학교 AI에게 맡겨 보세요.</p> : (
+          {res.missingPages.length > 0 && <p className="fine">{t('site.tpl.autofill.missingPages', { pages: res.missingPages.join('·') })}</p>}
+          {res.proposals.length === 0 ? <p className="muted">{t('site.tpl.autofill.noMatch')}</p> : (
             <ul className="issue-list" data-testid="autofill-proposals">{res.proposals.map((p) => (
               <li key={p.slotId} className="autofill-item">
                 <label className="radio"><input type="checkbox" checked={!!pick[p.slotId]} onChange={(e) => setPick({ ...pick, [p.slotId]: e.target.checked })} /><strong>{p.label}</strong></label>
-                <small className="muted">{p.page} · {p.confidence === 'high' ? '제목으로 찾음' : '본문 낱말로 찾음(확인 필요)'}{p.source?.file ? ` · ${p.source.file}${p.source.heading ? ` › ${p.source.heading}` : ''}` : ''}</small>
+                <small className="muted">{p.page} · {p.confidence === 'high' ? t('site.tpl.prop.byHeading') : t('site.tpl.prop.byWords')}{p.source?.file ? ` · ${p.source.file}${p.source.heading ? ` › ${p.source.heading}` : ''}` : ''}</small>
                 {Array.isArray(p.value)
                   ? <ul className="fine">{p.value.map((i, k) => <li key={k}>{i.title}{i.body ? ` — ${i.body}` : ''}</li>)}</ul>
-                  : p.kind === 'image' ? <small className="muted">그림: {p.source?.excerpt}</small>
-                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={`${p.label} 내용`} />}
+                  : p.kind === 'image' ? <small className="muted">{t('site.tpl.prop.image', { name: p.source?.excerpt ?? '' })}</small>
+                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={t('site.tpl.prop.content', { label: p.label })} />}
               </li>
             ))}</ul>
           )}
-          {res.unfilled.length > 0 && <p className="fine">못 찾은 칸: {res.unfilled.map((u) => u.label).join(' · ')}</p>}
-          {res.proposals.length > 0 && <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy || !Object.values(pick).some(Boolean)} onClick={apply} data-testid="autofill-apply">고른 것 넣기</button></div>}
+          {res.unfilled.length > 0 && <p className="fine">{t('site.tpl.autofill.unfilled', { labels: res.unfilled.map((u) => u.label).join(' · ') })}</p>}
+          {res.proposals.length > 0 && <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy || !Object.values(pick).some(Boolean)} onClick={apply} data-testid="autofill-apply">{t('site.tpl.prop.apply')}</button></div>}
         </div>
       )}
-      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && <> <a href="/site?box=page">쪽 목록으로</a></>}</p>}
-      <details><summary>학교 AI에게 맡기기</summary>
-        <p className="fine">홈페이지 → 설정 → AI 작업 공간에서 &lsquo;쪽&rsquo; 종류(읽기·고치기)로 토큰을 발급해 학교 AI에 연결 글을 붙여 넣고, &ldquo;템플릿 빈 칸을 학교 자료로 채워 줘&rdquo;라고 맡기면 됩니다. 학교 AI는 GET /api/agent/templates로 빈 칸 안내를 읽고 쪽 새 판(시안)을 저장합니다.</p>
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && <> <a href="/site?box=page">{t('site.tpl.toPages')}</a></>}</p>}
+      <details><summary>{t('site.tpl.autofill.agent')}</summary>
+        <p className="fine">{t('site.tpl.autofill.agentHelp')}</p>
       </details>
     </section>
   );
@@ -127,6 +136,7 @@ type MigrateResult = { start: string; pages: { url: string; title: string }[]; s
 /** 67차(ADR 0031): 기존 홈페이지에서 옮기기 — 주소 → 같은 사이트 쪽 읽기 → 빈 칸 제안(고치기·고르기) → 넣기. 그림은 고른 것만 가져온다 */
 export function MigratePanel({ templateKey }: { templateKey: string }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<MigrateResult | null>(null);
@@ -137,7 +147,7 @@ export function MigratePanel({ templateKey }: { templateKey: string }) {
   const post = async (path: string, body: unknown) => {
     const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error ?? '처리하지 못했습니다.');
+    if (!r.ok) throw new Error(data.error ?? t('common.failed'));
     return data;
   };
   async function read(e: React.FormEvent) {
@@ -163,7 +173,7 @@ export function MigratePanel({ templateKey }: { templateKey: string }) {
       const imageProps: Proposal[] = res.imageSlots.flatMap((s) => { const i = imgs.shift(); return i ? [{ slotId: s.slotId, page: s.page, label: s.label, kind: 'image', value: i.id, source: { file: i.name, heading: null, excerpt: i.name }, confidence: 'low' as const }] : []; });
       setRes({ ...res, proposals: [...others, ...imageProps] });
       setPick({ ...pick, ...Object.fromEntries(imageProps.map((p) => [p.slotId, true])) });
-      setMsg({ text: `그림 ${data.imported.length}장을 홈페이지 그림으로 가져왔습니다${data.failed.length ? ` (${data.failed.length}장 실패)` : ''}.` });
+      setMsg({ text: t('site.tpl.migrate.imagesDone', { n: data.imported.length, failed: data.failed.length ? t('site.tpl.migrate.imagesFailed', { n: data.failed.length }) : '' }) });
     } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
     finally { setBusy(false); }
   }
@@ -174,46 +184,46 @@ export function MigratePanel({ templateKey }: { templateKey: string }) {
     try {
       const body = await post('/api/site/templates/autofill/apply', { key: templateKey, fills });
       const n = (body.result as { filled: string[] }[]).reduce((a, x) => a + x.filled.length, 0);
-      setMsg({ text: `옛 사이트 내용으로 ${n}칸을 채워 새 시안 판을 만들었습니다. 공개 전에 쪽 목록에서 확인해 주세요.` });
+      setMsg({ text: t('site.tpl.migrate.done', { n }) });
       setRes(null); router.refresh();
     } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
     finally { setBusy(false); }
   }
   return (
-    <section className="stack" data-testid="migrate-panel" aria-label="기존 홈페이지에서 옮기기">
-      <h2>기존 홈페이지에서 옮기기</h2>
-      <p className="fine">지금 쓰는 학교 홈페이지 주소를 적으면 같은 사이트 안의 쪽을 8개까지 읽어 칸마다 제안합니다. 공개된 쪽만 읽고, 사이트의 robots.txt를 따릅니다. 확인한 것만 새 시안 판으로 넣고, 그림은 고른 것만 가져옵니다.</p>
+    <section className="stack" data-testid="migrate-panel" aria-label={t('site.tpl.migrate.title')}>
+      <h2>{t('site.tpl.migrate.title')}</h2>
+      <p className="fine">{t('site.tpl.migrate.intro')}</p>
       <form className="row-wrap" onSubmit={read}>
-        <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://our-school.example" aria-label="기존 홈페이지 주소" required data-testid="migrate-url" />
-        <button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-read">{busy ? '읽는 중…' : '읽기'}</button>
+        <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://our-school.example" aria-label={t('site.tpl.migrate.url')} required data-testid="migrate-url" />
+        <button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-read">{busy ? t('site.tpl.migrate.reading') : t('site.tpl.migrate.read')}</button>
       </form>
       {res && (
         <div className="stack">
-          <p className="fine">읽은 쪽 {res.pages.length}개: {res.pages.map((p) => p.title || new URL(p.url).pathname).join(' · ')}{res.skipped.length ? ` · 건너뜀 ${res.skipped.length}개` : ''}</p>
-          {res.proposals.length === 0 ? <p className="muted">맞는 부분을 찾지 못했습니다.</p> : (
+          <p className="fine">{t('site.tpl.migrate.pagesRead', { n: res.pages.length, pages: res.pages.map((p) => p.title || new URL(p.url).pathname).join(' · '), skipped: res.skipped.length ? t('site.tpl.migrate.skipped', { n: res.skipped.length }) : '' })}</p>
+          {res.proposals.length === 0 ? <p className="muted">{t('site.tpl.migrate.noMatch')}</p> : (
             <ul className="issue-list" data-testid="migrate-proposals">{res.proposals.map((p) => (
               <li key={p.slotId} className="autofill-item">
                 <label className="radio"><input type="checkbox" checked={!!pick[p.slotId]} onChange={(e) => setPick({ ...pick, [p.slotId]: e.target.checked })} /><strong>{p.label}</strong></label>
-                <small className="muted">{p.page} · {p.confidence === 'high' ? '제목으로 찾음' : '확인 필요'}{p.source?.file ? ` · ${p.source.file}${p.source.heading ? ` › ${p.source.heading}` : ''}` : ''}</small>
+                <small className="muted">{p.page} · {p.confidence === 'high' ? t('site.tpl.prop.byHeading') : t('site.tpl.prop.check')}{p.source?.file ? ` · ${p.source.file}${p.source.heading ? ` › ${p.source.heading}` : ''}` : ''}</small>
                 {Array.isArray(p.value) ? <ul className="fine">{p.value.map((i, k) => <li key={k}>{i.title}{i.body ? ` — ${i.body}` : ''}</li>)}</ul>
-                  : p.kind === 'image' ? <small className="muted">그림: {p.source?.excerpt}</small>
-                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={`${p.label} 내용`} />}
+                  : p.kind === 'image' ? <small className="muted">{t('site.tpl.prop.image', { name: p.source?.excerpt ?? '' })}</small>
+                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={t('site.tpl.prop.content', { label: p.label })} />}
               </li>
             ))}</ul>
           )}
           {res.images.length > 0 && res.imageSlots.length > 0 && (
-            <details><summary>옛 사이트 그림 {res.images.length}장에서 고르기</summary>
+            <details><summary>{t('site.tpl.migrate.pickImages', { n: res.images.length })}</summary>
               <ul className="issue-list">{res.images.map((i) => (
                 <li key={i.src}><label className="radio"><input type="checkbox" checked={!!imgPick[i.src]} onChange={(e) => setImgPick({ ...imgPick, [i.src]: e.target.checked })} />{i.alt || new URL(i.src).pathname.split('/').pop()}</label></li>
               ))}</ul>
-              <p className="fine">학생이 나오는 사진은 학생·보호자 공개 허가를 받은 것만 가져옵니다.</p>
-              <div className="form-actions"><button type="button" className="btn" disabled={busy || !Object.values(imgPick).some(Boolean)} onClick={importImages}>고른 그림 가져오기(10장까지)</button></div>
+              <p className="fine">{t('site.tpl.migrate.consent')}</p>
+              <div className="form-actions"><button type="button" className="btn" disabled={busy || !Object.values(imgPick).some(Boolean)} onClick={importImages}>{t('site.tpl.migrate.importImages')}</button></div>
             </details>
           )}
-          {res.proposals.length > 0 && <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy || !Object.values(pick).some(Boolean)} onClick={apply} data-testid="migrate-apply">고른 것 넣기</button></div>}
+          {res.proposals.length > 0 && <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy || !Object.values(pick).some(Boolean)} onClick={apply} data-testid="migrate-apply">{t('site.tpl.prop.apply')}</button></div>}
         </div>
       )}
-      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && !res && <> <a href="/site?box=page">쪽 목록으로</a></>}</p>}
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{!msg.error && !res && <> <a href="/site?box=page">{t('site.tpl.toPages')}</a></>}</p>}
     </section>
   );
 }
@@ -226,6 +236,7 @@ export function MigratePanel({ templateKey }: { templateKey: string }) {
  */
 export function MigrateStart({ templates, site }: { templates: { key: string; name: string; summary: string; designName: string }[]; site: SiteState }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [url, setUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<(MigrateResult & { template: string; fits: Fit[]; byTemplate: Record<string, TemplateProposals> }) | null>(null);
@@ -238,7 +249,7 @@ export function MigrateStart({ templates, site }: { templates: { key: string; na
   const post = async (path: string, body: unknown) => {
     const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error ?? '처리하지 못했습니다.');
+    if (!r.ok) throw new Error(data.error ?? t('common.failed'));
     return data;
   };
   const choose = (k: string, data = res) => {
@@ -258,7 +269,7 @@ export function MigrateStart({ templates, site }: { templates: { key: string; na
     finally { setBusy(false); }
   }
   const tp = res && key ? res.byTemplate[key] : null;
-  const name = templates.find((t) => t.key === key)?.name ?? key;
+  const name = templates.find((x) => x.key === key)?.name ?? key;
   async function move() {
     if (!res || !tp) return;
     setBusy(true); setMsg(null);
@@ -270,75 +281,79 @@ export function MigrateStart({ templates, site }: { templates: { key: string; na
         const body = await post('/api/site/templates/autofill/apply', { key, fills });
         n = (body.result as { filled: string[] }[]).reduce((a, x) => a + x.filled.length, 0);
       }
-      setMsg({ done: true, text: `‘${name}’ 디자인으로 시안 쪽 ${applied.created.length}개를 만들고 옛 사이트 내용으로 ${n}칸을 채웠습니다${applied.skipped.length ? ` (이미 있는 ${applied.skipped.join('·')} 쪽은 그대로 둠)` : ''}${applied.design === 'applied' ? '. 화면 모양도 바꿨습니다' : ''}. 아직 공개되지 않았습니다.` });
+      setMsg({ done: true, text: t('site.tpl.start.done', {
+        name, pages: applied.created.length, n,
+        skipped: applied.skipped.length ? t('site.tpl.start.skipped', { pages: applied.skipped.join('·') }) : '',
+        design: applied.design === 'applied' ? t('site.tpl.start.designDone') : '',
+      }) });
       router.refresh();
     } catch (x) { setMsg({ text: (x as Error).message, error: true }); }
     finally { setBusy(false); }
   }
   // 남은 일 = 제안이 없던 칸 + 제안했지만 고르지 않은 칸(옮기기에서 빠짐)
-  const remaining = tp ? [...tp.unfilled, ...tp.proposals.filter((p) => p.kind !== 'image' && !pick[p.slotId]).map((p) => ({ id: p.slotId, label: p.label, hint: '옛 사이트에서 찾았지만 옮기지 않음 — 확인 필요' }))] : [];
+  const remaining = tp ? [...tp.unfilled, ...tp.proposals.filter((p) => p.kind !== 'image' && !pick[p.slotId]).map((p) => ({ id: p.slotId, label: p.label, hint: t('site.tpl.start.notMoved') }))] : [];
   const agentText = res && tp ? [
-    `우리 학교 홈페이지를 '${name}' 템플릿(새 디자인)으로 옮기는 중입니다. 옛 사이트: ${res.start}`,
-    `학교 관리자가 'AI 작업 공간'에서 발급한 작업 토큰(종류 page, 권한 read·upload·edit)으로만 일하고, 공개하지 마세요(사람이 확인 뒤 공개합니다).`,
-    `안내: 저장소 문서 docs/agents/site-migrate.md 와 docs/agents/README.md(API).`,
+    t('site.tpl.agent.intro', { name, start: res.start }),
+    t('site.tpl.agent.token'),
+    t('site.tpl.agent.docs'),
     '',
-    '할 일',
-    ...(remaining.length ? [`1. 아직 못 채운 칸을 옛 사이트(${res.pages.length}쪽 읽음)에서 찾아 채운 새 판을 저장: ${remaining.map((u) => `${u.label}(${u.hint})`).join(', ')}`] : ['1. 채운 칸을 옛 사이트와 대조해 틀린 곳을 고친 새 판을 저장']),
-    ...(tp.imageSlots.length ? [`2. 사진 칸: ${tp.imageSlots.map((s) => `${s.label}(${s.page} 쪽)`).join(', ')} — 옛 사이트 사진 가운데 학교가 권리를 가진 것을 쓰거나, 실제 사람 얼굴이 없는 삽화를 만들어 POST /api/agent/assets 로 올리고 그 쪽 새 판에 넣기`] : []),
-    `${tp.imageSlots.length ? 3 : 2}. 남은 [ ] 안내 자리 목록과 확인이 필요한 사실(학비·날짜·연락처)을 사람에게 보고`,
+    t('site.tpl.agent.todo'),
+    ...(remaining.length ? [t('site.tpl.agent.fill', { n: res.pages.length, slots: remaining.map((u) => `${u.label}(${u.hint})`).join(', ') })] : [t('site.tpl.agent.check')]),
+    ...(tp.imageSlots.length ? [t('site.tpl.agent.images', { slots: tp.imageSlots.map((s) => t('site.tpl.agent.imageSlot', { label: s.label, page: s.page })).join(', ') })] : []),
+    t('site.tpl.agent.report', { step: tp.imageSlots.length ? 3 : 2 }),
   ].join('\n') : '';
   return (
     <section className="card stack" data-testid="migrate-start" aria-labelledby="migrate-start-title">
-      <h2 id="migrate-start-title">기존 홈페이지를 새 디자인으로 옮기기</h2>
-      <p className="fine">지금 쓰는 홈페이지 주소를 넣으면 같은 사이트의 공개된 쪽을 8개까지 읽고(robots.txt를 따름), 내용에 맞는 템플릿을 추천합니다. 템플릿을 바꿔 볼 수 있고, 확인한 내용만 새 디자인의 시안으로 옮깁니다. 공개는 직접 합니다.</p>
+      <h2 id="migrate-start-title">{t('site.tpl.start.title')}</h2>
+      <p className="fine">{t('site.tpl.start.intro')}</p>
       <form className="stack" onSubmit={read}>
-        <Field label="기존 홈페이지 주소" required hint="https:// 로 시작하는 학교 홈페이지 첫 쪽 주소">
+        <Field label={t('site.tpl.migrate.url')} required hint={t('site.tpl.start.urlHint')}>
           <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://our-school.example" data-testid="migrate-start-url" />
         </Field>
-        <div className="form-actions"><button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-start-read">{busy && !res ? '읽는 중…' : '읽고 추천받기'}</button></div>
+        <div className="form-actions"><button type="submit" className="btn" disabled={busy || !url} data-testid="migrate-start-read">{busy && !res ? t('site.tpl.migrate.reading') : t('site.tpl.start.read')}</button></div>
       </form>
       {res && tp && (
         <div className="stack">
-          <p className="fine">읽은 쪽 {res.pages.length}개: {res.pages.map((p) => p.title || new URL(p.url).pathname).join(' · ')}{res.skipped.length ? ` · 건너뜀 ${res.skipped.length}개` : ''}</p>
+          <p className="fine">{t('site.tpl.migrate.pagesRead', { n: res.pages.length, pages: res.pages.map((p) => p.title || new URL(p.url).pathname).join(' · '), skipped: res.skipped.length ? t('site.tpl.migrate.skipped', { n: res.skipped.length }) : '' })}</p>
           <fieldset className="stack migrate-fits">
-            <legend>옮길 디자인(템플릿)</legend>
+            <legend>{t('site.tpl.start.pick')}</legend>
             {res.fits.map((f, i) => (
               <label key={f.key} className="radio migrate-fit">
                 <input type="radio" name="migrate-template" value={f.key} checked={key === f.key} onChange={() => choose(f.key)} data-testid={`migrate-fit-${f.key}`} />
                 <img src={`/site-templates/${f.key}.jpg`} alt="" width={96} height={60} />
-                <span><strong>{f.name}</strong>{i === 0 && <span className="badge" data-tone="success"> 추천</span>}<br />
-                  <small className="muted">채울 수 있는 칸 {f.filled}개{f.reasons.length ? ` · 찾은 단서: ${f.reasons.join(', ')}` : ''} · <a href={`/site/templates/${f.key}`} target="_blank" rel="noreferrer">미리보기</a></small></span>
+                <span><strong>{templateText(t, f.key, 'name', f.name)}</strong>{i === 0 && <span className="badge" data-tone="success"> {t('cc.recommended')}</span>}<br />
+                  <small className="muted">{t('site.tpl.start.fillable', { n: f.filled })}{f.reasons.length ? t('site.tpl.start.clues', { clues: f.reasons.join(', ') }) : ''} · <a href={`/site/templates/${f.key}`} target="_blank" rel="noreferrer">{t('site.tpl.preview')}</a></small></span>
               </label>
             ))}
           </fieldset>
-          <h3>‘{name}’에 옮길 내용</h3>
-          {tp.proposals.filter((p) => p.kind !== 'image').length === 0 ? <p className="muted">이 템플릿 칸에 맞는 내용을 찾지 못했습니다. 템플릿만 시작하고 학교 AI에게 맡길 수 있습니다.</p> : (
+          <h3>{t('site.tpl.start.content', { name })}</h3>
+          {tp.proposals.filter((p) => p.kind !== 'image').length === 0 ? <p className="muted">{t('site.tpl.start.noMatch')}</p> : (
             <ul className="issue-list" data-testid="migrate-start-proposals">{tp.proposals.filter((p) => p.kind !== 'image').map((p) => (
               <li key={p.slotId} className="autofill-item">
                 <label className="radio"><input type="checkbox" checked={!!pick[p.slotId]} onChange={(e) => setPick({ ...pick, [p.slotId]: e.target.checked })} /><strong>{p.label}</strong></label>
-                <small className="muted">{p.page} 쪽 · {p.confidence === 'high' ? '제목으로 찾음' : '확인 필요'}{p.source?.file ? ` · ${p.source.file}` : ''}</small>
+                <small className="muted">{t('site.tpl.start.page', { page: p.page })} · {p.confidence === 'high' ? t('site.tpl.prop.byHeading') : t('site.tpl.prop.check')}{p.source?.file ? ` · ${p.source.file}` : ''}</small>
                 {Array.isArray(p.value) ? <ul className="fine">{p.value.map((it, k) => <li key={k}>{it.title}{it.body ? ` — ${it.body}` : ''}</li>)}</ul>
-                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={`${p.label} 내용`} />}
+                  : <textarea rows={2} value={edit[p.slotId] ?? ''} onChange={(e) => setEdit({ ...edit, [p.slotId]: e.target.value })} aria-label={t('site.tpl.prop.content', { label: p.label })} />}
               </li>
             ))}</ul>
           )}
-          {remaining.length > 0 && <p className="fine">옮기지 않는 칸: {remaining.map((u) => u.label).join(' · ')} — 옮긴 뒤 직접 쓰거나 학교 AI에게 맡깁니다.</p>}
-          {res.images.length > 0 && <p className="fine">옛 사이트 그림 {res.images.length}장은 옮긴 뒤 ‘{name}’ 미리보기 아래 ‘기존 홈페이지에서 옮기기’에서 골라 가져옵니다.</p>}
+          {remaining.length > 0 && <p className="fine">{t('site.tpl.start.remaining', { labels: remaining.map((u) => u.label).join(' · ') })}</p>}
+          {res.images.length > 0 && <p className="fine">{t('site.tpl.start.images', { n: res.images.length, name })}</p>}
           <DesignChoice site={site} designName={templates.find((x) => x.key === key)?.designName ?? key} value={design} onChange={setDesign} />
-          <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy} onClick={move} data-testid="migrate-start-move">‘{name}’ 디자인으로 옮기기</button></div>
+          <div className="form-actions"><button type="button" className="btn btn-primary" disabled={busy} onClick={move} data-testid="migrate-start-move">{t('site.tpl.start.move', { name })}</button></div>
           <details data-testid="migrate-agent">
-            <summary>학교 AI(Codex·Claude Code)에게 맡길 글</summary>
-            <p className="fine">못 찾은 칸 채우기, 사진 칸의 그림 만들기는 학교가 쓰는 AI 구독으로 합니다(플랫폼 비용 없음). 아래 글과 ‘AI 작업 공간’에서 발급한 작업 토큰을 함께 AI 대화창에 붙여 넣으세요. 토큰은 이 글에 들어 있지 않습니다.</p>
-            <textarea readOnly rows={8} value={agentText} aria-label="학교 AI에게 맡길 글" />
+            <summary>{t('site.tpl.agent.summary')}</summary>
+            <p className="fine">{t('site.tpl.agent.help')}</p>
+            <textarea readOnly rows={8} value={agentText} aria-label={t('site.tpl.agent.label')} />
             <div className="form-actions">
-              <button type="button" className="btn" onClick={async () => { try { await navigator.clipboard.writeText(agentText); setCopied(true); } catch { setCopied(false); } }}>글 복사</button>
-              <a className="btn btn-ghost" href="/site?box=settings">AI 작업 공간(토큰 발급)</a>
-              {copied && <span role="status" className="fine">복사했습니다.</span>}
+              <button type="button" className="btn" onClick={async () => { try { await navigator.clipboard.writeText(agentText); setCopied(true); } catch { setCopied(false); } }}>{t('site.tpl.agent.copy')}</button>
+              <a className="btn btn-ghost" href="/site?box=settings">{t('site.tpl.agent.workspace')}</a>
+              {copied && <span role="status" className="fine">{t('site.tpl.agent.copied')}</span>}
             </div>
           </details>
         </div>
       )}
-      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{msg.done && <> <a href="/site?box=page">쪽 목록으로</a> · <a href={`/site/templates/${key}`}>‘{name}’ 미리보기·그림 가져오기</a></>}</p>}
+      {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}{msg.done && <> <a href="/site?box=page">{t('site.tpl.toPages')}</a> · <a href={`/site/templates/${key}`}>{t('site.tpl.start.previewImages', { name })}</a></>}</p>}
     </section>
   );
 }
