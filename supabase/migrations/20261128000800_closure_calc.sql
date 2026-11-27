@@ -20,6 +20,8 @@ create table public.remediation_events (
   foreign key (person_id, school_id) references public.people(id, school_id)
 );
 comment on table public.remediation_events is 'ADR 0042 — 보충 이수 사건(보장지도·추가학습). 추가만, 최근 사건이 현재 값';
+-- 추가만: 고치기·지우기를 DB 가 막는다(다른 학사 사건 원장과 같은 장치)
+create trigger remediation_events_guard before update or delete on public.remediation_events for each row execute function private.guard_columns();
 create index remediation_events_lookup on public.remediation_events (offering_id, person_id, kind, recorded_at desc);
 alter table public.remediation_events enable row level security;
 revoke all on public.remediation_events from public, anon, authenticated;
@@ -61,6 +63,8 @@ begin
     -- 잘라내지 않는다(Codex #169 P2): float8 로 나누면 앱(JS)의 2/3·1/3 과 같은 값이 되어 경계 비교가 맞고, JSON 왕복에도 글자가 같다
     select count(*), count(*) filter (where a.kind_code not in ('absent', 'class_absent')
              or exists (select 1 from public.code_lists c where c.school_id = target and c.list_key = 'attendance_reason' and c.code = a.reason_code
+                         -- 그 출결 날짜에 유효한 코드 판만 본다(옛 판·새 판이 같은 코드를 쓴다, Codex #169)
+                         and (c.effective_from is null or c.effective_from <= a.day) and (c.effective_to is null or a.day < c.effective_to)
                          and coalesce((c.attrs ->> 'counts_present')::boolean, false)))
       into tot, pres
       from public.current_attendance a

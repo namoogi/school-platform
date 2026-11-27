@@ -217,4 +217,17 @@ describe('계산식으로 마감', () => {
     const inputs = await asUser(A.userId, (db) => g.offeringCalcInputs(db, A.schoolId, offering));
     expect((inputs[st[1]].attendance as { rate: number }).rate).toBe(2 / 3);
   });
+
+  it('보충 이수 사건은 고치거나 지울 수 없고, 출석인정 사유는 그 날짜에 유효한 판으로 본다(Codex #169)', async () => {
+    await expect(su.query('update public.remediation_events set completed = false')).rejects.toThrow('바꿀 수 없는');
+    await expect(su.query('delete from public.remediation_events')).rejects.toThrow('삭제하지 않습니다');
+    // 3월 3일까지는 '현장학습' 이 출석인정, 그 뒤 판은 아님. 2번 학생의 3월 4일 결석에 이 사유를 붙인다
+    await su.query(`insert into public.code_lists(school_id, list_key, code, label, attrs, effective_from, effective_to)
+                    values ($1, 'attendance_reason', 'field_trip', '{"ko":"현장학습"}', '{"counts_present": true}', '2026-03-01', '2026-03-04'),
+                           ($1, 'attendance_reason', 'field_trip', '{"ko":"현장학습"}', '{"counts_present": false}', '2026-03-04', null)`, [A.schoolId]);
+    await su.query(`insert into public.attendance_events(school_id, person_id, day, scope, period, offering_id, kind_code, reason_code, recorded_by)
+                    values ($1, $2, '2026-03-04', 'period', 1, $3, 'absent', 'field_trip', $4)`, [A.schoolId, st[1], offering, A.userId]);
+    const inputs = await asUser(A.userId, (db) => g.offeringCalcInputs(db, A.schoolId, offering));
+    expect((inputs[st[1]].attendance as { rate: number }).rate).toBe(2 / 3);
+  });
 });
