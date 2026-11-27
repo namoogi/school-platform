@@ -27,20 +27,40 @@ for (const f of fs.readdirSync(adrDir).filter((x) => /^\d{4}-/.test(x))) {
   adrSeen.set(n, f);
 }
 
-// 3. 비밀 값처럼 보이는 문자열 (코드·문서)
+// 3. 비밀 값·개인 연락처 (2026-11-27 저장소 공개 전환 뒤 강화)
+//    저장소는 공개다. 커밋 기록까지 누구나 본다. 값은 출력하지 않고 파일·줄만 알린다.
 const secretPatterns = [
-  /sb_secret_[A-Za-z0-9_-]{10,}/, /service_role["'\s:=]+ey[A-Za-z0-9_-]{20,}/,
-  /postgres(?:ql)?:\/\/[^\s:@/]+:(?!\[)[^\s@/\[\]<>]{6,}@[^\s]*supabase\.co/, /sk-ant-[A-Za-z0-9_-]{20,}/,
+  ['Supabase 비밀 키', /sb_secret_[A-Za-z0-9_-]{10,}/],
+  ['service_role 키', /service_role["'\s:=]+ey[A-Za-z0-9_-]{20,}/],
+  ['JWT(서명된 키)', /eyJhbGciOi[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/],
+  ['비밀번호가 든 DB 주소', /postgres(?:ql)?:\/\/[^\s:@/]+:(?!\[)[^\s@/\[\]<>]{6,}@[^\s]*(?:supabase\.(?:co|com)|amazonaws\.com|neon\.tech)/],
+  ['Anthropic 키', /sk-ant-[A-Za-z0-9_-]{20,}/],
+  ['OpenAI 키', /sk-(?:proj-)?[A-Za-z0-9_-]{32,}/],
+  ['GitHub 토큰', /\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})/],
+  ['Google API 키', /\bAIza[0-9A-Za-z_-]{35}\b/],
+  ['AWS 접근 키', /\bAKIA[0-9A-Z]{16}\b/],
+  ['Slack 토큰', /\bxox[abprs]-[A-Za-z0-9-]{10,}/],
+  ['개인 키', /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
+  ['비밀 이름에 값 대입', /\b[A-Z0-9_]*(?:SECRET|PASSWORD|TOKEN|API_KEY|PRIVATE_KEY)[A-Z0-9_]*\s*[=:]\s*['"]?(?![^'"\s]*(?:local|dev|test|example|change-me|dummy|demo|placeholder|<|\$|\.\.\.))[A-Za-z0-9_+/=-]{24,}/],
 ];
+// 개인 메일 주소: 실제 사람 연락처를 코드·문서에 넣지 않는다. 예시는 example.test 등을 쓴다.
+const personalMail = /[A-Za-z0-9._%+-]+@(?:gmail|naver|daum|hanmail|kakao|nate|hotmail|outlook|yahoo|icloud)\.(?:com|net)\b/i;
+const skipDirs = ['node_modules', '.next', '.git', 'test-results', '.ui-review', '.school-move'];
+const scanExt = /\.(ts|tsx|mjs|cjs|js|json|md|sql|yml|yaml|css|html|py|sh|txt|toml|csv|env|example)$/;
 function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (['node_modules', '.next', '.git', 'school-platform-handoff', 'test-results'].includes(e.name)) continue;
+    if (skipDirs.includes(e.name) || e.name.startsWith('.e2e-agent-')) continue;
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) walk(p);
-    else if (/\.(ts|tsx|mjs|js|json|md|sql|yml|yaml|css)$/.test(e.name)) {
-      const text = fs.readFileSync(p, 'utf8');
-      for (const re of secretPatterns) if (re.test(text)) problems.push(`비밀 값으로 보이는 문자열: ${path.relative(root, p)}`);
-    }
+    const rel = path.relative(root, p);
+    if (e.isDirectory()) { walk(p); continue; }
+    if (/^\.env/.test(e.name) && e.name !== '.env.example' && !/\.local$/.test(e.name)) problems.push(`환경 파일은 커밋하지 않습니다: ${rel}`);
+    if (!scanExt.test(e.name) && !/^\.env/.test(e.name)) continue;
+    if (/\.local$/.test(e.name)) continue; // .gitignore 대상(로컬 비밀)
+    const lines = fs.readFileSync(p, 'utf8').split('\n');
+    lines.forEach((line, i) => {
+      for (const [label, re] of secretPatterns) if (re.test(line)) problems.push(`${label} 의심: ${rel}:${i + 1}`);
+      if (!/license/i.test(e.name) && personalMail.test(line)) problems.push(`개인 메일 주소: ${rel}:${i + 1}`);
+    });
   }
 }
 walk(root);
