@@ -34,16 +34,19 @@ const NON_UUID_PK: Record<string, string> = {
 };
 /** 학교 표끼리 연결하면서 school_id 를 함께 묶지 않은 것. 다른 학교 행을 가리킬 수 없게 트리거·명령 함수가 막는지 확인 뒤 복합 외래키로 바꾼다. 줄이기만 한다 */
 const FK_WITHOUT_SCHOOL: Record<string, string> = {
-  'assessment_results->assessment_results': '정정 사슬(이전 결과) — 명령 함수가 같은 학교만 허용',
-  'attendance_events->attendance_events': '정정 사슬(이전 사건)',
-  'billing_statements->school_licenses': '청구 기록 → 라이선스(관제가 씀)',
-  'code_lists->code_lists': '코드 목록 판 사슬',
-  'control_messages->control_requests': '관제 대화(관제 영역)',
-  'control_messages->control_sessions': '관제 대화(관제 영역)',
-  'control_requests->control_sessions': '관제 요청(관제 영역)',
-  'evidence_items->evidence_items': '증거물 정정 사슬',
-  'narratives->narratives': '서술 정정 사슬',
-  'site_entries->agent_tokens': '홈페이지 항목 → 만든 작업 토큰',
+  // 제약 이름으로 묶는다(같은 표 쌍에 새 연결이 더해져도 따로 잡히게)
+  'assessment_results.assessment_results_corrects_id_fkey': '정정 사슬(이전 결과) — 명령 함수가 같은 학교만 허용',
+  'attendance_events.attendance_events_corrects_id_fkey': '정정 사슬(이전 사건)',
+  'billing_statements.billing_statements_license_id_fkey': '청구 기록 → 라이선스(관제가 씀)',
+  'code_lists.code_lists_prior_code_id_fkey': '코드 목록 판 사슬',
+  'control_messages.control_messages_author_session_fkey': '관제 대화(관제 영역, 학교 없는 세션 가능)',
+  'control_messages.control_messages_request_id_fkey': '관제 대화(관제 영역)',
+  'control_messages.control_messages_target_session_fkey': '관제 대화(관제 영역, 학교 없는 세션 가능)',
+  'control_requests.control_requests_assignee_session_fkey': '관제 요청(관제 영역, 학교 없는 세션 가능)',
+  'control_requests.control_requests_source_session_fkey': '관제 요청(관제 영역, 학교 없는 세션 가능)',
+  'evidence_items.evidence_items_supersedes_id_fkey': '증거물 정정 사슬',
+  'narratives.narratives_corrects_id_fkey': '서술 정정 사슬',
+  'site_entries.site_entries_archived_by_token_fkey': '홈페이지 항목 → 보관한 작업 토큰',
 };
 
 let su: pg.Client;
@@ -62,7 +65,7 @@ async function nonUuidPk(db: pg.Client) {
 }
 async function fkWithoutSchool(db: pg.Client) {
   const { rows } = await db.query(
-    `select distinct c.relname || '->' || r.relname as f from pg_constraint k
+    `select c.relname || '.' || k.conname as f from pg_constraint k
        join pg_class c on c.oid = k.conrelid join pg_class r on r.oid = k.confrelid join pg_namespace n on n.oid = c.relnamespace
       where k.contype = 'f' and n.nspname = 'public' and r.relname <> 'schools'
         and exists (select 1 from pg_attribute s where s.attrelid = c.oid and s.attname = 'school_id' and not s.attisdropped)
@@ -176,7 +179,7 @@ describe('이전 가능성 문: 구조 규칙', () => {
       await su.query(`create table public.zz_move_probe (id bigserial primary key, school_id uuid not null references public.schools(id),
                         offering_id uuid references public.course_offerings(id))`);
       expect(await nonUuidPk(su)).toEqual(['zz_move_probe']);
-      expect(await fkWithoutSchool(su)).toEqual(['zz_move_probe->course_offerings']);
+      expect(await fkWithoutSchool(su)).toEqual(['zz_move_probe.zz_move_probe_offering_id_fkey']);
     } finally { await su.query('rollback'); }
   });
 });

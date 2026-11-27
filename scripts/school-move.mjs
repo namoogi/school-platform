@@ -50,6 +50,16 @@ async function singleForeignKeys(db) {
 const CARRIED = new Set(['schools', 'app_users', 'baselines']);
 
 export async function exportSchool(db, key) {
+  // 모든 표·계정·기본판·마이그레이션을 한 시점(스냅샷)에서 읽는다. 꺼내는 도중 관제 쪽 기록이 생겨도 부모 없는 자식이 섞이지 않게
+  await db.query('begin isolation level repeatable read read only');
+  try {
+    return await exportSnapshot(db, key);
+  } finally {
+    await db.query('rollback');
+  }
+}
+
+async function exportSnapshot(db, key) {
   const { rows: [school] } = await db.query(
     `select * from public.schools where id::text = $1 or slug = $1`, [key]);
   if (!school) throw new Error(`학교를 찾을 수 없습니다: ${key}`);
