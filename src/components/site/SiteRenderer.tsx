@@ -268,7 +268,8 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             {b.template === 'banner' && figure}
             <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
             {(b.template === 'media-left' || b.template === 'media-right') && figure}
-            {v === 'filter' && !ed && itemList && tags.length > 1
+            {/* 거르기는 분류를 가진 카드·사진 목록에서만(정보·단계 목록에는 분류 칸이 없음) */}
+            {v === 'filter' && !ed && itemList && tags.length > 1 && (b.template === 'cards' || b.template === 'photos')
               ? <TagFilter tags={tags} allLabel={w('all', lang)} label={w('byTag', lang)}>{itemList}</TagFilter>
               : itemList}
             {btnAfter && btn}

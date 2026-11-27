@@ -9,7 +9,8 @@ export function TagFilter({ tags, allLabel, label, children }: { tags: string[];
   const [on, setOn] = useState<string | null>(null);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    box.current?.querySelectorAll<HTMLElement>('li[data-tag]').forEach((li) => { li.hidden = on !== null && li.dataset.tag !== on; });
+    // 분류가 없는 항목도 포함해 목록의 모든 항목을 본다(분류를 고르면 분류 없는 항목은 숨김)
+    box.current?.querySelectorAll<HTMLElement>(':scope > ul > li').forEach((li) => { li.hidden = on !== null && li.dataset.tag !== on; });
   }, [on]);
   return (
     <div className="sec-filter" ref={box}>

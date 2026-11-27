@@ -391,7 +391,7 @@ function SectionFields({ b, langs, assets, onUploaded, onChange }: { b: SectionB
         <li key={k} className="block-card">
           <LangFields label={`${k + 1}. 제목`} value={it.title} langs={langs} onChange={(title) => setItem(k, { ...it, title })} />
           {b.template !== 'photos' && <LangFields label={`${k + 1}. 글`} value={it.body} langs={langs} multiline onChange={(body) => setItem(k, { ...it, body })} />}
-          {b.variant === 'filter' && <LangFields label={`${k + 1}. 분류(거르기 단추)`} value={it.tag} langs={langs} onChange={(tag) => setItem(k, { ...it, tag })} />}
+          {b.variant === 'filter' && (b.template === 'cards' || b.template === 'photos') && <LangFields label={`${k + 1}. 분류(거르기 단추)`} value={it.tag} langs={langs} onChange={(tag) => setItem(k, { ...it, tag })} />}
           {(b.template === 'cards' || b.template === 'photos') && <AssetPick label={`${k + 1}. 사진`} value={it.asset} assets={assets} onUploaded={onUploaded} onChange={(asset) => setItem(k, { ...it, asset: asset || undefined })} />}
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChange({ ...b, items: items.filter((_, j) => j !== k) })}>{k + 1}번 항목 빼기</button>
         </li>))}</ol>

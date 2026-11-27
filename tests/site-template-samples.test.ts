@@ -1,7 +1,7 @@
 /** 86차 — 템플릿 예시 내용(가상 학교)·썸네일 검사(DB 없음) */
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { SITE_TEMPLATES } from '@/lib/site-templates';
+import { recommendTemplates, SITE_TEMPLATES } from '@/lib/site-templates';
 import { placeholders, sampleAssetUrl, samplePages, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { isSiteTheme, validateContent } from '@/lib/site';
 
@@ -65,5 +65,9 @@ describe('템플릿 예시 내용', () => {
     expect(variants('story')).toContain('mosaic');
     expect(variants('project')).toContain('filter');
     expect(variants('kinder')).toEqual(expect.arrayContaining(['mask', 'timeline', 'faq']));
+  });
+  it('90차: 유치원 자료면 유치원형을 추천한다(이관 추천 단서)', () => {
+    const fits = recommendTemplates([{ name: '/', text: '햇님 유치원 · 만 3세 새싹반, 만 4세 꽃잎반 · 놀이 중심 · 등원 시간 9시' }], {});
+    expect(fits[0].key).toBe('kinder');
   });
 });

@@ -424,6 +424,7 @@ const SIGNALS: Record<string, string[]> = {
   project: ['프로젝트', 'pbl', '발표회', '탐구', '전시', '작품', 'project', 'exhibition'],
   mission: ['후원', '선교', '기도', '사명', '봉사', '기부', 'donate', 'mission', 'prayer', 'sponsor'],
   international: ['international', 'ib ', 'curriculum', 'boarding', '국제', 'โรงเรียน', 'นานาชาติ'],
+  kinder: ['유치원', '어린이집', '원아', '만 3세', '만 4세', '만 5세', '놀이', '등원', 'kindergarten', 'preschool', 'nursery'],
   single: [],
 };
 export type TemplateFit = { key: string; name: string; score: number; filled: number; reasons: string[] };
