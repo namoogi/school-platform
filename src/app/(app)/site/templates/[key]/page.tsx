@@ -1,3 +1,4 @@
+import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
@@ -9,6 +10,7 @@ import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { PageHead } from '@/components/site/load';
 import { PageHeader } from '@/components/ui';
 import { ApplyTemplate, AutofillPanel, MigratePanel } from '../TemplatesClient';
+import { getI18n, userLang } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +20,15 @@ export default async function TemplatePreview({ params, searchParams }: { params
   const sp = await searchParams;
   const t = SITE_TEMPLATES.find((x) => x.key === key);
   if (!t) notFound();
-  const { school, pages, settings } = await loadForPage(async ({ db, school }) => ({
+  const { school, pages, settings, uiLang } = await loadForPage(async ({ db, school }) => ({
+    uiLang: await userLang(db),
     pages: (await listEntries(db, school.id)).filter((e) => e.kind === 'page').map((e) => e.key),
     settings: await getSettings(db, school.id),
   }), { module: 'homepage' });
-  const designName = SITE_THEMES.find((x) => x.key === t.theme)?.name ?? t.theme;
-  const siteState = { exists: !!settings, open: !!settings?.is_open, theme: settings?.theme ?? null, themeName: SITE_THEMES.find((x) => x.key === settings?.theme)?.name ?? null };
+  const { t: tr } = await getI18n(uiLang, school.locale);
+  const tplName = templateText(tr, t.key, 'name', t.name);
+  const designName = siteLabel(tr, 'theme', t.theme, SITE_THEMES.find((x) => x.key === t.theme)?.name ?? t.theme);
+  const siteState = { exists: !!settings, open: !!settings?.is_open, theme: settings?.theme ?? null, themeName: settings?.theme ? siteLabel(tr, 'theme', settings.theme, SITE_THEMES.find((x) => x.key === settings.theme)?.name ?? settings.theme) : null };
   const pg = t.pages.find((p) => p.key === sp.page) ?? t.pages[0];
   const lang = (t.langs as string[]).includes(sp.lang ?? '') ? (sp.lang as Lang) : (t.langs[0] as Lang);
   const slots = t.slots.filter((s) => s.page === pg.key);
@@ -34,24 +39,24 @@ export default async function TemplatePreview({ params, searchParams }: { params
     `/site/templates/${t.key}?page=${o.page ?? pg.key}&lang=${o.lang ?? lang}${(o.view ?? view) === 'guide' ? '&view=guide' : ''}`;
   return (
     <>
-      <PageHeader title={`템플릿: ${t.name}`} crumbs={[{ label: '학교 홈페이지', href: '/site' }, { label: '템플릿', href: '/site/templates' }, { label: t.name }]}
-        description={`${t.summary} 디자인: ${SITE_THEMES.find((x) => x.key === t.theme)?.name ?? t.theme}`} />
+      <PageHeader title={tr('site.tpl.detail.title', { name: tplName })} crumbs={[{ label: tr('nav.site.title'), href: '/site' }, { label: tr('site.tpl.crumb'), href: '/site/templates' }, { label: tplName }]}
+        description={tr('site.tpl.detail.description', { summary: templateText(tr, t.key, 'summary', t.summary), design: designName })} />
       <div className="template-layout">
-        <section className="template-stage" aria-label="미리보기">
+        <section className="template-stage" aria-label={tr('site.tpl.preview')}>
           {/* 86차(사용자 지시): 미리보기에서 쪽마다 바로 넘겨 본다 — 쪽 탭을 미리보기 바로 위에 둔다 */}
-          <nav className="tabs template-page-tabs" aria-label="템플릿 쪽">
+          <nav className="tabs template-page-tabs" aria-label={tr('site.tpl.detail.pageTabs')}>
             {t.pages.map((p) => <Link key={p.key} href={href({ page: p.key })} aria-current={p.key === pg.key ? 'page' : undefined}>
-              {p.key === 'home' ? '홈' : p.content.title[lang] ?? Object.values(p.content.title)[0]}{pages.includes(p.key) ? <small className="muted"> · 이미 있음</small> : null}</Link>)}
+              {p.key === 'home' ? tr('nav.home') : p.content.title[lang] ?? Object.values(p.content.title)[0]}{pages.includes(p.key) ? <small className="muted"> · {tr('site.tpl.detail.exists')}</small> : null}</Link>)}
           </nav>
           {TEMPLATE_SAMPLES[t.key] && <div className="template-view-bar">
-            <nav className="segmented" aria-label="미리보기 내용">
-              <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined} data-testid="template-view-sample">예시 내용</Link>
-              <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined} data-testid="template-view-guide">안내 자리</Link>
+            <nav className="segmented" aria-label={tr('site.tpl.view.label')}>
+              <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined} data-testid="template-view-sample">{tr('site.tpl.view.sample')}</Link>
+              <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined} data-testid="template-view-guide">{tr('site.tpl.view.guide')}</Link>
             </nav>
-            <Link className="btn btn-sm" href={`/templates/${t.key}?page=${pg.key}&lang=${lang}${view === 'guide' ? '&view=guide' : ''}`} data-testid="template-live-link">전체 화면으로 보기</Link>
+            <Link className="btn btn-sm" href={`/templates/${t.key}?page=${pg.key}&lang=${lang}${view === 'guide' ? '&view=guide' : ''}`} data-testid="template-live-link">{tr('site.tpl.detail.fullscreen')}</Link>
             <p className="fine muted" data-testid="template-view-note">{view === 'sample'
-              ? `지어낸 가상 학교 '${TEMPLATE_SAMPLES[t.key].school}'로 채운 모습입니다. 시작하면 예시 글이 아니라 [ ] 안내 자리가 들어갑니다.`
-              : '시작하면 학교 쪽에 이대로 들어갑니다. [ ] 자리를 학교 내용으로 바꿔 주세요.'}</p>
+              ? tr('site.tpl.detail.sampleNote', { school: TEMPLATE_SAMPLES[t.key].school })
+              : tr('site.tpl.detail.guideNote')}</p>
           </div>}
           <div className="site site-preview template-preview" data-theme={t.theme} lang={lang} data-testid="template-preview" data-view={view}>
             <main className="site-wrap site-main">
@@ -60,15 +65,15 @@ export default async function TemplatePreview({ params, searchParams }: { params
             </main>
           </div>
         </section>
-        <aside className="card stack" aria-label="템플릿 정보">
-          {t.langs.length > 1 && <p className="fine">언어: {t.langs.map((l) => <Link key={l} href={href({ lang: l })} aria-current={l === lang ? 'true' : undefined} style={{ marginRight: 8 }}>{LANG_LABEL[l as Lang]}</Link>)}</p>}
-          <p className="fine">쪽 {t.pages.length}개: {t.pages.map((p) => p.key === 'home' ? '/' : `/p/${p.key}`).join(' · ')}</p>
-          <h2>이 쪽에서 채울 칸</h2>
-          {slots.length === 0 ? <p className="muted">없음</p> : <ul className="issue-list">{slots.map((s) => <li key={s.id}><span><strong>{s.label}</strong> <small className="muted">{s.hint}</small></span></li>)}</ul>}
-          <h2>꼭 알릴 정보</h2>
+        <aside className="card stack" aria-label={tr('site.tpl.detail.info')}>
+          {t.langs.length > 1 && <p className="fine">{tr('site.tpl.detail.langs')} {t.langs.map((l) => <Link key={l} href={href({ lang: l })} aria-current={l === lang ? 'true' : undefined} style={{ marginRight: 8 }}>{LANG_LABEL[l as Lang]}</Link>)}</p>}
+          <p className="fine">{tr('site.tpl.detail.pages', { n: t.pages.length, paths: t.pages.map((p) => p.key === 'home' ? '/' : `/p/${p.key}`).join(' · ') })}</p>
+          <h2>{tr('site.tpl.detail.slots')}</h2>
+          {slots.length === 0 ? <p className="muted">{tr('site.tpl.detail.noSlots')}</p> : <ul className="issue-list">{slots.map((s) => <li key={s.id}><span><strong>{s.label}</strong> <small className="muted">{s.hint}</small></span></li>)}</ul>}
+          <h2>{tr('site.tpl.detail.mustHave')}</h2>
           <ul className="issue-list">{t.mustHave.map((m) => <li key={m}>{m}</li>)}</ul>
-          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={t.name} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} site={siteState} designName={designName} />
-            : <p className="muted">템플릿 적용은 학교 관리자가 합니다.</p>}
+          {school.isAdmin ? <ApplyTemplate templateKey={t.key} name={tplName} existing={t.pages.map((p) => p.key).filter((k) => pages.includes(k))} site={siteState} designName={designName} />
+            : <p className="muted">{tr('site.tpl.detail.adminOnly')}</p>}
 
         </aside>
       </div>

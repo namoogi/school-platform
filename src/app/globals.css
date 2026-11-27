@@ -144,6 +144,8 @@ code { font: 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; background: 
 .sidebar nav { display: flex; flex-direction: column; flex: 1; }
 .menu-label { font-size: var(--fs-caption); line-height: var(--lh-caption); font-weight: 600; color: var(--text-muted); letter-spacing: .02em; padding: 0 var(--space-3) var(--space-1); }
 .sidebar .menu-label { color: var(--rail-ink); font-size: 11px; text-align: center; padding: var(--space-3) var(--space-1) var(--space-1); border-top: 1px solid var(--rail-hover); margin: var(--space-2) var(--space-3) 0; opacity: .8; }
+/* 103차: 좁은 메뉴 막대에서 영어 묶음 이름(Academics 등)이 글자 중간에서 끊기지 않게 — 옆 여백을 줄이고 낱말 단위로만 줄을 바꾼다 */
+.sidebar .menu-label { margin-inline: var(--space-1); padding-inline: 0; letter-spacing: 0; overflow-wrap: normal; word-break: keep-all; hyphens: none; }
 .nav-group { display: grid; gap: 2px; }
 .nav-group:first-child .menu-label { border-top: 0; margin-top: 0; }
 .nav-item {
