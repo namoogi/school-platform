@@ -3,10 +3,11 @@ import { loadForPage } from '@/lib/page';
 import { listEntries } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { PageHeader, StatusBadge } from '@/components/ui';
+import { MigrateStart } from './TemplatesClient';
 
 /** 65차(ADR 0031): 홈페이지 템플릿 둘러보기 — 형식 7종. 미리보기 후 고르면 시안 쪽을 만든다 */
 export default async function TemplatesPage() {
-  const { pages } = await loadForPage(async ({ db, school }) => ({
+  const { pages, school } = await loadForPage(async ({ db, school }) => ({
     pages: (await listEntries(db, school.id)).filter((e) => e.kind === 'page').map((e) => e.key),
   }), { module: 'homepage' });
   return (
@@ -14,6 +15,8 @@ export default async function TemplatesPage() {
       <PageHeader title="홈페이지 템플릿" crumbs={[{ label: '학교 홈페이지', href: '/site' }, { label: '템플릿' }]}
         description="학교 홈페이지 형식을 조사해 형식별로 정리했습니다. 둘러보고 우리 학교에 맞는 형식을 고르면 쪽 시안이 만들어집니다. 공개는 내용을 채운 뒤 직접 합니다."
         meta={<span>지금 쪽 {pages.length}개</span>} />
+      {school.isAdmin && <MigrateStart templates={SITE_TEMPLATES.map((t) => ({ key: t.key, name: t.name, summary: t.summary }))} />}
+      <h2 className="section-title">템플릿 둘러보기</h2>
       <div className="template-grid" data-testid="template-grid">
         {SITE_TEMPLATES.map((t) => (
           <article key={t.key} className="card template-card">

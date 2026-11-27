@@ -1635,6 +1635,18 @@ try {
     await h.locator('text=자료로 빈 칸 채움').first().waitFor();
     await ctx.close();
   });
+  await step('87차: 주소만 넣고 새 디자인으로 옮기기 — 둘러보기 위 패널, 내부 주소는 서버가 거부해 화면에 알린다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site/templates`);
+    const panel = h.locator('[data-testid=migrate-start]');
+    await panel.waitFor();
+    await panel.locator('[data-testid=migrate-start-url]').fill(`${BASE}/`);
+    await panel.locator('[data-testid=migrate-start-read]').click();
+    await panel.locator('[role=status]', { hasText: /공개 인터넷|포트|내부/ }).waitFor();
+    await ctx.close();
+  });
   await step('67차: 기존 홈페이지에서 옮기기 — 패널이 보이고, 내부·사설 주소는 서버가 거부해 화면에 알린다', async () => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const h = await ctx.newPage();

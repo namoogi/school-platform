@@ -7,6 +7,7 @@
 - 시작 안내: [Claude Code](claude-code.md) · [Codex](codex.md)
 - 반복 작업: [현재 구독으로 콘텐츠 번역·시안 저장](subscription-translation.md)
 - 일 하나의 예: [성품 동화에 캐릭터 그림·PDF 붙이기](story-agent.md)
+- 일 하나의 예: [옛 홈페이지를 새 디자인으로 옮기는 일 돕기](site-migrate.md)
 
 ## 토큰 범위
 | 범위 | 값 |
