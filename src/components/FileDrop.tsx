@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Upload, X, FileText, Check, AlertCircle } from 'lucide-react';
-import { acceptAttr, checkFiles, describeAccept, formatSize, type FileRules } from '@/lib/file-check';
+import { UPLOAD_NETWORK_ERROR, acceptAttr, checkFiles, describeAccept, formatSize, type FileRules } from '@/lib/file-check';
 import { useI18n } from './I18nProvider';
 
 /**
@@ -80,7 +80,7 @@ export function FileDrop({
     } catch (e) {
       const aborted = (e as Error)?.name === 'AbortError';
       setItems((xs) => xs.map((x) => ({ ...x, state: 'error' })));
-      const msg = aborted ? t('file.cancelled') : ((e as Error)?.message || t('file.failed'));
+      const msg = aborted ? t('file.cancelled') : (e as Error)?.name === UPLOAD_NETWORK_ERROR ? t('file.err.network') : ((e as Error)?.message || t('file.failed'));
       if (!aborted) setErrors((xs) => [...xs, msg]);
       setStatus(msg);
     } finally {

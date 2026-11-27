@@ -103,8 +103,10 @@ export function acceptAttr(accept: string[] | undefined): string | undefined {
  * 진행률을 알 수 있는 업로드(XMLHttpRequest). fetch는 올리는 진행률을 주지 않는다.
  * 응답 본문은 JSON으로 읽어 돌려준다(읽지 못하면 {}). 취소하면 AbortError를 던진다.
  */
+export const UPLOAD_NETWORK_ERROR = 'UploadNetworkError';
+
 export function uploadWithProgress(url: string, body: FormData | Blob, opts: {
-  signal?: AbortSignal; onProgress?: (ratio: number) => void; method?: string; headers?: Record<string, string>; t?: Translate;
+  signal?: AbortSignal; onProgress?: (ratio: number) => void; method?: string; headers?: Record<string, string>;
 } = {}): Promise<{ ok: boolean; status: number; body: Record<string, unknown> }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -116,7 +118,8 @@ export function uploadWithProgress(url: string, body: FormData | Blob, opts: {
       try { parsed = JSON.parse(xhr.responseText || '{}'); } catch { /* 본문 없음 */ }
       resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, body: parsed });
     };
-    xhr.onerror = () => reject(new Error((opts.t ?? baseT)('file.err.network')));
+    // 문구는 기준 언어로 두고 이름으로 알린다: FileDrop 은 이 이름을 보고 화면 언어 문구로 바꿔 보여 준다
+    xhr.onerror = () => { const e = new Error(baseT('file.err.network')); e.name = UPLOAD_NETWORK_ERROR; reject(e); };
     xhr.onabort = () => reject(new DOMException('취소했습니다.', 'AbortError'));
     if (opts.signal) {
       if (opts.signal.aborted) { reject(new DOMException('취소했습니다.', 'AbortError')); return; }

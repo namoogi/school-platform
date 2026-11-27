@@ -4,7 +4,7 @@ import { MessagesSquare, Maximize2, Minimize2, X, ArrowLeft } from 'lucide-react
 import { StatusBadge } from './ui';
 import { useI18n } from './I18nProvider';
 import type { MsgKey } from '@/lib/i18n/catalog';
-import { baseT, type Translate } from '@/lib/i18n/base';
+import type { Translate } from '@/lib/i18n/base';
 import {
   BADGE, CLOSED, NEEDS_USER, SCHOOL_TOPICS, STATUS,
   type Request, type Status, type ThreadSummary, type Topic,
@@ -33,7 +33,8 @@ const topicLabel = (t: Translate, k: string) => t(`control.topic.${k}` as MsgKey
 const when = (s: string, lang: string) => new Date(s).toLocaleString(lang, { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 const POS_KEY = 'chatdock:rect';
 
-async function call<T = unknown>(url: string, method = 'GET', body?: unknown, failed = baseT('common.failed')): Promise<T> {
+// failed: 서버가 오류 문구를 주지 않을 때 보일 글(화면 언어로 넘긴다)
+async function call<T = unknown>(url: string, method: string, body: unknown, failed: string): Promise<T> {
   const res = await fetch(url, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((data as { error?: string }).error ?? failed);
@@ -62,7 +63,7 @@ export function ChatDock({ scope }: { scope: Scope }) {
   }, []);
 
   const refreshList = useCallback(async () => {
-    try { const d = await call<ListData>(`/api/chat${q}`); setData(d); setCount(d.count); setError(null); }
+    try { const d = await call<ListData>(`/api/chat${q}`, 'GET', undefined, t('common.failed')); setData(d); setCount(d.count); setError(null); }
     catch (e) { setError(t('chat.loadFailed', { error: (e as Error).message })); }
   }, [q, t]);
 
@@ -72,7 +73,7 @@ export function ChatDock({ scope }: { scope: Scope }) {
     const tick = async () => {
       if (document.hidden) return;
       if (open) await refreshList();
-      else { try { const d = await call<{ count: number }>(`/api/chat${q}${q ? '&' : '?'}badge=1`); if (!stop) setCount(d.count); } catch { /* 숫자만 못 받으면 그대로 둔다 */ } }
+      else { try { const d = await call<{ count: number }>(`/api/chat${q}${q ? '&' : '?'}badge=1`, 'GET', undefined, ''); if (!stop) setCount(d.count); } catch { /* 숫자만 못 받으면 그대로 둔다 */ } }
     };
     tick();
     const t = setInterval(tick, open ? 10000 : 60000);
@@ -255,7 +256,7 @@ function Thread({ id, q, scope, onBack, onChange }: { id: string; q: string; sco
   const [busy, setBusy] = useState(false);
   const feed = useRef<HTMLOListElement>(null);
   const load = useCallback(async () => {
-    try { setR(await call<Request>(`/api/chat/${id}${q}`)); setErr(null); } catch (e) { setErr(t('chat.loadThreadFailed', { error: (e as Error).message })); }
+    try { setR(await call<Request>(`/api/chat/${id}${q}`, 'GET', undefined, t('common.failed'))); setErr(null); } catch (e) { setErr(t('chat.loadThreadFailed', { error: (e as Error).message })); }
   }, [id, q, t]);
   useEffect(() => { load(); const t = setInterval(() => { if (!document.hidden) load(); }, 5000); return () => clearInterval(t); }, [load]);
   const n = r?.messages.length ?? 0;

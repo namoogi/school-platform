@@ -28,4 +28,4 @@
 ## 다음 묶음
 2. 홈 · 자료 첨부 · 관리자 확인 → 3. 학사 화면 → 4. 설정·`/my` → 5. 전체 관리 → 6. 서버 오류 문구 설계.
 - `control-shared.ts`의 `STATUS`·`TOPIC` 한국어 이름은 관제 센터 화면(5묶음)을 옮길 때 사전으로 합치고 지운다(지금은 대화창만 사전을 쓴다).
-- `uploadWithProgress`의 네트워크 오류 문구는 `t` 옵션을 받게 했다. 부르는 화면을 옮길 때 넘긴다.
+- `uploadWithProgress`의 네트워크 오류는 이름(`UploadNetworkError`)으로 알리고, `FileDrop`이 화면 언어 문구로 바꿔 보여 준다(부르는 화면은 고칠 것 없음, Codex P2 반영).
