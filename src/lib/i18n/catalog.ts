@@ -508,7 +508,7 @@ export const CATALOG = {
   'people.metaEnrolled': '오늘 재학 {n}',
   'people.list': '사람 목록',
   'people.searchName': '이름으로 찾기',
-  'people.empty': '아직 등록한 사람이 없습니다. 아래 \'사람 추가\'로 첫 사람을 등록하세요.',
+  'people.empty': '보여 줄 사람이 없습니다. 새로 등록하려면 아래 \'사람 추가\'를 쓰세요.',
   'people.add': '사람 추가',
   'people.added': '사람을 추가했습니다.',
   'people.latinOptional': '로마자 이름(선택)',

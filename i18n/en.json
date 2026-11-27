@@ -477,7 +477,7 @@
   "people.metaEnrolled": "Enrolled today {n}",
   "people.list": "People",
   "people.searchName": "Search by name",
-  "people.empty": "No people yet. Use \"Add person\" below to register the first one.",
+  "people.empty": "No people to show. To register someone, use \"Add person\" below.",
   "people.add": "Add person",
   "people.added": "Person added.",
   "people.latinOptional": "Romanized name (optional)",
