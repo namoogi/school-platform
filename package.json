@@ -21,6 +21,7 @@
     "ui:seed": "node scripts/ui-review-seed.mjs",
     "lint:i18n": "node scripts/lint-i18n.mjs",
     "templates:thumbs": "node scripts/template-thumbs.mjs",
+    "number": "node scripts/reserve-number.mjs",
     "i18n:missing": "node scripts/i18n-missing.mjs"
   },
   "dependencies": {
