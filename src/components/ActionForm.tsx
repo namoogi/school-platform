@@ -45,8 +45,8 @@ export type PreviewSpec = { action: string; label: string; columns: { key: strin
 type PreviewResult = { issues: { path: string; message: string }[]; results: Record<string, unknown>[] };
 const cell = (v: unknown, t: (k: 'common.yes' | 'common.no') => string) => (v == null ? '-' : v === true ? t('common.yes') : v === false ? t('common.no') : String(v));
 
-/** 판 번호처럼 '보고 시작한 때' 값을 지켜야 하는 칸, 매번 새로 만드는 요청 키. 나머지 extra 는 대상(학생·수업 id 등) */
-const VERSION_KEYS = ['base_version', 'bases'];
+/** 판 번호처럼 '보고 시작한 때' 값을 지켜야 하는 칸(base_version·bases·수업 revision), 매번 새로 만드는 요청 키. 나머지 extra 는 대상(학생·수업 id 등) */
+const VERSION_KEYS = ['base_version', 'bases', 'revision'];
 const VOLATILE_KEYS = [...VERSION_KEYS, 'requestKey'];
 const identity = (e: Record<string, unknown>) => Object.fromEntries(Object.entries(e).filter(([k]) => !VOLATILE_KEYS.includes(k)));
 
