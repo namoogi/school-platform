@@ -18,7 +18,7 @@ const L = {
  * 91차(ADR 0036): 방문·상담 신청 칸. slug가 없으면(템플릿 미리보기) 보내지 않고 안내만 한다.
  * 사람에게 안 보이는 website 칸은 자동 입력을 걸러 낸다.
  */
-export function InquiryForm({ slug, lang, page, title, body }: { slug: string | null; lang: Lang; page: string; title?: string; body?: string }) {
+export function InquiryForm({ slug, lang, page, title, body, anchor }: { slug: string | null; lang: Lang; page: string; title?: string; body?: string; /** 126차: 메뉴 주소 */ anchor?: string }) {
   const id = useId();
   const t = (k: keyof typeof L) => L[k][lang];
   const [busy, setBusy] = useState(false);
@@ -40,7 +40,7 @@ export function InquiryForm({ slug, lang, page, title, body }: { slug: string | 
     finally { setBusy(false); }
   }
   return (
-    <section className="sec site-inquiry" data-testid="site-inquiry" aria-labelledby={`${id}-h`}>
+    <section id={anchor} className="sec site-inquiry" data-testid="site-inquiry" aria-labelledby={`${id}-h`}>
       <div className="sec-copy">
         <h2 className="site-h2" id={`${id}-h`}>{title || t('send')}</h2>
         {body && <p>{body}</p>}

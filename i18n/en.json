@@ -3077,5 +3077,6 @@
   "db.tplOfferStale": "The school already uses this version or newer, so the offer is out of date.",
   "tplOffer.history": "{n} past decisions",
   "tplOffer.versionsShort": "v{from} → v{to}",
-  "tplOffer.confirm": "Record this decision? If you accept, {name} v{to} is applied now and the items under 'Added if you accept' are added to the school copy (school values stay)."
+  "tplOffer.confirm": "Record this decision? If you accept, {name} v{to} is applied now and the items under 'Added if you accept' are added to the school copy (school values stay).",
+  "err.site.anchorTitle": "Block {n}: a menu anchor can only be set on a section, heading, news list or inquiry block that has a title."
 }

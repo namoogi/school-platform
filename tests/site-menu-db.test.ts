@@ -42,7 +42,10 @@ describe('126차 두 단계 메뉴', () => {
       { type: 'section', template: 'cards', title: { ko: '인사말' }, anchor: 'greeting' },
       { type: 'section', template: 'cards', title: { ko: '숨긴 구역' }, anchor: 'secret', hidden: true },
       { type: 'heading', text: { ko: '오시는 길' }, anchor: 'way' },
-      { type: 'text', text: { ko: '메뉴 주소 없음' } }] }, 1);
+      { type: 'text', text: { ko: '메뉴 주소 없음' } },
+      // 신청을 받지 않는 학교·소식이 없는 학교는 이 구역을 방문자에게 그리지 않으므로 메뉴에도 없다
+      { type: 'inquiry', title: { ko: '상담 신청' }, anchor: 'apply' },
+      { type: 'news_list', title: { ko: '최근 소식' }, count: 3, style: 'list', anchor: 'latest' }] }, 1);
     await page(A, 'history', { title: { ko: '연혁' }, menu: { parent: 'about' }, blocks: [] }, 2);
     await page(B, 'b-only', { title: { ko: 'B 학교 쪽' }, blocks: [{ type: 'heading', text: { ko: 'B' }, anchor: 'b-sec' }] }, 1);
     const nav = (await site.publicSite('menu-a'))!.nav;
@@ -51,6 +54,13 @@ describe('126차 두 단계 메뉴', () => {
       { key: 'history', title: { ko: '연혁' }, parent: 'about', sections: [] },
     ]);
     expect(JSON.stringify((await site.publicSite('menu-b'))!.nav)).not.toContain('greeting');
+  });
+  it('신청을 받고 소식이 있으면 신청 칸·소식 목록 하위 메뉴가 생긴다', async () => {
+    await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'menu-a', langs: ['ko'], default_lang: 'ko', theme: 'clear', site_title: { ko: 'menu-a' }, is_open: true, inquiry_open: true }));
+    const { id } = (await asUser(A.userId, (db) => site.createEntry(db, A.schoolId, { kind: 'news', key: 'n1', content: { title: { ko: '소식 하나' }, blocks: [] } })))!;
+    await asUser(A.userId, (db) => site.publish(db, A.schoolId, id, undefined));
+    const about = (await site.publicSite('menu-a'))!.nav.find((n) => n.key === 'about')!;
+    expect(about.sections!.map((x) => x.anchor)).toEqual(['greeting', 'way', 'apply', 'latest']);
   });
   it('공개하지 않은 새 판의 상위 메뉴는 공개될 때까지 메뉴에 실리지 않는다', async () => {
     const id = (await su.query(`select id from public.site_entries where school_id = $1 and key = 'history'`, [A.schoolId])).rows[0].id;

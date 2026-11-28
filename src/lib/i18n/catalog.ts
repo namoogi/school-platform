@@ -3136,6 +3136,8 @@ export const CATALOG = {
   'tplOffer.versionsShort': '{from}판 → {to}판',
   // 125차 템플릿 새 판 제안 결정 확인
   'tplOffer.confirm': '결정을 남길까요? \'수락\'이면 {name} {to}판을 지금 적용해 위의 \'수락하면 더해지는 것\'을 학교 사본에 더합니다(학교 값은 그대로).',
+  // 126차: 두 단계 메뉴
+  'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
