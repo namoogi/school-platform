@@ -2606,10 +2606,12 @@ label.check input { margin-top: 0.25em; }
 /* 짧은 글 구역이 이어지면 [제목 | 글] 두 칸으로 촘촘하게 — 학교 생활 안내(급식·방과후·상담)처럼 같은 종류를 같은 격자로 */
 @media (min-width: 901px) {
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="text"]:not([data-variant]):is(:has(+ .sec[data-template="text"]:not([data-variant])), .sec[data-template="text"]:not([data-variant]) + *) > .sec-copy {
-    display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); column-gap: var(--L-gutter); align-items: start; max-width: none;
+    display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); column-gap: var(--L-gutter); row-gap: var(--ds-space-3); align-items: start; max-width: none;
   }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="text"]:not([data-variant]):is(:has(+ .sec[data-template="text"]:not([data-variant])), .sec[data-template="text"]:not([data-variant]) + *) > .sec-copy > :is(.sec-eyebrow, h2) { grid-column: 1; }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="text"]:not([data-variant]):is(:has(+ .sec[data-template="text"]:not([data-variant])), .sec[data-template="text"]:not([data-variant]) + *) > .sec-copy > :not(.sec-eyebrow, h2) { grid-column: 2; grid-row: 1 / span 6; max-width: var(--L-read); }
+  /* 제목은 왼쪽 칸에서 여러 줄을 차지하고, 글·목록·단추는 오른쪽 칸에 차례로 쌓인다(겹치지 않게) */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="text"]:not([data-variant]):is(:has(+ .sec[data-template="text"]:not([data-variant])), .sec[data-template="text"]:not([data-variant]) + *) > .sec-copy > h2 { grid-row: span 20; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="text"]:not([data-variant]):is(:has(+ .sec[data-template="text"]:not([data-variant])), .sec[data-template="text"]:not([data-variant]) + *) > .sec-copy > :not(.sec-eyebrow, h2) { grid-column: 2; max-width: var(--L-read); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="text"]:not([data-variant]) + .sec[data-template="text"]:not([data-variant]) { padding-top: var(--ds-space-6); border-top: 1px solid var(--t-line); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > .sec[data-template="text"]:not([data-variant]):has(+ .sec[data-template="text"]:not([data-variant])) { padding-bottom: var(--ds-space-6); }
 }
