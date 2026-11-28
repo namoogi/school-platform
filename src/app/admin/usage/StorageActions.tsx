@@ -10,7 +10,7 @@ export function StorageActions({ configured, left, copies }: { configured: boole
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [after, setAfter] = useState<string | null>(null);
   async function run(action: 'check' | 'copy' | 'clear-db') {
-    // 125차: DB 사본 비우기는 되돌릴 수 없다 → 확인 창. R2 내용이 같은 것만 비운다(서버가 sha256 대조)
+    // 128차: DB 사본 비우기는 되돌릴 수 없다 → 확인 창. R2 내용이 같은 것만 비운다(서버가 sha256 대조)
     if (action === 'clear-db' && !window.confirm(t('usage.clearConfirm', { n: copies }))) return;
     setBusy(true); setMsg(null);
     try {

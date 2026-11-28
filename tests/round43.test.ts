@@ -128,7 +128,7 @@ describe('R2 파일 저장소', () => {
     // 다른 학교 접두어로는 적을 수 없다(ADR 0019 A1)
     await expect(sql(`update public.site_assets set object_key = 's/' || $2 || '/' || sha256 where id = $1`, [r!.id, B.schoolId])).rejects.toThrow();
     await sql(`update public.site_assets set object_key = 's/' || school_id::text || '/' || sha256 where id = $1`, [r!.id]);
-    // 125차: 위치가 있는 행은 DB 사본(bytes)만 비울 수 있다. 다른 칸을 함께 바꾸거나, 위치가 없는 행을 비우는 것은 거부
+    // 128차: 위치가 있는 행은 DB 사본(bytes)만 비울 수 있다. 다른 칸을 함께 바꾸거나, 위치가 없는 행을 비우는 것은 거부
     await expect(sql(`update public.site_assets set bytes = null, name = 'y' where id = $1`, [r!.id])).rejects.toThrow('고칠 수 없습니다');
     await sql(`update public.site_assets set bytes = null where id = $1`, [r!.id]);
     await expect(sql(`update public.site_assets set bytes = '\\x00'::bytea where id = $1`, [r!.id])).rejects.toThrow('고칠 수 없습니다');
@@ -137,7 +137,7 @@ describe('R2 파일 저장소', () => {
     await expect(sql(`delete from public.site_assets where id = $1`, [r!.id])).rejects.toThrow('지울 수 없습니다');
   });
 
-  it('125차 DB 사본 비우기: R2 내용이 같을 때만 비우고, 다르거나 없으면 건너뛴다. 학교 관리자는 못 한다', async () => {
+  it('128차 DB 사본 비우기: R2 내용이 같을 때만 비우고, 다르거나 없으면 건너뛴다. 학교 관리자는 못 한다', async () => {
     useR2(true);
     await asUser(P, (db) => usage.copyToStorage(db));
     const before = await sql(`select count(*)::int as n from public.site_assets where object_key is not null and bytes is not null`);
