@@ -5,7 +5,8 @@
 ## 0. 준비
 1. 저장소 `namoogi/school-platform`을 세션에 연결하고 받는다(얕은 클론).
 2. `AGENTS.md`, `docs/automation/AUTOPILOT.md`, `docs/automation/DIRECTION.md`(방향 설계), `docs/automation/QUEUE.md`, `docs/COLLABORATION.md`를 읽는다. 관제 센터 `/api/control/mine`과 연구소 항목(`/api/admin/items`)도 본다.
-   - `/api/control/mine?session=<내 id>`에서 `due: true`인 내 기한 진행 카드가 있으면 그 카드의 `default_action`을 먼저 실행하고, 같은 요청에 `{"kind":"report","status":"done"}`로 보고한다(ADR 0048).
+   - `/api/control/mine?session=<자동 세션 id>`에서 `due: true`인 기한 진행 카드가 있으면 그 카드의 `default_action`을 먼저 실행하고, 같은 요청에 `{"kind":"report","status":"done","author_session":"<자동 세션 id>","body":"한 일·PR 링크"}`로 보고한다(ADR 0048, 보고 형식은 `CONTROL-CENTER.md`). `author_session`과 `body`가 없으면 기록에 누가 무엇을 했는지 남지 않는다.
+   - **자동 세션 id는 실행마다 같아야 한다.** `mine`은 카드의 `source_session`(또는 배정 세션)이 정확히 같은 id일 때만 돌려준다. 지금 매시간 실행은 예약 작업이 같은 세션으로 보내므로 그 세션 id가 고정이다. 실행마다 새 세션을 만드는 방식으로 바꾸면, 카드의 `source_session`과 `mine` 조회에 예약 작업이 정한 고정 자동 세션 id를 쓴다(새 실행의 id를 쓰면 기한이 지난 카드가 다음 실행에 오지 않는다).
 3. 기준 브랜치를 정한다: main에 `package.json`이 있으면 main. 없으면 열린 PR 중 다른 PR의 기준이 되지 않는 가장 최근 `round-*` 브랜치(쌓인 PR의 끝).
 4. 검토 대기 `[자동]` PR 수(진행 중 제외)를 센다. 3개 이상이면 새 기능을 시작하지 않는다(이어가기는 한다).
 5. 로컬 Postgres 16을 54322 포트로 띄우고 `npm ci`. (방법은 README '로컬 실행')
@@ -51,7 +52,7 @@
 | 문(`door`) | 자동 세션에서 쓰는 경우 | 꼭 있어야 하는 칸 |
 | --- | --- | --- |
 | `notice` | 화면·문서·시험 정리처럼 고를 것이 없는 진행 보고 | `title`, `changes` |
-| `default` | 되돌릴 수 있지만 방향이 갈리는 것(화면 구성·명칭·순서). 기한은 보통 2~3일 | `title`, `ask`(예/아니오, 물음표), `changes`·`unchanged`·`undo`, 선택지 2~4개 + `recommended`, `due_at`(ISO 8601 + 시간대, 30일 안), `default_action`, `source_session` |
+| `default` | 되돌릴 수 있지만 방향이 갈리는 것(화면 구성·명칭·순서). 기한은 보통 2~3일 | `title`, `ask`(예/아니오, 물음표), `changes`·`unchanged`·`undo`, 선택지 2~4개 + `recommended`, `due_at`(ISO 8601 + 시간대, 30일 안), `default_action`, `source_session`(고정 자동 세션 id) |
 | `one_way` | 삭제·덮어쓰기, 비용, 공개 범위 확대, 외부 발송, 권한 확대만 | `default`의 칸에서 `due_at`·`default_action` 빼고 모두. 답이 올 때까지 보류하고 다른 일을 한다 |
 - 사용자가 직접 시킨 일은 카드를 올리지 않는다(지시가 곧 승인).
 - 분류가 애매하면 한 단계 위로 올린다(알림 → 기한 진행 → 한쪽 문).
