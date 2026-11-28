@@ -123,6 +123,12 @@ describe('계산식 미리 계산(경계값)', () => {
     expect(bad.results).toEqual([]);
   });
 
+  it('계산식 이름은 언어 칸의 글자만 저장한다(Codex #228)', async () => {
+    await asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'title_check', title: { ko: {}, en: ' Score ', xx1: 'x' }, spec: PRESETS.weighted_average.spec, why: 't', base_version: 0 }));
+    const r = (await asUser(A.userId, (db) => cr.listCalcRules(db, A.schoolId))).find((x) => x.code === 'title_check')!;
+    expect(r.title).toEqual({ en: 'Score' });
+  });
+
   it('반올림 경계: 정수 반올림 식이면 89.5 → 90, 59.5 → 60(이수)', () => {
     const spec = { lets: { s: { op: 'round', args: [{ op: 'weighted_score' }], digits: 0, mode: 'half_up' } }, outputs: { score: { var: 'let.s' }, passed: { op: '>=', args: [{ var: 'let.s' }, 60] } } };
     const r = cr.previewCalc(spec, cr.boundarySamples(String));

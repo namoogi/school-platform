@@ -76,7 +76,7 @@ export function GradeSettings({ t, lang, scales, policy, calcRules, calcFrom, of
         {calcRules.length === 0 ? <p className="muted">{t('gset.noCalc')}</p> : (
           <ul className="record-list">{calcRules.map((r) => (
             <li key={r.code}>
-              <span><strong>{r.title[lang] ?? r.title.ko ?? r.code}</strong> <small className="muted">{r.code} · {t('common.version', { v: r.version })}{r.why ? ` · ${r.why}` : ''}</small></span>
+              <span><strong>{[r.title?.[lang], r.title?.ko].find((x) => typeof x === 'string') ?? r.code}</strong> <small className="muted">{r.code} · {t('common.version', { v: r.version })}{r.why ? ` · ${r.why}` : ''}</small></span>
               <details data-testid={`calc-edit-${r.code}`}><summary>{t('gset.editCalc')}</summary>
                 <ActionForm url="/api/calc-rules" action="save" extra={{ code: r.code, title: r.title, base_version: r.version, samples: samples(t) }} keep preview={calcPreview}
                   submitLabel={t('gset.saveVersion', { v: r.version + 1 })} successText={t('gset.saved')}
