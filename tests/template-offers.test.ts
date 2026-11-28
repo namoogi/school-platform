@@ -136,6 +136,21 @@ describe('템플릿 새 판 제안', () => {
     expect(await count(A)).toBe(1);
   });
 
+  it('학교 판을 바꾸는 중에 다른 관리자가 보류하면, 바뀐 판이 확정된 뒤를 보고 거부한다(학교별 잠금)', async () => {
+    // B는 지금 한국 일반 1판, 5판 제안이 열려 있다. 다른 연결이 학교 판을 홈스쿨로 바꾸는 중(아직 커밋 전)
+    const a = new pg.Client({ connectionString: TEST_URL });
+    await a.connect();
+    await a.query('begin');
+    await a.query(`select pg_advisory_xact_lock(hashtext('school-platform:school_profiles'), hashtext($1::text))`, [B.schoolId]);
+    await a.query(`insert into public.school_profiles(school_id, version, grade_scheme, template_key, template_version, created_by)
+      select school_id, version + 1, grade_scheme, 'homeschool', 1, created_by from public.school_profiles where school_id = $1 order by version desc limit 1`, [B.schoolId]);
+    // 결과는 바로 붙잡아 둔다(커밋 뒤에 거부되므로 처리되지 않은 거부가 되지 않게)
+    const held = asUser(B.userId, (db) => db.query(`select app.record_template_decision($1, 'kr_general', 5, 'held')`, [B.schoolId])).then(() => null, (e: Error) => e);
+    await new Promise((r) => setTimeout(r, 300));
+    await a.query('commit'); await a.end();
+    expect((await held)?.message).toContain('다른 템플릿');
+  });
+
   it('결정 기록은 고치거나 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {
     const id = (await su.query(`select id from public.academic_template_decisions limit 1`)).rows[0].id;
     await expect(su.query(`delete from public.academic_template_decisions where id = $1`, [id])).rejects.toThrow();

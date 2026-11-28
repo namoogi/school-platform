@@ -33,6 +33,9 @@ declare cur record; before record; latest integer; src integer; new_id uuid;
 begin
   if not app.is_school_admin(target) then raise exception '학교 관리자만 결정합니다.' using errcode = '42501'; end if;
   if decision not in ('accepted', 'declined', 'held') then raise exception '결정은 accepted·declined·held 입니다.' using errcode = '22023'; end if;
+  -- 학교 관할 판 쓰기(app.set_school_profile)와 같은 학교별 잠금: 그 사이 진행 중인 템플릿 바꾸기·수락이 끝난 뒤의 판을 보고 결정한다(Codex 199번 PR 검토).
+  -- 수락은 같은 트랜잭션에서 이미 이 잠금을 잡았다(트랜잭션 잠금은 다시 잡아도 된다)
+  perform pg_advisory_xact_lock(hashtext('school-platform:school_profiles'), hashtext(target::text));
   select template_key, template_version into cur from public.school_profiles where school_id = target order by version desc limit 1;
   if cur.template_key is distinct from p_key then
     raise exception '학교가 다른 템플릿으로 바꿔 이 제안은 쓸 수 없습니다.' using errcode = 'P0409';
