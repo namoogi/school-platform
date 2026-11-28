@@ -3080,6 +3080,12 @@ export const CATALOG = {
   'atpl.saveHidden': '숨김 저장',
   'atpl.hiddenSaved': '숨길 구획을 저장했습니다.',
   'err.sections.unknown': '숨길 구획은 석차·평점·석차등급·교시 출결 중에서 고릅니다.',
+  // 119차 학교 구조 탭
+  'academics.tabs': '학교 구조 나누기',
+  'academics.tab.levels': '학교급·학년',
+  'academics.tab.terms': '학기 구조',
+  'academics.tab.years': '학년도·학기',
+  'academics.tab.templates': '템플릿',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

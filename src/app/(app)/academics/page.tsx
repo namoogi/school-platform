@@ -10,15 +10,18 @@ import { getI18n, userLang } from '@/lib/i18n/server';
 import { presetLevels, schemeView, gradeLabel, type GradeScheme } from '@/lib/grade-schemes';
 import { GradeSchemeForm, type PresetRow } from './GradeSchemeForm';
 import type { MsgKey } from '@/lib/i18n/catalog';
+import { ACADEMICS_TABS, AcademicsTabs, academicsTabCounts, type AcademicsTab } from './AcademicsTabs';
 
-/** 71차: 학교 구조 — 학교급·학년도·학기 구조(확정 규칙 판)·학년도별 학기와 날짜 */
-export default async function AcademicsPage() {
-  const { levels, years, rule, terms, school, uiLang, view } = await loadForPage(async ({ db, school }) => {
+/** 71차: 학교 구조 — 학교급·학년도·학기 구조(확정 규칙 판)·학년도별 학기와 날짜. 119차: 성격별 탭으로 나눔 */
+export default async function AcademicsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const want = (await searchParams).tab;
+  const tab: AcademicsTab = (ACADEMICS_TABS as readonly string[]).includes(want ?? '') ? want as AcademicsTab : 'levels';
+  const { levels, years, rule, terms, school, uiLang, view, counts } = await loadForPage(async ({ db, school }) => {
     const years = await listAcademicYears(db, school.id);
     const terms: Record<string, Awaited<ReturnType<typeof listTerms>>> = {};
     for (const y of years) terms[y.id] = await listTerms(db, school.id, y.id);
     const uiLang = await userLang(db);
-    return { levels: await listSchoolLevels(db, school.id), years, rule: await latestPeriodRule(db, school.id), terms, uiLang, view: await schemeView(db, school.id, uiLang ?? school.locale) };
+    return { counts: await academicsTabCounts(db, school.id), levels: await listSchoolLevels(db, school.id), years, rule: await latestPeriodRule(db, school.id), terms, uiLang, view: await schemeView(db, school.id, uiLang ?? school.locale) };
   }, { module: 'records' });
   const admin = school.isAdmin;
   const { t, lang } = await getI18n(uiLang, school.locale);
@@ -29,7 +32,8 @@ export default async function AcademicsPage() {
       <PageHeader title={t('nav.academics.title')} crumbs={[{ label: t('intake.crumb') }, { label: t('nav.academics.title') }]}
         description={t('academics.lead')}
         meta={<><span>{t('academics.metaLevels', { n: levels.length })}</span><span>{t('academics.metaYears', { n: years.length })}</span>{rule && <span>{t('academics.metaRule', { v: rule.version })}</span>}</>} />
-      <div className="settings-grid">
+      <AcademicsTabs current={tab} t={t} counts={counts} />
+      {tab === 'levels' && (
         <section className="card" data-testid="levels">
           <h2>{t('academics.levels')} {view.scheme && <StatusBadge tone="neutral">{t(`scheme.${view.scheme}` as MsgKey)}</StatusBadge>}</h2>
           {levels.length === 0 ? <p className="muted">{t('academics.levelsEmpty')}</p>
@@ -40,13 +44,16 @@ export default async function AcademicsPage() {
           {admin && <details><summary>{t('scheme.addOther')}</summary><ActionForm url="/api/academics" action="level" inline submitLabel={t('academics.addLevel')} successText={t('academics.levelAdded')} testId="level-form"
             fields={[{ name: 'name', label: t('common.name'), required: true, placeholder: t('academics.levelPlaceholder') }, { name: 'code', label: t('academics.codeLabel'), required: true, placeholder: 'middle' }]} /></details>}
         </section>
+      )}
+      {tab === 'terms' && (
         <section className="card" data-testid="period-rule">
           <h2>{t('academics.termStructure')} {rule && <StatusBadge tone="neutral">{t('common.version', { v: rule.version })}</StatusBadge>}</h2>
           {rule ? <p className="fine">{rule.value.periods.map((p) => p.label).join(' · ')}{rule.rationale ? t('academics.ruleReason', { why: rule.rationale }) : rule.decision === 'accepted' ? t('academics.ruleFromFiles') : ''}</p>
             : <p className="muted">{t('academics.ruleEmpty')}</p>}
           {admin && <RuleForm baseVersion={rule?.version ?? 0} current={rule?.value.periods ?? []} />}
         </section>
-      </div>
+      )}
+      {tab === 'years' && (
       <section className="card" data-testid="years">
         <h2>{t('academics.yearsTerms')}</h2>
         {years.length === 0 && <p className="muted">{t('academics.yearsEmpty')}</p>}
@@ -55,7 +62,7 @@ export default async function AcademicsPage() {
             <h3>{y.label} <small className="muted">{y.starts_on} ~ {y.ends_on}</small></h3>
             {terms[y.id].length === 0
               ? (admin && rule ? <ActionForm url="/api/academics" action="terms" extra={{ yearId: y.id }} fields={[]} submitLabel={t('academics.makeTerms', { v: rule.version })} successText={t('academics.termsMade')} testId={`terms-${y.label}`} />
-                : <p className="muted">{t('academics.ruleFirst')}</p>)
+                : <p className="muted">{t('academics.ruleFirst')} <Link href="/academics?tab=terms">{t('academics.tab.terms')}</Link></p>)
               : <dl className="facts">{terms[y.id].map((tm) => (
                 <Fragment key={tm.id}><dt>{tm.label}</dt><dd>
                   {tm.starts_on ? `${tm.starts_on} ~ ${tm.ends_on}` : <span className="muted">{t('academics.noDates')}</span>}
@@ -67,6 +74,7 @@ export default async function AcademicsPage() {
         {admin && <><h3>{t('academics.addYear')}</h3><ActionForm url="/api/academics" action="year" inline submitLabel={t('academics.addYear')} successText={t('academics.yearAdded')} testId="year-form"
           fields={[{ name: 'label', label: t('common.name'), required: true, placeholder: '2027' }, { name: 'startsOn', label: t('common.start'), type: 'date', required: true }, { name: 'endsOn', label: t('academics.yearEnd'), type: 'date', required: true }]} /></>}
       </section>
+      )}
     </>
   );
 }
