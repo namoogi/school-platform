@@ -46,8 +46,12 @@ begin
   end if;
   if (new.door, new.ask, new.default_action, new.due_at, new.changes, new.unchanged, new.undo)
      is distinct from (old.door, old.ask, old.default_action, old.due_at, old.changes, old.unchanged, old.undo)
-     -- 카드의 선택지·추천안도 결정의 일부다
-     or (old.door is not null and (new.options, new.recommended, new.reversible) is distinct from (old.options, old.recommended, old.reversible)) then
+     -- 카드의 선택지·추천안, 그리고 누가 받는지(학교·주제·올린 세션)도 결정의 일부다. 받는 곳을 바꾸면 기한 지난
+     -- 추천안이 다른 세션(다른 학교 세션 포함)으로 간다
+     or (old.door is not null and (new.options, new.recommended, new.reversible, new.source_session, new.school_id, new.topic)
+                                  is distinct from (old.options, old.recommended, old.reversible, old.source_session, old.school_id, old.topic))
+     -- 맡은 세션은 관제의 배정 함수(control.assign, control_writer)로만 바꾼다
+     or (old.door is not null and new.assignee_session is distinct from old.assignee_session and current_user <> 'control_writer') then
     raise exception '결정 카드의 내용은 올린 뒤 고칠 수 없습니다. 새 카드로 올려 주세요.' using errcode = 'P0001';
   end if;
   return new;

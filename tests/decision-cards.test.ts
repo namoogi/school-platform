@@ -102,6 +102,12 @@ describe('결정 카드', () => {
         .rejects.toThrow('결정 카드는 control.file_request 로만');
       const d = await file(base()) as { id: string };
       await expect(cl.query(`update public.control_requests set recommended = 'list' where id = $1`, [d.id])).rejects.toThrow('결정 카드의 내용은');
+      // 받는 곳(맡은 세션·올린 세션·학교)도 직접 바꿀 수 없다. 관제 배정 함수로는 바꾼다
+      const OTHER = 'session_013RZyUqUFVPBGjdxpiXsrU2';
+      await expect(cl.query(`update public.control_requests set assignee_session = $2 where id = $1`, [d.id, OTHER])).rejects.toThrow('결정 카드의 내용은');
+      await expect(cl.query(`update public.control_requests set source_session = $2 where id = $1`, [d.id, OTHER])).rejects.toThrow('결정 카드의 내용은');
+      await asAgent((db) => db.query('select control.assign($1, $2, $3)', [T, d.id, OTHER]));
+      expect((await cl.query('select assignee_session from public.control_requests where id = $1', [d.id])).rows[0].assignee_session).toBe(OTHER);
     } finally { await cl.end(); }
   });
 
