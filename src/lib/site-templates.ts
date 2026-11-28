@@ -537,12 +537,27 @@ export async function applyTemplate(db: Db, schoolId: string, key: string, opts:
     await db.query(`update public.site_entries set meta = meta || $3 where id = $1 and school_id = $2`, [id, schoolId, JSON.stringify({ template: `${t.key}@${t.version}` })]);
   }
   let design: 'applied' | 'no-settings' | 'kept' = 'kept';
+  let layout: 'applied' | 'kept' = 'kept';
   if (opts.design) {
     const r = await db.query(`update public.site_settings set theme = $2, updated_at = now() where school_id = $1`, [schoolId, t.theme]);
     design = r.rowCount ? 'applied' : 'no-settings';
+    // 136차(ADR 0052, Codex 검토): '디자인도 바꾸기'를 고르면 메뉴 구조도 템플릿 것으로 바꾼다. 홈이 이미 있으면
+    // 홈 쪽에 메뉴 구조만 바꾼 새 시안 판을 쌓는다(다른 칸은 그대로, 공개는 사람이 한다). 새로 만든 홈은 이미 템플릿 값이다
+    const home = (await listEntries(db, schoolId)).find((e) => e.kind === 'page' && e.key === 'home' && !created.some((c) => c.key === 'home'));
+    if (home) {
+      const { versions } = await getEntry(db, schoolId, home.id);
+      const cur = versions[0]?.content as Content | undefined;
+      const want = t.nav === 'top' ? undefined : t.nav;
+      if (cur && (cur.site?.layout ?? undefined) !== want) {
+        const site = { ...(cur.site ?? {}), layout: want as 'side' | 'onepage' | undefined };
+        if (!want) delete site.layout;
+        await saveVersion(db, schoolId, home.id, { content: { ...cur, site }, base_version: versions[0].version, note: `템플릿 ${t.name} v${t.version}: 메뉴 구조` });
+        layout = 'applied';
+      }
+    }
   }
-  await db.query(`select app.log_access($1, 'site.template_apply', $2)`, [schoolId, JSON.stringify({ template: t.key, version: t.version, created: created.map((c) => c.key), skipped, design })]);
-  return { template: t.key, version: t.version, theme: t.theme, created, skipped, design };
+  await db.query(`select app.log_access($1, 'site.template_apply', $2)`, [schoolId, JSON.stringify({ template: t.key, version: t.version, created: created.map((c) => c.key), skipped, design, layout })]);
+  return { template: t.key, version: t.version, theme: t.theme, created, skipped, design, layout };
 }
 
 // ── 66차: 학교 자료로 빈 칸 채우기 ─────────────────────────
