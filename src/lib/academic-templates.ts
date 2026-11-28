@@ -1,4 +1,5 @@
 import type { Db } from './db';
+import { latestPolicy, listScales } from './gradebook';
 import { definePeriodRule, latestPeriodRule } from './academics';
 import { schoolProfile } from './foundation';
 import { applyGradeScheme, gradeLabel, presetLevels, type GradeScheme, type LevelKey } from './grade-schemes';
@@ -158,14 +159,18 @@ export async function schoolCopySummary(db: Db, schoolId: string, lang = 'ko') {
   const t = (await db.query<AcademicTemplate>('select * from app.academic_template($1, $2)', [p.template_key, p.template_version])).rows[0];
   if (!t) return null;
   const { rows: levels } = await db.query<{ name: string }>('select name from public.school_levels where school_id = $1 order by sort_order, code', [schoolId]);
-  const { rows: scales } = await db.query<{ code: string }>('select code from public.scales where school_id = $1 order by code', [schoolId]);
+  // 척도·성적 정책은 코드만이 아니라 지금 판의 내용까지 준다. AI가 '지금 값 → 바꿀 값'을 쓰고 학교가 고친 값을 되돌리지 않게(Codex 220번 PR 검토)
+  const scaleRows = await listScales(db, schoolId);
+  const policy = await latestPolicy(db, schoolId);
   const rule = await latestPeriodRule(db, schoolId);
   return {
     template: { key: t.key, version: t.version, title: t.title[lang] ?? t.title.ko ?? Object.values(t.title)[0] },
     scheme: (p.grade_scheme as string | null) ?? null,
     levels: levels.map((l) => l.name),
     periods: rule ? rule.value.periods.map((x) => x.label) : [],
-    scales: scales.map((s) => s.code),
+    scales: scaleRows.map((r) => ({ code: r.code, kind: r.kind, version: r.version,
+      bands: r.bands.map((b) => ({ code: b.code, min: b.min, ...(b.points != null ? { points: b.points } : {}), ...(b.earns_credit != null ? { earns_credit: b.earns_credit } : {}) })) })),
+    policy: policy ? { version: policy.version, policy: policy.policy } : null,
     calcSamples: t.manifest.calc_samples,
     outputs: t.manifest.outputs,
     hidden: ((p.hidden_sections ?? []) as string[]),
