@@ -3034,5 +3034,16 @@
   "academics.tab.levels": "Levels & grades",
   "academics.tab.terms": "Term structure",
   "academics.tab.years": "School years & terms",
-  "academics.tab.templates": "Templates"
+  "academics.tab.templates": "Templates",
+  "err.photoConsentRequired": "This version has {n} photos. Confirm photo publishing permission in the publish window.",
+  "err.photoTargets": "Choose 1 to 100 items to publish.",
+  "site.consent.title": "Confirm photo permission before publishing",
+  "site.consent.body": "The version you are publishing has {n} photos. Only publish photos of students when the student and guardian have given permission.",
+  "site.consent.check": "I have confirmed publishing permission (student, guardian, school) for these photos.",
+  "site.consent.record": "Who confirmed, when, and which photos are kept in the publishing record.",
+  "site.consent.confirm": "Confirm and publish",
+  "site.consent.more": "and {n} more",
+  "site.consent.photos": "Photos to publish",
+  "site.consent.cancelled": "Publishing was cancelled.",
+  "site.consent.loadFailed": "Could not load the photo list."
 }

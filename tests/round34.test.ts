@@ -175,7 +175,7 @@ describe('토큰으로 할 수 있는 일과 없는 일', () => {
     expect(await site.publicAsset('school-a-site', pdf.id)).toBeNull();
     // 2판(PDF 블록 있음)을 골라 공개
     const v2 = (await sql(`select id from public.site_entry_versions where entry_id = $1 and version = 2`, [storyA]))[0].id;
-    await asUser(A.userId, (db) => site.publish(db, A.schoolId, storyA, v2));
+    await asUser(A.userId, (db) => site.publish(db, A.schoolId, storyA, v2, { photoConsent: true }));
     expect((await site.publicAsset('school-a-site', pdf.id))!.mime).toBe('application/pdf');
     // 사람도 편집 화면에서 PDF를 올리고 내려받기 블록을 쓸 수 있다
     const own = (await asUser(T, (db) => site.uploadAsset(db, A.schoolId, { name: 'teacher.pdf', type: 'application/pdf', bytes: makePdf({ pad: 10 }) })))!;
