@@ -2483,8 +2483,10 @@ label.check input { margin-top: 0.25em; }
 /* 바깥 틀(.rt-TextFieldRoot)이 테두리·초점을 그린다. 전역 input 규칙(테두리·그림자·초점 고리)이 안쪽 입력에 겹치지 않게 끈다. 글씨는 다른 입력 칸과 같게 */
 .app.app :is(.rt-TextFieldRoot, .rt-TextAreaRoot) :is(.rt-TextFieldInput, .rt-TextAreaInput),
 .app.app :is(.rt-TextFieldRoot, .rt-TextAreaRoot) :is(.rt-TextFieldInput, .rt-TextAreaInput):is(:hover, :focus) {
-  border: 0; box-shadow: none; background: transparent; min-height: 0; font-size: var(--fs-body); color: var(--text-default);
+  border: 0; box-shadow: none; outline: none; background: transparent; min-height: 0; font-size: var(--fs-body); color: var(--text-default);
 }
+/* 전역 :focus-visible 바깥선도 안쪽 입력에서는 끈다(바깥 틀만 그린다, Codex #201) */
+.app.app :is(.rt-TextFieldRoot, .rt-TextAreaRoot) :is(.rt-TextFieldInput, .rt-TextAreaInput):focus-visible { outline: none; }
 
 /* ── ADR 0045: 양식 배치 규약 (docs/design/DESIGN-SYSTEM.md '양식 배치') ──
    칸 너비는 들어갈 내용 길이에 맞춘다(GOV.UK 'input width matches expected content'). 같은 줄에 놓고, 단추는 마지막 칸 옆 바닥선에 맞춘다.

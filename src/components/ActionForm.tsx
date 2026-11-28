@@ -75,8 +75,9 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
             {f.type === 'select'
               ? <select value={v[f.name]} onChange={on} required={f.required}>{f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
               : f.type === 'textarea'
-                ? <TextArea rows={3} value={v[f.name]} onChange={on} required={f.required} placeholder={f.placeholder} />
-                : <TextField.Root type={f.type ?? 'text'} value={v[f.name]} onChange={on} required={f.required} placeholder={f.placeholder} />}
+                ? <TextArea rows={3} spellCheck value={v[f.name]} onChange={on} required={f.required} placeholder={f.placeholder} />
+                // Radix TextField 는 맞춤법 검사를 기본으로 끈다. 글 칸(이유·메모·제목)은 브라우저 맞춤법 도움을 되살린다(Codex #201)
+                : <TextField.Root type={f.type ?? 'text'} value={v[f.name]} onChange={on} required={f.required} placeholder={f.placeholder} spellCheck={(f.type ?? 'text') === 'text'} />}
           </label>
         );
       })}
