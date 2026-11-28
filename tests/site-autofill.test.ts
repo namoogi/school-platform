@@ -94,5 +94,12 @@ describe('69차 운영 시험 반영', () => {
     const th2 = proposeFills(t, [{ name: 'x.txt', text: 'ติดต่อเรา\nโทร 045-953270 มือถือ 062-0626837' }], { schoolName: 'R' });
     expect(th2.find((p) => p.slotId === 'footer')!.value).toBe('R · 045-953270');
   });
-});
 
+  it('115차: 두 언어 템플릿에서 한국어 자료로 채워도 영어 칸은 남는다', () => {
+    const t = templateByKey('admissions');
+    const home = structuredClone(t.pages[0].content);
+    const slot = t.slots.find((s) => s.id === 'address')!;
+    expect(putProposal(home, slot, '가상시 새솔구 미래로 30')).toBe(true);
+    expect(home.site?.address).toEqual({ ko: '가상시 새솔구 미래로 30', en: '[Address]' });
+  });
+});

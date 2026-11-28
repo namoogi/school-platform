@@ -205,6 +205,8 @@ export function putProposal(content: Content, slot: Slot, value: Proposal['value
     });
     return true;
   }
-  p[field] = { [langOf(value)]: value } as LText;
+  // 115차(Codex 검토): 찾은 언어 칸만 바꾸고, 다른 언어(두 언어 템플릿의 영어 안내 자리 등)는 그대로 둔다
+  const prev = cur && typeof cur === 'object' && !Array.isArray(cur) ? (cur as LText) : {};
+  p[field] = { ...prev, [langOf(value)]: value } as LText;
   return true;
 }
