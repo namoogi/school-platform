@@ -61,7 +61,7 @@ curl -s -X POST "$B/requests" -H 'content-type: application/json' -d '{
 ```
 - 서버(`control.file_request`)가 형식을 검사한다. 빠진 칸이 있으면 무엇이 빠졌는지 알려 주며 거부한다.
 - 문 종류가 상태를 정한다: 한쪽 문 → '보류', 기한 진행·알림 → '추천안으로 진행 중'. `reversible`은 문 종류에서 정해진다(보내면 엇갈리지 않아야 함).
-- 기한이 지나면 `GET $B/mine?session=<내 id>`에 그 카드가 `due: true`로 나온다. 추천안대로 진행하고 그 요청에 보고(`kind: report`)한다. 메모·답글은 실행 기록으로 보지 않는다.
+- 기한이 지나면 `GET $B/mine?session=<내 id>`에 그 카드가 `due: true`로 나온다. 추천안대로 진행하고 그 요청에 `status: "done"`(확인이 필요하면 `"review"`)로 보고한다. 상태를 닫을 때까지 계속 나온다.
 - 한쪽 문에는 `due_at`·`default_action`을 두지 않는다.
 - 기한 진행 카드에는 `source_session`(맡을 세션)이 꼭 있어야 한다. 기한이 지나면 그 세션이 받아 실행하기 때문이다.
 - `ask`는 줄바꿈 없는 한 줄이다.

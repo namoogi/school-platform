@@ -39,7 +39,7 @@ describe('관제 지시 당겨 오기', () => {
     expect((await mine(RAS)).body).toEqual([]);
   });
 
-  it('기한이 지난 기한 진행 카드는 사람 답이 없어도 나오고(due), 기한 뒤 내가 보고하면 빠진다 (ADR 0048)', async () => {
+  it('기한이 지난 기한 진행 카드는 사람 답이 없어도 나오고(due), 상태를 닫으면 빠진다 (ADR 0048)', async () => {
     const r = await asAgent((db) => c.control.file(db, T, {
       title: '기한 지난 카드', source_session: RAS, door: 'default', ask: '목록을 카드로 바꿀까요?',
       changes: '카드 3열', unchanged: '글 그대로', undo: '목록형 다시 고르기',
@@ -61,7 +61,10 @@ describe('관제 지시 당겨 오기', () => {
     // 기한 뒤 메모는 실행 기록이 아니다
     await asAgent((db) => c.control.post(db, T, r.id, { kind: 'note', body: '곧 진행', author_session: RAS }));
     expect(((await mine(RAS)).body as { id: string; due?: boolean }[]).find((x) => x.id === r.id)).toMatchObject({ due: true });
+    // 보고만 하고 상태를 그대로 두면 계속 나온다(관제 센터 '답 필요'에 남지 않게 상태를 닫아야 함)
     await asAgent((db) => c.control.post(db, T, r.id, { kind: 'report', body: '추천안으로 진행함', author_session: RAS }));
+    expect(((await mine(RAS)).body as { id: string; due?: boolean }[]).find((x) => x.id === r.id)).toMatchObject({ due: true });
+    await asAgent((db) => c.control.post(db, T, r.id, { kind: 'report', body: '끝', status: 'done', author_session: RAS }));
     expect((await mine(RAS)).body.some((x: { id: string }) => x.id === r.id)).toBe(false);
   });
 
