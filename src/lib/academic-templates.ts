@@ -91,7 +91,7 @@ export async function applyTemplate(db: Db, schoolId: string, input: { key?: unk
       // 미리 만든 척도 이름이 모르는 것이면 띠 없이 저장으로 넘어가지 않고 멈춘다(DB 검사와 같은 목록)
       if (!(s.preset in SCALE_PRESETS)) throw new ValidationError('err.template.unknown');
       await saveScalePreset(db, schoolId, s.preset as keyof typeof SCALE_PRESETS, s.code);
-    } else await saveScale(db, schoolId, { code: s.code, kind: s.kind, bands: s.bands, why: s.why, base_version: 0 });
+    } else await saveScale(db, schoolId, { code: s.code, kind: s.kind, bands: s.bands, why: s.why, base_version: 0 }, { floor: true }); // 바닥 띠 필수(화면 길과 같음, 132차)
     madeScales.push(s.code);
   }
   return {
