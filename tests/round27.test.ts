@@ -85,7 +85,7 @@ describe('학교 홈페이지', () => {
     const { id: img } = (await asUser(A.userId, (db) => site.uploadAsset(db, A.schoolId, { name: 'dot.png', type: 'image/png', bytes: PNG })))!;
     const { id } = (await asUser(A.userId, (db) => site.createEntry(db, A.schoolId, { kind: 'news', key: 'open-day', content: { title: { ko: '공개 수업' }, cover: img, blocks: [{ type: 'image', asset: img }] } })))!;
     expect(await site.publicAsset('school-a-site', img)).toBeNull();
-    await asUser(A.userId, (db) => site.publish(db, A.schoolId, id, undefined));
+    await asUser(A.userId, (db) => site.publish(db, A.schoolId, id, undefined, { photoConsent: true }));
     expect((await site.publicAsset('school-a-site', img))!.mime).toBe('image/png');
     await expect(asUser(A.userId, (db) => site.uploadAsset(db, A.schoolId, { name: 'x.svg', type: 'image/svg+xml', bytes: Buffer.from('<svg/>') }))).rejects.toThrow('PNG');
   });

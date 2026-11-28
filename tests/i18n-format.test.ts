@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 /** ADR 0037: 화면 문구 채우기·대체 순서·브라우저 언어 고르기 (DB 없이) */
 import { describe, expect, it } from 'vitest';
 import { fallbackChain, formatMessage, pickFromAcceptLanguage, placeholders, safeLocale, sameShape } from '@/lib/i18n/format';
@@ -49,6 +51,17 @@ describe('기본 영어 묶음', () => {
   it('채우기 자리({…})가 기준 문구와 같다', () => {
     const bad = Object.entries(CATALOG).filter(([k, v]) => !sameShape(v, (en as Record<string, string>)[k])).map(([k]) => k);
     expect(bad).toEqual([]);
+  });
+});
+
+describe('다른 언어 묶음(i18n/*.json, 영어 말고)', () => {
+  // 영어 말고는 빠진 이름표가 있어도 된다(대체 언어로 보임). 대신 목록에 없는 이름표·모양이 다른 번역은 막는다
+  const dir = path.resolve(__dirname, '..', 'i18n');
+  const packs = fs.readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'en.json');
+  it.each(packs)('%s: 목록에 있는 이름표만, 채우기 자리는 기준 문구와 같다', (file) => {
+    const pack = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as Record<string, string>;
+    expect(Object.keys(pack).filter((k) => !(k in CATALOG))).toEqual([]);
+    expect(Object.entries(pack).filter(([k, v]) => !sameShape(CATALOG[k as keyof typeof CATALOG], v)).map(([k]) => k)).toEqual([]);
   });
 });
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Theme } from '@radix-ui/themes';
-import { Bell } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { Nav, type NavGroup } from './Nav';
 import { LeaveSchoolButton, SchoolSwitcher } from './SchoolSwitcher';
 import { UiControls } from './UiControls';
@@ -66,7 +66,7 @@ export function Shell({ i18n, account, current, schools, groups, roleLabel, inSc
           )}
           <span className="account"><span className="avatar" aria-hidden="true">{account.name.slice(0, 1)}</span>
             <span className="account-name"><b>{account.name}</b>{roleLabel}</span></span>
-          <form method="post" action="/api/logout"><button type="submit" className="btn btn-ghost btn-sm">{t('shell.logout')}</button></form>
+          <form method="post" action="/api/logout"><button type="submit" className="btn btn-ghost btn-sm logout-btn" title={t('shell.logout')}><LogOut size={16} aria-hidden="true" /><span className="logout-text">{t('shell.logout')}</span></button></form>
         </div>
       </header>
       <div className="content" id="content">

@@ -3,12 +3,14 @@ import { useId, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { PublishOutcome, PublishSelection } from '@/lib/site-bulk-publish';
 import { useI18n } from '@/components/I18nProvider';
+import { usePhotoConsent } from '@/components/site/PhotoConsent';
 
 type Candidate = PublishSelection & { title: string };
 
 export function BulkPublishControl({ candidates }: { candidates: Candidate[] }) {
   const router = useRouter();
   const { t } = useI18n();
+  const [askConsent, consentDialog] = usePhotoConsent();
   const panelId = useId();
   const [review, setReview] = useState<Candidate[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -27,9 +29,12 @@ export function BulkPublishControl({ candidates }: { candidates: Candidate[] }) 
     setBusy(true); setMessage(''); setProblems([]);
     try {
       const items = review.filter((item) => selected.includes(item.id));
+      // 122차: 고른 동화들의 사진을 공개 창 한 번으로 확인
+      const consent = await askConsent(items.map((item) => ({ entryId: item.id })));
+      if (!consent) { setMessage(t('site.consent.cancelled')); return; }
       const response = await fetch('/api/site/entries/bulk-publish', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ items: items.map(({ id, base_version, live_version }) => ({ id, base_version, live_version })) }),
+        body: JSON.stringify({ ...consent, items: items.map(({ id, base_version, live_version }) => ({ id, base_version, live_version })) }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? t('site.bulk.failed'));
@@ -45,6 +50,7 @@ export function BulkPublishControl({ candidates }: { candidates: Candidate[] }) 
   }
 
   return <div className="site-bulk-publish" data-testid="bulk-publish-control">
+    {consentDialog}
     <button type="button" className="btn btn-secondary btn-sm" aria-expanded={review !== null} aria-controls={panelId}
       disabled={disabled || (!review && !candidates.length)} onClick={() => review ? setReview(null) : openReview()}>
       {review ? t('site.bulk.collapse') : t('site.bulk.open', { n: candidates.length })}
