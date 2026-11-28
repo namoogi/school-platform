@@ -1443,6 +1443,41 @@ try {
     await ctxA.close();
   });
 
+  await step('115차: 교사도 공개 화면에서 바로 편집 — 관리 막대(교직원) → 이 화면 편집 → 시안 저장만(공개 단추 없음)', async () => {
+    // 합성 교사 계정 (A 학교 구성원, 역할 teacher)
+    const db = new pg.Client({ connectionString: DB_URL });
+    await db.connect();
+    const salt = crypto.randomBytes(16);
+    const hash = `scrypt$16384$${salt.toString('base64')}$${crypto.scryptSync('demo-pass-t', salt, 32, { N: 16384, r: 8, p: 1 }).toString('base64')}`;
+    const { rows: [u] } = await db.query(`insert into private.app_users(email, password_hash, display_name) values ('e2e-teacher@school-a.test', $1, 'E2E 교사') returning id`, [hash]);
+    await db.query(`insert into public.memberships(school_id, user_id, role) select id, $1, 'teacher' from public.schools where slug = 'school-a'`, [u.id]);
+    await db.end();
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
+    const t = await ctx.newPage();
+    // 로그인 전: 바닥의 교직원 로그인 → 로그인 → 그 쪽 화면 편집
+    await t.goto(`${BASE}/s/dreamy-a/p/about`);
+    assert.equal(await t.locator('[data-testid=site-admin-bar]').count(), 0);
+    await t.click('[data-testid=staff-edit]');
+    await t.waitForURL(/\/login\?next=/);
+    await t.fill('input[name=email]', 'e2e-teacher@school-a.test');
+    await t.fill('input[name=password]', 'demo-pass-t');
+    await t.click('button[type=submit]');
+    await t.waitForURL(/\/site\/edit\/[0-9a-f-]{36}\?back=/);
+    await t.waitForSelector('[data-testid=live-editor] .site h1 .le-text');
+    assert.equal(await t.locator('[data-testid=le-save]').count(), 1);
+    assert.equal(await t.locator('[data-testid=le-publish]').count(), 0); // 공개는 관리자
+    // 로그인한 뒤: 공개 화면 위 관리 막대(교직원) → 이 화면 편집
+    await t.goto(`${BASE}/s/dreamy-a/p/about`);
+    const bar = t.locator('[data-testid=site-admin-bar]');
+    await bar.waitFor();
+    assert.equal(await bar.getAttribute('data-role'), 'staff');
+    await bar.locator('a[href*="kind=page"]').click();
+    await t.waitForURL(/\/site\/edit\/[0-9a-f-]{36}\?back=/);
+    await t.waitForSelector('[data-testid=live-editor]');
+    await shot(t, '115-teacher-live-edit.png');
+    await ctx.close();
+  });
+
   await step('성품 동화 새 판 일괄 공개: 선택·충돌·공개 내림 제외·태국어 노출', async () => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const h = await ctx.newPage();
