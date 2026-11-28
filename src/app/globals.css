@@ -2524,6 +2524,9 @@ label.check input { margin-top: 0.25em; }
 .offer-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--ds-space-4); }
 .offer-list > li { display: grid; gap: var(--ds-space-3); min-width: 0; padding-bottom: var(--ds-space-4); border-bottom: 1px solid var(--border-subtle); }
 .offer-list > li:last-child { padding-bottom: 0; border-bottom: 0; }
+
+/* 127차: 템플릿 화면 'AI로 맞추기' 세 단계(번호 목록) */
+.guide-steps { margin: 0; padding-left: var(--ds-space-5); display: grid; gap: var(--ds-space-1); }
 /* ───────── 124차: 템플릿 모바일 정리 — 머리글 한 줄·메뉴 펼침판·첫 화면 글 가독성·바닥글 링크·소식 목록 (키트 테마만, campus·dawn 제외) ───────── */
 /* 홈(data-home) 첫 구역이 큰 사진 띠면 쪽 제목(학교 이름)은 작은 이름표로 — 머리글 학교 이름과 같은 큰 글자가 두 번 나오지 않게 */
 .site[data-theme][data-home]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-head:has(+ .site-blocks > .sec[data-template="banner"]:first-child) { padding-block: 0 var(--ds-space-4); }

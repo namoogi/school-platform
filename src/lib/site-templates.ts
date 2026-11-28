@@ -68,7 +68,7 @@ const commonSlots = (): Slot[] => [
 
 export const SITE_TEMPLATES: SiteTemplate[] = [
   {
-    key: 'notice', version: 4, name: '알림 중심형', theme: 'clear', langs: ['ko'],
+    key: 'notice', version: 5, name: '알림 중심형', theme: 'clear', langs: ['ko'],
     summary: '재학생 가정이 매일 찾는 알림·소식·학사일정·급식을 첫 화면에 둡니다.',
     fits: ['공립·지역 학교', '재학생 가정이 주 방문자', '공지가 많은 학교'], firstScreen: '알림 · 최근 소식 · 학사일정 · 급식',
     mustHave: ['학교 소개(인사말·연혁·교육목표)', '학사일정', '오시는 길', '입학·전학 안내'],
@@ -96,7 +96,8 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ anchor: 'way', template: 'text', title: ko('오시는 길'), body: ko('[주소·대중교통·주차]') }),
       ]),
       page('school-life', 2, ko('학교 생활'), [
-        section({ anchor: 'calendar', template: 'facts', title: ko('학사일정'), items: [{ title: ko('[월]'), body: ko('[주요 일정]') }] }),
+        // 129차: 학사일정은 석 달 치(실제 학교 안내 길이) — 한 칸짜리 목록이 늘어나지 않게
+        section({ anchor: 'calendar', template: 'facts', title: ko('학사일정'), items: [1, 2, 3].map((i) => ({ title: ko(`[알림 달 ${i}]`), body: ko(`[알림 달 ${i} 일정]`) })) }),
         section({ anchor: 'lunch', template: 'text', title: ko('급식'), body: ko('[급식 운영 안내 · 이번 달 식단표는 PDF로 올려 주세요]') }),
         section({ anchor: 'afterschool', template: 'text', title: ko('방과후·돌봄'), body: ko('[운영 시간·신청 방법]') }),
         section({ anchor: 'counsel', template: 'text', title: ko('상담·학교폭력 신고'), body: ko('[알림 상담 안내]') }),
@@ -262,7 +263,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'mission', version: 4, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
+    key: 'mission', version: 5, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
     summary: '학교의 사명과 함께하는 방법(후원·봉사·기도)을 분명히 알립니다.',
     fits: ['기독교·선교 학교', '후원으로 운영되는 비영리 학교'], firstScreen: '사명 · 후원 단추 · 소식',
     mustHave: ['사명·신앙 고백', '후원 방법과 쓰임', '재정 보고(있으면)'],
@@ -278,13 +279,16 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       ], { site: contact({ label: '후원하기', href: '/p/partner', en: 'Give' }) }),
       page('mission', 1, kb('사명과 신앙', 'Mission & faith'), [
         section({ template: 'quote', body: kb('[사명 선언문]', '[Mission statement]') }),
-        section({ anchor: 'beliefs', template: 'facts', title: kb('우리가 믿는 것', 'What we believe'), items: [{ title: kb('[고백 1]', '[Belief 1]'), body: kb('[설명]', '[Description]') }] }),
+        section({ anchor: 'beliefs', template: 'facts', title: kb('우리가 믿는 것', 'What we believe'), items: [{ title: kb('[고백 1]', '[Belief 1]'), body: kb('[설명]', '[Description]') },
+          // 129차: 고백·쓰임은 세 가지(실제 길이) — 한 칸짜리 목록이 늘어나지 않게
+          ...[2, 3].map((i) => ({ title: kb(`[고백 ${i}]`, `[Belief ${i}]`), body: kb(`[사명 고백 ${i} 설명]`, `[Mission belief ${i} note]`) }))] }),
         // 126차(ADR 0046): 사명과 신앙 아래 하위 메뉴 — 걸어온 길
         section({ anchor: 'story', template: 'steps', variant: 'timeline', title: kb('걸어온 길', 'Our story'), items: [1, 2, 3].map((i) => ({ title: kb(`[사명 연혁 ${i}]`, `[Mission year ${i}]`), body: kb(`[사명 연혁 ${i} 내용]`, `[Mission year ${i} note]`) })) }),
       ]),
       page('partner', 2, kb('함께하기', 'Partner with us'), [
         section({ anchor: 'ways', template: 'cards', title: kb('함께하는 방법', 'Ways to partner'), items: [{ title: kb('정기 후원', 'Monthly giving'), body: kb('[계좌·방법]', '[Account · how]') }, { title: kb('봉사', 'Volunteer'), body: kb('[필요한 봉사]', '[Volunteering needed]') }, { title: kb('기도', 'Prayer'), body: kb('[기도 제목 받는 방법]', '[How to receive prayer letters]') }] }),
-        section({ anchor: 'funds', template: 'facts', title: kb('후원금은 이렇게 쓰입니다', 'How gifts are used'), items: [{ title: kb('[쓰임 1]', '[Use 1]'), body: kb('[비율·설명]', '[Share · note]') }] }),
+        section({ anchor: 'funds', template: 'facts', title: kb('후원금은 이렇게 쓰입니다', 'How gifts are used'), items: [{ title: kb('[쓰임 1]', '[Use 1]'), body: kb('[비율·설명]', '[Share · note]') },
+          ...[2, 3].map((i) => ({ title: kb(`[쓰임 ${i}]`, `[Use ${i}]`), body: kb(`[사명 쓰임 ${i} 설명]`, `[Mission use ${i} note]`) }))] }),
         section({ anchor: 'report', template: 'text', title: kb('재정 보고', 'Financial reports'), body: kb('[사명 재정 보고 안내]', '[Mission financial report note]') }),
         section({ anchor: 'contact', template: 'cta', title: kb('후원 문의', 'Partnership enquiries'), body: kb('[담당자 연락처]', '[Contact person]'), button: { label: kb('문의하기', 'Contact us'), href: '/p/partner' } }),
       ]),
@@ -302,7 +306,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'international', version: 4, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
+    key: 'international', version: 5, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
     summary: '여러 언어로 교육과정 경로와 입학 여정을 안내합니다.',
     fits: ['국제학교', '외국 가정·현지 가정을 함께 받는 학교'], firstScreen: '다국어 소개 · 문의 단추',
     mustHave: ['교육과정 경로(학년·인가)', '입학 여정', '학생 생활(기숙·통학)', '언어별 연락처'],
@@ -331,12 +335,13 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ anchor: 'safeguarding', template: 'text', title: { en: 'Safeguarding', ko: '아동 보호', th: 'การคุ้มครองเด็ก' }, body: { en: '[Intl safeguarding]' } }),
       ]),
       page('curriculum', 2, { en: 'Curriculum', ko: '교육과정', th: 'หลักสูตร' }, [
-        section({ anchor: 'pathway', template: 'steps', title: { en: 'Pathway', ko: '경로' }, items: [{ title: { en: '[Stage]' }, body: { en: '[Programme · accreditation]' } }] }),
+        section({ anchor: 'pathway', template: 'steps', title: { en: 'Pathway', ko: '경로' }, // 129차: 경로는 세 단계, 학비는 세 줄(실제 안내 길이)
+          items: [1, 2, 3].map((i) => ({ title: { en: `[Intl stage ${i}]` }, body: { en: `[Intl stage ${i} programme]` } })) }),
         section({ anchor: 'languages', template: 'cards', title: { en: 'Language support', ko: '언어 지원', th: 'การสนับสนุนด้านภาษา' }, items: [1, 2].map((i) => ({ title: { en: `[Intl language ${i}]` }, body: { en: `[Intl language ${i} note]` } })) }),
       ]),
       page('admissions', 3, { en: 'Admissions', ko: '입학', th: 'การรับสมัคร' }, [
         section({ anchor: 'journey', template: 'steps', title: { en: 'Admissions journey', ko: '입학 여정' }, items: [{ title: { en: 'Enquire' }, body: { en: '[How]' } }, { title: { en: 'Visit' }, body: { en: '[Tour days]' } }, { title: { en: 'Apply' }, body: { en: '[Documents · assessment]' } }, { title: { en: 'Join' }, body: { en: '[Enrolment]' } }] }),
-        section({ anchor: 'fees', template: 'facts', title: { en: 'Fees', ko: '학비' }, items: [{ title: { en: '[Fee]' }, body: { en: '[Amount · terms]' } }] }),
+        section({ anchor: 'fees', template: 'facts', title: { en: 'Fees', ko: '학비' }, items: [1, 2, 3].map((i) => ({ title: { en: `[Intl fee ${i}]` }, body: { en: `[Intl fee ${i} terms]` } })) }),
         { type: 'inquiry', anchor: 'enquire', title: { en: 'Enquire', ko: '문의하기', th: 'ติดต่อสอบถาม' }, body: { en: '[Intl enquiry note]' } },
       ]),
       page('student-life', 4, { en: 'Student life', ko: '학생 생활', th: 'ชีวิตนักเรียน' }, [
