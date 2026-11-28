@@ -56,7 +56,7 @@ export async function applyTemplate(db: Db, schoolId: string, input: { key?: unk
   // 1) 학교급·학년 + 관할 판(학년 체계·템플릿 키·판을 한 판에).
   //    학교가 이미 학년 체계를 정했으면 그 체계를 지킨다(학교 값 유지, Codex #180). 처음일 때만 템플릿 체계를 쓴다
   const cur = await schoolProfile(db, schoolId);
-  // 121차: 같은 템플릿의 다른 판으로 옮기는 길은 새 판 제안 수락 하나다(미리 보기·기록 없이 판이 바뀌지 않게, Codex 199번 PR 검토).
+  // 123차: 같은 템플릿의 다른 판으로 옮기는 길은 새 판 제안 수락 하나다(미리 보기·기록 없이 판이 바뀌지 않게, Codex 199번 PR 검토).
   // 처음 고르기·다시 채우기(같은 판)·다른 템플릿으로 바꾸기는 그대로 된다
   if (!opts.viaOffer && cur?.template_key === key && cur.template_version != null && cur.template_version !== t.version) throw new ValidationError('err.template.useOffer');
   const keepScheme = (cur?.grade_scheme ?? null) as GradeScheme | null;
@@ -132,10 +132,10 @@ export async function setupChecklist(db: Db, schoolId: string): Promise<SetupSte
   ];
 }
 
-/** 119·121차: 학교 구조 탭 옆 개수·판 번호(두 화면이 같은 길로 읽음, 학교 사용자 권한으로 읽히는 것만 씀) */
+/** 119·123차: 학교 구조 탭 옆 개수·판 번호(두 화면이 같은 길로 읽음, 학교 사용자 권한으로 읽히는 것만 씀) */
 export type TabCounts = { levels: number; rule: number | null; years: number; template: number | null; offers: number };
 
-/** offers(121차) = 지금 열린 새 판 제안(최신 판 > 학교 판, 마지막 결정이 거절이 아님)이 있으면 1. 최신 판은 학교가 읽는 함수로 본다. 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
+/** offers(123차) = 지금 열린 새 판 제안(최신 판 > 학교 판, 마지막 결정이 거절이 아님)이 있으면 1. 최신 판은 학교가 읽는 함수로 본다. 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
 export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabCounts> {
   const { rows: [c] } = await db.query<TabCounts>(
     `select (select count(*)::int from public.school_levels where school_id = $1) as levels,

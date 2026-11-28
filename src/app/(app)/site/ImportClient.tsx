@@ -5,6 +5,7 @@ import { unzip, strFromU8, type Unzipped } from 'fflate';
 import { FileArchive, Upload } from 'lucide-react';
 import { FileDrop } from '@/components/FileDrop';
 import { byBaseText } from '@/lib/site-labels';
+import { usePhotoConsent, PublishCancelled } from '@/components/site/PhotoConsent';
 import { useI18n } from '@/components/I18nProvider';
 import { decideReimport, fillAssets, IMPORT_NOTE, MERGED_MARK, mergeSettings, planImport, refsIn, type ImportPlan, type ReimportDecision } from '@/lib/site-import';
 import { type SiteSettings } from '@/lib/site-shared';
@@ -36,6 +37,7 @@ function readZip(buf: Uint8Array): Promise<Unzipped> {
 export function ImportPanel({ settings, existing }: { settings: SiteSettings; existing: Existing[] }) {
   const router = useRouter();
   const { t } = useI18n();
+  const [askConsent, consentDialog] = usePhotoConsent();
   const failed = t('common.saveFailed');
   const [files, setFiles] = useState<Unzipped | null>(null);
   const [plan, setPlan] = useState<ImportPlan | null>(null);
@@ -133,7 +135,10 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
     if (!done) return;
     setErr(null);
     try {
-      for (const [i, d] of done.entries()) { setStep({ label: t('site.import.step.publish'), n: i + 1, of: done.length }); await send(`/api/site/entries/${d.id}/publish`, 'POST', failed, {}); }
+      // 122차: 가져온 시안 전체의 사진을 공개 창 한 번으로 확인
+      const consent = await askConsent(done.map((d) => ({ entryId: d.id })));
+      if (!consent) { setErr(t('site.consent.cancelled')); return; }
+      for (const [i, d] of done.entries()) { setStep({ label: t('site.import.step.publish'), n: i + 1, of: done.length }); await send(`/api/site/entries/${d.id}/publish`, 'POST', failed, consent); }
       setPublished(true); router.refresh();
     } catch (e) { setErr((e as Error).message); }
     finally { setStep(null); }
@@ -142,6 +147,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
   const count = (k: string, v?: string) => plan?.entries.filter((e) => e.kind === k && (v === undefined || e.visibility === v)).length ?? 0;
   return (
     <section className="card site-form" data-testid="site-import">
+      {consentDialog}
       <h2><FileArchive size={20} aria-hidden="true" /> {t('site.import.title')}</h2>
       <p className="fine">{withLink(t('site.import.lead'), { b: <b>{t('site.import.draft')}</b> })}</p>
       <FileDrop

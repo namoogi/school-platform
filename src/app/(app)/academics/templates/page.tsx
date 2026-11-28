@@ -124,7 +124,7 @@ export default async function TemplatesPage() {
               <dl className="facts">
                 {rows.map((r) => <Fragment key={r.label}><dt>{r.label}</dt><dd>{r.value(tp)}</dd></Fragment>)}
               </dl>
-              {/* 121차: 새 판으로 바꾸는 길은 제안 수락 하나다(위 '새 판 제안' 카드) */}
+              {/* 123차: 새 판으로 바꾸는 길은 제안 수락 하나다(위 '새 판 제안' 카드) */}
               {admin && (mode === 'update'
                 ? <a className="btn btn-primary" href="#template-offers" data-testid={`tpl-to-offer-${tp.key}`}>{t('tplOffer.see')}</a>
                 : <ApplyTemplate templateKey={tp.key} templateVersion={tp.version} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />)}

@@ -1966,6 +1966,9 @@ label.lang-switch { display: inline-flex; align-items: center; gap: var(--space-
 @media (max-width: 600px) { .lang-switch > svg { display: none; } }
 /* 아주 좁은 화면: 이름은 이미 숨겨져 머리글자 동그라미만 남으므로 빼서 로그아웃이 화면 안에 들어오게 한다 */
 @media (max-width: 440px) { .topbar .account { display: none; } .topbar-right { gap: var(--space-1); } }
+/* 116차 뒤(태국어 추가): 로그아웃 이름 길이는 언어마다 다르다 → 아주 좁은 화면에서는 아이콘만 보이고 이름은 화면 읽기용으로 남긴다 */
+.logout-btn { display: inline-flex; align-items: center; gap: var(--space-1); }
+@media (max-width: 440px) { .logout-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
 
 /* ══ 89차(ADR 0034): 템플릿 완성 디자인 6종 — 맑은 하늘(clear)·힘찬 시작(bold)·작업실(studio)·등불(lamp)·지평(horizon)·씨앗(seed) ══
    공용 틀(K)은 --t-* 토큰만 쓰고, 테마마다 토큰 값과 몇 가지 모양만 바꾼다. 블록·쪽 구조는 모든 테마가 같다. */
@@ -2465,7 +2468,7 @@ label.check input { margin-top: 0.25em; }
   .academics-tabs a { justify-content: center; }
 }
 
-/* 121차: 템플릿 새 판 제안 목록 — 제안 하나가 세로로 쌓인 묶음(제목·이유·더해지는 것·결정) */
+/* 123차: 템플릿 새 판 제안 목록 — 제안 하나가 세로로 쌓인 묶음(제목·이유·더해지는 것·결정) */
 .offer-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-4); }
 .offer-list > li { display: grid; gap: var(--space-3); min-width: 0; padding-bottom: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
 .offer-list > li:last-child { padding-bottom: 0; border-bottom: 0; }
