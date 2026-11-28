@@ -445,6 +445,8 @@ export type PublicSite = {
   on_own_host?: boolean;
   /** 49차: 로그인한 이 학교 관리자가 보는 중이면 true — 공개 화면 위에 관리 막대를 보인다 */
   viewer_admin?: boolean;
+  /** 115차: 로그인한 이 학교 구성원(교사 포함)이 보는 중 — 관리 막대를 보인다(관리자 여부는 viewer_admin) */
+  viewer_staff?: boolean;
 };
 export type PublicEntry = { kind: EntryKind; key: string; visibility: 'public' | 'unlisted'; meta: Record<string, string>; version: number; content: Content; published_at: string };
 export type PublicListItem = { key: string; meta: Record<string, string>; title: LText; summary: LText | null; cover: string | null; published_at: string };
