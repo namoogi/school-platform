@@ -141,7 +141,7 @@ export function PortalAccountsPanel({ accounts, people }: { accounts: PortalRow[
       <h2>{t('portalAcc.title')}</h2>
       <p className="fine">{t('portalAcc.lead')}</p>
       <form className="stack" onSubmit={add} data-testid="portal-account-form">
-        <fieldset><legend>{t('portalAcc.kind')}</legend><div className="row-wrap">
+        <fieldset className="choices"><legend>{t('portalAcc.kind')}</legend><div className="row-wrap">
           <label className="radio"><input type="radio" name="portal-kind" checked={kind === 'student'} onChange={() => setKind('student')} />{t('portalAcc.student')}</label>
           <label className="radio"><input type="radio" name="portal-kind" checked={kind === 'guardian'} onChange={() => setKind('guardian')} />{t('portalAcc.guardian')}</label>
         </div></fieldset>
