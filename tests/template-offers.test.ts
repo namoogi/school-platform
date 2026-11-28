@@ -141,6 +141,16 @@ describe('템플릿 새 판 제안', () => {
     expect(await count(A)).toBe(1);
   });
 
+  it('학교 AI 맞춤 지시문은 템플릿이 아니라 지금 학교 사본 값을 요약한다(126차)', async () => {
+    const c = await asUser(B.userId, (db) => at.schoolCopySummary(db, B.schoolId, 'ko'));
+    expect(c).toMatchObject({ template: { key: 'kr_general', version: 1 }, scheme: 'kr', periods: ['1학기', '2학기'] });
+    expect(c!.scales).toEqual(expect.arrayContaining(['kr_achievement', 'kr_elective', 'kr_pf_v5']));
+    expect(c!.levels.length).toBeGreaterThan(0);
+    // 다른 학교 값은 섞이지 않는다
+    const a = await asUser(A.userId, (db) => at.schoolCopySummary(db, A.schoolId, 'ko'));
+    expect(a!.scales).not.toContain('kr_pf_v5');
+  });
+
   it('학교 판을 바꾸는 중에 다른 관리자가 보류하면, 바뀐 판이 확정된 뒤를 보고 거부한다(학교별 잠금)', async () => {
     // B는 지금 한국 일반 1판, 5판 제안이 열려 있다. 다른 연결이 학교 판을 홈스쿨로 바꾸는 중(아직 커밋 전)
     const a = new pg.Client({ connectionString: TEST_URL });
