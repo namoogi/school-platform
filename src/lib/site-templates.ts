@@ -495,17 +495,24 @@ export async function applyTemplate(db: Db, schoolId: string, key: string, opts:
   const existing = new Set((await listEntries(db, schoolId)).filter((e) => e.kind === 'page').map((e) => e.key));
   const created: { key: string; id: string }[] = [];
   const skipped: string[] = [];
-  // 133차(Codex 검토): 예전 판으로 만든 상위 쪽이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면, 그 아래 새 하위 쪽은 만들지 않는다.
-  // 만들면 공개 뒤 같은 하위 메뉴가 두 번(구역·쪽) 보인다. 학교가 상위 쪽을 새 구조로 옮긴 뒤 다시 적용하면 만들어진다
+  // 133차(Codex 검토): 학교에 이미 있는 상위 쪽이 새 하위 쪽을 받을 수 없으면 그 아래 하위 쪽은 만들지 않는다.
+  //  - 최신 판이나 공개 판이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면: 공개 뒤 같은 하위 메뉴가 두 번(구역·쪽) 보인다
+  //  - 그 쪽이 이미 다른 쪽의 하위면: 메뉴는 한 단계뿐이라 새 하위 쪽이 엉뚱한 상위 메뉴로 올라온다
+  // 학교가 상위 쪽을 새 구조로 옮기고 공개한 뒤 다시 적용하면 만들어진다
   const sourceKeys = new Set((t.source ?? t.pages).map((p) => p.key));
   const oldStyle = new Set<string>();
   for (const parent of new Set(t.pages.filter((p) => !sourceKeys.has(p.key)).map((p) => p.content.menu?.parent).filter((k): k is string => !!k && existing.has(k)))) {
-    const { rows: [r] } = await db.query<{ anchored: boolean }>(
-      `select exists (select 1 from public.site_entries e
-         join lateral (select content from public.site_entry_versions x where x.entry_id = e.id order by x.version desc limit 1) v on true
-         cross join lateral jsonb_array_elements(case when jsonb_typeof(v.content -> 'blocks') = 'array' then v.content -> 'blocks' else '[]'::jsonb end) b
-         where e.school_id = $1 and e.kind = 'page' and e.key = $2 and coalesce(b ->> 'anchor', '') <> '') as anchored`, [schoolId, parent]);
-    if (r?.anchored) oldStyle.add(parent);
+    const { rows: [r] } = await db.query<{ blocked: boolean }>(
+      `with e as (select id from public.site_entries where school_id = $1 and kind = 'page' and key = $2),
+       v as (
+         (select x.content from public.site_entry_versions x join e on x.entry_id = e.id order by x.version desc limit 1)
+         union all
+         (select lv.content from e join lateral (select version_id from public.site_publications p where p.entry_id = e.id order by p.id desc limit 1) p on true
+            join public.site_entry_versions lv on lv.id = p.version_id))
+       select coalesce(bool_or(coalesce(v.content -> 'menu' ->> 'parent', '') <> ''
+         or exists (select 1 from jsonb_array_elements(case when jsonb_typeof(v.content -> 'blocks') = 'array' then v.content -> 'blocks' else '[]'::jsonb end) b
+                    where coalesce(b ->> 'anchor', '') <> '')), false) as blocked from v`, [schoolId, parent]);
+    if (r?.blocked) oldStyle.add(parent);
   }
   for (const p of t.pages) {
     if (existing.has(p.key)) { skipped.push(p.key); continue; }

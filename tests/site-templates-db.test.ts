@@ -189,4 +189,17 @@ describe('133차 예전 판 상위 쪽과 겹치지 않게', () => {
     // 새 구조인 상위 쪽(about: 국제형으로 만든 쪽, 메뉴 주소 없음) 아래는 만든다
     expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['about-greeting', 'about-way']));
   });
+  it('공개 판이 아직 메뉴 주소를 쓰거나(최신 시안은 지웠어도), 상위 쪽이 이미 하위 쪽이면 만들지 않는다', async () => {
+    // 이야기형 상위 쪽 'learning': 메뉴 주소가 있는 판을 공개하고, 메뉴 주소를 지운 새 시안 판을 쌓는다
+    const learning = await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'learning', content: { title: { ko: '배움' },
+      blocks: [{ type: 'section', template: 'text', title: { ko: '배움의 방식' }, body: { ko: '공개된 예전 판' }, anchor: 'method' } as never] } }));
+    await asUser(B.userId, (db) => site.publish(db, B.schoolId, learning!.id, undefined, { photoConsent: true }));
+    await asUser(B.userId, (db) => site.saveVersion(db, B.schoolId, learning!.id, { content: { title: { ko: '배움' }, blocks: [] }, base_version: 1 } as never));
+    // 이야기형 상위 쪽 'community': 소식 아래 하위 쪽
+    await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'community', content: { title: { ko: '공동체' }, blocks: [], menu: { parent: 'news' } } }));
+    const r = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'story'));
+    const kidsOf = (parent: string) => tpl.SITE_TEMPLATES.find((t) => t.key === 'story')!.pages.filter((p) => p.content.menu?.parent === parent).map((p) => p.key);
+    for (const k of [...kidsOf('learning'), ...kidsOf('community')]) expect(r.created.map((c) => c.key), k).not.toContain(k);
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(kidsOf('philosophy'))); // 새로 만든 상위 쪽 아래는 만든다
+  });
 });
