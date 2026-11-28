@@ -67,7 +67,7 @@ const commonSlots = (): Slot[] => [
 
 export const SITE_TEMPLATES: SiteTemplate[] = [
   {
-    key: 'notice', version: 3, name: '알림 중심형', theme: 'clear', langs: ['ko'],
+    key: 'notice', version: 4, name: '알림 중심형', theme: 'clear', langs: ['ko'],
     summary: '재학생 가정이 매일 찾는 알림·소식·학사일정·급식을 첫 화면에 둡니다.',
     fits: ['공립·지역 학교', '재학생 가정이 주 방문자', '공지가 많은 학교'], firstScreen: '알림 · 최근 소식 · 학사일정 · 급식',
     mustHave: ['학교 소개(인사말·연혁·교육목표)', '학사일정', '오시는 길', '입학·전학 안내'],
@@ -87,21 +87,30 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         events('알림', '이번 달 학사일정'),
       ], { site: contact({ label: '오시는 길', href: '/p/about' }) }),
       page('about', 1, ko('학교 소개'), [
-        section({ template: 'text', title: ko('인사말'), body: ko('[교장 인사말 3~5문장]') }),
-        section({ template: 'facts', title: ko('교육 목표'), items: [{ title: ko('[교육 목표 1]'), body: ko('[설명]') }, { title: ko('[교육 목표 2]'), body: ko('[설명]') }] }),
-        section({ template: 'steps', title: ko('연혁'), items: [{ title: ko('[연도]'), body: ko('[개교·주요 일]') }, { title: ko('[연도]'), body: ko('[주요 일]') }] }),
-        section({ template: 'text', title: ko('오시는 길'), body: ko('[주소·대중교통·주차]') }),
+        section({ anchor: 'greeting', template: 'text', title: ko('인사말'), body: ko('[교장 인사말 3~5문장]') }),
+        section({ anchor: 'goals', template: 'facts', title: ko('교육 목표'), items: [{ title: ko('[교육 목표 1]'), body: ko('[설명]') }, { title: ko('[교육 목표 2]'), body: ko('[설명]') }] }),
+        section({ anchor: 'history', template: 'steps', title: ko('연혁'), items: [{ title: ko('[연도]'), body: ko('[개교·주요 일]') }, { title: ko('[연도]'), body: ko('[주요 일]') }] }),
+        // 126차(ADR 0046): 학교 소개 아래 하위 메뉴 — 구역마다 메뉴 주소
+        section({ anchor: 'symbols', template: 'cards', title: ko('학교 상징'), items: [1, 2, 3].map((i) => ({ title: ko(`[알림 상징 ${i}]`), body: ko(`[알림 상징 ${i} 설명]`) })) }),
+        section({ anchor: 'way', template: 'text', title: ko('오시는 길'), body: ko('[주소·대중교통·주차]') }),
       ]),
       page('school-life', 2, ko('학교 생활'), [
-        section({ template: 'facts', title: ko('학사일정'), items: [{ title: ko('[월]'), body: ko('[주요 일정]') }] }),
-        section({ template: 'text', title: ko('급식'), body: ko('[급식 운영 안내 · 이번 달 식단표는 PDF로 올려 주세요]') }),
-        section({ template: 'text', title: ko('방과후·돌봄'), body: ko('[운영 시간·신청 방법]') }),
+        section({ anchor: 'calendar', template: 'facts', title: ko('학사일정'), items: [{ title: ko('[월]'), body: ko('[주요 일정]') }] }),
+        section({ anchor: 'lunch', template: 'text', title: ko('급식'), body: ko('[급식 운영 안내 · 이번 달 식단표는 PDF로 올려 주세요]') }),
+        section({ anchor: 'afterschool', template: 'text', title: ko('방과후·돌봄'), body: ko('[운영 시간·신청 방법]') }),
+        section({ anchor: 'counsel', template: 'text', title: ko('상담·학교폭력 신고'), body: ko('[알림 상담 안내]') }),
       ]),
       page('admission', 3, ko('입학·전학'), [
-        section({ template: 'steps', title: ko('입학·전학 절차'), items: [{ title: ko('문의'), body: ko('[알림 입학 문의]') }, { title: ko('서류 제출'), body: ko('[알림 입학 서류]') }, { title: ko('배정·안내'), body: ko('[알림 배정 안내]') }] }),
-        section({ template: 'facts', title: ko('준비할 서류'), items: [{ title: ko('[알림 서류 1]'), body: ko('[알림 서류 1 설명]') }, { title: ko('[알림 서류 2]'), body: ko('[알림 서류 2 설명]') }] }),
-        section({ template: 'cta', title: ko('입학·전학 문의'), body: ko('[알림 입학 연락처]') }),
+        section({ anchor: 'process', template: 'steps', title: ko('입학·전학 절차'), items: [{ title: ko('문의'), body: ko('[알림 입학 문의]') }, { title: ko('서류 제출'), body: ko('[알림 입학 서류]') }, { title: ko('배정·안내'), body: ko('[알림 배정 안내]') }] }),
+        section({ anchor: 'documents', template: 'facts', title: ko('준비할 서류'), items: [{ title: ko('[알림 서류 1]'), body: ko('[알림 서류 1 설명]') }, { title: ko('[알림 서류 2]'), body: ko('[알림 서류 2 설명]') }] }),
+        section({ anchor: 'contact', template: 'cta', title: ko('입학·전학 문의'), body: ko('[알림 입학 연락처]') }),
       ]),
+      // 126차: 소식 아래 하위 쪽 — 가정통신문
+      page('letters', 4, ko('가정통신문'), [
+        section({ template: 'text', title: ko('가정통신문 보는 법'), body: ko('[알림 가정통신문 안내]') }),
+        section({ anchor: 'recent', template: 'cards', variant: 'events', title: ko('최근 가정통신문'), items: [1, 2, 3].map((i) => ({
+          tag: ko(`[알림 통신문 ${i} 날짜]`), title: ko(`[알림 통신문 ${i}]`), body: ko(`[알림 통신문 ${i} 안내]`) })) }),
+      ], { menu: { parent: 'news' } }),
     ],
     slots: [
       ...commonSlots(),
