@@ -961,6 +961,8 @@ export const CATALOG = {
   'req.metaOverdue': '기한 지남 {n}건',
   'req.list': '요청',
   'req.empty': '아직 요청이 없습니다.',
+  'req.emptyBody': '학생·보호자가 열람 계정(/my)에서 기록 열람이나 수정을 요청하면 여기에 기한과 함께 쌓입니다. 요청하려면 먼저 그 사람의 열람 계정이 있어야 합니다.',
+  'req.emptyAction': '열람 계정 만들기',
   'req.byGuardian': '보호자 요청',
   'req.bySelf': '본인 요청',
   'req.kind.amend': '수정',
