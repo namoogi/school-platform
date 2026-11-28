@@ -3108,16 +3108,15 @@ export const CATALOG = {
   'tplOffer.done.declined': '거절로 남겼습니다. 학교 사본은 그대로이고, 나중에 수락으로 바꿀 수 있습니다.',
   'tplOffer.see': '새 판 제안 보기',
   'tplOffer.tab': '새 판',
-  'err.tplOffer.notFound': '템플릿 새 판 제안을 찾을 수 없습니다.',
   // 121차 DB 안내 — 템플릿 새 판 제안
-  'db.tplOfferNotFound': '템플릿 새 판 제안을 찾을 수 없습니다.',
-  'db.tplOfferAccepted': '이미 수락한 제안입니다.',
   'db.tplOfferOtherTemplate': '학교가 다른 템플릿으로 바꿔 이 제안은 쓸 수 없습니다.',
   'db.tplOfferApplyFirst': '템플릿 새 판을 먼저 적용해야 수락할 수 있습니다.',
   // 121차 템플릿 새 판 제안(Codex 검토)
   'err.template.useOffer': '같은 템플릿의 다른 판으로는 \'템플릿 새 판 제안\'에서 수락해 바꿉니다.',
   'db.tplOfferStale': '학교가 이미 그 판 이상을 써서 지난 제안입니다.',
-  'tplOffer.includedIn': '{v}판과 함께 반영',
+  // 121차 템플릿 새 판 제안 기록
+  'tplOffer.history': '결정 기록 {n}건',
+  'tplOffer.versionsShort': '{from}판 → {to}판',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

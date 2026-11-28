@@ -16,22 +16,26 @@
 
 ## 흐름
 ```
-관제: 템플릿 새 판 내기 ─▶ 그 템플릿을 쓰는 학교마다 제안 1건(DB 함수)
-학교: 템플릿 화면 '템플릿 새 판 제안' 카드
+관제: 템플릿 새 판 내기
+학교 화면이 그때그때 계산: 학교가 쓰는 템플릿의 최신 판 > 학교 판 → '지금 판 → 최신 판' 제안
       · 바뀐 이유 · 수락하면 더해지는 것 · 학교 값 유지
-      [수락하고 적용] [보류] [거절]   (거절·보류도 나중에 수락 가능, 수락은 끝)
-수락 = 기존 적용 길(applyTemplate)로 새 판 적용 + 같은 트랜잭션에서 기록
+      [수락하고 적용] [보류] [거절]   (거절·보류 뒤에도 수락 가능)
+수락 = 기존 적용 길(applyTemplate)로 최신 판 적용 + 같은 트랜잭션에서 결정 기록
 ```
 
+## 설계 결정: 제안은 저장하지 않고 계산한다 (Codex 199번 PR 검토 5회 끝에)
+처음에는 제안을 표에 저장하고 상태(열림·수락)를 학교 판과 맞췄다. 그러자 같은 사실이 두 곳에 있어 어긋나는 경우가 검토마다 나왔다(다른 템플릿을 거쳐 되돌아오기, 학교 선택과 새 판 공개가 겹침, 학교 이전 때 관제 표 빠짐, 적용 없이 '수락'만 남기기). 참을 학교 관할 판 하나로 두고, 열린 제안은 계산, 결정(수락·보류·거절)은 추가만 하는 기록으로 바꾸니 이 경우들이 모두 없어졌다. 수락 기록은 아무것도 열지 않는 이력이다.
+
 ## 한 일
-- 마이그레이션 `20261128001400_template_offers.sql`: 표 `academic_template_offers`(학교별, 지우기 막음, RLS 학교 구성원·관제 읽기), `private.offer_academic_template`, `app.publish_academic_template`이 제안을 만들도록, `app.decide_template_offer`(적용하지 않은 판의 수락 거부, 높은 판 수락 시 낮은 판 제안도 닫음, 다른 템플릿으로 바꿨으면 거부), 이미 나온 새 판 제안 채우기, `app.academic_template`에 `why`.
-- `src/lib/template-offers.ts`: 제안 목록, 미리 보기 `planTemplate`(적용 규칙과 같음), 결정 `decideTemplateOffer`, 관제 `publishAcademicTemplate`.
-- API: `POST /api/academics` `template-offer`, `POST /api/admin/academic-templates`(관제 새 판 내기).
-- 화면: 템플릿 화면 맨 위 제안 카드, 템플릿 탭 옆 '새 판' 표시, 새 판 카드의 버튼은 '새 판 제안 보기'(갱신하는 길은 제안 수락 하나).
-- 이름표 29개(ko·en, DB 안내 5개 포함). 같은 템플릿의 다른 판으로 바로 적용하는 길은 막음(제안 수락만), 지난 제안(학교가 이미 그 판 이상)은 숨기고 결정 거부, 함께 닫힌 제안은 `included_in` 판 번호. DB 수락은 '이 트랜잭션에서 낮은 판 → 그 판으로 적용됨'을 확인하고, 학교 관할 판이 생길 때마다 트리거가 높은 판 제안을 만든다(Codex 199번 PR 검토).
+- 마이그레이션 `20261128001400_template_offers.sql`: 결정 기록 표 `academic_template_decisions`(학교별, 고치기·지우기 막음, RLS 학교 구성원·관제 읽기), `app.record_template_decision`(학교 관리자. 다른 템플릿·최신 판이 아닌 판·지난 제안 거부, 수락은 학교 판이 이미 그 판일 때만), `app.academic_template`에 `why`.
+- `src/lib/template-offers.ts`: 열린 제안 계산 `openTemplateOffer`, 미리 보기 `planTemplate`(적용 규칙과 같음), 결정 `decideTemplateOffer`(수락 = 적용 + 기록), 결정 기록 `templateDecisions`, 관제 `publishAcademicTemplate`.
+- `applyTemplate`: 같은 템플릿의 다른 판으로 옮기기(올리기·내리기)는 제안 수락만(`viaOffer`). 처음 고르기·같은 판 다시 채우기·다른 템플릿으로 바꾸기는 그대로.
+- API: `POST /api/academics` `template-offer`(to_version), `POST /api/admin/academic-templates`(관제 새 판 내기).
+- 화면: 템플릿 화면 맨 위 제안 카드 + 결정 기록(접힘), 템플릿 탭 옆 '새 판'(거절하면 사라짐), 새 판 카드의 버튼은 '새 판 제안 보기'.
 
 ## 시험
-- `tests/template-offers.test.ts` 5개: 쓰는 학교에만 제안·학교 사본 그대로·다른 학교 못 봄, 미리 보기, 보류·거절·낡은 판 409·다른 학교 거부·수락 적용, 적용 없는 수락 거부·낮은 판 제안 닫힘·다른 템플릿으로 바꾸면 거부, 지우기·직접 쓰기 막힘
+- `tests/template-offers.test.ts` 8개: 쓰는 학교에만 제안·학교 사본 그대로, 미리 보기, 보류·거절·낡은 판·다른 학교 거부와 수락(적용 + 기록), 여러 판은 최신 판 하나로, DB 함수 직접 호출 거부, 판 옮기기는 수락만, 되돌아오기·옛 화면 판 고르기에도 제안 다시 계산, 기록은 고치기·지우기 막힘
+- `npm test` 전체 통과, 비슈퍼유저 마이그레이션 점검 통과
 - UI 점검 `academic-templates`(ko·en, 제안이 열린 상태): 문제 0건
 
 ## 확인하지 못한 것·다음

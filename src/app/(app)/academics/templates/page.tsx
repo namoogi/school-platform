@@ -10,12 +10,12 @@ import { ApplyTemplate } from './ApplyTemplate';
 import { HiddenSectionsForm } from './HiddenSectionsForm';
 import { hiddenSections } from '@/lib/sections';
 import { AcademicsTabs, academicsTabCounts } from '../AcademicsTabs';
-import { templateOfferViews } from '@/lib/template-offers';
+import { openTemplateOffer, templateDecisions } from '@/lib/template-offers';
 import { OfferActions } from './OfferActions';
 
 /** 113차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
 export default async function TemplatesPage() {
-  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts, offers } = await loadForPage(async ({ db, school }) => ({
+  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts, offer, decisions } = await loadForPage(async ({ db, school }) => ({
     templates: await listTemplates(db),
     current: await schoolTemplate(db, school.id),
     steps: await setupChecklist(db, school.id),
@@ -23,7 +23,8 @@ export default async function TemplatesPage() {
     hidden: [...(await hiddenSections(db, school.id))],
     uiLang: await userLang(db),
     counts: await academicsTabCounts(db, school.id),
-    offers: await templateOfferViews(db, school.id),
+    offer: await openTemplateOffer(db, school.id),
+    decisions: await templateDecisions(db, school.id),
   }), { module: 'records' });
   const { t, lang } = await getI18n(uiLang, school.locale);
   const admin = school.isAdmin;
@@ -49,41 +50,45 @@ export default async function TemplatesPage() {
           <span>{t('atpl.metaCount', { n: templates.length })}</span></>} />
       <AcademicsTabs current="templates" t={t} counts={counts} />
 
-      {offers.length > 0 && (
+      {(offer || decisions.length > 0) && (
         <section className="card stack" id="template-offers" data-testid="template-offers">
           <h2>{t('tplOffer.title')}</h2>
           <p className="fine">{t('tplOffer.lead')}</p>
-          <ul className="offer-list">{offers.map((o) => {
-            const name = pick(o.title);
-            const open = o.status === 'offered' || o.status === 'held' || o.status === 'declined';
-            // 열린 제안은 '지금 학교가 쓰는 판 → 새 판'으로 보인다(낮은 판을 먼저 수락했으면 from_version 보다 높다, Codex 199번 PR 검토)
-            const fromV = open ? (current?.version ?? o.from_version) : o.from_version;
-            const add = o.plan ? [
-              ...o.plan.add.levels.map((k) => t(`scheme.level.${k}` as MsgKey)),
-              ...(o.plan.add.grades ? [t('tplOffer.grades', { n: o.plan.add.grades })] : []),
-              ...(o.plan.add.periods.length ? [t('tplOffer.periods', { list: o.plan.add.periods.join(' · ') })] : []),
-              ...o.plan.add.scales.map((c) => t('tplOffer.scale', { code: c })),
-            ] : [];
-            const keep = o.plan ? [
-              ...(o.plan.keep.scheme ? [t('tplOffer.keepScheme', { scheme: t(`scheme.${o.plan.keep.scheme}` as MsgKey) })] : []),
-              ...(o.plan.keep.periods ? [t('tplOffer.keepPeriods')] : []),
-              ...(o.plan.keep.hidden ? [t('tplOffer.keepHidden')] : []),
-              ...o.plan.keep.scales.map((c) => t('tplOffer.scale', { code: c })),
-            ] : [];
+          {offer && (() => {
+            const name = pick(offer.title);
+            const add = [
+              ...offer.plan.add.levels.map((k) => t(`scheme.level.${k}` as MsgKey)),
+              ...(offer.plan.add.grades ? [t('tplOffer.grades', { n: offer.plan.add.grades })] : []),
+              ...(offer.plan.add.periods.length ? [t('tplOffer.periods', { list: offer.plan.add.periods.join(' · ') })] : []),
+              ...offer.plan.add.scales.map((c) => t('tplOffer.scale', { code: c })),
+            ];
+            const keep = [
+              ...(offer.plan.keep.scheme ? [t('tplOffer.keepScheme', { scheme: t(`scheme.${offer.plan.keep.scheme}` as MsgKey) })] : []),
+              ...(offer.plan.keep.periods ? [t('tplOffer.keepPeriods')] : []),
+              ...(offer.plan.keep.hidden ? [t('tplOffer.keepHidden')] : []),
+              ...offer.plan.keep.scales.map((c) => t('tplOffer.scale', { code: c })),
+            ];
             return (
-              <li key={o.id} data-testid={`tpl-offer-${o.to_version}`}>
-                <span><strong>{t('tplOffer.versions', { name, from: fromV, to: o.to_version })}</strong>{' '}
-                  <StatusBadge tone={o.status === 'accepted' ? 'success' : o.status === 'offered' ? 'info' : 'neutral'}>{t(`offer.status.${o.status}` as MsgKey)}</StatusBadge>
-                  {o.included_in != null && <small className="muted"> · {t('tplOffer.includedIn', { v: o.included_in })}</small>}
-                  {o.note && <small className="muted"> · {o.note}</small>}</span>
-                {o.why && <p className="fine">{t('tplOffer.why', { why: o.why })}</p>}
-                {o.plan && <dl className="facts">
-                  <dt>{t('tplOffer.add')}</dt><dd data-testid={`tpl-offer-add-${o.to_version}`}>{add.length ? add.join(' · ') : t('tplOffer.nothingToAdd')}</dd>
-                  <dt>{t('tplOffer.keep')}</dt><dd data-testid={`tpl-offer-keep-${o.to_version}`}>{keep.length ? keep.join(' · ') : t('atpl.none')}</dd>
-                </dl>}
-                {admin && open && <OfferActions offerId={o.id} title={name} from={fromV} to={o.to_version} baseVersion={profileVersion} canAccept status={o.status} />}
-              </li>);
-          })}</ul>
+              <div className="stack" data-testid={`tpl-offer-${offer.to}`}>
+                <span><strong>{t('tplOffer.versions', { name, from: offer.from, to: offer.to })}</strong>{' '}
+                  <StatusBadge tone={offer.status === 'offered' ? 'info' : 'neutral'}>{t(`offer.status.${offer.status}` as MsgKey)}</StatusBadge>
+                  {offer.note && <small className="muted"> · {offer.note}</small>}</span>
+                {offer.why && <p className="fine">{t('tplOffer.why', { why: offer.why })}</p>}
+                <dl className="facts">
+                  <dt>{t('tplOffer.add')}</dt><dd data-testid={`tpl-offer-add-${offer.to}`}>{add.length ? add.join(' · ') : t('tplOffer.nothingToAdd')}</dd>
+                  <dt>{t('tplOffer.keep')}</dt><dd data-testid={`tpl-offer-keep-${offer.to}`}>{keep.length ? keep.join(' · ') : t('atpl.none')}</dd>
+                </dl>
+                {admin && <OfferActions key={`${offer.to}-${profileVersion}`} title={name} from={offer.from} to={offer.to} baseVersion={profileVersion} canAccept status={offer.status} />}
+              </div>);
+          })()}
+          {decisions.length > 0 && (
+            <details data-testid="tpl-decisions">
+              <summary>{t('tplOffer.history', { n: decisions.length })}</summary>
+              <ul className="offer-list">{decisions.map((d) => (
+                <li key={d.id}><span>{t('tplOffer.versionsShort', { from: d.from_version, to: d.to_version })}{' '}
+                  <StatusBadge tone={d.decision === 'accepted' ? 'success' : 'neutral'}>{t(`offer.status.${d.decision}` as MsgKey)}</StatusBadge>
+                  <small className="muted"> · {d.decided_at.slice(0, 10)}{d.note ? ` · ${d.note}` : ''}</small></span></li>))}</ul>
+            </details>)}
         </section>
       )}
 

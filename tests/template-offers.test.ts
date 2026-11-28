@@ -1,4 +1,7 @@
-/** 121차 ADR 0043 3단계 — 템플릿 새 판 제안: 새 판을 내면 그 템플릿을 쓰는 학교에만 제안, 미리 보기, 보류·거절·수락(적용 + 기록) */
+/**
+ * 121차 ADR 0043 3단계 — 템플릿 새 판 제안. 열린 제안은 계산(학교가 쓰는 템플릿의 최신 판 > 학교 판), 결정만 기록.
+ * 쓰는 학교에만 보임 · 미리 보기 · 보류·거절·수락(적용 + 기록) · 판 옮기기는 수락 길 하나 · 되돌아오기·동시 공개에도 어긋남 없음
+ */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { lookupIds, resetTestDb, TEST_URL } from './helpers';
@@ -25,138 +28,102 @@ beforeAll(async () => {
 afterAll(async () => { await su.end(); await getPool().end(); });
 
 const ver = (s: S) => asUser(s.userId, async (db) => (await f.schoolProfile(db, s.schoolId))?.version ?? 0);
+const tv = async (s: S) => (await asUser(s.userId, (db) => at.schoolTemplate(db, s.schoolId)))?.version;
+const offer = (s: S) => asUser(s.userId, (db) => off.openTemplateOffer(db, s.schoolId));
+const decide = (s: S, decision: string, to: number, base?: number) => asUser(s.userId, async (db) =>
+  off.decideTemplateOffer(db, s.schoolId, { to_version: to, decision, base_version: base ?? await ver(s) }));
 // 새 판은 직전 판에 쌓는다(실제 관제가 내는 방식)
-const latest = async () => (await su.query(`select manifest from public.academic_templates where key = 'kr_general' order by version desc limit 1`)).rows[0].manifest;
 const publish = async (version: number, extraScale: string) => {
-  const m = await latest();
+  const m = (await su.query(`select manifest from public.academic_templates where key = 'kr_general' order by version desc limit 1`)).rows[0].manifest;
   m.scales = [...m.scales, { code: extraScale, preset: 'pass_fail' }];
   return asUser(platformId, (db) => off.publishAcademicTemplate(db, {
     key: 'kr_general', base_version: version - 1, title: { ko: '한국 일반 초·중·고', en: 'Korean K-12 (general)' }, summary: { ko: `${version}판` },
     manifest: m, why: `P/F 척도 ${extraScale} 추가`,
   }));
 };
+const scaleCount = async (s: S, codes: string[]) =>
+  (await su.query(`select count(*)::int as n from public.scales where school_id = $1 and code = any($2)`, [s.schoolId, codes])).rows[0].n;
 
 describe('템플릿 새 판 제안', () => {
-  it('새 판은 그 템플릿을 쓰는 학교에만 제안으로 가고, 학교 사본은 그대로다', async () => {
+  it('새 판은 그 템플릿을 쓰는 학교에만 제안으로 보이고, 학교 사본은 그대로다', async () => {
     await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 1, base_version: await ver(B) }));
     await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'homeschool', version: 1, base_version: await ver(A) }));
-    const scales = async () => (await su.query(`select count(*)::int as n from public.scales where school_id = $1`, [B.schoolId])).rows[0].n;
-    const before = await scales();
+    expect(await offer(B)).toBeNull();
     expect(await publish(2, 'kr_pf_v2')).toBe(2);
-    const offers = await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId));
-    expect(offers).toHaveLength(1);
-    expect(offers[0]).toMatchObject({ template_key: 'kr_general', from_version: 1, to_version: 2, status: 'offered' });
-    expect(await asUser(A.userId, (db) => off.templateOffers(db, A.schoolId))).toEqual([]);
-    expect(await scales()).toBe(before);
-    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(1);
-    // 다른 학교는 이 제안을 못 본다(RLS)
-    expect((await asUser(A.userId, (db) => db.query(`select * from public.academic_template_offers where school_id = $1`, [B.schoolId]))).rows).toEqual([]);
+    expect(await offer(B)).toMatchObject({ key: 'kr_general', from: 1, to: 2, status: 'offered', why: 'P/F 척도 kr_pf_v2 추가' });
+    expect(await offer(A)).toBeNull();
+    expect(await scaleCount(B, ['kr_pf_v2'])).toBe(0);
+    expect(await tv(B)).toBe(1);
   });
 
   it('미리 보기: 없는 척도만 더하고, 학기 구조·숨길 구획·있는 척도는 학교 값', async () => {
-    const [view] = await asUser(B.userId, (db) => off.templateOfferViews(db, B.schoolId));
-    expect(view.why).toBe('P/F 척도 kr_pf_v2 추가');
-    expect(view.plan!.add).toMatchObject({ levels: [], grades: 0, periods: [], scales: ['kr_pf_v2'] });
-    expect(view.plan!.keep).toMatchObject({ periods: true, hidden: true });
-    expect(view.plan!.keep.scales).toEqual(expect.arrayContaining(['kr_achievement', 'kr_elective']));
+    const o = (await offer(B))!;
+    expect(o.plan.add).toMatchObject({ levels: [], grades: 0, periods: [], scales: ['kr_pf_v2'] });
+    expect(o.plan.keep).toMatchObject({ periods: true, hidden: true });
+    expect(o.plan.keep.scales).toEqual(expect.arrayContaining(['kr_achievement', 'kr_elective']));
   });
 
-  it('보류·거절은 기록만, 다른 학교·낡은 판은 거부, 수락은 적용 + 기록(미리 보기와 같은 결과)', async () => {
-    const [o] = await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId));
-    const decide = (s: S, decision: string, base?: number) => asUser(s.userId, async (db) =>
-      off.decideTemplateOffer(db, s.schoolId, { offerId: o.id, decision, base_version: base ?? await ver(s) }));
-    await expect(decide(A, 'held')).rejects.toThrow();
-    expect((await decide(B, 'held')).status).toBe('held');
-    expect((await decide(B, 'declined')).status).toBe('declined');
-    await expect(decide(B, 'accepted', 0)).rejects.toMatchObject({ code: 'P0409' });
-    expect((await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId)))[0].status).toBe('declined');
-    // 거절한 제안도 나중에 수락할 수 있다
-    const r = await decide(B, 'accepted');
-    expect(r).toMatchObject({ status: 'accepted', to_version: 2, applied: { made: { scales: ['kr_pf_v2'] } } });
-    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(2);
-    await expect(decide(B, 'held')).rejects.toThrow('이미 수락');
+  it('보류·거절은 기록만, 다른 학교·낡은 판·본 적 없는 판은 거부, 수락은 적용 + 기록', async () => {
+    await expect(decide(A, 'held', 2)).rejects.toThrow();
+    expect((await decide(B, 'held', 2)).decision).toBe('held');
+    expect((await offer(B))!.status).toBe('held');
+    expect((await decide(B, 'declined', 2)).decision).toBe('declined');
+    expect((await offer(B))!.status).toBe('declined');
+    await expect(decide(B, 'accepted', 3)).rejects.toMatchObject({ code: 'P0409' });
+    await expect(decide(B, 'accepted', 2, 0)).rejects.toMatchObject({ code: 'P0409' });
+    // 거절한 뒤에도 수락할 수 있다
+    const r = await decide(B, 'accepted', 2);
+    expect(r).toMatchObject({ decision: 'accepted', to_version: 2, applied: { made: { scales: ['kr_pf_v2'] } } });
+    expect(await tv(B)).toBe(2);
+    expect(await offer(B)).toBeNull();
+    const hist = await asUser(B.userId, (db) => off.templateDecisions(db, B.schoolId));
+    expect(hist.map((d) => d.decision)).toEqual(['accepted', 'declined', 'held']);
+    // 다른 학교는 결정 기록을 못 본다(RLS)
+    expect((await asUser(A.userId, (db) => db.query(`select * from public.academic_template_decisions where school_id = $1`, [B.schoolId]))).rows).toEqual([]);
   });
 
-  it('적용하지 않은 판은 DB가 수락을 막고, 높은 판을 수락하면 낮은 판의 열린 제안도 함께 닫힌다', async () => {
+  it('여러 판이 나오면 제안은 지금 판 → 최신 판 하나다(중간 판을 건너뜀)', async () => {
     await publish(3, 'kr_pf_v3');
     await publish(4, 'kr_pf_v4');
-    const offers = await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId));
-    const o3 = offers.find((x) => x.to_version === 3)!; const o4 = offers.find((x) => x.to_version === 4)!;
-    await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'accepted')`, [B.schoolId, o3.id]))).rejects.toThrow('먼저 적용');
-    await asUser(B.userId, async (db) => off.decideTemplateOffer(db, B.schoolId, { offerId: o4.id, decision: 'accepted', base_version: await ver(B) }));
-    const after = await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId));
-    expect(after.find((x) => x.id === o3.id)!.status).toBe('accepted');
-    expect((await su.query(`select count(*)::int as n from public.scales where school_id = $1 and code in ('kr_pf_v3','kr_pf_v4')`, [B.schoolId])).rows[0].n).toBe(2);
-    // 학교가 다른 템플릿으로 바꾸면 옛 템플릿 제안은 보이지 않는다
+    expect(await offer(B)).toMatchObject({ from: 2, to: 4 });
+    await expect(decide(B, 'accepted', 3)).rejects.toMatchObject({ code: 'P0409' });
+    await decide(B, 'accepted', 4);
+    expect(await tv(B)).toBe(4);
+    expect(await scaleCount(B, ['kr_pf_v3', 'kr_pf_v4'])).toBe(2);
+  });
+
+  it('DB 함수를 직접 불러도 적용 없는 수락·지난 제안·다른 템플릿 결정은 거부', async () => {
     await publish(5, 'kr_pf_v5');
-    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'homeschool', version: 1, base_version: await ver(B) }));
-    expect(await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId))).toEqual([]);
-    const o5 = (await su.query(`select id from public.academic_template_offers where school_id = $1 and to_version = 5`, [B.schoolId])).rows[0].id;
-    await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'held')`, [B.schoolId, o5]))).rejects.toThrow('다른 템플릿');
-    // 최신 판(5판)으로 다시 고르면 옛 제안은 지난 것: 보이지 않고, 결정하면 판을 내리지 않고 거부(Codex 199번 PR 검토)
-    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 5, base_version: await ver(B) }));
-    expect((await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId))).filter((x) => x.status !== 'accepted')).toEqual([]);
-    await expect(asUser(B.userId, async (db) => off.decideTemplateOffer(db, B.schoolId, { offerId: o5, decision: 'accepted', base_version: await ver(B) }))).rejects.toThrow('지난 제안');
-    await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'held')`, [B.schoolId, o5]))).rejects.toThrow('지난 제안');
-    // DB 함수를 직접 불러 '수락'만 남기는 것도 막힌다(이 트랜잭션에서 그 판으로 적용되지 않았음)
-    await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'accepted')`, [B.schoolId, o5]))).rejects.toThrow('지난 제안');
-    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(5);
-    // 함께 닫힌 제안은 언어와 상관없는 판 번호를 남긴다
-    expect(after.find((x) => x.id === o3.id)!.included_in).toBe(4);
+    const rec = (s: S, from: number, to: number, d: string) => asUser(s.userId, (db) =>
+      db.query(`select app.record_template_decision($1, 'kr_general', $2, $3, $4)`, [s.schoolId, from, to, d]));
+    await expect(rec(B, 4, 5, 'accepted')).rejects.toThrow('먼저 적용');
+    await expect(rec(B, 3, 4, 'held')).rejects.toMatchObject({ code: 'P0409' });
+    await expect(rec(A, 1, 5, 'held')).rejects.toThrow('다른 템플릿');
   });
 
-  it('같은 템플릿의 다른 판으로 바로 적용하는 길은 막힌다(제안 수락만)', async () => {
-    await publish(6, 'kr_pf_v6');
-    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 6, base_version: await ver(B) }))).rejects.toThrow();
-    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(5);
-    // 같은 판 다시 채우기는 된다
-    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 5, base_version: await ver(B) }));
-    const [o6] = (await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId))).filter((x) => x.status !== 'accepted');
-    expect(o6.to_version).toBe(6);
-    await asUser(B.userId, async (db) => off.decideTemplateOffer(db, B.schoolId, { offerId: o6.id, decision: 'accepted', base_version: await ver(B) }));
-    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(6);
+  it('같은 템플릿의 다른 판으로 바로 적용하는 길은 막힌다(제안 수락만), 같은 판 다시 채우기는 된다', async () => {
+    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 5, base_version: await ver(B) }))).rejects.toThrow('제안');
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 4, base_version: await ver(B) }));
+    expect(await tv(B)).toBe(4);
   });
 
-  it('옛 화면에서 본 낮은 판을 고르면, 이미 나온 높은 판 제안이 곧바로 생긴다', async () => {
-    // A는 홈스쿨을 쓰는 중. 한국 일반은 이미 6판까지 나왔는데, A가 예전에 본 1판 카드를 고른다(다른 템플릿으로 바꾸기)
+  it('다른 템플릿을 거쳐 옛 판으로 돌아와도 제안은 다시 계산된다(옛 화면의 판 고르기 포함)', async () => {
+    // A: 홈스쿨을 쓰다가 예전에 본 한국 일반 1판 카드를 고른다 → 최신 5판 제안이 곧바로 보인다
     await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general', version: 1, base_version: await ver(A) }));
-    const offers = (await asUser(A.userId, (db) => off.templateOffers(db, A.schoolId))).filter((x) => x.status !== 'accepted');
-    expect(offers).toHaveLength(1);
-    expect(offers[0]).toMatchObject({ from_version: 1, to_version: 6, status: 'offered' });
+    expect(await offer(A)).toMatchObject({ from: 1, to: 5, status: 'offered' });
+    // B: 4판을 쓰던 학교가 다른 템플릿을 거쳐 1판으로 돌아와도 5판 제안이 다시 열린다
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'homeschool', version: 1, base_version: await ver(B) }));
+    expect(await offer(B)).toBeNull();
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 1, base_version: await ver(B) }));
+    expect(await offer(B)).toMatchObject({ from: 1, to: 5 });
+    await decide(B, 'accepted', 5);
+    expect(await tv(B)).toBe(5);
   });
 
-  it('학교가 템플릿을 고르는 것과 새 판 내기가 동시에 돌아도 제안이 빠지지 않는다(두 순서 모두)', async () => {
-    const one = async (order: 'profile-first' | 'publish-first') => {
-      const a = new pg.Client({ connectionString: TEST_URL }); const b = new pg.Client({ connectionString: TEST_URL });
-      await a.connect(); await b.connect();
-      const v = (await a.query(`select max(version)::int as v from public.academic_templates where key = 'us_k12'`)).rows[0].v as number;
-      const profile = async () => {
-        await a.query('begin');
-        await a.query(`insert into public.school_profiles(school_id, version, template_key, template_version, created_by)
-          values ($1, (select max(version) from public.school_profiles where school_id = $1) + 1, 'us_k12', $2, $3)`, [A.schoolId, v, A.userId]);
-      };
-      const publish = async () => {
-        await b.query('begin');
-        // app.publish_academic_template 과 같은 잠금 → 같은 순서로 판을 넣고 제안을 만든다
-        await b.query(`select pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext('us_k12'))`);
-        await b.query(`insert into public.academic_templates(key, version, sort_order, title, summary, manifest, why)
-          select key, version + 1, sort_order, title, summary, manifest, '경쟁 시험' from public.academic_templates where key = 'us_k12' and version = $1`, [v]);
-        await b.query(`select private.offer_academic_template('us_k12', $1)`, [v + 1]);
-      };
-      const wait = () => new Promise((r) => setTimeout(r, 300));
-      if (order === 'profile-first') { await profile(); const p = publish().then(() => b.query('commit')); await wait(); await a.query('commit'); await p; }
-      else { await publish(); const p = profile().then(() => a.query('commit')); await wait(); await b.query('commit'); await p; }
-      const n = (await a.query(`select count(*)::int as n from public.academic_template_offers where school_id = $1 and template_key = 'us_k12' and to_version = $2`, [A.schoolId, v + 1])).rows[0].n;
-      await a.end(); await b.end();
-      return n;
-    };
-    expect(await one('profile-first')).toBe(1);
-    expect(await one('publish-first')).toBe(1);
-  });
-
-  it('제안 행은 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {
-    const id = (await su.query(`select id from public.academic_template_offers limit 1`)).rows[0].id;
-    await expect(su.query(`delete from public.academic_template_offers where id = $1`, [id])).rejects.toThrow();
-    await expect(asUser(B.userId, (db) => db.query(`update public.academic_template_offers set status = 'accepted' where id = $1`, [id]))).rejects.toThrow();
+  it('결정 기록은 고치거나 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {
+    const id = (await su.query(`select id from public.academic_template_decisions limit 1`)).rows[0].id;
+    await expect(su.query(`delete from public.academic_template_decisions where id = $1`, [id])).rejects.toThrow();
+    await expect(su.query(`update public.academic_template_decisions set note = 'changed' where id = $1`, [id])).rejects.toThrow();
+    await expect(asUser(B.userId, (db) => db.query(`insert into public.academic_template_decisions(school_id, template_key, from_version, to_version, decision) values ($1, 'kr_general', 1, 2, 'accepted')`, [B.schoolId]))).rejects.toThrow();
   });
 });
