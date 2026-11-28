@@ -52,6 +52,7 @@
 | [0047](0047-r2-clear-db-copies.md) | R2로 옮긴 파일의 DB 사본 비우기: R2 내용의 sha256이 같을 때만, 가드는 위치가 있는 행의 bytes만 허락 | 채택 |
 | [0049](0049-codex-publishes-pr.md) | Codex 구현 작업은 실제 GitHub PR 게시까지가 완료(클라우드에서 막히면 로컬에서 게시, Claude 요청 문구) | 채택 |
 | [0052](0052-template-facets-nav-layout.md) | 템플릿 세 축(메뉴 구조·첫 화면·내용)과 메뉴 구조 설정(옆 메뉴·한 쪽 스크롤 차례) | 채택 |
+| [0053](0053-school-template-market.md) | 학교 제작 템플릿 올리기와 이용 보상(크레딧) — 설계, 결제·지급은 확인 뒤 | 제안 |
 
 상태: 제안 → 검토 중 → 채택 / 기각 / 대체됨(대체한 번호 적기). 채택된 기록은 고치지 않고, 바꿀 때는 새 기록을 만들어 "대체됨"으로 연결한다.
 새 기록은 [TEMPLATE.md](TEMPLATE.md)를 복사해 쓴다. 번호는 만들기 직전에 `ls docs/decisions`로 다음 빈 번호를 확인하고, 겹치면 CI(`npm run check:repo`)가 막는다.
