@@ -106,6 +106,12 @@ async function exportSnapshot(db, key) {
   const baselineIds = new Set([...(tables.school_baselines ?? []).map((r) => r.version), ...(tables.baseline_offers ?? []).map((r) => r.to_version)]);
   const { rows: [{ data: baselines }] } = await db.query(
     `select coalesce(json_agg(b), '[]'::json) as data from public.baselines b where b.version = any($1::int[])`, [[...baselineIds].filter((v) => v != null)]);
+  // 123차: 학교 관할 판이 가리키는 학사 관리 템플릿 판(관제 표). 운영 중에 낸 판이 대상 DB에 없을 수 있어 함께 옮긴다
+  const tplPairs = [...new Set((tables.school_profiles ?? []).filter((r) => r.template_key && r.template_version != null)
+    .map((r) => `${r.template_key}:${r.template_version}`))].map((x) => { const [k, v] = x.split(':'); return { k, v: Number(v) }; });
+  const { rows: [{ data: academicTemplates }] } = await db.query(
+    `select coalesce(json_agg(t), '[]'::json) as data from public.academic_templates t
+      join json_to_recordset($1::json) as p(k text, v int) on p.k = t.key and p.v = t.version`, [JSON.stringify(tplPairs)]);
   return {
     format: 'school-move/1',
     exported_at: new Date().toISOString(),
@@ -114,6 +120,7 @@ async function exportSnapshot(db, key) {
     school: JSON.parse(JSON.stringify(school)),
     users: exported,
     baselines,
+    academic_templates: academicTemplates,
     normalized,
     tables,
   };
@@ -214,6 +221,13 @@ export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) 
       throw new Error(`대상의 기본판 ${b.version}판이 원본과 내용이 다릅니다. 기본판을 맞춘 뒤 넣으세요.`);
     }
   }
+  // 123차 학사 관리 템플릿: 같은 키·판인데 내용이 다르면 넣지 않는다(학교가 엉뚱한 템플릿 판에 묶이지 않게)
+  for (const t of bundle.academic_templates ?? []) {
+    const { rows: [d] } = await db.query('select manifest from public.academic_templates where key = $1 and version = $2', [t.key, t.version]);
+    if (d && JSON.stringify(sortKeys(d.manifest)) !== JSON.stringify(sortKeys(t.manifest))) {
+      throw new Error(`대상의 학사 관리 템플릿 ${t.key} ${t.version}판이 원본과 내용이 다릅니다. 템플릿을 맞춘 뒤 넣으세요.`);
+    }
+  }
   // 계정: 같은 메일인데 다른 id 인 계정이 대상에 있으면 넣지 않는다(연결이 끊긴 채 되돌려지기 전에 이유를 알린다)
   const { rows: [{ n: emailClash }] } = await db.query(
     `select count(*)::int as n from private.app_users t join json_populate_recordset(null::private.app_users, $1::json) u
@@ -225,6 +239,7 @@ export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) 
   try {
     await db.query('set local session_replication_role = replica');
     await insertRows(db, 'public', 'baselines', bundle.baselines, { onConflictNothing: true });
+    await insertRows(db, 'public', 'academic_templates', bundle.academic_templates ?? [], { onConflictNothing: true });
     await insertRows(db, 'private', 'app_users', auth === 'reset' ? bundle.users.map((u) => ({ ...u, auth_subject: null })) : bundle.users, { onConflictNothing: true });
     await insertRows(db, 'public', 'schools', [school]);
     const counts = {};
