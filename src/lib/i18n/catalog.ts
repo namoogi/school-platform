@@ -3098,6 +3098,15 @@ export const CATALOG = {
   'academics.tab.terms': '학기 구조',
   'academics.tab.years': '학년도·학기',
   'academics.tab.templates': '템플릿',
+  // 126차: 두 단계 메뉴
+  'site.menu.parent': '상위 메뉴',
+  'site.menu.parentNone': '없음 — 이 쪽이 상위 메뉴',
+  'site.menu.parentNews': '소식',
+  'site.menu.anchor': '메뉴 주소 (비우면 메뉴에 안 보임)',
+  'site.menu.anchorHint': '영문 소문자·숫자·하이픈. 이 쪽 상위 메뉴 아래 하위 메뉴로 보이고, 누르면 이 구역으로 바로 옵니다.',
+  'err.site.anchorFormat': '{n}번째 블록: 메뉴 주소는 영문 소문자로 시작하고 영문 소문자·숫자·하이픈 40자 이하로 씁니다.',
+  'err.site.anchorDuplicate': '메뉴 주소 \'{anchor}\'가 이 쪽에 두 번 있습니다.',
+  'err.site.menuParent': '상위 메뉴는 다른 쪽의 주소 이름이나 news(소식)여야 합니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

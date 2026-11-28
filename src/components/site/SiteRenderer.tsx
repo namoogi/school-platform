@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Fragment, type ReactNode } from 'react';
+import { cloneElement, Fragment, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { ArrowRight, FileDown, Plus } from 'lucide-react';
 import { fileSize, pick, type Block, type Content, type GalleryItem, type Lang, type LText } from '@/lib/site-shared';
 import type { EditPath } from '@/lib/site-edit';
@@ -326,7 +326,10 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
       )}
       {orderedBlocks.map(({ b, i }) => {
         if (ed) return <Fragment key={i}>{ed.wrap(i, b, renderBlock(b, i))}</Fragment>;
-        return b.hidden ? null : <Fragment key={i}>{renderBlock(b, i)}</Fragment>;
+        if (b.hidden) return null;
+        // 126차(ADR 0046): 메뉴 주소가 있는 구역은 그 이름을 id로 달아 하위 메뉴(`#주소`)가 바로 이 구역으로 온다
+        const el = renderBlock(b, i);
+        return <Fragment key={i}>{b.anchor && isValidElement(el) ? cloneElement(el as ReactElement<{ id?: string }>, { id: b.anchor }) : el}</Fragment>;
       })}
     </div>
   );

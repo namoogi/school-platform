@@ -145,6 +145,7 @@ export default async function SiteAdminPage({ searchParams }: { searchParams: Pr
                 {school.isAdmin && <ArchiveControl id={selected.entry.id} archived={!!selected.entry.archived_at} live={!!selected.liveVersionId} />}
                 <EntryEditor key={selected.entry.id} detail={JSON.parse(JSON.stringify(selected))}
                   langs={settings?.langs ?? ['ko']} canPublish={school.isAdmin} assets={JSON.parse(JSON.stringify(assets))}
+                  menuParents={entries.filter((e) => e.kind === 'page' && e.key !== 'home' && e.id !== selected.entry.id && !e.archived_at).map((e) => ({ key: e.key, title: e.latest_title[settings?.default_lang ?? 'ko'] || Object.values(e.latest_title)[0] || e.key }))}
                   publicHref={settings?.is_open ? `${publicUrl}${box === 'page' ? (selected.entry.key === 'home' ? '' : `/p/${selected.entry.key}`) : box === 'news' ? `/news/${selected.entry.key}` : `/stories/${selected.entry.key}`}` : null} /></>
               : <EmptyState title={t('site.home.pickTitle')}>{t('site.home.pickBody')}</EmptyState>}
         </div>

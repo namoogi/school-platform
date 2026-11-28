@@ -2572,3 +2572,25 @@ label.check input { margin-top: 0.25em; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="quicklinks"] .sec-item-copy { padding: var(--ds-space-4); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid { gap: var(--ds-space-6); }
 }
+
+/* ───────── 126차(ADR 0046): 두 단계 메뉴 — 넓은 화면은 상위 메뉴에 손을 대거나 초점이 가면 하위 메뉴 판, 휴대폰은 펼침 묶음 (키트 테마만) ───────── */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 clamp(12px, 2vw, 28px); margin: 0; padding: 0; list-style: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree > li { position: relative; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree > li > a[aria-current="true"] { color: var(--t-link); border-bottom-color: var(--t-accent); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree > li[data-sub] > a::after { content: ""; width: .42em; height: .42em; margin-left: .45em; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-.15em) rotate(45deg); opacity: .55; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree .site-subnav { position: absolute; top: 100%; left: 50%; z-index: 40; min-width: 13rem; margin: 0; padding: var(--ds-space-2) 0; list-style: none; background: var(--t-surface); border: 1px solid var(--t-line); border-radius: var(--t-radius-sm); box-shadow: var(--ds-shadow-2); transform: translateX(-50%); opacity: 0; visibility: hidden; transition: opacity .12s ease, visibility .12s; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree > li:is(:hover, :focus-within) > .site-subnav { opacity: 1; visibility: visible; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree .site-subnav a { display: flex; align-items: center; min-height: 44px; padding: 0 var(--ds-space-4); border: 0; color: var(--t-ink); font-weight: 500; white-space: nowrap; text-decoration: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree .site-subnav a:is(:hover, :focus-visible) { background: var(--t-accent-soft); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree .site-subnav a[aria-current="page"] { color: var(--t-link); font-weight: 700; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-tree { margin: 0; padding: 0; list-style: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-tree > li > details > summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; border-bottom: 1px solid var(--t-line); color: var(--t-ink); font-weight: 600; cursor: pointer; list-style: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-tree > li > details > summary::-webkit-details-marker { display: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-tree > li > details > summary[aria-current="true"] { color: var(--t-link); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-tree > li > details[open] > summary svg { transform: rotate(180deg); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu-tree .site-subnav { margin: 0; padding: 0 0 var(--ds-space-2) var(--ds-space-4); list-style: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu nav .site-menu-tree .site-subnav a { min-height: 44px; font-weight: 500; color: var(--t-muted); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-menu nav .site-menu-tree .site-subnav a[aria-current="page"] { color: var(--t-link); font-weight: 700; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu nav { max-height: 75vh; overflow-y: auto; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > [id] { scroll-margin-top: var(--ds-space-6); }
+@media (prefers-reduced-motion: reduce) { .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree .site-subnav { transition: none; } }

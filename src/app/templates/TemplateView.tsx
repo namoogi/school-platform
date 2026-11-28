@@ -2,7 +2,7 @@ import type { I18n } from '@/lib/i18n/server';
 import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { LANG_LABEL, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
+import { LANG_LABEL, navEntriesOf, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages, sampleAssetUrl, sampleNews, sampleNewsPage, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { SiteFrame } from '@/components/site/SiteFrame';
@@ -34,7 +34,7 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
   const site: PublicSite = {
     slug: `template-${t.key}`, school: view === 'sample' ? sample.school : '[학교 이름]', default_lang: fallback, langs: t.langs as Lang[], theme: t.theme,
     title: home.title, stories: false, has_news: false,
-    nav: t.pages.filter((p) => p.key !== 'home').map((p) => ({ key: p.key, title: pages[p.key].title })),
+    nav: navEntriesOf(t.pages.map((p) => ({ key: p.key, content: pages[p.key] }))),
   };
   const link = (path: string) => {
     if (path === '/' || path === '') return href({ page: 'home' });

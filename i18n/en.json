@@ -3045,5 +3045,13 @@
   "site.consent.more": "and {n} more",
   "site.consent.photos": "Photos to publish",
   "site.consent.cancelled": "Publishing was cancelled.",
-  "site.consent.loadFailed": "Could not load the photo list."
+  "site.consent.loadFailed": "Could not load the photo list.",
+  "site.menu.parent": "Parent menu",
+  "site.menu.parentNone": "None — this page is a top menu",
+  "site.menu.parentNews": "News",
+  "site.menu.anchor": "Menu anchor (leave empty to keep it out of the menu)",
+  "site.menu.anchorHint": "Lowercase letters, numbers and hyphens. Shown as a submenu under this page and jumps straight to this section.",
+  "err.site.anchorFormat": "Block {n}: a menu anchor starts with a lowercase letter and uses up to 40 lowercase letters, numbers and hyphens.",
+  "err.site.anchorDuplicate": "The menu anchor '{anchor}' is used twice on this page.",
+  "err.site.menuParent": "The parent menu must be another page's address name or news."
 }
