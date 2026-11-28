@@ -169,7 +169,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
         </>}
       </header>
       {group ? (
-        <div className="site-wrap site-side" data-testid="site-side">
+        <div className="site-wrap site-sidenav-layout" data-testid="site-side">
           <nav className="site-localnav" aria-label={t(group.title)}>
             <Link className="site-localnav-title" href={group.href} aria-current={group.key === current ? 'page' : undefined}>{t(group.title)}</Link>
             <ul>{group.children.map((c) => <li key={c.key}><Link href={c.href} aria-current={c.key === current ? 'page' : undefined}>{t(c.title)}</Link></li>)}</ul>

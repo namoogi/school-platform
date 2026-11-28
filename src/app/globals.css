@@ -2645,8 +2645,8 @@ label.check input { margin-top: 0.25em; }
 
 /* ───────── 136차(ADR 0052): 메뉴 구조 — 옆 메뉴형(side)·한 쪽 스크롤형(onepage) (키트 테마만) ───────── */
 /* 옆 메뉴: 하위 쪽이 있는 묶음 안에서 형제 쪽 목록. 넓은 화면은 왼쪽 세로, 휴대폰은 본문 위 가로 띠(가로 넘김) */
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-side { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ds-space-6); padding-block: var(--ds-space-6); }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-side > .site-main { min-width: 0; padding: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-sidenav-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ds-space-6); padding-block: var(--ds-space-6); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-sidenav-layout > .site-main { min-width: 0; padding: 0; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav { border-bottom: 1px solid var(--t-line); }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav-title { display: block; padding-bottom: var(--ds-space-2); color: var(--t-ink); font-weight: 700; font-size: 1.125rem; text-decoration: none; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav ul { display: flex; gap: var(--ds-space-1); margin: 0; padding: 0 0 var(--ds-space-2); list-style: none; overflow-x: auto; }
@@ -2654,7 +2654,7 @@ label.check input { margin-top: 0.25em; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav a:is(:hover, :focus-visible) { background: var(--t-accent-soft); }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav a[aria-current="page"] { color: var(--t-link); font-weight: 700; background: var(--t-accent-soft); }
 @media (min-width: 901px) {
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-side { grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr); align-items: start; gap: var(--L-gutter); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-sidenav-layout { grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr); align-items: start; gap: var(--L-gutter); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav { position: sticky; top: var(--ds-space-6); max-height: calc(100vh - 2 * var(--ds-space-6)); overflow-y: auto; overscroll-behavior: contain; border-bottom: 0; border-top: 3px solid var(--t-link); padding-top: var(--ds-space-3); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav ul { flex-direction: column; overflow: visible; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav li a { white-space: normal; }
