@@ -1382,7 +1382,7 @@ label.radio { display: flex; align-items: center; gap: var(--ds-space-2); font-w
 @media (max-width: 800px) {
   .site[data-theme="dawn"] .site-wrap, .site[data-theme="dawn"] .site-header-row, .site[data-theme="dawn"] .site-footer .site-wrap { width: calc(100% - 48px); }
   .site[data-theme="dawn"] .sec-decor { width: 100%; }
-  .site[data-theme="dawn"] .sec-decor img { opacity: .18; -webkit-mask-image: none; mask-image: none; }
+  .site[data-theme="dawn"] .sec-decor img { opacity: .08; -webkit-mask-image: none; mask-image: none; }
   .site[data-theme="dawn"] .site-nav-inline { display: none; }
   .site[data-theme="dawn"] .site-header { position: relative; }
   .site[data-theme="dawn"] .site-header-row { padding: 18px 0; gap: 9px; padding-right: 54px; }
