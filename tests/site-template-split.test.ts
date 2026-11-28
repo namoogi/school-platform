@@ -62,6 +62,9 @@ describe('하위 메뉴 = 별도 쪽', () => {
     expect(html).toContain('<caption class="sr-only">학년별 배움</caption>');
     const other = renderToStaticMarkup(createElement(SiteBlocks, { content: { ...grades, title: { ko: '다른 제목' } }, lang: 'ko', fallback: 'ko', assetUrl: () => '' }));
     expect(other).toContain('<h2 class="site-h2">학년별 배움</h2>');
+    // 상위 쪽·직접 만든 쪽(상위 메뉴 없음)은 제목이 같아도 그대로 보인다
+    const top = renderToStaticMarkup(createElement(SiteBlocks, { content: { ...grades, menu: undefined }, lang: 'ko', fallback: 'ko', assetUrl: () => '' }));
+    expect(top).toContain('<h2 class="site-h2">학년별 배움</h2>');
     // 신청 칸은 제목을 떼어 기본 제목을 쓴다
     const apply = story.pages.find((p) => p.key === 'admission-apply')!.content.blocks[0] as { type: string; title?: unknown };
     expect(apply.type).toBe('inquiry');

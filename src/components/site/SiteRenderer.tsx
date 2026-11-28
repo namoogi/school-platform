@@ -126,9 +126,9 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   // 방문자에게 아무것도 그리지 않는 구역(닫힌 신청 칸, 소식 없는 소식 목록, 그림책으로 넘긴 장면)은 이웃 판정에서 뺀다 — 아래 renderBlock의 null 조건과 같게
   const drawsNothing = (b: Block) => !ed && ((b.type === 'inquiry' && !inquiry?.open) || (b.type === 'news_list' && !news.length) || b.type === 'story_page');
   const shown = orderedBlocks.filter(({ b }) => !b.hidden && !drawsNothing(b));
-  // 133차: 하위 쪽은 구역 제목이 곧 쪽 제목이다. 첫 구역 제목이 쪽 제목과 같으면 보이는 제목만 감춘다(제목 구조·표 설명은 남김). 편집 화면은 그대로
+  // 133차: 하위 쪽(상위 메뉴가 있는 쪽)은 구역 제목이 곧 쪽 제목이다. 첫 구역 제목이 쪽 제목과 같으면 보이는 제목만 감춘다(제목 구조·표 설명은 남김). 편집 화면은 그대로
   const pageTitle = t(content.title);
-  const dupHeadAt = !ed && shown[0] && pageTitle && shown[0].b.type === 'section' && t(shown[0].b.title) === pageTitle ? shown[0].i : -1;
+  const dupHeadAt = !ed && content.menu?.parent && shown[0] && pageTitle && shown[0].b.type === 'section' && t(shown[0].b.title) === pageTitle ? shown[0].i : -1;
   const runOf = new Map<number, 'first' | 'next'>();
   shown.forEach((x, k) => {
     if (!plainText(x)) return;
