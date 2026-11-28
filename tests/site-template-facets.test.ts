@@ -1,4 +1,4 @@
-// 134차(ADR 0050): 템플릿 세 축(메뉴 구조·첫 화면·내용) 거르기와 메뉴 구조(옆 메뉴·따라오는 차례)
+// 136차(ADR 0052): 템플릿 세 축(메뉴 구조·첫 화면·내용) 거르기와 메뉴 구조(옆 메뉴·따라오는 차례)
 import { describe, expect, it } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';

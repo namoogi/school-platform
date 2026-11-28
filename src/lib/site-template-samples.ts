@@ -524,7 +524,7 @@ export function samplePages(t: SiteTemplate): Record<string, Content> {
     if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x, k)]));
     return v;
   };
-  // 133차: 예시 글·사진은 나누기 전 원본(source)에 원래 순서대로 채운 뒤, 템플릿과 같은 방식으로 하위 쪽을 나눈다
+  // 135차: 예시 글·사진은 나누기 전 원본(source)에 원래 순서대로 채운 뒤, 템플릿과 같은 방식으로 하위 쪽을 나눈다
   const src = t.source ?? t.pages;
   const out: Record<string, Content> = {};
   for (const p of src) out[p.key] = fill(p.content) as Content;

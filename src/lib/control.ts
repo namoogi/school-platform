@@ -225,6 +225,8 @@ export const control = {
   inbox: (db: Db, t: string) => q(db, 'select control.inbox($1) as r', [t]),
   requests: (db: Db, t: string, status: string | null) => q(db, 'select control.requests($1, $2) as r', [t, status]),
   file: (db: Db, t: string, body: unknown) => q(db, 'select control.file_request($1, $2) as r', [t, JSON.stringify(body ?? {})]),
+  /** 133차(ADR 0050): 관제가 세션 앞으로 지시를 남긴다. {session, title, body} 또는 {session, request, body} */
+  direct: (db: Db, t: string, body: unknown) => q(db, 'select control.direct($1, $2) as r', [t, JSON.stringify(body ?? {})]),
   post: (db: Db, t: string, id: string, body: unknown) => {
     if (!isUuid(id)) throw new NotFoundError('db.requestNotFound');
     return q(db, 'select control.post($1, $2, $3) as r', [t, id, JSON.stringify(body ?? {})]);

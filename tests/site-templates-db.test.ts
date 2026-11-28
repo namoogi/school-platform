@@ -30,10 +30,10 @@ describe('템플릿 적용', () => {
   it('없는 쪽만 시안으로 만들고, 있는 쪽은 건너뛰며, 공개하지 않는다', async () => {
     await asUser(A.userId, (db) => site.createEntry(db, A.schoolId, { kind: 'page', key: 'about', content: { title: { ko: '우리 학교가 이미 쓴 소개' }, blocks: [] } }));
     const r = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'notice'));
-    // 133차: 하위 메뉴도 별도 쪽이다. 학교가 이미 쓴 'about'만 건너뛰고, 그 아래 하위 쪽(인사말 등)은 만든다
+    // 135차: 하위 메뉴도 별도 쪽이다. 학교가 이미 쓴 'about'만 건너뛰고, 그 아래 하위 쪽(인사말 등)은 만든다
     const keys = (k: string) => tpl.SITE_TEMPLATES.find((t) => t.key === k)!.pages.map((p) => p.key);
     expect(r.created.map((c) => c.key)).toEqual(keys('notice').filter((k) => k !== 'about'));
-    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['greeting', 'way', 'calendar', 'lunch', 'letters']));
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['about-greeting', 'about-way', 'school-life-calendar', 'school-life-lunch', 'letters']));
     expect(r.skipped).toEqual(['about']);
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const about = entries.find((e) => e.key === 'about')!;
@@ -75,10 +75,10 @@ describe('66차 학교 자료로 빈 칸 채우기', () => {
     const r = await asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'notice', pv.proposals.map((p) => ({ slotId: p.slotId, value: p.value }))));
     const by = Object.fromEntries(r.result.map((x) => [x.page, x]));
     expect(by.home).toMatchObject({ version: 2, filled: expect.arrayContaining(['address', 'footer']) });
-    // 133차: 학사일정·급식·교육 목표는 각자의 하위 쪽이다
-    expect(by.calendar).toMatchObject({ version: 2, filled: ['calendar'] });
-    expect(by.lunch).toMatchObject({ version: 2, filled: ['meals'] });
-    expect(by.goals).toMatchObject({ version: 2, filled: ['goals'] });
+    // 135차: 학사일정·급식·교육 목표는 각자의 하위 쪽이다
+    expect(by['school-life-calendar']).toMatchObject({ version: 2, filled: ['calendar'] });
+    expect(by['school-life-lunch']).toMatchObject({ version: 2, filled: ['meals'] });
+    expect(by['about-goals']).toMatchObject({ version: 2, filled: ['goals'] });
     expect(by.about).toBeUndefined(); // 학교가 먼저 쓴 소개 쪽은 손대지 않는다
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const home = entries.find((e) => e.key === 'home')!;
@@ -142,8 +142,8 @@ describe('87차 주소만 넣고 새 디자인으로 옮기기', () => {
     expect(applied.created.map((c) => c.key)).toEqual(expect.arrayContaining(['partner']));
     const fills = pv.proposals.filter((p) => p.kind !== 'image').map((p) => ({ slotId: p.slotId, value: p.value }));
     const r = await asUser(B.userId, (db) => tpl.autofillApply(db, B.schoolId, 'mission', fills));
-    // 133차: '후원금 쓰임'은 '함께하기' 아래 하위 쪽(funds)이다
-    expect(r.result.find((x) => x.page === 'funds')).toMatchObject({ version: 2, filled: ['use-of-funds'] });
+    // 135차: '후원금 쓰임'은 '함께하기' 아래 하위 쪽(funds)이다
+    expect(r.result.find((x) => x.page === 'partner-funds')).toMatchObject({ version: 2, filled: ['use-of-funds'] });
     const entries = await asUser(B.userId, (db) => site.listEntries(db, B.schoolId));
     expect(entries.filter((e) => e.kind === 'page').every((e) => !e.live_version)).toBe(true);
   });
@@ -174,5 +174,35 @@ describe('89차 템플릿 = 완성 디자인(ADR 0034)', () => {
     expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('horizon');
     await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'design-a', langs: ['ko'], default_lang: 'ko', theme: 'nope', site_title: { ko: 'A' }, is_open: false }));
     expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('campus');
+  });
+});
+
+describe('135차 예전 판 상위 쪽과 겹치지 않게', () => {
+  it('상위 쪽이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면 그 아래 새 하위 쪽은 만들지 않는다(다른 묶음은 만든다)', async () => {
+    // B학교: 예전 판처럼 '학교 생활' 쪽이 구역 하위 메뉴를 쓴다
+    await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'school-life', content: { title: { ko: '학교 생활' },
+      blocks: [{ type: 'section', template: 'text', title: { ko: '급식' }, body: { ko: '예전 판 급식 안내' }, anchor: 'lunch' } as never] } }));
+    const r = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'notice'));
+    const kidsOf = (parent: string) => tpl.SITE_TEMPLATES.find((t) => t.key === 'notice')!.pages.filter((p) => p.content.menu?.parent === parent).map((p) => p.key);
+    expect(r.skipped).toEqual(expect.arrayContaining(['school-life', ...kidsOf('school-life')]));
+    for (const k of kidsOf('school-life')) expect(r.created.map((c) => c.key)).not.toContain(k);
+    // 새 구조인 상위 쪽(about: 국제형으로 만든 쪽, 메뉴 주소 없음) 아래는 만든다
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['about-greeting', 'about-way']));
+  });
+  it('공개 판이 아직 메뉴 주소를 쓰거나(최신 시안은 지웠어도), 상위 쪽이 이미 하위 쪽이면 만들지 않는다', async () => {
+    // 이야기형 상위 쪽 'learning': 메뉴 주소가 있는 판을 공개하고, 메뉴 주소를 지운 새 시안 판을 쌓는다
+    const learning = await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'learning', content: { title: { ko: '배움' },
+      blocks: [{ type: 'section', template: 'text', title: { ko: '배움의 방식' }, body: { ko: '공개된 예전 판' }, anchor: 'method' } as never] } }));
+    await asUser(B.userId, (db) => site.publish(db, B.schoolId, learning!.id, undefined, { photoConsent: true }));
+    await asUser(B.userId, (db) => site.saveVersion(db, B.schoolId, learning!.id, { content: { title: { ko: '배움' }, blocks: [] }, base_version: 1 } as never));
+    // 이야기형 상위 쪽 'community': 소식 아래 하위 쪽
+    await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'community', content: { title: { ko: '공동체' }, blocks: [], menu: { parent: 'news' } } }));
+    // 이야기형 상위 쪽 'admission': 앞 시험(알림형)으로 B에 생긴 쪽을 보관한다 — 보관된 상위 쪽 아래도 만들지 않는다
+    const adm = (await asUser(B.userId, (db) => site.listEntries(db, B.schoolId))).find((e) => e.kind === 'page' && e.key === 'admission')!;
+    await asUser(B.userId, (db) => site.setArchived(db, B.schoolId, adm.id, true, B.userId));
+    const r = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'story'));
+    const kidsOf = (parent: string) => tpl.SITE_TEMPLATES.find((t) => t.key === 'story')!.pages.filter((p) => p.content.menu?.parent === parent).map((p) => p.key);
+    for (const k of [...kidsOf('learning'), ...kidsOf('community'), ...kidsOf('admission')]) expect(r.created.map((c) => c.key), k).not.toContain(k);
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(kidsOf('philosophy'))); // 새로 만든 상위 쪽 아래는 만든다
   });
 });

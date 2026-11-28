@@ -1,4 +1,4 @@
-// 133차: 여러 쪽 템플릿의 하위 메뉴는 '쪽 안의 구역'이 아니라 별도 쪽으로 간다(2026-11-28 선생님 결정).
+// 135차: 여러 쪽 템플릿의 하위 메뉴는 '쪽 안의 구역'이 아니라 별도 쪽으로 간다(2026-11-28 선생님 결정).
 // 템플릿 원본은 구역에 메뉴 주소(anchor)를 단 채로 쓰고, 이 함수가 메뉴 주소가 있는 구역마다
 // 상위 쪽(menu.parent)을 가리키는 하위 쪽을 만든다. 상위 쪽에는 메뉴 주소 없는 구역과 '하위 쪽 바로 가기'가 남는다.
 // 홈·이미 하위인 쪽(한 단계만)은 쪽을 나누지 않고 메뉴 주소만 뗀다. 한 쪽 구조 템플릿(single)은 이 함수를 쓰지 않는다.
@@ -22,27 +22,32 @@ export function splitSubmenuPages(pages: SplitPage[]): { pages: SplitPage[]; mov
     const blocks = p.content.blocks;
     const anchored = blocks.map((b, i) => ({ b, i })).filter(({ b }) => (b as { anchor?: string }).anchor);
     const nested = p.key === 'home' || Boolean(p.content.menu?.parent);
-    if (!anchored.length || nested) {
+    const existingKids = pages.filter((x) => x.content.menu?.parent === p.key);
+    if (nested || (!anchored.length && !existingKids.length)) {
       blocks.forEach((_, i) => moves.set(`${p.key}:${i}`, [p.key, i]));
       out.push({ ...p, sort: (sort += 10), content: { ...p.content, blocks: blocks.map(withoutAnchor) } });
       continue;
     }
     const children = anchored.map(({ b, i }) => {
       const anchor = (b as { anchor: string }).anchor;
-      const key = taken.has(anchor) ? `${p.key}-${anchor}` : anchor;
+      // 하위 쪽 주소는 늘 '상위-메뉴주소'다. 여러 템플릿을 한 학교에 쓰면 메뉴 주소(history 등)가 겹치는데, 상위를 붙이면
+      // 다른 묶음의 쪽을 잘못 가리키지 않는다(같은 상위·같은 주소면 같은 자리라서 이미 있는 쪽을 그대로 쓴다)
+      const base = `${p.key}-${anchor}`.slice(0, 60);
+      let key = base;
+      for (let n = 2; taken.has(key); n++) key = `${base.slice(0, 57)}-${n}`;
       taken.add(key);
       hrefOf.set(`/p/${p.key}#${anchor}`, `/p/${key}`);
       moves.set(`${p.key}:${i}`, [key, 0]);
-      // 구역 제목은 쪽 제목이 된다(같은 제목을 쪽 머리와 구역에 두 번 쓰지 않게 구역 제목은 뗀다. 제목 글 블록은 그대로)
+      // 구역 제목은 쪽 제목이 된다. 구역 제목은 그대로 두고(표 설명·제목 구조), 쪽 제목과 같으면 화면이 보이는 제목만 감춘다(SiteRenderer).
+      // 신청 칸은 제목이 없으면 기본 제목을 쓰므로 뗀다
       const moved = withoutAnchor(b) as Block & { title?: LText };
-      const body = b.type === 'section' || b.type === 'inquiry' || b.type === 'news_list' ? (({ title: _t, ...r }) => { void _t; return r as Block; })(moved) : moved;
+      const body = b.type === 'inquiry' ? (({ title: _t, ...r }) => { void _t; return r as Block; })(moved) : moved;
       return { kind: 'page' as const, key, sort: 0, content: { title: titleOf(b) ?? p.content.title, blocks: [body], menu: { parent: p.key } } as Content };
     });
     // 상위 쪽: 메뉴 주소 없는 구역은 그대로 두고, 맨 앞에 하위 쪽 바로 가기를 둔다(상위 메뉴를 누른 사람이 길을 잃지 않게)
     const rest = blocks.map((b, i) => ({ b, i })).filter(({ b }) => !(b as { anchor?: string }).anchor);
-    const links: Block = { type: 'section', template: 'cards', variant: 'quicklinks',
-      items: [...children, ...pages.filter((x) => x.content.menu?.parent === p.key)] // 원래부터 하위였던 쪽도 함께
-        .map((c) => ({ title: c.content.title, href: `/p/${c.key}` })) };
+    // 바로 가기는 링크를 박지 않고 그릴 때 공개된 하위 쪽을 찾는다(공개 안 된 하위 쪽·같은 주소의 다른 쪽을 가리키지 않게)
+    const links: Block = { type: 'subpages' };
     rest.forEach(({ i }, k) => moves.set(`${p.key}:${i}`, [p.key, k + 1]));
     out.push({ ...p, sort: (sort += 10), content: { ...p.content, blocks: [links, ...rest.map(({ b }) => b)] } });
     for (const c of children) out.push({ ...c, sort: (sort += 10) });

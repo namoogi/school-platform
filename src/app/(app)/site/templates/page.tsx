@@ -30,7 +30,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
         meta={<span>{t('site.tpl.pageCount', { n: pages.length })}</span>} />
       {school.isAdmin && <MigrateStart site={siteState} templates={SITE_TEMPLATES.map((x) => ({ key: x.key, name: templateText(t, x.key, 'name', x.name), summary: templateText(t, x.key, 'summary', x.summary), designName: designName(x.theme) ?? x.theme }))} />}
       <h2 className="section-title">{t('site.tpl.browse')}</h2>
-      {/* 134차(ADR 0050): 메뉴 구조 · 첫 화면 구성 · 내용(목적)으로 거르기. 링크라서 자바스크립트 없이도 되고, 주소를 나눠 줄 수 있다 */}
+      {/* 136차(ADR 0052): 메뉴 구조 · 첫 화면 구성 · 내용(목적)으로 거르기. 링크라서 자바스크립트 없이도 되고, 주소를 나눠 줄 수 있다 */}
       <div className="facet-filter" data-testid="template-facets">
         {([['nav', NAV_LAYOUTS], ['first', FIRST_SCREENS], ['content', CONTENT_KINDS]] as const).map(([axis, values]) => (
           <nav key={axis} className="facet-row" aria-label={t(`site.facet.${axis}` as MsgKey)}>

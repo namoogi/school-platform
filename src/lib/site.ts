@@ -127,7 +127,7 @@ function siteProfile(v: unknown): SiteProfile | undefined {
     tagline: opt(text(x.tagline, '학교 소개 한 줄', 200), noText), address: opt(text(x.address, '주소', 300), noText),
     phone: phone.length ? (phone as string[]) : undefined, facebook: x.facebook ? href(x.facebook, '페이스북') : undefined,
     footer: opt(text(x.footer, '바닥 글', 500), noText), visit: button(x.visit, '방문 안내'),
-    // 134차(ADR 0050): 메뉴 구조. 비우면 위 메뉴(top). 알 수 없는 값은 거부한다
+    // 136차(ADR 0052): 메뉴 구조. 비우면 위 메뉴(top). 알 수 없는 값은 거부한다
     layout: x.layout == null || x.layout === 'top' ? undefined : isNavLayout(x.layout) ? (x.layout as 'side' | 'onepage') : (() => { throw new ValidationError('err.site.layout'); })(),
   };
 }
@@ -155,6 +155,7 @@ function blockOf(x: Record<string, unknown>, at: string): Block {
       }
       return { type: 'video', url };
     }
+    case 'subpages': return { type: 'subpages' };
     case 'inquiry': return { type: 'inquiry', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, `${at} 안내`, 1000), noText) };
     case 'download': return {
       type: 'download', asset: asset(x.asset, at), label: opt(text(x.label, `${at} 이름`, 120), noText), note: opt(text(x.note, `${at} 설명`, 300), noText),

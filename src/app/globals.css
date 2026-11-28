@@ -2643,7 +2643,7 @@ label.check input { margin-top: 0.25em; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run] { padding-bottom: var(--ds-space-6); }
 }
 
-/* ───────── 134차(ADR 0050): 메뉴 구조 — 옆 메뉴형(side)·한 쪽 스크롤형(onepage) (키트 테마만) ───────── */
+/* ───────── 136차(ADR 0052): 메뉴 구조 — 옆 메뉴형(side)·한 쪽 스크롤형(onepage) (키트 테마만) ───────── */
 /* 옆 메뉴: 하위 쪽이 있는 묶음 안에서 형제 쪽 목록. 넓은 화면은 왼쪽 세로, 휴대폰은 본문 위 가로 띠(가로 넘김) */
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-side { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ds-space-6); padding-block: var(--ds-space-6); }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-side > .site-main { min-width: 0; padding: 0; }
@@ -2674,7 +2674,7 @@ label.check input { margin-top: 0.25em; }
 html:has(.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc) { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html:has(.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc) { scroll-behavior: auto; } }
 
-/* 134차(ADR 0050): 템플릿 고르기 — 메뉴 구조·첫 화면·내용 거르기(관리 화면) */
+/* 136차(ADR 0052): 템플릿 고르기 — 메뉴 구조·첫 화면·내용 거르기(관리 화면) */
 .facet-filter { display: grid; gap: var(--ds-space-2); margin-bottom: var(--ds-space-5); }
 .facet-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); }
 .facet-label { min-width: 6.5rem; color: var(--text-muted); font-weight: 600; font-size: var(--fs-body-sm, .875rem); }

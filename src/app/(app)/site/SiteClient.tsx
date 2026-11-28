@@ -160,6 +160,7 @@ const NEW_BLOCK: Record<Block['type'], () => Block> = {
   section: () => ({ type: 'section', template: 'text', title: {}, body: {} }), news_list: () => ({ type: 'news_list', count: 3, style: 'cards' }),
   download: () => ({ type: 'download', asset: '', label: {} }),
   inquiry: () => ({ type: 'inquiry', title: {}, body: {} }),
+  subpages: () => ({ type: 'subpages' }),
 };
 type SectionBlock = Extract<Block, { type: 'section' }>;
 const HAS_PHOTO: SectionTemplate[] = ['media-left', 'media-right', 'banner'];
@@ -472,7 +473,7 @@ function ProfileFields({ value, langs, assets, onUploaded, onChange }: { value: 
       <label>{t('site.profile.phone')} <span className="fine">{t('site.profile.phoneHint')}</span><input value={(value.phone ?? []).join(', ')} onChange={(e) => onChange({ ...value, phone: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })} /></label>
       <label>{t('site.profile.facebook')}<input value={value.facebook ?? ''} onChange={(e) => onChange({ ...value, facebook: e.target.value || undefined })} placeholder="https://www.facebook.com/…" /></label>
       <LangFields label={t('site.profile.footer')} value={value.footer} langs={langs} multiline onChange={(footer) => onChange({ ...value, footer })} />
-      {/* 134차(ADR 0050): 메뉴 구조 — 위 메뉴(기본)·옆 메뉴·한 쪽 스크롤. 학사 기본·새벽빛 디자인에는 적용되지 않는다 */}
+      {/* 136차(ADR 0052): 메뉴 구조 — 위 메뉴(기본)·옆 메뉴·한 쪽 스크롤. 학사 기본·새벽빛 디자인에는 적용되지 않는다 */}
       <label>{t('site.facet.nav')} <span className="fine">{t('site.profile.layoutHint')}</span>
         <select value={value.layout ?? 'top'} data-testid="site-layout" onChange={(e) => onChange({ ...value, layout: e.target.value === 'top' ? undefined : (e.target.value as 'side' | 'onepage') })}>
           {(['top', 'side', 'onepage'] as const).map((v) => <option key={v} value={v}>{t(`site.facet.nav.${v}`)} — {t(`site.facet.nav.${v}.note`)}</option>)}

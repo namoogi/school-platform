@@ -22,7 +22,7 @@ export type TemplatePage = { kind: 'page'; key: string; sort: number; content: C
 export type SiteTemplate = TemplateFacets & {
   key: string; version: number; name: string; summary: string; fits: string[]; firstScreen: string;
   theme: SiteTheme; langs: ('ko' | 'en' | 'th')[]; pages: TemplatePage[]; slots: Slot[]; mustHave: string[];
-  /** 133차: 하위 메뉴를 쪽으로 나누기 전 원본(예시 글은 원본 순서대로 채운 뒤 같은 방식으로 나눈다). 한 쪽 구조는 없음 */
+  /** 135차: 하위 메뉴를 쪽으로 나누기 전 원본(예시 글은 원본 순서대로 채운 뒤 같은 방식으로 나눈다). 한 쪽 구조는 없음 */
   source?: TemplatePage[];
 };
 
@@ -450,9 +450,9 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
 ];
 
-// 133차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(single)는 구역 차례를 그대로 쓴다
+// 135차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(single)는 구역 차례를 그대로 쓴다
 const ONE_PAGE = new Set(['single']);
-// 134차(ADR 0050): 메뉴 구조가 위 메뉴(top)가 아니면 홈의 사이트 정보에 적어 둔다(학교가 설정에서 바꿀 수 있다)
+// 136차(ADR 0052): 메뉴 구조가 위 메뉴(top)가 아니면 홈의 사이트 정보에 적어 둔다(학교가 설정에서 바꿀 수 있다)
 const withLayout = (t: SiteTemplate): SiteTemplate => (t.nav === 'top' ? t : {
   ...t, pages: t.pages.map((p) => (p.key === 'home' ? { ...p, content: { ...p.content, site: { ...p.content.site, layout: t.nav as 'side' | 'onepage' } } } : p)) });
 export const SITE_TEMPLATES: SiteTemplate[] = RAW_TEMPLATES.map(withLayout).map((t) => {
@@ -507,8 +507,30 @@ export async function applyTemplate(db: Db, schoolId: string, key: string, opts:
   const existing = new Set((await listEntries(db, schoolId)).filter((e) => e.kind === 'page').map((e) => e.key));
   const created: { key: string; id: string }[] = [];
   const skipped: string[] = [];
+  // 135차(Codex 검토): 학교에 이미 있는 상위 쪽이 새 하위 쪽을 받을 수 없으면 그 아래 하위 쪽은 만들지 않는다.
+  //  - 최신 판이나 공개 판이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면: 공개 뒤 같은 하위 메뉴가 두 번(구역·쪽) 보인다
+  //  - 그 쪽이 이미 다른 쪽의 하위면: 메뉴는 한 단계뿐이라 새 하위 쪽이 엉뚱한 상위 메뉴로 올라온다
+  //  - 그 쪽이 보관돼 있으면: 공개 화면에 상위 쪽이 없어 새 하위 쪽이 상위 메뉴로 올라온다(되살린 뒤 다시 적용)
+  // 학교가 상위 쪽을 새 구조로 옮기고 공개한 뒤 다시 적용하면 만들어진다
+  const sourceKeys = new Set((t.source ?? t.pages).map((p) => p.key));
+  const oldStyle = new Set<string>();
+  for (const parent of new Set(t.pages.filter((p) => !sourceKeys.has(p.key)).map((p) => p.content.menu?.parent).filter((k): k is string => !!k && existing.has(k)))) {
+    const { rows: [r] } = await db.query<{ blocked: boolean }>(
+      `with e as (select id, archived_at from public.site_entries where school_id = $1 and kind = 'page' and key = $2),
+       v as (
+         (select x.content from public.site_entry_versions x join e on x.entry_id = e.id order by x.version desc limit 1)
+         union all
+         (select lv.content from e join lateral (select version_id from public.site_publications p where p.entry_id = e.id order by p.id desc limit 1) p on true
+            join public.site_entry_versions lv on lv.id = p.version_id))
+       select coalesce(bool_or(coalesce(v.content -> 'menu' ->> 'parent', '') <> ''
+         or exists (select 1 from jsonb_array_elements(case when jsonb_typeof(v.content -> 'blocks') = 'array' then v.content -> 'blocks' else '[]'::jsonb end) b
+                    where coalesce(b ->> 'anchor', '') <> '')), false)
+         or exists (select 1 from e where archived_at is not null) as blocked from v`, [schoolId, parent]);
+    if (r?.blocked) oldStyle.add(parent);
+  }
   for (const p of t.pages) {
     if (existing.has(p.key)) { skipped.push(p.key); continue; }
+    if (!sourceKeys.has(p.key) && oldStyle.has(p.content.menu?.parent ?? '')) { skipped.push(p.key); continue; }
     const { id } = (await createEntry(db, schoolId, { kind: 'page', key: p.key, sort: p.sort, content: validateContent(p.content), note: `템플릿 ${t.name} v${t.version}` }))!;
     created.push({ key: p.key, id });
     // 66차: 어느 템플릿에서 왔는지 남긴다(자동 배치가 빈 칸 목록을 찾는 데 씀)

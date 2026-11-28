@@ -92,7 +92,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
     ...(site.stories ? [{ key: 'stories', href: link('/stories'), title: { [lang]: siteText('stories', lang) }, children: [] }] : []),
   ] : [];
   const here = (n: (typeof tree)[number]) => n.key === current || n.children.some((c) => c.key === current);
-  // 134차(ADR 0050): 메뉴 구조. side = 하위 쪽이 있는 묶음 안에서는 옆에 형제 쪽 메뉴, onepage = 홈 구역 차례가 오른쪽에 따라온다
+  // 136차(ADR 0052): 메뉴 구조. side = 하위 쪽이 있는 묶음 안에서는 옆에 형제 쪽 메뉴, onepage = 홈 구역 차례가 오른쪽에 따라온다
   const layout = kit && !hidden ? profile?.layout : undefined;
   const group = layout === 'side' ? tree.find((n) => n.key !== 'home' && n.children.length > 0 && here(n)) : undefined;
   const toc = layout === 'onepage' && current === 'home' ? (tree[0]?.children ?? []) : [];

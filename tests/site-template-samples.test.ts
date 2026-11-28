@@ -30,7 +30,7 @@ describe('템플릿 예시 내용', () => {
   });
   it('같은 안내 자리가 여러 번 나오면 차례대로 다른 값을 쓴다', () => {
     const t = SITE_TEMPLATES.find((x) => x.key === 'story')!;
-    const items = (samplePages(t).values.blocks[0] as { items: { body: { ko: string } }[] }).items.map((i) => i.body.ko);
+    const items = (samplePages(t)['philosophy-values'].blocks[0] as { items: { body: { ko: string } }[] }).items.map((i) => i.body.ko);
     expect(new Set(items).size).toBe(3);
   });
   it('예시는 가상 연락처만 쓴다(예약 도메인 example.org, 0으로 채운 전화)', () => {
@@ -49,7 +49,7 @@ describe('템플릿 예시 내용', () => {
   it('89차: 예시 그림이 실제 칸에 놓이고 그림 파일이 있다', () => {
     for (const t of SITE_TEMPLATES) {
       const pages = samplePages(t);
-      // 133차: 예시 사진 자리는 나누기 전 원본 기준이다. 나눈 뒤 위치로 옮겨 확인한다
+      // 135차: 예시 사진 자리는 나누기 전 원본 기준이다. 나눈 뒤 위치로 옮겨 확인한다
       const moves = t.source ? splitSubmenuPages(t.source).moves : new Map();
       for (const img of TEMPLATE_SAMPLES[t.key].images ?? []) {
         const [pg, path] = movePath(moves, String(img.at[0]), img.at.slice(1));
