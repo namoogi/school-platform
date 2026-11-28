@@ -148,6 +148,15 @@ describe('출력 프로필', () => {
     expect(JSON.stringify(out.content)).toContain('"grade":"4"');
   });
 
+  it('있는 프로필의 서식은 바꾸지 못하고, 소개서 척도 코드는 학교에 있어야 한다(Codex #228)', async () => {
+    await expect(asUser(A.userId, (db) => rec.saveOutputProfile(db, A.schoolId, { format: 'th_por_por_1', code: 'kr_school', settings: { bands: [{ min: 0, grade: 0 }] }, why: 'x', base_version: 2 })))
+      .rejects.toThrow(expect.objectContaining({ key: 'err.rec.profileFormat' }));
+    await expect(asUser(A.userId, (db) => rec.saveOutputProfile(db, A.schoolId, { format: 'us_school_profile', code: 'sp_typo', settings: { scale_code: 'us_ltter' }, why: 'x', base_version: 0 })))
+      .rejects.toThrow(expect.objectContaining({ key: 'err.rec.profileScale' }));
+    expect(await asUser(A.userId, (db) => rec.saveOutputProfile(db, A.schoolId, { format: 'us_school_profile', code: 'sp_ok', settings: { scale_code: 'school_letter' }, why: '학교 척도', base_version: 0 })))
+      .toMatchObject({ version: 1 });
+  });
+
   it('발행 때 다른 서식의 프로필은 고르지 못한다', async () => {
     await expect(asUser(A.userId, (db) => rec.publishRecordDocument(db, A.schoolId, { format: 'us_school_profile', profileCode: 'kr_school' })))
       .rejects.toThrow(expect.objectContaining({ key: 'err.rec.profileFormat' }));

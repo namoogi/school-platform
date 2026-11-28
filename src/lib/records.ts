@@ -87,6 +87,14 @@ export function checkProfileSettings(format: Format, settings: unknown): Record<
 }
 export async function saveOutputProfile(db: Db, schoolId: string, input: { format: Format; code: string; settings: Record<string, unknown>; why?: string; base_version: number }) {
   checkProfileSettings(input.format, input.settings);
+  // 있는 프로필의 서식은 바꾸지 않는다(DB는 처음 만들 때만 서식을 쓰므로 다른 서식 설정이 조용히 붙는다, Codex #228)
+  const { rows: [had] } = await db.query<{ format: string }>('select format from public.output_profiles where school_id = $1 and code = $2', [schoolId, input.code]);
+  if (had && had.format !== input.format) throw new ValidationError('err.rec.profileFormat', { code: input.code });
+  // 학교 소개서가 가리키는 척도는 이 학교에 있어야 한다(오타면 발행본 등급표가 빈다)
+  if (typeof input.settings.scale_code === 'string') {
+    const { rowCount } = await db.query('select 1 from public.scales where school_id = $1 and code = $2', [schoolId, input.settings.scale_code]);
+    if (!rowCount) throw new ValidationError('err.rec.profileScale', { code: input.settings.scale_code });
+  }
   const { rows: [r] } = await db.query('select app.save_output_profile($1, $2) as v', [schoolId, JSON.stringify(input)]);
   return r.v as { id: string; version: number };
 }
@@ -310,6 +318,7 @@ export async function publishRecordDocument(db: Db, schoolId: string, input: { f
       `select sv.bands from public.scales s join public.scale_versions sv on sv.scale_id = s.id where s.school_id = $1 and s.code = $2 order by sv.version desc limit 1`,
       [schoolId, (prof.settings.scale_code as string) ?? 'us_letter']);
     out = renderUsSchoolProfile({ school: sch, students: Number(s.r.counts.students_enrolled), scale: (sc?.bands ?? []) }, prof.settings);
+    if (!sc) out.issues.push({ level: 'question', where: 'grading_scale', message: `School scale "${(prof.settings.scale_code as string) ?? 'us_letter'}" was not found, so the grading scale is empty.` });
     secrets = [sch.name];
   } else {
     const closures = await recordClosures(db, schoolId, uuid(input.personId, '학생'));
