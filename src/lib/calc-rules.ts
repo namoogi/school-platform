@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { ValidationError } from './services';
+import { safeId, ValidationError } from './services';
 import { checkSpec, evaluate, sanitizeInput, type CalcOutput, type CalcSpec } from './calc/expr';
 
 /** ADR 0040: 학교 계산식 판 읽기·저장·미리 계산 */
@@ -22,8 +22,11 @@ export async function calcRuleHistory(db: Db, schoolId: string, code: string): P
 export async function saveCalcRule(db: Db, schoolId: string, input: Record<string, unknown>) {
   const issues = checkSpec(input.spec);
   // 문제 목록은 미리 계산(preview)이 돌려준다. 오류에는 개수와 첫 자리만(ADR 0039: 이름표 + 값)
-  if (issues.length) throw new ValidationError('err.calcSpecInvalid', { count: issues.length, path: issues[0].path || '-' });
-  const title = input.title && typeof input.title === 'object' && !Array.isArray(input.title) ? input.title : undefined;
+  if (issues.length) throw new ValidationError('err.calcSpecInvalid', { count: issues.length, path: safeId(issues[0].path || '-') });
+  // 이름은 언어 칸(두 글자) → 글자만 남긴다. 글자가 아닌 값이 저장되면 목록 화면이 깨진다(Codex #228)
+  const raw = input.title && typeof input.title === 'object' && !Array.isArray(input.title) ? input.title as Record<string, unknown> : {};
+  const clean = Object.fromEntries(Object.entries(raw).filter(([k, v]) => /^[a-z]{2}$/.test(k) && typeof v === 'string' && v.trim()).map(([k, v]) => [k, (v as string).trim().slice(0, 200)]));
+  const title = Object.keys(clean).length ? clean : undefined;
   const { rows: [r] } = await db.query('select app.save_calc_rule($1, $2) as v', [schoolId, JSON.stringify({
     code: input.code, title, spec: input.spec, why: typeof input.why === 'string' ? input.why : null, base_version: Number(input.base_version ?? 0),
   })]);
@@ -46,7 +49,7 @@ export function previewCalc(spec: unknown, samples: unknown): { issues: ReturnTy
 }
 
 /**
- * 130차: 계산식 편집 화면이 저장 전에 돌리는 경계값 견본(학생 자료 없음).
+ * 131차: 계산식 편집 화면이 저장 전에 돌리는 경계값 견본(학생 자료 없음).
  * 89.5 = A/B(90) 반올림 경계, 59.5 = 이수(60) 반올림 경계, 39.5 = 미이수(40) 반올림 경계. 평가 항목 하나(total, 만점 100)·출석 100%
  */
 export const BOUNDARY_SCORES = [89.5, 59.5, 39.5] as const;

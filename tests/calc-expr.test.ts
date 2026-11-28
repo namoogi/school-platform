@@ -188,3 +188,19 @@ describe('106차: 중간값은 적힌 순서가 아니라 서로 가리키는 �
     expect(checkSpec({ lets: { a: { var: 'let.a' } }, outputs: { score: 1 } }).map((i) => i.message).join()).toMatch(/서로를 가리킵니다/);
   });
 });
+
+describe('131차: 식 검사 문구·견본 설명은 화면 언어 이름표가 있다', async () => {
+  const { CATALOG } = await import('@/lib/i18n/catalog');
+  const en = (await import('../i18n/en.json')).default as Record<string, string>;
+  it('검사 문제마다 calc.issue.* 이름표(한·영)', () => {
+    const bad = [{}, [], { outputs: 1, x: 1 }, { lets: { A: { var: 'nope' } }, outputs: { other: 1 } },
+      { outputs: { score: { op: 'round', args: 1, digits: 9 } } }, { outputs: { level: { op: 'band', args: [1], bands: [[1, 'A'], [2, 'B']], else: '' } } },
+      { outputs: { score: { op: 'eval' } } }, { lets: { a: { var: 'let.a' } }, outputs: { passed: { op: 'count_levels' } } }];
+    const keys = bad.flatMap((s) => checkSpec(s)).map((i) => i.key);
+    expect(keys.length).toBeGreaterThan(5);
+    for (const k of keys) { expect(k, 'key').toBeTruthy(); expect(CATALOG).toHaveProperty([k!]); expect(en).toHaveProperty([k!]); }
+  });
+  it('견본마다 calc.preset.* 설명(한·영)', () => {
+    for (const code of Object.keys(PRESETS)) { expect(CATALOG).toHaveProperty([`calc.preset.${code}`]); expect(en).toHaveProperty([`calc.preset.${code}`]); }
+  });
+});

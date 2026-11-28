@@ -12,7 +12,7 @@ export * from './control-shared';
 export async function listControl(db: Db) {
   const { rows: requests } = await db.query<Request>(
     `select r.id, r.no, r.kind, r.title, r.detail, r.options, r.recommended, r.reversible, r.related, r.lab_item_id, r.source_session,
-            r.status, r.topic, r.school_id, r.assignee_session, (select name from public.schools s where s.id = r.school_id) as school_name,
+            r.status, r.topic, r.school_id, r.assignee_session, r.door, r.ask, r.default_action, r.due_at, r.changes, r.unchanged, r.undo, (select name from public.schools s where s.id = r.school_id) as school_name,
             r.author, r.created_at, r.updated_at,
             coalesce((select jsonb_agg(to_jsonb(m) - 'request_id' - 'created_by' order by m.id) from public.control_messages m where m.request_id = r.id), '[]') as messages
        from public.control_requests r order by r.no desc`);
@@ -101,7 +101,7 @@ const firstLine = (s: string) => s.trim().split('\n')[0].slice(0, TITLE_MAX) || 
 
 export async function listThreads(db: Db, scope: ChatScope): Promise<ThreadSummary[]> {
   const { rows } = await db.query<ThreadSummary>(
-    `select r.id, r.no, r.kind, r.title, r.status, r.topic, r.school_id, r.assignee_session,
+    `select r.id, r.no, r.kind, r.title, r.status, r.topic, r.school_id, r.assignee_session, r.door,
             (select name from public.schools s where s.id = r.school_id) as school_name,
             greatest(r.updated_at, coalesce(l.created_at, r.updated_at)) as activity_at,
             case when l.id is null then null else jsonb_build_object('author', l.author, 'body', left(l.body, 140), 'kind', l.kind) end as last
@@ -117,7 +117,7 @@ export async function getThread(db: Db, scope: ChatScope, id: string): Promise<R
   if (!isUuid(id)) throw new NotFoundError('err.ctl.threadNotFound');
   const { rows: [r] } = await db.query<Request>(
     `select r.id, r.no, r.kind, r.title, r.detail, r.options, r.recommended, r.reversible, r.related, r.lab_item_id, r.source_session,
-            r.assignee_session, r.status, r.topic, r.school_id, (select name from public.schools s where s.id = r.school_id) as school_name,
+            r.assignee_session, r.status, r.topic, r.school_id, r.door, r.ask, r.default_action, r.due_at, r.changes, r.unchanged, r.undo, (select name from public.schools s where s.id = r.school_id) as school_name,
             r.author, r.created_at, r.updated_at,
             coalesce((select jsonb_agg(to_jsonb(m) - 'request_id' - 'created_by' - 'school_id'
                         || jsonb_build_object('author_name', case when m.author = 'user' then app.chat_author_name(m.created_by) end,
@@ -213,7 +213,10 @@ export async function chatAction(db: Db, scope: ChatScope, id: string, action: u
 export async function chatBadge(db: Db, scope: ChatScope) {
   const { rows: [c] } = await db.query<{ n: number }>(
     `select count(*)::int as n from public.control_requests r
-      where ($1::uuid is null or r.school_id = $1) and (r.status in ('open', 'parked', 'review') or (r.status = 'pending' and $2))`,
+      where ($1::uuid is null or r.school_id = $1)
+        and (r.status in ('open', 'parked', 'review') or (r.status = 'pending' and $2)
+             -- 기한 진행 결정 카드: 기한 전에 반대할 수 있게 숫자에 넣는다(ADR 0048)
+             or (r.status = 'proceeding' and r.door = 'default'))`,
     [scope.schoolId, scope.isPlatform]);
   return c.n;
 }

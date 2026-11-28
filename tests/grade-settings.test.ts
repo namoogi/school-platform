@@ -1,5 +1,5 @@
 /**
- * 130차: 학교 관리자가 학사 설정을 화면에서 새 판으로 저장한다 — 맞춤 척도·성적 정책 전체·계산식(미리 계산 경계값)·출력 프로필.
+ * 131차: 학교 관리자가 학사 설정을 화면에서 새 판으로 저장한다 — 맞춤 척도·성적 정책 전체·계산식(미리 계산 경계값)·출력 프로필.
  * 모두 판 추가만, base_version 409, 학교 관리자만, 학교 간 쓰기·읽기 거부(양방향). 화면 검사(띠·정책 칸·'왜')는 서버 쪽 함수로 본다.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -12,7 +12,7 @@ const gr = await import('@/lib/grading');
 const gb = await import('@/lib/gradebook');
 const cr = await import('@/lib/calc-rules');
 const rec = await import('@/lib/records');
-const { requireWhy } = await import('@/lib/services');
+const { requireWhy, safeId } = await import('@/lib/services');
 const { PRESETS } = await import('@/lib/calc/expr');
 
 type S = { schoolId: string; userId: string };
@@ -46,6 +46,8 @@ describe('맞춤 척도', () => {
     expect(() => gr.checkBands([{ code: 'P' }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandFloor' }));
     for (const k of Object.keys(gr.SCALE_PRESETS)) expect(() => gr.checkBands(gr.SCALE_PRESETS[k].bands, { floor: true })).not.toThrow();
     expect(() => gr.checkBands([{ code: 'A', min: 90 }, { code: 'A', min: 80 }])).toThrow(expect.objectContaining({ key: 'err.grade.bandDup' }));
+    expect(() => gr.checkBands([{ code: 'A', min: false }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
+    expect(() => gr.checkBands([{ code: 'A', min: 0, points: true }])).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
     expect(() => gr.checkBands([{ code: 'A', min: 'ninety' }])).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
     expect(() => gr.checkBands([])).toThrow(expect.objectContaining({ key: 'err.grade.bands' }));
   });
@@ -121,6 +123,12 @@ describe('계산식 미리 계산(경계값)', () => {
     expect(bad.results).toEqual([]);
   });
 
+  it('계산식 이름은 언어 칸의 글자만 저장한다(Codex #228)', async () => {
+    await asUser(A.userId, (db) => cr.saveCalcRule(db, A.schoolId, { code: 'title_check', title: { ko: {}, en: ' Score ', xx1: 'x' }, spec: PRESETS.weighted_average.spec, why: 't', base_version: 0 }));
+    const r = (await asUser(A.userId, (db) => cr.listCalcRules(db, A.schoolId))).find((x) => x.code === 'title_check')!;
+    expect(r.title).toEqual({ en: 'Score' });
+  });
+
   it('반올림 경계: 정수 반올림 식이면 89.5 → 90, 59.5 → 60(이수)', () => {
     const spec = { lets: { s: { op: 'round', args: [{ op: 'weighted_score' }], digits: 0, mode: 'half_up' } }, outputs: { score: { var: 'let.s' }, passed: { op: '>=', args: [{ var: 'let.s' }, 60] } } };
     const r = cr.previewCalc(spec, cr.boundarySamples(String));
@@ -141,6 +149,7 @@ describe('출력 프로필', () => {
 
   it('서식별 설정 칸·모양만 받는다(Codex #228: 띠에 null 이면 발행 때 서버 오류)', async () => {
     expect(rec.checkProfileSettings('th_por_por_1', { bands: [{ min: 80, grade: 4 }, { min: 0, grade: 0 }], note: '학교 사본' })).toBeTruthy();
+    expect(() => rec.checkProfileSettings('th_por_por_1', { bands: [{ min: 0, grade: 40 }] })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
     expect(() => rec.checkProfileSettings('th_por_por_1', { bands: [null] })).toThrow(expect.objectContaining({ key: 'err.rec.profileField', vars: { key: 'bands' } }));
     expect(() => rec.checkProfileSettings('kr_alt_record', { char_limits: { subject_detail: '500' } })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
     expect(() => rec.checkProfileSettings('kr_alt_record', { char_limits: { subject_detial: 500 } })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
@@ -181,6 +190,12 @@ describe('출력 프로필', () => {
 });
 
 describe("'왜' 칸", () => {
+  it('오류 문구에 넣는 입력은 허용 글자만, 30자까지(Codex #228)', () => {
+    expect(safeId('earn_credit')).toBe('earn_credit');
+    expect(safeId('sk-live 비밀 010-1234-5678 ' + 'x'.repeat(50)).length).toBeLessThanOrEqual(30);
+    expect(safeId('홍길동')).toBe('?');
+    expect(() => gr.checkBands([{ code: 'A', min: 0, ['token=abc def 학생이름']: 1 }])).toThrow(expect.objectContaining({ key: 'err.grade.bandField', vars: expect.objectContaining({ key: 'tokenabcdef' }) }));
+  });
   it('비우면 거부, 500자 넘으면 거부', () => {
     expect(requireWhy('  규정 5조 ')).toBe('규정 5조');
     expect(() => requireWhy('')).toThrow(expect.objectContaining({ key: 'err.whyRequired' }));

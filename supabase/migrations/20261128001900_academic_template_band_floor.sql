@@ -1,4 +1,4 @@
--- 131차: 템플릿 판 검사에 바닥 띠 규칙을 더한다(130차 PR #228 '남은 것').
+-- 132차: 템플릿 판 검사에 바닥 띠 규칙을 더한다(131차 PR #228 '남은 것').
 -- 학교 관리자 화면·API 척도 쓰기(src/lib/grading.ts checkBands floor)와 템플릿 적용 길(applyTemplate)이 같은 규칙을 쓰게 한다.
 -- 적용 전 운영 확인(2026-11-28): academic_templates 는 시드 5종 1판뿐이고, 직접 정한 척도 ib_1_7 은 min 0 띠가 있으며
 -- 나머지는 모두 바닥 띠가 있는 미리 만든 척도다 → 기존 판은 모두 새 규칙을 지난다.
@@ -38,7 +38,7 @@ language sql immutable set search_path = pg_catalog, public, pg_temp as $$
                                                   or jsonb_typeof(b -> 'label') <> 'object'
                                                   or not exists (select 1 from jsonb_each(b -> 'label') l where l.key ~ '^[a-z]{2}$' and jsonb_typeof(l.value) = 'string' and length(trim(l.value #>> '{}')) > 0)
                                                   or jsonb_typeof(b -> 'min') not in ('number', 'null'))
-                              -- 131차: 0점까지 덮는 바닥 띠(min ≤ 0)가 있어야 한다. 없으면 그 아래 점수가 app.band_for → null 로
+                              -- 132차: 0점까지 덮는 바닥 띠(min ≤ 0)가 있어야 한다. 없으면 그 아래 점수가 app.band_for → null 로
                               -- 등급 없이 이수(completed) 마감 판으로 굳는다. 화면·API 쓰기 길 checkBands({ floor: true })와 같은 규칙
                               and exists (select 1 from jsonb_array_elements(e -> 'bands') b
                                            where jsonb_typeof(b -> 'min') = 'number' and (b ->> 'min')::numeric <= 0))))

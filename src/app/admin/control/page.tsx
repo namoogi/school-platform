@@ -18,7 +18,8 @@ export default async function ControlPage({ searchParams }: { searchParams: Prom
     return { ...data, lab, uiLang: await userLang(db) };
   });
   const { t } = await getI18n(uiLang);
-  const count = (s: string[]) => requests.filter((r) => s.includes(r.status)).length;
+  // 알림 카드는 답할 일이 아니므로 '답 필요' 숫자에서 뺀다(ADR 0048)
+  const count = (s: string[]) => requests.filter((r) => s.includes(r.status) && !(r.door === 'notice' && NEEDS_USER.includes(r.status))).length;
   return (
     <>
       <PageHeader title={t('nav.control.title')} crumbs={[{ label: t('nav.group.platform') }, { label: t('nav.control.title') }]}

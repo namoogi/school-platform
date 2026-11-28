@@ -119,7 +119,7 @@ describe('학사 관리 템플릿', () => {
     expect((await asUser(B.userId, (db) => at.listTemplates(db))).find((t) => t.key === 'us_k12')!.version).toBe(2);
     await expect(bad({ ...ok, scales: [{ code: 'pass_fail', preset: 'pass_fail' }, { code: 'pass_fail', preset: 'pass_fail' }] })).rejects.toThrow('템플릿 내용');
     await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', why: 'w'.repeat(501), bands: [{ code: 'A', label: { ko: 'A' }, min: 0 }] }] })).rejects.toThrow('템플릿 내용');
-    // 131차: 직접 정한 척도는 0점까지 덮는 바닥 띠(min ≤ 0)가 있어야 한다(없으면 낮은 점수가 등급 없이 이수로 마감됨)
+    // 132차: 직접 정한 척도는 0점까지 덮는 바닥 띠(min ≤ 0)가 있어야 한다(없으면 낮은 점수가 등급 없이 이수로 마감됨)
     await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'A', label: { ko: 'A' }, min: 60 }] }] })).rejects.toThrow('템플릿 내용');
     await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'A', label: { ko: 'A' }, min: 60 }, { code: 'B', label: { ko: 'B' }, min: null }] }] })).rejects.toThrow('템플릿 내용');
     await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'pass_fail', bands: [{ code: 'P', label: { ko: 'P' } }] }] })).rejects.toThrow('템플릿 내용');
@@ -132,7 +132,7 @@ describe('학사 관리 템플릿', () => {
     // 템플릿 판은 고칠 수 없다
     await expect(su.query(`update public.academic_templates set why = 'x'`)).rejects.toThrow();
   });
-  it('템플릿 적용 길도 바닥 띠 없는 척도를 거부한다(131차: DB 검사를 지나친 옛 판이 있어도 화면 길과 같은 규칙)', async () => {
+  it('템플릿 적용 길도 바닥 띠 없는 척도를 거부한다(132차: DB 검사를 지나친 옛 판이 있어도 화면 길과 같은 규칙)', async () => {
     // 규칙 이전에 들어간 판을 흉내: 제약을 잠시 빼고 바닥 띠 없는 판을 넣는다
     const manifest = { grade_scheme: 'custom', levels: ['middle'], periods: [{ id: 'q1', label: 'Q1' }],
       scales: [{ code: 'no_floor', kind: 'level', why: 'old', bands: [{ code: 'A', label: { en: 'A' }, min: 60 }, { code: 'B', label: { en: 'B' }, min: null }] }],

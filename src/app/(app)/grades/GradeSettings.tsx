@@ -13,7 +13,7 @@ type T = (key: MsgKey, vars?: Record<string, string | number>) => string;
 const samples = (t: T) => boundarySamples((score) => t('gset.sample', { score }));
 
 /**
- * 130차: 학교 관리자가 학사 설정을 화면에서 새 판으로 저장한다(AI 초안 붙여 넣기 포함).
+ * 131차: 학교 관리자가 학사 설정을 화면에서 새 판으로 저장한다(AI 초안 붙여 넣기 포함).
  * 맞춤 척도 · 성적 정책 전체 · 계산식 판. 모든 저장은 보고 고친 판(base_version)을 보내 그 사이 새 판이 있으면 409, '왜' 칸 필수.
  */
 export function GradeSettings({ t, lang, scales, policy, calcRules, calcFrom, offering }: {
@@ -76,7 +76,7 @@ export function GradeSettings({ t, lang, scales, policy, calcRules, calcFrom, of
         {calcRules.length === 0 ? <p className="muted">{t('gset.noCalc')}</p> : (
           <ul className="record-list">{calcRules.map((r) => (
             <li key={r.code}>
-              <span><strong>{r.title[lang] ?? r.title.ko ?? r.code}</strong> <small className="muted">{r.code} · {t('common.version', { v: r.version })}{r.why ? ` · ${r.why}` : ''}</small></span>
+              <span><strong>{[r.title?.[lang], r.title?.ko].find((x) => typeof x === 'string') ?? r.code}</strong> <small className="muted">{r.code} · {t('common.version', { v: r.version })}{r.why ? ` · ${r.why}` : ''}</small></span>
               <details data-testid={`calc-edit-${r.code}`}><summary>{t('gset.editCalc')}</summary>
                 <ActionForm url="/api/calc-rules" action="save" extra={{ code: r.code, title: r.title, base_version: r.version, samples: samples(t) }} keep preview={calcPreview}
                   submitLabel={t('gset.saveVersion', { v: r.version + 1 })} successText={t('gset.saved')}
@@ -86,7 +86,7 @@ export function GradeSettings({ t, lang, scales, policy, calcRules, calcFrom, of
         <div className="detail-section" data-testid="calc-new">
           <h3>{t('gset.newCalc')}</h3>
           <p className="fine">{t('gset.startFrom')} {Object.keys(PRESETS).map((p, i) => <span key={p}>{i ? ' · ' : ''}{p === from ? <strong>{p}</strong> : <Link href={href(p)}>{p}</Link>}</span>)}</p>
-          <p className="fine">{PRESETS[from].note}</p>
+          <p className="fine">{t(`calc.preset.${from}` as MsgKey)}</p>
           <ActionForm url="/api/calc-rules" action="save" extra={{ base_version: 0, lang, samples: samples(t) }} preview={calcPreview}
             submitLabel={t('gset.createCalc')} successText={t('gset.saved')}
             fields={[{ name: 'code', label: t('common.code'), required: true, placeholder: 'school_score', width: 'sm' }, { name: 'title', label: t('common.name'), required: true },

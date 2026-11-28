@@ -1354,6 +1354,17 @@ export const CATALOG = {
   'cc.waiting': '전달 대기',
   'cc.statusLine': '상태: {status}',
   'cc.deliveryNote': '전달 메모: {note}',
+  'dc.door.one_way': '되돌리기 어려움 · 답을 기다림',
+  'dc.door.default': '기한까지 반대 없으면 진행',
+  'dc.door.notice': '알림',
+  'dc.changes': '승인하면 바뀌는 것',
+  'dc.changesNotice': '바뀐 것',
+  'dc.unchanged': '바뀌지 않는 것',
+  'dc.undo': '되돌리는 길',
+  'dc.due': '{when}까지 반대가 없으면 진행: {action}',
+  'dc.overdue': '기한이 지나 추천안으로 진행: {action}',
+  'dc.digest': '알림 {n}건',
+  'dc.digestHint': '답하지 않아도 되는 진행 알림',
   'cc.options': '선택지',
   'cc.recommended': '추천',
   'cc.extraHint': '선택지에 더할 조건이나 새로 시킬 일. 그대로 세션에 전달됩니다.',
@@ -3131,6 +3142,22 @@ export const CATALOG = {
   // 125차 템플릿 새 판 제안(Codex 검토)
   'err.template.useOffer': '같은 템플릿의 다른 판으로는 \'템플릿 새 판 제안\'에서 수락해 바꿉니다.',
   'db.tplOfferStale': '학교가 이미 그 판 이상을 써서 지난 제안입니다.',
+  'db.cardDoor': '결정 카드의 door 는 one_way(되돌리기 어려움)·default(기한까지 반대 없으면 진행)·notice(알림) 가운데 하나입니다. docs/automation/DECISION-CARDS.md',
+  'db.cardChanges': '결정 카드에는 changes(승인하면 바뀌는 것, 300자 이내)가 필요합니다.',
+  'db.cardAsk': '결정 카드의 ask 는 예/아니오로 답할 수 있는 한 줄 질문(120자 이내, 물음표로 끝남)입니다.',
+  'db.cardUnchangedUndo': '결정 카드에는 unchanged(안 바뀌는 것)와 undo(되돌리는 길)가 필요합니다(각 300자 이내).',
+  'db.cardDue': '기한까지 진행(default) 카드에는 앞으로 30일 안의 due_at(ISO 8601, 시간대 포함)이 필요합니다.',
+  'db.cardOneWayDefault': 'default_action 은 기한까지 진행(default) 카드에만 씁니다. 한쪽 문(one_way)은 사람의 답을 기다립니다.',
+  'db.cardDefaultSession': '기한까지 진행(default) 카드에는 맡을 세션(source_session)이 필요합니다.',
+  'db.cardOneLine': '결정 카드의 changes·unchanged·undo 는 각각 한 줄로 씁니다. 자세한 설명은 detail 에 둡니다.',
+  'db.cardImmutable': '결정 카드의 내용은 올린 뒤 고칠 수 없습니다. 새 카드로 올려 주세요.',
+  'db.cardInsertOnlyFn': '결정 카드는 control.file_request 로만 올립니다.',
+  'db.cardNoticeAsk': '알림(notice) 카드에는 ask·default_action·recommended 를 두지 않습니다. 물을 것이 있으면 default 나 one_way 로 올려 주세요.',
+  'db.cardDefaultAction': '기한까지 진행(default) 카드에는 default_action(답이 없으면 할 일, 500자 이내)이 필요합니다.',
+  'db.cardDueOnlyDefault': '기한(due_at)은 기한까지 진행(default) 카드에만 씁니다.',
+  'db.cardReversible': 'reversible 과 door 가 엇갈립니다. 되돌리기 어려우면 one_way, 되돌릴 수 있으면 default·notice 입니다.',
+  'db.cardOptions': '결정 카드의 선택지는 2~4개이고, 추천안(recommended)을 하나 고릅니다.',
+  'db.cardNoticeOptions': '알림(notice) 카드에는 선택지를 두지 않습니다. 고를 일이 있으면 default 로 올려 주세요.',
   // 125차 템플릿 새 판 제안 기록
   'tplOffer.history': '결정 기록 {n}건',
   'tplOffer.versionsShort': '{from}판 → {to}판',
@@ -3154,7 +3181,7 @@ export const CATALOG = {
   'tplAi.tokenNoHomepage': '학사 꾸러미 작업 토큰은 홈페이지 기능의 AI 작업 공간에서 발급합니다. 이 학교는 홈페이지 기능이 꺼져 있어, 대화창의 ‘새 대화’로 관제에 발급을 요청합니다.',
   // 126차: 두 단계 메뉴
   'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
-  // 130차 학사 설정 편집(척도·정책·계산식·출력 프로필)
+  // 131차 학사 설정 편집(척도·정책·계산식·출력 프로필)
   'form.jsonInvalid': '‘{field}’ 칸의 JSON을 읽지 못했습니다. 괄호·따옴표·쉼표를 확인해 주세요.',
   'gset.whyPlaceholder': '예: 학업성적관리규정 제12조 — 성취도 구간 변경',
   'gset.kind': '종류',
@@ -3208,18 +3235,18 @@ export const CATALOG = {
   'err.grade.policyUnknown': '성적 정책에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.rec.profileFormat': '출력 프로필 {code}는 이 서식용이 아닙니다.',
   'err.rec.profileSettings': '출력 프로필 설정은 JSON 객체({ … })여야 합니다.',
-  // 130차 Codex 검토
+  // 131차 Codex 검토
   'err.grade.bandFloor': '척도에 0점까지 덮는 바닥 구간(min 0)이 있어야 합니다. 없으면 그 아래 점수는 등급 없이 이수로 마감됩니다.',
   'err.rec.profileUnknown': '이 서식의 출력 프로필에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.rec.profileField': '출력 프로필의 {key} 칸 값이 올바르지 않습니다.',
-  // 130차 Codex 검토 2
+  // 131차 Codex 검토 2
   'err.rec.profileScale': '학교에 {code} 척도가 없습니다. 성적 화면의 척도 코드를 적어 주세요.',
-  // 130차 Codex 검토 4
+  // 131차 Codex 검토 4
   'err.grade.bandCredit': '척도 띠 {code}의 earns_credit은 true 또는 false(따옴표 없이)여야 합니다.',
-  // 130차 Codex 검토 5
+  // 131차 Codex 검토 5
   'err.grade.bandField': '척도 띠 {code}에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.grade.bandDupMin': '하한 {min}인 띠가 둘 이상입니다. 띠마다 하한을 다르게 적어 주세요.',
-  // 130차 Codex 검토 6
+  // 131차 Codex 검토 6
   'err.grade.scaleKindChange': '척도 {code}의 종류({kind})는 바꿀 수 없습니다. 다른 종류는 새 코드로 만들어 주세요.',
   // R2 DB 사본 비우기 (128차)
   'usage.clearDb': 'DB 사본 비우기 (25개씩, 남은 {n}개)',
@@ -3227,6 +3254,49 @@ export const CATALOG = {
   // R2 DB 사본 비우기 (128차)
   'usage.clearResult': 'DB 사본 {cleared}개 비움 · 내용이 달라 건너뜀 {skipped}개 · 남은 사본 {left}개',
   'usage.clearNoR2': 'R2 설정이 없어 DB 사본을 비울 수 없습니다.',
+  // 131차 계산식 검사·견본 설명(화면 언어)
+  'calc.issue.specShape': '계산식은 outputs 칸을 가진 객체여야 합니다.',
+  'calc.issue.tooLong': '계산식이 너무 깁니다({max}자 이하).',
+  'calc.issue.unknownTop': '알 수 없는 칸입니다(lets·outputs만).',
+  'calc.issue.tooBig': '식이 너무 큽니다(마디 {max}개 이하).',
+  'calc.issue.tooDeep': '식이 너무 깊습니다({max}단 이하).',
+  'calc.issue.notNumber': '숫자가 아닙니다.',
+  'calc.issue.textLong': '글자 값은 40자 이하입니다.',
+  'calc.issue.notExpr': '식 꼴이 아닙니다.',
+  'calc.issue.badVar': '쓸 수 없는 변수입니다: {v}',
+  'calc.issue.undefLet': '정하지 않은 중간값입니다: {v}',
+  'calc.issue.unknownItem': '수업에 없는 평가 항목입니다: {code}',
+  'calc.issue.unknownField': '알 수 없는 칸입니다: {fields}',
+  'calc.issue.badOp': '쓸 수 없는 연산입니다: {op}',
+  'calc.issue.argsList': 'args 는 목록입니다.',
+  'calc.issue.argCount': '{op} 는 값 {n}개가 필요합니다.',
+  'calc.issue.digits': 'digits 는 0~4 정수입니다.',
+  'calc.issue.mode': 'mode 는 {modes} 중 하나입니다.',
+  'calc.issue.normalize': 'normalize 는 true 또는 false 입니다(글자 "false" 아님).',
+  'calc.issue.bandShape': 'band 에는 bands 목록(하한 숫자와 등급의 쌍, 큰 하한부터)이 필요합니다.',
+  'calc.issue.bandOrder': 'bands 는 하한이 큰 것부터 적습니다.',
+  'calc.issue.elseGrade': 'else 등급은 1~8자 글자입니다.',
+  'calc.issue.countLevels': 'count_levels 에는 in 목록(수준 코드 1~8자, 30개 이하)이 필요합니다.',
+  'calc.issue.needOne': '{op} 에는 값이 하나 이상 필요합니다.',
+  'calc.issue.letsShape': 'lets 는 이름과 식을 짝지은 객체입니다.',
+  'calc.issue.letCycle': '중간값이 서로를 가리킵니다: {name}',
+  'calc.issue.letName': '중간값 이름은 영문 소문자로 시작합니다.',
+  'calc.issue.outputsNeeded': 'outputs 가 필요합니다.',
+  'calc.issue.outputKeys': '결과 칸은 score·passed·level 만 씁니다.',
+  'calc.issue.scoreOrPassed': 'score 나 passed 중 하나는 있어야 합니다.',
+  'calc.preset.kr_high_common': '한국 고등 공통과목(2026 기재요령): 환산점수 합계 소수 2자리 → 원점수 정수 → A 90·B 80·C 70·D 60·E 40 이상. 40 미만은 최소 성취수준 보장지도를 마치면 E·이수, 아니면 I(미이수). 과목 출석률 2/3 미만은 추가학습을 마쳐야 이수',
+  'calc.preset.kr_high_science_lab': '한국 고등 과학탐구실험: A 80·B 60·C 40 이상. 40 미만은 보장지도 이수 시 C, 아니면 I. 출석률 2/3 규칙 같음',
+  'calc.preset.kr_high_elective': '한국 고등 선택과목: A 90·B 80·C 70·D 60, 그 밖 E. 이수는 과목 출석률 2/3(미달이면 추가학습). 과목이 P/F(교양)면 P·원점수 빈칸',
+  'calc.preset.kr_high_arts_pe': '한국 고등 체육·예술: A 80·B 60, 그 밖 C. 이수는 과목 출석률 2/3',
+  'calc.preset.kr_middle': '한국 중학교: 원점수로 A 90·B 80·C 70·D 60, 그 밖 E(과목별 이수 판정 없음). 자유학기 과목(과목 P/F)은 P, 원점수·과목평균·수강자수 빈칸',
+  'calc.preset.kr_middle_arts_pe': '한국 중학교 체육·예술(음악·미술): A 80·B 60, 그 밖 C. 학생부에는 성취도만 적는다(원점수 표기는 출력 프로필 몫)',
+  'calc.preset.us_letter_plus_minus': '미국식 ± 글자 성적(흔한 표, 학교마다 다름): 97 A+ · 93 A · 90 A- … 60 D-, 그 밖 F. 정규화 가중 평균 → 정수 반올림. 60 이상이면 학점 인정. P/F는 과목 속성·학생 판정 P·NP. 평점(GPA)은 척도 판의 points로 모집단 계산',
+  'calc.preset.weighted_average': '평가 항목 가중 평균(만점 환산, 가중치 합으로 나눔) → 소수 첫째 자리 반올림, 60점 이상 + 출석 2/3 이상이면 이수',
+  'calc.preset.competency_mastery': '역량 도달 개수: 도달(M)·넘어섬(E) 수준이 5개 이상이면 이수',
+  'calc.preset.pass_fail_project': '통과/미통과(프로젝트): 출석 2/3 이상 + 산출물 제출 + 발표 루브릭 3점(4점 만점) 이상이면 P',
+  'calc.preset.rounded_twice_bands': '드리미포털 방식: 영역 합 Σ(점수÷만점×비율)을 정규화하지 않고 소수 2자리 → 정수(원점수) 반올림 → 원점수로 성취도 A~E. 학생 판정 = 입력 행의 성취도, 입력 행이 없을 때만 이전 기록의 성취도(계승). P/F면 원점수만 비우고 성취도는 남긴다',
+  'calc.preset.us_letter_pf': '미국식 글자 성적 A·B·C·D·F(F는 한국식 E와 같은 맨 아래 등급). 가중 평균 → 정수 반올림 → 90/80/70/60, 그 밖 F. F는 성적 등급이므로 학생 판정 F를 P/F로 읽지 않는다. P/F는 과목 속성이거나 학생 판정이 P·NP일 때만',
+  'calc.preset.peer_teacher_mix': '동료평가 20% + 교사평가 80%, 둘 중 하나라도 비면 계산하지 않음(null)',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

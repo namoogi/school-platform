@@ -60,7 +60,9 @@ const MAX_NODES = 400;
 const MAX_DEPTH = 24;
 
 // ── 검사 ─────────────────────────────────────────────
-export type Issue = { path: string; message: string };
+/** message 는 한국어 기준 문구(서버 오류·시험), key·vars 는 화면이 사용자 언어로 그릴 이름표(calc.issue.*, 131차) */
+export type Issue = { path: string; message: string; key?: string; vars?: Record<string, string | number> };
+const I = (path: string, key: string, message: string, vars?: Record<string, string | number>): Issue => ({ path, message, key: `calc.issue.${key}`, ...(vars ? { vars } : {}) });
 
 /** 식 모양 검사. 저장 전에 반드시 통과해야 한다. knownItems 를 주면 없는 평가 항목 참조를 알려 준다 */
 const NODE_KEYS = new Set(['op', 'args', 'mode', 'digits', 'normalize', 'in', 'bands', 'else']);
@@ -104,72 +106,72 @@ export function letOrder(lets: Record<string, unknown>): { order: string[]; cycl
 
 export function checkSpec(spec: unknown, knownItems?: string[]): Issue[] {
   const issues: Issue[] = [];
-  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return [{ path: '', message: '계산식은 { "outputs": {…} } 꼴입니다.' }];
+  if (!spec || typeof spec !== 'object' || Array.isArray(spec)) return [I('', 'specShape', '계산식은 { "outputs": {…} } 꼴입니다.')];
   const s = spec as Record<string, unknown>;
   // DB 칸 제약(length(spec::text) <= 20000)과 같은 잣대로 먼저 잰다. 넘치면 저장에서 500 이 아니라 검사 문제로 돌려준다
-  if (jsonbTextLength(s) > MAX_SPEC_CHARS) return [{ path: '', message: `계산식이 너무 깁니다(${MAX_SPEC_CHARS}자 이하).` }];
-  for (const k of Object.keys(s)) if (k !== 'lets' && k !== 'outputs') issues.push({ path: k, message: '알 수 없는 칸입니다(lets·outputs만).' });
+  if (jsonbTextLength(s) > MAX_SPEC_CHARS) return [I('', 'tooLong', `계산식이 너무 깁니다(${MAX_SPEC_CHARS}자 이하).`, { max: MAX_SPEC_CHARS })];
+  for (const k of Object.keys(s)) if (k !== 'lets' && k !== 'outputs') issues.push(I(k, 'unknownTop', '알 수 없는 칸입니다(lets·outputs만).'));
   let nodes = 0;
   const lets = new Set<string>();
   const walk = (e: unknown, path: string, depth: number) => {
-    if (++nodes > MAX_NODES) { if (nodes === MAX_NODES + 1) issues.push({ path, message: `식이 너무 큽니다(마디 ${MAX_NODES}개 이하).` }); return; }
-    if (depth > MAX_DEPTH) { issues.push({ path, message: `식이 너무 깊습니다(${MAX_DEPTH}단 이하).` }); return; }
-    if (e === null || typeof e === 'number' || typeof e === 'boolean') { if (typeof e === 'number' && !Number.isFinite(e)) issues.push({ path, message: '숫자가 아닙니다.' }); return; }
-    if (typeof e === 'string') { if (e.length > 40) issues.push({ path, message: '글자 값은 40자 이하입니다.' }); return; }
-    if (typeof e !== 'object' || Array.isArray(e)) { issues.push({ path, message: '식 꼴이 아닙니다.' }); return; }
+    if (++nodes > MAX_NODES) { if (nodes === MAX_NODES + 1) issues.push(I(path, 'tooBig', `식이 너무 큽니다(마디 ${MAX_NODES}개 이하).`, { max: MAX_NODES })); return; }
+    if (depth > MAX_DEPTH) { issues.push(I(path, 'tooDeep', `식이 너무 깊습니다(${MAX_DEPTH}단 이하).`, { max: MAX_DEPTH })); return; }
+    if (e === null || typeof e === 'number' || typeof e === 'boolean') { if (typeof e === 'number' && !Number.isFinite(e)) issues.push(I(path, 'notNumber', '숫자가 아닙니다.')); return; }
+    if (typeof e === 'string') { if (e.length > 40) issues.push(I(path, 'textLong', '글자 값은 40자 이하입니다.')); return; }
+    if (typeof e !== 'object' || Array.isArray(e)) { issues.push(I(path, 'notExpr', '식 꼴이 아닙니다.')); return; }
     const o = e as Record<string, unknown>;
     if ('var' in o) {
       const v = o.var;
-      if (typeof v !== 'string' || !VAR_RE.test(v)) { issues.push({ path, message: `쓸 수 없는 변수입니다: ${String(v).slice(0, 60)}` }); return; }
-      if (v.startsWith('let.') && !lets.has(v.slice(4))) issues.push({ path, message: `정하지 않은 중간값입니다: ${v}` });
+      if (typeof v !== 'string' || !VAR_RE.test(v)) { issues.push(I(path, 'badVar', `쓸 수 없는 변수입니다: ${String(v).slice(0, 60)}`, { v: String(v).slice(0, 60) })); return; }
+      if (v.startsWith('let.') && !lets.has(v.slice(4))) issues.push(I(path, 'undefLet', `정하지 않은 중간값입니다: ${v}`, { v }));
       if (knownItems && v.startsWith('items.')) {
         const code = v.split('.').slice(1, -1).join('.');
-        if (!knownItems.includes(code)) issues.push({ path, message: `수업에 없는 평가 항목입니다: ${code}` });
+        if (!knownItems.includes(code)) issues.push(I(path, 'unknownItem', `수업에 없는 평가 항목입니다: ${code}`, { code }));
       }
       return;
     }
     const op = o.op;
     const extra = Object.keys(o).filter((k) => !NODE_KEYS.has(k));
-    if (extra.length) issues.push({ path, message: `알 수 없는 칸입니다: ${extra.slice(0, 3).join(', ').slice(0, 60)}` });
-    if (typeof op !== 'string' || !OPS.includes(op)) { issues.push({ path, message: `쓸 수 없는 연산입니다: ${String(op).slice(0, 30)}` }); return; }
+    if (extra.length) issues.push(I(path, 'unknownField', `알 수 없는 칸입니다: ${extra.slice(0, 3).join(', ').slice(0, 60)}`, { fields: extra.slice(0, 3).join(', ').slice(0, 60) }));
+    if (typeof op !== 'string' || !OPS.includes(op)) { issues.push(I(path, 'badOp', `쓸 수 없는 연산입니다: ${String(op).slice(0, 30)}`, { op: String(op).slice(0, 30) })); return; }
     const args = o.args;
-    if (args !== undefined && !Array.isArray(args)) { issues.push({ path, message: 'args 는 목록입니다.' }); return; }
+    if (args !== undefined && !Array.isArray(args)) { issues.push(I(path, 'argsList', 'args 는 목록입니다.')); return; }
     const n = (args as unknown[] | undefined)?.length ?? 0;
-    const need = (min: number, max = min) => { if (n < min || n > max) issues.push({ path, message: `${op} 는 값 ${min === max ? min : `${min}~${max}`}개가 필요합니다.` }); };
+    const need = (min: number, max = min) => { if (n < min || n > max) issues.push(I(path, 'argCount', `${op} 는 값 ${min === max ? min : `${min}~${max}`}개가 필요합니다.`, { op, n: min === max ? min : `${min}~${max}` })); };
     if (CMP_OPS.has(op) || op === '/' || op === '-') need(2);
     else if (op === 'not' || op === 'abs' || op === 'missing') need(1);
     else if (op === 'if') need(3);
-    else if (op === 'round') { need(1); if (o.digits !== undefined && (!Number.isInteger(o.digits) || (o.digits as number) < 0 || (o.digits as number) > 4)) issues.push({ path, message: 'digits 는 0~4 정수입니다.' }); if (o.mode !== undefined && !ROUND_MODES.has(String(o.mode))) issues.push({ path, message: `mode 는 ${[...ROUND_MODES].join('·')} 중 하나입니다.` }); }
-    else if (op === 'weighted_score') { need(0); if (o.normalize !== undefined && typeof o.normalize !== 'boolean') issues.push({ path, message: 'normalize 는 true 또는 false 입니다(글자 "false" 아님).' }); }
+    else if (op === 'round') { need(1); if (o.digits !== undefined && (!Number.isInteger(o.digits) || (o.digits as number) < 0 || (o.digits as number) > 4)) issues.push(I(path, 'digits', 'digits 는 0~4 정수입니다.')); if (o.mode !== undefined && !ROUND_MODES.has(String(o.mode))) issues.push(I(path, 'mode', `mode 는 ${[...ROUND_MODES].join('·')} 중 하나입니다.`, { modes: [...ROUND_MODES].join('·') })); }
+    else if (op === 'weighted_score') { need(0); if (o.normalize !== undefined && typeof o.normalize !== 'boolean') issues.push(I(path, 'normalize', 'normalize 는 true 또는 false 입니다(글자 "false" 아님).')); }
     else if (op === 'band') {
       need(1);
       const b = o.bands;
-      if (!Array.isArray(b) || !b.length || b.length > 20 || b.some((x) => !Array.isArray(x) || x.length !== 2 || typeof x[0] !== 'number' || typeof x[1] !== 'string' || !x[1] || x[1].length > 8)) issues.push({ path, message: 'band 에는 bands: [[하한 숫자, "등급"]…] 가 필요합니다(큰 하한부터).' });
-      else if (b.some((x, i) => i > 0 && (x[0] as number) >= (b[i - 1][0] as number))) issues.push({ path, message: 'bands 는 하한이 큰 것부터 적습니다.' });
-      if (o.else !== undefined && (typeof o.else !== 'string' || !o.else || o.else.length > 8)) issues.push({ path, message: 'else 등급은 1~8자 글자입니다.' });
+      if (!Array.isArray(b) || !b.length || b.length > 20 || b.some((x) => !Array.isArray(x) || x.length !== 2 || typeof x[0] !== 'number' || typeof x[1] !== 'string' || !x[1] || x[1].length > 8)) issues.push(I(path, 'bandShape', 'band 에는 bands: [[하한 숫자, "등급"]…] 가 필요합니다(큰 하한부터).'));
+      else if (b.some((x, i) => i > 0 && (x[0] as number) >= (b[i - 1][0] as number))) issues.push(I(path, 'bandOrder', 'bands 는 하한이 큰 것부터 적습니다.'));
+      if (o.else !== undefined && (typeof o.else !== 'string' || !o.else || o.else.length > 8)) issues.push(I(path, 'elseGrade', 'else 등급은 1~8자 글자입니다.'));
     }
-    else if (op === 'count_levels') { need(0); if (!Array.isArray(o.in) || !o.in.length || o.in.length > 30 || o.in.some((x) => typeof x !== 'string' || !x || x.length > 8)) issues.push({ path, message: 'count_levels 에는 in: [수준 코드(1~8자)…] 가 30개 이하로 필요합니다.' }); }
-    else if (n < 1) issues.push({ path, message: `${op} 에는 값이 하나 이상 필요합니다.` });
+    else if (op === 'count_levels') { need(0); if (!Array.isArray(o.in) || !o.in.length || o.in.length > 30 || o.in.some((x) => typeof x !== 'string' || !x || x.length > 8)) issues.push(I(path, 'countLevels', 'count_levels 에는 in: [수준 코드(1~8자)…] 가 30개 이하로 필요합니다.')); }
+    else if (n < 1) issues.push(I(path, 'needOne', `${op} 에는 값이 하나 이상 필요합니다.`, { op }));
     (args as unknown[] | undefined)?.forEach((a, i) => walk(a, `${path}.args[${i}]`, depth + 1));
   };
   if (s.lets !== undefined) {
-    if (!s.lets || typeof s.lets !== 'object' || Array.isArray(s.lets)) issues.push({ path: 'lets', message: 'lets 는 {이름: 식} 꼴입니다.' });
+    if (!s.lets || typeof s.lets !== 'object' || Array.isArray(s.lets)) issues.push(I('lets', 'letsShape', 'lets 는 {이름: 식} 꼴입니다.'));
     else {
       const l = s.lets as Record<string, unknown>;
       const { order, cycle } = letOrder(l);
-      if (cycle) issues.push({ path: `lets.${cycle}`, message: `중간값이 서로를 가리킵니다: ${cycle}` });
+      if (cycle) issues.push(I(`lets.${cycle}`, 'letCycle', `중간값이 서로를 가리킵니다: ${cycle}`, { name: cycle }));
       for (const name of order) {
-        if (!/^[a-z][a-z0-9_]{0,30}$/.test(name)) issues.push({ path: `lets.${name}`, message: '중간값 이름은 영문 소문자로 시작합니다.' });
+        if (!/^[a-z][a-z0-9_]{0,30}$/.test(name)) issues.push(I(`lets.${name}`, 'letName', '중간값 이름은 영문 소문자로 시작합니다.'));
         walk(l[name], `lets.${name}`, 0);
         lets.add(name);
       }
     }
   }
   const out = s.outputs as Record<string, unknown> | undefined;
-  if (!out || typeof out !== 'object' || Array.isArray(out)) issues.push({ path: 'outputs', message: 'outputs 가 필요합니다.' });
+  if (!out || typeof out !== 'object' || Array.isArray(out)) issues.push(I('outputs', 'outputsNeeded', 'outputs 가 필요합니다.'));
   else {
-    for (const k of Object.keys(out)) if (!['score', 'passed', 'level'].includes(k)) issues.push({ path: `outputs.${k}`, message: '결과 칸은 score·passed·level 만 씁니다.' });
-    if (!('score' in out) && !('passed' in out)) issues.push({ path: 'outputs', message: 'score 나 passed 중 하나는 있어야 합니다.' });
+    for (const k of Object.keys(out)) if (!['score', 'passed', 'level'].includes(k)) issues.push(I(`outputs.${k}`, 'outputKeys', '결과 칸은 score·passed·level 만 씁니다.'));
+    if (!('score' in out) && !('passed' in out)) issues.push(I('outputs', 'scoreOrPassed', 'score 나 passed 중 하나는 있어야 합니다.'));
     for (const [k, e] of Object.entries(out)) walk(e, `outputs.${k}`, 0);
   }
   return issues;

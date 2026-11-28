@@ -15,7 +15,7 @@ import type { MsgKey } from '@/lib/i18n/catalog';
 // 이름은 사전의 grade.preset.* · grade.attempt.* · grade.kind.*
 const KINDS = ['exam', 'assignment', 'project', 'performance'];
 
-/** 73차: 성적 — 척도·성적 정책 판·계산식 판(관리자, 130차 GradeSettings), 수업별 평가 항목·점수 입력·과목 서술·수업 마감 판 */
+/** 73차: 성적 — 척도·성적 정책 판·계산식 판(관리자, 131차 GradeSettings), 수업별 평가 항목·점수 입력·과목 서술·수업 마감 판 */
 export default async function GradesPage({ searchParams }: { searchParams: Promise<{ o?: string; calcFrom?: string }> }) {
   const sp = await searchParams;
   const o = sp.o && isUuid(sp.o) ? sp.o : null;
