@@ -1603,6 +1603,7 @@ export const CATALOG = {
   'db.directTitle': '지시 제목(title)이 필요합니다(200자 이내).',
   'db.directSession': '지시를 받을 세션(session)이 필요합니다.',
   'db.directSessionInactive': '지시를 받을 세션이 활성 상태가 아닙니다.',
+  'db.directPending': '승인 대기 중인 대화에는 덧붙이지 않습니다. 먼저 승인하거나 새 지시로 남겨 주세요.',
   'db.requestNotFound': '요청을 찾을 수 없습니다.',
   'db.tokenTerm': '기한은 7·30·90·365일 또는 무기한입니다.',
   'db.offeringNotFound': '개설을 찾을 수 없습니다.',

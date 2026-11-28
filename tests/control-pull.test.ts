@@ -106,6 +106,12 @@ describe('관제 지시 당겨 오기', () => {
     const dec = await asAgent((db) => c.control.file(db, T, { title: '닫힐 카드', source_session: RAS, door: 'notice', changes: '알림' })) as { id: string };
     await asAgent((db) => c.control.post(db, T, dec.id, { kind: 'status', status: 'done', author_session: RAS }));
     await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: dec.id, body: 'x' }))).rejects.toThrow('닫힌 결정에는 덧붙이지 않습니다');
+    // 승인 대기 대화에는 덧붙이지 않는다(/mine 이 승인 대기를 빼므로 받을 길이 없음)
+    const cl = new pg.Client({ connectionString: TEST_URL }); await cl.connect();
+    const pend = (await cl.query(`insert into public.control_requests(kind, title, topic, status, author, created_by, assignee_session)
+      values ('chat', '승인 대기 대화', 'system', 'pending', 'user', $1, $2) returning id`, [P, RAS])).rows[0].id as string;
+    await cl.end();
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: pend, body: 'x' }))).rejects.toThrow('승인 대기 중인 대화에는');
     expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(true);
     await expect(asAgent((db) => c.control.direct(db, T, { session: OTHER, request: d.id, body: 'x' }))).rejects.toThrow('그 요청을 맡은 세션에게만');
     await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, title: 't', body: '' }))).rejects.toThrow('지시 본문');

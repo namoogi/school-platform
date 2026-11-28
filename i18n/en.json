@@ -3232,5 +3232,6 @@
   "db.directBody": "A directive body (body) is required (up to 20000 characters).",
   "db.directTitle": "A directive title (title) is required (up to 200 characters).",
   "db.directSession": "A target session (session) is required for the directive.",
-  "db.directSessionInactive": "The target session is not active."
+  "db.directSessionInactive": "The target session is not active.",
+  "db.directPending": "Conversations awaiting approval cannot take directives. Approve it first or leave a new directive."
 }
