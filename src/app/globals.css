@@ -2444,3 +2444,8 @@ label.check input { margin-top: 0.25em; }
   .academics-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
   .academics-tabs a { justify-content: center; }
 }
+
+/* 121차: 템플릿 새 판 제안 목록 — 제안 하나가 세로로 쌓인 묶음(제목·이유·더해지는 것·결정) */
+.offer-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-4); }
+.offer-list > li { display: grid; gap: var(--space-3); min-width: 0; padding-bottom: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
+.offer-list > li:last-child { padding-bottom: 0; border-bottom: 0; }

@@ -11,15 +11,18 @@ export type AcademicsTab = (typeof ACADEMICS_TABS)[number] | 'templates';
 
 export const academicsTabHref = (tab: AcademicsTab) => (tab === 'templates' ? '/academics/templates' : tab === 'levels' ? '/academics' : `/academics?tab=${tab}`);
 
-export type TabCounts = { levels: number; rule: number | null; years: number; template: number | null };
+export type TabCounts = { levels: number; rule: number | null; years: number; template: number | null; offers: number };
 
-/** 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
+/** offers(121차) = 지금 쓰는 템플릿의 아직 수락하지 않은 새 판 제안 수. 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
 export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabCounts> {
   const { rows: [c] } = await db.query<TabCounts>(
     `select (select count(*)::int from public.school_levels where school_id = $1) as levels,
             (select max(version)::int from public.school_rules where school_id = $1 and topic = 'period_structure') as rule,
             (select count(*)::int from public.academic_years where school_id = $1) as years,
-            (select p.template_version from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) as template`, [schoolId]);
+            (select p.template_version from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) as template,
+            (select count(*)::int from public.academic_template_offers o
+              where o.school_id = $1 and o.status <> 'accepted'
+                and o.template_key = (select p.template_key from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1)) as offers`, [schoolId]);
   return c;
 }
 
@@ -27,7 +30,7 @@ export function AcademicsTabs({ current, t, counts: c }: {
   current: AcademicsTab; t: (k: MsgKey, v?: Record<string, string | number>) => string; counts: TabCounts;
 }) {
   const v = (n: number | null) => (n == null ? undefined : t('common.version', { v: n }));
-  const counts: Partial<Record<AcademicsTab, string | number>> = { levels: c.levels, terms: v(c.rule), years: c.years, templates: v(c.template) };
+  const counts: Partial<Record<AcademicsTab, string | number>> = { levels: c.levels, terms: v(c.rule), years: c.years, templates: c.offers > 0 ? t('tplOffer.tab') : v(c.template) };
   const items: { key: AcademicsTab; label: MsgKey }[] = [
     { key: 'levels', label: 'academics.tab.levels' }, { key: 'terms', label: 'academics.tab.terms' },
     { key: 'years', label: 'academics.tab.years' }, { key: 'templates', label: 'academics.tab.templates' },

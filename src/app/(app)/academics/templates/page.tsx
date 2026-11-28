@@ -10,10 +10,12 @@ import { ApplyTemplate } from './ApplyTemplate';
 import { HiddenSectionsForm } from './HiddenSectionsForm';
 import { hiddenSections } from '@/lib/sections';
 import { AcademicsTabs, academicsTabCounts } from '../AcademicsTabs';
+import { templateOfferViews } from '@/lib/template-offers';
+import { OfferActions } from './OfferActions';
 
 /** 113차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
 export default async function TemplatesPage() {
-  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts } = await loadForPage(async ({ db, school }) => ({
+  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts, offers } = await loadForPage(async ({ db, school }) => ({
     templates: await listTemplates(db),
     current: await schoolTemplate(db, school.id),
     steps: await setupChecklist(db, school.id),
@@ -21,6 +23,7 @@ export default async function TemplatesPage() {
     hidden: [...(await hiddenSections(db, school.id))],
     uiLang: await userLang(db),
     counts: await academicsTabCounts(db, school.id),
+    offers: await templateOfferViews(db, school.id),
   }), { module: 'records' });
   const { t, lang } = await getI18n(uiLang, school.locale);
   const admin = school.isAdmin;
@@ -45,6 +48,41 @@ export default async function TemplatesPage() {
         meta={<>{current ? <span>{t('atpl.metaCurrent', { name: pick(current.latest?.title ?? { ko: current.key }), v: current.version })}</span> : <span>{t('atpl.metaNone')}</span>}
           <span>{t('atpl.metaCount', { n: templates.length })}</span></>} />
       <AcademicsTabs current="templates" t={t} counts={counts} />
+
+      {offers.length > 0 && (
+        <section className="card stack" id="template-offers" data-testid="template-offers">
+          <h2>{t('tplOffer.title')}</h2>
+          <p className="fine">{t('tplOffer.lead')}</p>
+          <ul className="offer-list">{offers.map((o) => {
+            const name = pick(o.title);
+            const open = o.status === 'offered' || o.status === 'held' || o.status === 'declined';
+            const add = o.plan ? [
+              ...o.plan.add.levels.map((k) => t(`scheme.level.${k}` as MsgKey)),
+              ...(o.plan.add.grades ? [t('tplOffer.grades', { n: o.plan.add.grades })] : []),
+              ...(o.plan.add.periods.length ? [t('tplOffer.periods', { list: o.plan.add.periods.join(' · ') })] : []),
+              ...o.plan.add.scales.map((c) => t('tplOffer.scale', { code: c })),
+            ] : [];
+            const keep = o.plan ? [
+              ...(o.plan.keep.scheme ? [t('tplOffer.keepScheme', { scheme: t(`scheme.${o.plan.keep.scheme}` as MsgKey) })] : []),
+              ...(o.plan.keep.periods ? [t('tplOffer.keepPeriods')] : []),
+              ...(o.plan.keep.hidden ? [t('tplOffer.keepHidden')] : []),
+              ...o.plan.keep.scales.map((c) => t('tplOffer.scale', { code: c })),
+            ] : [];
+            return (
+              <li key={o.id} data-testid={`tpl-offer-${o.to_version}`}>
+                <span><strong>{t('tplOffer.versions', { name, from: o.from_version, to: o.to_version })}</strong>{' '}
+                  <StatusBadge tone={o.status === 'accepted' ? 'success' : o.status === 'offered' ? 'info' : 'neutral'}>{t(`offer.status.${o.status}` as MsgKey)}</StatusBadge>
+                  {o.note && <small className="muted"> · {o.note}</small>}</span>
+                {o.why && <p className="fine">{t('tplOffer.why', { why: o.why })}</p>}
+                {o.plan && <dl className="facts">
+                  <dt>{t('tplOffer.add')}</dt><dd data-testid={`tpl-offer-add-${o.to_version}`}>{add.length ? add.join(' · ') : t('tplOffer.nothingToAdd')}</dd>
+                  <dt>{t('tplOffer.keep')}</dt><dd data-testid={`tpl-offer-keep-${o.to_version}`}>{keep.length ? keep.join(' · ') : t('atpl.none')}</dd>
+                </dl>}
+                {admin && open && <OfferActions offerId={o.id} title={name} from={o.from_version} to={o.to_version} baseVersion={profileVersion} canAccept status={o.status} />}
+              </li>);
+          })}</ul>
+        </section>
+      )}
 
       <section className="card stack" data-testid="setup-checklist">
         <h2>{t('atpl.checklist')}</h2>
@@ -78,7 +116,10 @@ export default async function TemplatesPage() {
               <dl className="facts">
                 {rows.map((r) => <Fragment key={r.label}><dt>{r.label}</dt><dd>{r.value(tp)}</dd></Fragment>)}
               </dl>
-              {admin && <ApplyTemplate templateKey={tp.key} templateVersion={tp.version} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />}
+              {/* 121차: 새 판으로 바꾸는 길은 제안 수락 하나다(위 '새 판 제안' 카드) */}
+              {admin && (mode === 'update'
+                ? <a className="btn btn-primary" href="#template-offers" data-testid={`tpl-to-offer-${tp.key}`}>{t('tplOffer.see')}</a>
+                : <ApplyTemplate templateKey={tp.key} templateVersion={tp.version} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />)}
             </section>);
         })}
       </div>
