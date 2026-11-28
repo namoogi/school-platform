@@ -215,7 +215,7 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     await expect(importSchool(dst, wrong)).rejects.toThrow(/학사 관리 템플릿/);
     // 맞는 묶음은 운영 중에 낸 판까지 대상 DB에 넣는다(대상에서도 학교 판 = 최신 판이라 제안이 없다)
     const before = (await dst.query(`select count(*)::int as n from public.academic_templates where key = 'us_k12' and version = $1`, [latest + 1])).rows[0].n;
-    await importSchool(dst, { ...base, school: { ...base.school, slug: 'school-a-tpl-move', public_slug: null } }, { status: 'active' });
+    await importSchool(dst, { ...base, school: { ...base.school, slug: 'school-a-tpl-move', public_slug: null } });
     expect(before).toBe(0);
     expect((await dst.query(`select count(*)::int as n from public.academic_templates where key = 'us_k12' and version = $1`, [latest + 1])).rows[0].n).toBe(1);
   });
