@@ -3112,12 +3112,6 @@ export const CATALOG = {
   'tplOffer.keepScheme': '학년 체계({scheme})',
   'tplOffer.keepPeriods': '학기 구조',
   'tplOffer.keepHidden': '숨길 구획',
-  'tplOffer.accept': '수락하고 적용',
-  'tplOffer.confirmTitle': '{name} {to}판을 적용할까요? (지금 {from}판)',
-  'tplOffer.changesBody': '위 \'수락하면 더해지는 것\'만 학교 사본에 더하고, 학교 관할 판에 새 판 번호를 남깁니다.',
-  'tplOffer.done.accepted': '새 판을 적용하고 수락으로 남겼습니다.',
-  'tplOffer.done.held': '보류로 남겼습니다. 나중에 수락할 수 있습니다.',
-  'tplOffer.done.declined': '거절로 남겼습니다. 학교 사본은 그대로이고, 나중에 수락으로 바꿀 수 있습니다.',
   'tplOffer.see': '새 판 제안 보기',
   'tplOffer.tab': '새 판',
   // 125차 DB 안내 — 템플릿 새 판 제안
@@ -3129,6 +3123,8 @@ export const CATALOG = {
   // 125차 템플릿 새 판 제안 기록
   'tplOffer.history': '결정 기록 {n}건',
   'tplOffer.versionsShort': '{from}판 → {to}판',
+  // 125차 템플릿 새 판 제안 결정 확인
+  'tplOffer.confirm': '결정을 남길까요? \'수락\'이면 {name} {to}판을 지금 적용해 위의 \'수락하면 더해지는 것\'을 학교 사본에 더합니다(학교 값은 그대로).',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
