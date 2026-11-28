@@ -47,9 +47,14 @@ describe('관제 지시 당겨 오기', () => {
       due_at: new Date(Date.now() + 3600000).toISOString(), default_action: '카드로 바꿈',
     })) as { id: string };
     expect((await mine(RAS)).body.some((x: { id: string }) => x.id === r.id)).toBe(false); // 기한 전
+    // 사람이 메모만 남기고(전달 안 함) 세션이 기한 전에 답했어도, 기한 지남은 따로 나온다
+    await asUser(P, (db) => c.answerRequest(db, r.id, { body: '메모만', target_session: null }));
+    await asAgent((db) => c.control.post(db, T, r.id, { kind: 'note', body: '기한 전 메모', author_session: RAS }));
     const cl = new pg.Client({ connectionString: TEST_URL }); await cl.connect();
-    await cl.query(`update public.control_requests set due_at = now() - interval '1 minute' where id = $1`, [r.id]);
+    await cl.query(`update public.control_requests set due_at = clock_timestamp() + interval '300 milliseconds' where id = $1`, [r.id]);
+    expect((await cl.query('select status from public.control_requests where id = $1', [r.id])).rows[0].status).toBe('proceeding');
     await cl.end();
+    await new Promise((ok) => setTimeout(ok, 500));
     const got = (await mine(RAS)).body as { id: string; due?: boolean }[];
     expect(got.find((x) => x.id === r.id)).toMatchObject({ due: true });
     expect((await mine(OTHER)).body.some((x: { id: string }) => x.id === r.id)).toBe(false);

@@ -20,12 +20,14 @@ export async function GET(req: Request) {
     const now = Date.now();
     return all.filter((r) => (r.assignee_session ?? r.source_session) === session && r.status !== 'pending').flatMap((r) => {
       const msgs = r.messages.filter((m) => m.kind !== 'status');
-      const lastUser = msgs.map((m) => m.author).lastIndexOf('user');
-      if (lastUser < 0) {
-        const expired = r.door === 'default' && r.status === 'proceeding' && !!r.due_at && Date.parse(r.due_at) <= now;
-        const reported = expired && msgs.some((m) => m.author_session === session && Date.parse(m.created_at) >= Date.parse(r.due_at!));
-        return expired && !reported ? [{ ...r, due: true }] : [];
+      // 기한 지남은 앞선 글과 따로 본다. 사람이 실제로 답하면 상태가 answered 로 바뀌므로, 아직 proceeding 이면
+      // 메모만 남긴 경우까지 포함해 추천안을 실행할 차례다.
+      const expired = r.door === 'default' && r.status === 'proceeding' && !!r.due_at && Date.parse(r.due_at) <= now;
+      if (expired && !msgs.some((m) => m.author_session === session && Date.parse(m.created_at) >= Date.parse(r.due_at!))) {
+        return [{ ...r, due: true }];
       }
+      const lastUser = msgs.map((m) => m.author).lastIndexOf('user');
+      if (lastUser < 0) return [];
       const answered = msgs.slice(lastUser + 1).some((m) => m.author_session === session);
       return answered ? [] : [r];
     });
