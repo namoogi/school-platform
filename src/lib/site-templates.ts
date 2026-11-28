@@ -96,7 +96,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ anchor: 'way', template: 'text', title: ko('오시는 길'), body: ko('[주소·대중교통·주차]') }),
       ]),
       page('school-life', 2, ko('학교 생활'), [
-        // 127차: 학사일정은 석 달 치(실제 학교 안내 길이) — 한 칸짜리 목록이 늘어나지 않게
+        // 129차: 학사일정은 석 달 치(실제 학교 안내 길이) — 한 칸짜리 목록이 늘어나지 않게
         section({ anchor: 'calendar', template: 'facts', title: ko('학사일정'), items: [1, 2, 3].map((i) => ({ title: ko(`[알림 달 ${i}]`), body: ko(`[알림 달 ${i} 일정]`) })) }),
         section({ anchor: 'lunch', template: 'text', title: ko('급식'), body: ko('[급식 운영 안내 · 이번 달 식단표는 PDF로 올려 주세요]') }),
         section({ anchor: 'afterschool', template: 'text', title: ko('방과후·돌봄'), body: ko('[운영 시간·신청 방법]') }),
