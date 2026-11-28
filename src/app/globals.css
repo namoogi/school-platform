@@ -2543,9 +2543,9 @@ label.check input { margin-top: 0.25em; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-header-row { display: contents; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-brand { grid-column: 1; min-width: 0; padding-block: var(--ds-space-3); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-brand strong { overflow-wrap: anywhere; }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-visit { grid-column: 2; margin-left: 0; min-height: 40px; padding-inline: var(--ds-space-4); white-space: nowrap; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-visit { grid-column: 2; margin-left: 0; min-height: 44px; padding-inline: var(--ds-space-4); white-space: nowrap; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu { grid-column: 3; width: auto; margin: 0; }
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu > summary { min-height: 40px; padding: 0 var(--ds-space-3); list-style: none; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu > summary { min-height: 44px; padding: 0 var(--ds-space-3); list-style: none; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu > summary::-webkit-details-marker { display: none; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu[open] > summary { margin-bottom: 0; background: var(--t-ink); color: var(--t-bg); border-color: var(--t-ink); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu nav { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; padding: var(--ds-space-2) var(--L-gutter) var(--ds-space-4); background: var(--t-bg); border-bottom: 1px solid var(--t-line); box-shadow: var(--ds-shadow-2); }
