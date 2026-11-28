@@ -2,7 +2,7 @@ import type { I18n } from '@/lib/i18n/server';
 import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { LANG_LABEL, navEntriesOf, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
+import { LANG_LABEL, menuSectionsOf, navEntriesOf, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages, sampleAssetUrl, sampleNews, sampleNewsPage, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { SiteFrame } from '@/components/site/SiteFrame';
@@ -35,9 +35,11 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
     slug: `template-${t.key}`, school: view === 'sample' ? sample.school : '[학교 이름]', default_lang: fallback, langs: t.langs as Lang[], theme: t.theme,
     title: home.title, stories: false, has_news: false,
     nav: navEntriesOf(t.pages.map((p) => ({ key: p.key, content: pages[p.key] })), { inquiry: true, news: view === 'sample' }),
+    home_sections: menuSectionsOf(pages.home, { inquiry: true, news: view === 'sample' }),
   };
   const link = (path: string) => {
     if (path === '/' || path === '') return href({ page: 'home' });
+    if (/^\/#[a-z][a-z0-9-]*$/.test(path)) return `${href({ page: 'home' })}${path.slice(1)}`;
     if (path === '/news') return `${href({})}&news=all`;
     const article = /^\/news\/([a-z0-9-]+)$/.exec(path);
     if (article && sampleNews().some((n) => n.key === article[1])) return `${href({})}&news=${article[1]}`;

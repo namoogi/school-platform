@@ -490,6 +490,7 @@ export type PublicSite = {
   slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme; title: LText;
   /** 91차: 방문·상담 신청 받음 */ inquiry_open?: boolean;
   stories: boolean; has_news: boolean; nav: NavEntry[];
+  /** 126차(ADR 0046): 홈 쪽의 메뉴 주소 구역 — '홈' 아래 하위 메뉴 */ home_sections?: { anchor: string; title: LText }[];
   /** 47차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
   on_own_host?: boolean;
   /** 49차: 로그인한 이 학교 관리자가 보는 중이면 true — 공개 화면 위에 관리 막대를 보인다 */
