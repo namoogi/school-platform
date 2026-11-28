@@ -23,6 +23,11 @@ describe('짧은 글 구역 묶음', () => {
   it('숨긴 구역은 건너뛰고 이웃을 판정한다', () => {
     expect(runs(render([text('하나'), text('숨김', { hidden: true }), text('둘')]))).toEqual(['first+head', 'next+head']);
   });
+  it('방문자에게 안 그려지는 구역(닫힌 신청 칸·소식 없는 소식 목록)은 건너뛴다', () => {
+    const closed = { type: 'inquiry', title: { ko: '신청' } } as Block;
+    const news = { type: 'news_list', count: 3, title: { ko: '소식' } } as unknown as Block;
+    expect(runs(render([text('하나'), closed, news, text('둘')]))).toEqual(['first+head', 'next+head']);
+  });
   it('모양이 있는 구역은 묶지 않는다', () => {
     expect(runs(render([text('하나'), text('카드', { variant: 'overview' } as Partial<Block>), text('둘')]))).toEqual(['-', '-', '-']);
   });

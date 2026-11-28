@@ -119,7 +119,9 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   // 편집 화면(구역마다 감싸개가 있음)에서도 같은 표시가 붙도록 CSS 형제 선택자 대신 여기서 정한다.
   // data-run: first(묶음 첫 구역) · next(앞 구역에 이어짐). data-run-head: 제목·머리말이 있을 때만 두 칸(없으면 본문이 온 폭)
   const plainText = (b: Block | undefined) => b?.type === 'section' && b.template === 'text' && !b.variant;
-  const shown = content.blocks.map((b, i) => ({ b, i })).filter(({ b }) => !b.hidden);
+  // 방문자에게 아무것도 그리지 않는 구역(닫힌 신청 칸, 소식 없는 소식 목록, 그림책으로 넘긴 장면)은 이웃 판정에서 뺀다 — 아래 renderBlock의 null 조건과 같게
+  const drawsNothing = (b: Block) => !ed && ((b.type === 'inquiry' && !inquiry?.open) || (b.type === 'news_list' && !news.length) || b.type === 'story_page');
+  const shown = content.blocks.map((b, i) => ({ b, i })).filter(({ b }) => !b.hidden && !drawsNothing(b));
   const runOf = new Map<number, 'first' | 'next'>();
   shown.forEach(({ b, i }, k) => {
     if (!plainText(b)) return;
