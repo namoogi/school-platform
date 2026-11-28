@@ -100,12 +100,17 @@ export const RESERVED_ANCHORS = ['site-main'];
  * pageHref(key, anchor?)로 링크를 만든다. news는 소식 목록 링크와 제목을 받는다.
  */
 export function buildNavTree(entries: NavEntry[], pageHref: (key: string, anchor?: string) => string, news?: { href: string; title: LText }): NavNode[] {
-  const keys = new Set(entries.map((e) => e.key));
-  const parentOf = (e: NavEntry) => (e.parent && e.parent !== e.key && (keys.has(e.parent) || (e.parent === 'news' && news)) && !entries.find((x) => x.key === e.parent)?.parent ? e.parent : null);
+  // 'news'는 늘 소식 목록(상위 '소식')을 뜻한다. 주소 이름이 news인 쪽이 있어도 그 쪽은 상위 메뉴가 되지 못한다(한 쪽 = 한 부모)
+  const keys = new Set(entries.map((e) => e.key).filter((k) => k !== 'news'));
+  const parentOf = (e: NavEntry) => {
+    if (!e.parent || e.parent === e.key) return null;
+    if (e.parent === 'news') return news ? 'news' : null;
+    return keys.has(e.parent) && !entries.find((x) => x.key === e.parent)?.parent ? e.parent : null;
+  };
   const childPages = (k: string) => entries.filter((e) => parentOf(e) === k).map((e) => ({ key: `p:${e.key}`, href: pageHref(e.key), title: e.title }));
   const tops: NavNode[] = entries.filter((e) => !parentOf(e)).map((e) => ({
     key: `p:${e.key}`, href: pageHref(e.key), title: e.title,
-    children: [...(e.sections ?? []).map((s) => ({ key: `p:${e.key}#${s.anchor}`, href: pageHref(e.key, s.anchor), title: s.title })), ...childPages(e.key)],
+    children: [...(e.sections ?? []).map((s) => ({ key: `p:${e.key}#${s.anchor}`, href: pageHref(e.key, s.anchor), title: s.title })), ...(e.key === 'news' ? [] : childPages(e.key))],
   }));
   if (news) tops.push({ key: 'news', href: news.href, title: news.title, children: childPages('news') });
   return tops;
