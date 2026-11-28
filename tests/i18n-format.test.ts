@@ -55,11 +55,13 @@ describe('기본 영어 묶음', () => {
 });
 
 describe('다른 언어 묶음(i18n/*.json, 영어 말고)', () => {
-  // 영어 말고는 빠진 이름표가 있어도 된다(대체 언어로 보임). 대신 목록에 없는 이름표·모양이 다른 번역은 막는다
+  // 묶음이 있는 언어는 빠짐없이 채운다(사용자 결정 2026-11-28 "새 문구도 태국어 자동으로"). 새 이름표는 scripts/i18n-add.mjs 로 모든 묶음에 함께 넣는다.
+  // 묶음 없이 관리 화면에서 더한 언어는 이 시험 대상이 아니다(빠진 문구는 대체 언어로 보임)
   const dir = path.resolve(__dirname, '..', 'i18n');
   const packs = fs.readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'en.json');
-  it.each(packs)('%s: 목록에 있는 이름표만, 채우기 자리는 기준 문구와 같다', (file) => {
+  it.each(packs)('%s: 목록의 모든 이름표가 있고, 목록에 있는 이름표만, 채우기 자리는 기준 문구와 같다', (file) => {
     const pack = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as Record<string, string>;
+    expect(Object.keys(CATALOG).filter((k) => typeof pack[k] !== 'string' || !pack[k].trim()), `${file}에 빠진 이름표 — node scripts/i18n-missing.mjs 로 목록을 받아 채운다`).toEqual([]);
     expect(Object.keys(pack).filter((k) => !(k in CATALOG))).toEqual([]);
     expect(Object.entries(pack).filter(([k, v]) => !sameShape(CATALOG[k as keyof typeof CATALOG], v)).map(([k]) => k)).toEqual([]);
   });
