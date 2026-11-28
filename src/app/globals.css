@@ -1127,7 +1127,7 @@ label.radio { display: flex; align-items: center; gap: var(--space-2); font-weig
 .site[data-theme="dawn"] .sec[data-template="cta"][data-decor] { position: relative; isolation: isolate; padding-left: 0; overflow: hidden; }
 .site[data-theme="dawn"] .sec-decor { position: absolute; top: 0; right: 0; bottom: 0; width: min(48%, 600px); z-index: -1; pointer-events: none; }
 .site[data-theme="dawn"] .sec-decor img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: .6;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 60%); mask-image: linear-gradient(to right, transparent, #000 60%); }
+  -webkit-mask-image: linear-gradient(to right, transparent, var(--dawn-ink) 60%); mask-image: linear-gradient(to right, transparent, var(--dawn-ink) 60%); }
 .site[data-theme="dawn"] .sec[data-template="cta"][data-decor] .sec-copy > p { max-width: 520px; }
 
 /* ── 구역 모양(data-variant): 옛 사이트의 고정 구역 ── */
