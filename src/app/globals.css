@@ -2437,7 +2437,8 @@ label.check input { margin-top: 0.25em; }
   .sidebar:is(:hover, :has(.nav-item:focus-visible)) { width: 232px; box-shadow: var(--shadow-3); overflow-x: hidden; transition-delay: .12s; }
   .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-item { justify-items: stretch; text-align: start; padding-inline: var(--space-3); }
   .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-label { grid-auto-flow: column; grid-template-columns: 22px minmax(0, 1fr); justify-items: start; align-items: center; gap: var(--space-3); }
-  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-text { display: none; }
+  /* 짧은 이름은 눈에만 숨긴다(접근 이름으로 남아야 한다. 전체 이름 .nav-full 은 aria-hidden — Codex #196) */
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-full { display: block; font-size: var(--fs-body-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-item .count-badge { top: 50%; right: var(--space-3); transform: translateY(-50%); }
   /* 묶음 이름도 글자로 보인다(분석형은 평소 가는 선만) */
