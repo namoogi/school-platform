@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, Plus, Trash2 } from 'lucide-react';
 import { LANG_LABEL, LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
+import { usePhotoConsent, PublishCancelled } from '@/components/site/PhotoConsent';
 import { useI18n } from '@/components/I18nProvider';
 import type { MsgKey } from '@/lib/i18n/catalog';
 
@@ -27,16 +28,21 @@ export function EntryPublishControl({ id, title, latestVersion, liveVersion }: {
   const [busy, setBusy] = useState(false);
   const [refreshing, startTransition] = useTransition();
   const [msg, setMsg] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
+  const [askConsent, consentDialog] = usePhotoConsent();
   async function change(publish: boolean) {
     setBusy(true); setMsg(null);
     try {
-      await send(`/api/site/entries/${id}/publish`, 'POST', publish ? {} : { versionId: null });
+      // 121차: 공개할 때 사진이 있으면 공개 창에서 사진 공개 허가 확인
+      const consent = publish ? await askConsent([{ entryId: id }]) : {};
+      if (!consent) { setMsg({ tone: 'success', text: t('site.consent.cancelled') }); return; }
+      await send(`/api/site/entries/${id}/publish`, 'POST', publish ? consent : { versionId: null });
       setMsg({ tone: 'success', text: publish ? t('site.entry.publishedLatest') : t('site.entry.unpublishedMsg') });
       startTransition(() => router.refresh());
     } catch (err) { setMsg({ tone: 'danger', text: (err as Error).message || t('common.saveFailed') }); }
     finally { setBusy(false); }
   }
   return <div className="site-list-publish" data-testid="entry-publish-control" role="group" aria-label={t('site.entry.publishGroup', { title })}>
+    {consentDialog}
     <div className="row-wrap">
       {liveVersion !== latestVersion && <button type="button" className="btn btn-secondary btn-sm" disabled={busy || refreshing} onClick={() => change(true)} title={t('site.entry.publishLatestHint')}>{liveVersion === null ? t('site.entry.publish') : t('site.entry.publishNew')}</button>}
       {liveVersion !== null && <button type="button" className="btn btn-ghost btn-sm" disabled={busy || refreshing} onClick={() => change(false)}>{t('site.entry.unpublish')}</button>}
@@ -247,20 +253,31 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
   const add = (type: Block['type']) => setContent((c) => ({ ...c, blocks: [...c.blocks, NEW_BLOCK[type]()] }));
   const uploaded = (a: Asset) => setAssets((xs) => (xs.some((x) => x.id === a.id) ? xs : [a, ...xs]));
 
+  const [askConsent, consentDialog] = usePhotoConsent();
   async function run(fn: () => Promise<unknown>, ok: string) {
     setBusy(true); setMsg(null);
     try { await fn(); setMsg({ tone: 'success', text: ok }); router.refresh(); }
-    catch (e) { setMsg({ tone: 'danger', text: (e as Error).message || t('common.saveFailed') }); }
+    catch (e) {
+      if (e instanceof PublishCancelled) { setMsg({ tone: 'success', text: t('site.consent.cancelled') }); router.refresh(); return; }
+      setMsg({ tone: 'danger', text: (e as Error).message || t('common.saveFailed') });
+    }
     finally { setBusy(false); }
   }
+  /** 121차: 공개 창(사진 공개 허가 확인)을 거쳐 공개한다. versionId 가 없으면 최신 판 */
+  const publishVersion = async (versionId?: string) => {
+    const consent = await askConsent([{ entryId: detail.entry.id, versionId }]);
+    if (!consent) throw new PublishCancelled();
+    await send(`/api/site/entries/${detail.entry.id}/publish`, 'POST', versionId ? { versionId, ...consent } : consent);
+  };
   const save = () => run(() => { setSent(norm(content)); return send(`/api/site/entries/${detail.entry.id}/versions`, 'POST', { content, note }); }, t('site.entry.savedVersion'));
   const publishLatest = () => run(async () => {
     if (dirty) { setSent(norm(content)); await send(`/api/site/entries/${detail.entry.id}/versions`, 'POST', { content, note }); }
-    await send(`/api/site/entries/${detail.entry.id}/publish`, 'POST', {});
+    await publishVersion();
   }, t('site.entry.published'));
 
   return (
     <div className="site-editor" data-testid="entry-editor">
+      {consentDialog}
       <div className="card">
         <div className="between site-editor-header">
           <div>
@@ -371,7 +388,7 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
               <span><b>{t('common.version', { v: v.version })}</b> · {when(v.created_at, locale)}{v.note ? ` · ${v.note}` : ''}{v.id === detail.liveVersionId && <> · <span className="badge" data-tone="success">{t('site.status.live')}</span></>}</span>
               <span className="actions">
                 <Link className="btn btn-ghost btn-sm" href={`/site/preview/${detail.entry.id}?v=${v.version}`} target="_blank">{t('site.entry.preview')}</Link>
-                {canPublish && v.id !== detail.liveVersionId && <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => run(() => send(`/api/site/entries/${detail.entry.id}/publish`, 'POST', { versionId: v.id }), t('site.entry.publishedVersion', { v: v.version }))}>{t('site.entry.publishThis')}</button>}
+                {canPublish && v.id !== detail.liveVersionId && <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => run(() => publishVersion(v.id), t('site.entry.publishedVersion', { v: v.version }))}>{t('site.entry.publishThis')}</button>}
               </span>
             </li>
           ))}

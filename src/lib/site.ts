@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { asPublic, type Db } from './db';
 import { isUuid, NotFoundError, ValidationError } from './services';
 import { checkPdf, sniffMime } from './pdf-check';
+import { photoAssetIds } from './site-photos';
 
 /**
  * 27차: 학교 홈페이지 · 성품 동화 (ADR 0008)
@@ -358,8 +359,37 @@ export async function updateEntry(db: Db, schoolId: string, entryId: string, inp
   return { ok: true };
 }
 
-/** 공개: 고른 판(없으면 최신 판)을 공개 기록에 더한다. versionId=null 이면 공개 내림. 학교 관리자만(RLS). */
-export async function publish(db: Db, schoolId: string, entryId: string, versionId: string | null | undefined) {
+/** 121차: 판 안의 사진(이 학교 그림 자산만, PDF 제외). 공개 창의 사진 공개 허가 확인에 쓴다 */
+export async function photosOf(db: Db, schoolId: string, content: Content | null | undefined): Promise<{ id: string; name: string }[]> {
+  const ids = photoAssetIds(content).filter(isUuid);
+  if (!ids.length) return [];
+  const { rows } = await db.query<{ id: string; name: string }>(
+    `select id, name from public.site_assets where school_id = $1 and id = any($2::uuid[]) and mime like 'image/%'`, [schoolId, ids]);
+  const by = new Map(rows.map((r) => [r.id, r]));
+  return ids.flatMap((id) => (by.has(id) ? [by.get(id)!] : []));
+}
+
+/** 121차: 공개하려는 판들의 사진 목록 (공개 창이 보여 준다). targets: [{ entryId, versionId? }] — versionId 가 없으면 최신 판 */
+export async function publishPhotos(db: Db, schoolId: string, raw: unknown) {
+  const targets = (raw as { targets?: unknown } | null)?.targets;
+  if (!Array.isArray(targets) || targets.length < 1 || targets.length > 100) throw new ValidationError('err.photoTargets');
+  const entries: { entryId: string; version: number; photos: { id: string; name: string }[] }[] = [];
+  for (const t of targets as { entryId?: unknown; versionId?: unknown }[]) {
+    const { entry, versions } = await getEntry(db, schoolId, String(t?.entryId ?? ''));
+    const v = typeof t?.versionId === 'string' ? versions.find((x) => x.id === t.versionId) : versions[0];
+    if (!v) throw new ValidationError('공개할 판을 찾을 수 없습니다.');
+    entries.push({ entryId: entry.id, version: v.version, photos: await photosOf(db, schoolId, v.content) });
+  }
+  const seen = new Set<string>();
+  const photos = entries.flatMap((e) => e.photos).filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
+  return { entries, photos };
+}
+
+/**
+ * 공개: 고른 판(없으면 최신 판)을 공개 기록에 더한다. versionId=null 이면 공개 내림. 학교 관리자만(RLS).
+ * 121차: 사진이 든 판은 공개 창에서 사진 공개 허가를 확인해야 공개된다(photoConsent). 확인 시각·사진 목록을 공개 기록에 남긴다.
+ */
+export async function publish(db: Db, schoolId: string, entryId: string, versionId: string | null | undefined, opts: { photoConsent?: boolean } = {}) {
   const { entry, versions } = await getEntry(db, schoolId, entryId);
   if (entry.archived_at && versionId !== null) throw new ValidationError('보관한 항목은 공개할 수 없습니다. 먼저 되살려 주세요.');
   let target: string | null;
@@ -368,10 +398,15 @@ export async function publish(db: Db, schoolId: string, entryId: string, version
     target = versionId ?? versions[0]?.id ?? null;
     if (!target || !versions.some((v) => v.id === target)) throw new ValidationError('공개할 판을 찾을 수 없습니다.');
   }
+  const photos = target ? await photosOf(db, schoolId, versions.find((v) => v.id === target)?.content) : [];
+  if (photos.length && opts.photoConsent !== true) throw new ValidationError('err.photoConsentRequired', { n: photos.length });
   try {
-    await db.query('insert into public.site_publications(school_id, entry_id, version_id) values ($1,$2,$3)', [schoolId, entry.id, target]);
+    await db.query(
+      `insert into public.site_publications(school_id, entry_id, version_id, photo_consent_at, photo_consent_assets)
+       values ($1,$2,$3, case when $4::uuid[] is null then null else now() end, $4::uuid[])`,
+      [schoolId, entry.id, target, photos.length ? photos.map((p) => p.id) : null]);
   } catch (e) { dbError(e); }
-  return { ok: true, version_id: target };
+  return { ok: true, version_id: target, photos: photos.length };
 }
 
 /**

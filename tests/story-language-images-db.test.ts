@@ -29,7 +29,7 @@ it('언어별 그림은 사람·작업 토큰 모두 같은 학교 파일만 저
   }
   const entry = (await asUser(A.userId, (db) => site.createEntry(db, A.schoolId, { kind: 'story', key: 'local-art', content: content(a.id, a.id) })))!;
   expect(await site.publicAsset('image-language-test', a.id)).toBeNull();
-  await asUser(A.userId, (db) => site.publish(db, A.schoolId, entry.id, undefined));
+  await asUser(A.userId, (db) => site.publish(db, A.schoolId, entry.id, undefined, { photoConsent: true }));
   expect(await site.publicAsset('image-language-test', a.id)).not.toBeNull();
   expect((await site.publicEntry('image-language-test', 'story', 'local-art'))?.content.blocks[0]).toMatchObject({ images: { th: { asset: a.id } } });
 });

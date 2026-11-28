@@ -34,7 +34,7 @@ describe('확인한 판만 공개', () => {
     expect(query.mock.calls[0][0]).toContain("school_id = $1 and kind = 'story'");
     expect(query.mock.calls[0][0]).toContain('order by id for update');
     expect(query.mock.calls[0][1]).toEqual([school, [id]]);
-    expect(query.mock.calls[2][1]).toEqual([school, id, versionId]);
+    expect(query.mock.calls[2][1]).toEqual([school, id, versionId, null]); // 121차: 사진 없는 판은 허가 확인 칸을 비운다
     expect(query.mock.calls[2][0]).toMatch(/^insert into public.site_publications/);
   });
   it.each([
@@ -69,7 +69,24 @@ describe('확인한 판만 공개', () => {
   it('충돌한 항목을 건너뛰고 나머지만 공개한다', async () => {
     const { db, query } = fakeDb([{ id, archived_at: null }, { id: second, archived_at: null }], [{ ...current, version: 3 }, current]);
     expect((await bulkPublishStories(db, school, { items: [choice, { ...choice, id: second }] })).results.map((r) => r.status)).toEqual(['skipped', 'published']);
-    expect(query.mock.calls[3][1]).toEqual([school, second, versionId]);
+    expect(query.mock.calls[3][1]).toEqual([school, second, versionId, null]);
+  });
+  // 121차: 사진이 든 판은 공개 창에서 사진 공개 허가를 확인해야 공개하고, 확인한 사진을 공개 기록에 남긴다
+  const photo = '55555555-5555-4555-8555-555555555555';
+  const withPhoto = { ...current, content: { title: { ko: 'x' }, blocks: [{ type: 'story_page', asset: photo, text: {} }] } };
+  it('사진이 든 판은 허가 확인 없이 공개하지 않는다', async () => {
+    const { db, query } = fakeDb(undefined, [withPhoto]);
+    query.mockResolvedValueOnce({ rows: [{ id: photo, name: 'p.png' }] });
+    const { results } = await bulkPublishStories(db, school, { items: [choice] });
+    expect(results[0]).toMatchObject({ status: 'skipped', reason: expect.stringContaining('공개 허가') });
+    expect(query.mock.calls.some((c) => String(c[0]).startsWith('insert'))).toBe(false);
+  });
+  it('허가를 확인하면 공개하고 확인한 사진을 기록한다', async () => {
+    const { db, query } = fakeDb(undefined, [withPhoto]);
+    query.mockResolvedValueOnce({ rows: [{ id: photo, name: 'p.png' }] });
+    const { results } = await bulkPublishStories(db, school, { photo_consent: true, items: [choice] });
+    expect(results[0].status).toBe('published');
+    expect(query.mock.calls[3][1]).toEqual([school, id, versionId, [photo]]);
   });
   it('DB 오류를 성공으로 바꾸지 않아 상위 트랜잭션이 전체 롤백한다', async () => {
     const { db, query } = fakeDb(); query.mockRejectedValueOnce(new Error('database unavailable'));
