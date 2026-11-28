@@ -26,7 +26,7 @@ floor | 세션이 저장소에서 본 가장 큰 번호 | main과 브랜치에 1
 ## 한 일
 - 마이그레이션 `20261128002100_control_numbers.sql`: 표 `control_numbers`(고치기·지우기 막음, 전체 관리자만 읽음), `control.reserve_number`·`control.numbers`(점검 토큰, `control_writer` 소유).
 - API `GET/POST /api/control/numbers`, `src/lib/control.ts`의 `reserve`·`numbers`.
-- 스크립트 `scripts/reserve-number.mjs`(`npm run number`), `--dry`로 floor만 보기.
+- 스크립트 `scripts/reserve-number.mjs`(`npm run number`), `--dry`로 floor만 보기. 지금 커밋·로컬·원격 브랜치를 모두 세고, 번호를 하나도 못 찾으면 받지 않는다(원격을 못 받은 환경에서 1부터 받아 겹치지 않게, Codex 검토).
 - 규칙: `docs/COLLABORATION.md` 2절 '번호 받기', 세션 시작 점검 6단계, `docs/automation/CONTROL-CENTER.md` '번호 받기'. ADR 0051.
 - 이 차시의 번호(134차·0051·002100)는 장치가 생기기 전이라 열린 PR과 브랜치를 보고 손으로 골랐다(`--dry`의 floor와 같음).
 
