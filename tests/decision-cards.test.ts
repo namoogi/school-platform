@@ -1,4 +1,4 @@
-/** 129차: 결정 카드 표준 (ADR 0048) — 세션이 올리는 결정 요청의 형식 검사 · 문 종류 → 상태 */
+/** 130차: 결정 카드 표준 (ADR 0048) — 세션이 올리는 결정 요청의 형식 검사 · 문 종류 → 상태 */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { resetTestDb, TEST_URL } from './helpers';

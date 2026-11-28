@@ -115,6 +115,24 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   });
   const storyPages = content.blocks.filter((b): b is Extract<Block, { type: 'story_page' }> => b.type === 'story_page' && !b.hidden);
 
+  // 129차: 짧은 글 구역(모양 없는 text)이 이어지면 [제목 | 글] 두 칸 격자로 맞춘다. 이웃 판정은 방문자에게 보이는 구역 기준이고,
+  // 편집 화면(구역마다 감싸개가 있음)에서도 같은 표시가 붙도록 CSS 형제 선택자 대신 여기서 정한다.
+  // data-run: first(묶음 첫 구역) · next(앞 구역에 이어짐). data-run-head: 제목·머리말이 있을 때만 두 칸(없으면 본문이 온 폭)
+  // 그리는 차례: 방문자 화면의 그림책 쪽은 캐릭터 그림(PNG) 모음을 맨 뒤로 보낸다. 이웃 판정도 이 차례로 한다
+  const orderedBlocks = content.blocks.map((b, i) => ({ b, i }));
+  if (!ed && storyPages.length) orderedBlocks.sort((a, b) => Number(a.b.type === 'gallery' && a.b.download === 'png') - Number(b.b.type === 'gallery' && b.b.download === 'png'));
+  const plainText = (x: { b: Block; i: number } | undefined) => x?.b.type === 'section' && x.b.template === 'text' && !x.b.variant
+    && !(!ed && textInImage && isStoryOutline(content.blocks, x.i)); // 줄거리 칸으로 바뀌는 구역은 글 구역이 아니다
+  // 방문자에게 아무것도 그리지 않는 구역(닫힌 신청 칸, 소식 없는 소식 목록, 그림책으로 넘긴 장면)은 이웃 판정에서 뺀다 — 아래 renderBlock의 null 조건과 같게
+  const drawsNothing = (b: Block) => !ed && ((b.type === 'inquiry' && !inquiry?.open) || (b.type === 'news_list' && !news.length) || b.type === 'story_page');
+  const shown = orderedBlocks.filter(({ b }) => !b.hidden && !drawsNothing(b));
+  const runOf = new Map<number, 'first' | 'next'>();
+  shown.forEach((x, k) => {
+    if (!plainText(x)) return;
+    if (plainText(shown[k - 1])) runOf.set(x.i, 'next');
+    else if (plainText(shown[k + 1])) runOf.set(x.i, 'first');
+  });
+
   const href = (h: string) => (h.startsWith('/') || h.startsWith('#') ? link(h) : h);
   const ext = (h: string) => !(h.startsWith('/') || h.startsWith('#'));
   /** 편집 중에는 링크 대신 같은 모양의 span: 고치는 칸·사진 단추가 링크 안에 들어가지 않게(중첩 대화형 요소 금지) */
@@ -285,7 +303,8 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         const tags = [...new Set(items.map((it) => t(it.tag)).filter(Boolean))] as string[];
         const btnAfter = v === 'overview' || (v === 'half' && items.length > 0) || (b.template === 'facts' && !v && items.length > 0); // 52차: 한눈에 보기도 항목 뒤에
         return (
-          <section className="sec" data-template={b.template} data-variant={v} data-decor={decor && b.asset ? '' : undefined}>
+          <section className="sec" data-template={b.template} data-variant={v} data-decor={decor && b.asset ? '' : undefined}
+            data-run={runOf.get(i)} data-run-head={runOf.has(i) && (t(b.title) || t(b.eyebrow)) ? '' : undefined}>
             {decor}
             {b.template === 'banner' && figure}
             <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
@@ -311,8 +330,6 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
     }
   }
 
-  const orderedBlocks = content.blocks.map((b, i) => ({ b, i }));
-  if (!ed && storyPages.length) orderedBlocks.sort((a, b) => Number(a.b.type === 'gallery' && a.b.download === 'png') - Number(b.b.type === 'gallery' && b.b.download === 'png'));
   return (
     <div className="site-blocks">
       {!ed && textInImage && content.blocks.some((b) => !b.hidden && (b.type === 'image' || b.type === 'story_page') && b.asset && !b.images?.[lang]) && <p className="site-lead">{{

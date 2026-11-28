@@ -319,6 +319,15 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
       '[필요한 봉사]': '방학 영어 캠프, 교재 만들기, 시설 보수',
       '[기도 제목 받는 방법]': '메일로 신청하시면 달마다 기도 편지를 보내 드립니다.',
       '[쓰임 1]': '교사 생활비',
+      // 129차(가상 예시)
+      '[고백 2]': '배움은 함께 자라는 길입니다', '[사명 고백 2 설명]': '아이와 교사, 마을이 서로 배우는 공동체를 꿈꿉니다.',
+      '[고백 3]': '섬김으로 가르칩니다', '[사명 고백 3 설명]': '말보다 삶으로 보여 주는 교사가 되려 합니다.',
+      '[Belief 2]': 'Learning is a shared journey', '[Mission belief 2 note]': 'Children, teachers and the village learn from one another.',
+      '[Belief 3]': 'We teach by serving', '[Mission belief 3 note]': 'We aim to show with our lives, not only our words.',
+      '[쓰임 2]': '교재·급식', '[사명 쓰임 2 설명]': '예시 비율 · 아이들 교재와 점심 한 끼',
+      '[쓰임 3]': '통학 차량', '[사명 쓰임 3 설명]': '예시 비율 · 산골 마을 세 곳을 잇는 차량 운영',
+      '[Use 2]': 'Books and meals', '[Mission use 2 note]': 'Sample share · textbooks and a daily lunch',
+      '[Use 3]': 'School bus', '[Mission use 3 note]': 'Sample share · a bus linking three mountain villages',
       '[비율·설명]': '예시 비율 · 실제 재정 보고는 학교 자료대로 싣습니다.',
       '[담당자 연락처]': '후원 담당 000-000-0000 · partner@example.org',
     },
@@ -441,7 +450,7 @@ const TOKEN = /\[[^\]]+\]/g;
  * 예시 그림 파일. 선생님 쪽 AI로 만든 사진풍 그림(.jpg)이 오기 전에는 같은 이름의 자리 그림(.svg)을 쓴다.
  * 사진풍 그림을 넣으면 그 이름을 이 목록에 더한다(docs/design/template-image-prompts.md).
  */
-export const SAMPLE_PHOTOS = new Set<string>(["story-hero", "story-day", "story-learning", "story-season-1", "story-season-2", "story-season-3", "story-season-4", "story-season-5", "project-hero", "project-river", "project-market", "project-work-1", "project-work-2", "project-work-3", "project-work-4", "project-work-5", "project-work-6", "kinder-hero", "kinder-class-1", "kinder-class-2", "kinder-class-3", "kinder-play"]);
+export const SAMPLE_PHOTOS = new Set<string>(["notice-hero", "story-hero", "story-day", "story-learning", "story-season-1", "story-season-2", "story-season-3", "story-season-4", "story-season-5", "project-hero", "project-river", "project-market", "project-work-1", "project-work-2", "project-work-3", "project-work-4", "project-work-5", "project-work-6", "admissions-hero", "admissions-class", "admissions-books", "admissions-mentor", "kinder-hero", "kinder-class-1", "kinder-class-2", "kinder-class-3", "kinder-play", "mission-hero", "mission-village", "international-hero", "international-early", "international-primary", "international-secondary", "single-study", "single-outing"]);
 const SAMPLE_PHOTO_ALT: Record<string, string> = {
   "story-hero": "아침 햇살이 비치는 숲길과 작은 학교 건물",
   "story-day": "숲길을 함께 걷는 아이들의 뒷모습",
@@ -464,7 +473,20 @@ const SAMPLE_PHOTO_ALT: Record<string, string> = {
   "kinder-class-1": "쿠션과 그림책, 나무 블록이 놓인 새싹반 교실",
   "kinder-class-2": "작은 나무 부엌과 장난감이 놓인 역할 놀이 공간",
   "kinder-class-3": "크레용으로 그림을 그리는 아이들의 손",
-  "kinder-play": "텃밭에 작은 모종을 심는 아이들의 손"
+  "kinder-play": "텃밭에 작은 모종을 심는 아이들의 손",
+  "notice-hero": "나무 그늘 아래 벤치와 붉은 벽돌 학교 건물 정문",
+  "admissions-hero": "밝은 교실에서 손을 드는 학생들의 뒷모습",
+  "admissions-class": "둥근 책상에 책이 펼쳐진 소규모 수업 교실",
+  "admissions-books": "햇살 드는 책상 위에 쌓인 책과 지구본",
+  "admissions-mentor": "창가 책상에서 학생과 함께 공책을 보는 선생님의 뒷모습",
+  "mission-hero": "해 질 녘 산자락에 불을 밝힌 작은 학교",
+  "mission-village": "계단식 논 사이 산길을 걷는 아이들의 뒷모습",
+  "international-hero": "야자수와 잔디 마당이 있는 유리창 학교 건물",
+  "international-early": "나무 블록과 그림책이 놓인 유아 교실",
+  "international-primary": "세계 지도 앞에서 공부하는 초등 학생들의 뒷모습",
+  "international-secondary": "현미경과 실험 도구가 놓인 과학 실험실",
+  "single-study": "스탠드 불빛 아래 책상에서 함께 공부하는 손",
+  "single-outing": "바구니를 들고 텃밭 길을 걷는 아이들의 뒷모습"
 };
 /** 그림 이름 → 블록 검사를 통과하는 고정 UUID(예시 전용, 학교 그림과 겹치지 않는 대역) */
 const sampleId = (name: string) => {

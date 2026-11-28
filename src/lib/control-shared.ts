@@ -39,7 +39,7 @@ export type Request = {
   id: string; no: number; kind: 'decision' | 'directive' | 'chat'; title: string; detail: string; options: Option[]; recommended: string | null;
   reversible: boolean | null; related: string; lab_item_id: string | null; source_session: string | null; assignee_session: string | null;
   status: Status; topic: Topic; school_id: string | null; school_name?: string | null;
-  /** 결정 카드(129차, ADR 0048). 옛 요청·지시·대화는 비어 있다 */
+  /** 결정 카드(130차, ADR 0048). 옛 요청·지시·대화는 비어 있다 */
   door?: Door | null; ask?: string | null; default_action?: string | null; due_at?: string | null;
   changes?: string | null; unchanged?: string | null; undo?: string | null;
   author: string; created_at: string; updated_at: string; messages: Message[];

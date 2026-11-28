@@ -58,7 +58,7 @@ export function ControlCenter({ requests, sessions, lab }: { requests: Request[]
   const names = Object.fromEntries(sessions.map((s) => [s.id, s.name]));
   const current = TABS.find((x) => x.key === tab)!;
   // 답 필요: 되돌리기 어려운 결정 → 기한이 가까운 '기한까지 진행' → 카드 형식 이전 요청 순, 같은 무리는 오래된 것부터.
-  // 알림 카드는 답할 일이 없으므로 맨 아래 접힌 묶음으로 (129차, ADR 0048). 나머지 묶음은 최근 것부터.
+  // 알림 카드는 답할 일이 없으므로 맨 아래 접힌 묶음으로 (130차, ADR 0048). 나머지 묶음은 최근 것부터.
   const inTab = requests.filter((r) => current.statuses.includes(r.status));
   const notices = tab === 'need' ? inTab.filter((r) => r.door === 'notice').sort((a, b) => b.no - a.no) : [];
   const visible = tab === 'need'

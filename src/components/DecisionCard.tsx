@@ -4,7 +4,7 @@ import { useI18n } from '@/components/I18nProvider';
 import type { Door, Request } from '@/lib/control-shared';
 import type { MsgKey } from '@/lib/i18n/catalog';
 
-/** 129차 결정 카드(ADR 0048): 문 종류 표시. 색만으로 구분하지 않게 글자를 함께 쓴다 */
+/** 130차 결정 카드(ADR 0048): 문 종류 표시. 색만으로 구분하지 않게 글자를 함께 쓴다 */
 const TONE: Record<Door, 'danger' | 'warning' | 'neutral'> = { one_way: 'danger', default: 'warning', notice: 'neutral' };
 
 export function DoorBadge({ door }: { door: Door }) {
