@@ -67,7 +67,7 @@ begin
     raise exception '결정 카드에는 changes(승인하면 바뀌는 것, 300자 이내)가 필요합니다.' using errcode = '22023';
   end if;
   if dr in ('one_way', 'default') then
-    if q is null or length(q) > 120 or q !~ '[?？]$' then
+    if q is null or length(q) > 120 or q !~ '[?？]$' or q ~ '[\r\n]' then
       raise exception '결정 카드의 ask 는 예/아니오로 답할 수 있는 한 줄 질문(120자 이내, 물음표로 끝남)입니다.' using errcode = '22023';
     end if;
     if unchg is null or und is null or length(unchg) > 300 or length(und) > 300 then
@@ -91,6 +91,10 @@ begin
     end if;
     if due is null or due <= now() or due > now() + interval '30 days' then
       raise exception '기한까지 진행(default) 카드에는 앞으로 30일 안의 due_at(ISO 8601, 시간대 포함)이 필요합니다.' using errcode = '22023';
+    end if;
+    -- 기한이 지나면 맡은 세션이 /mine 으로 받아 실행한다. 맡을 세션이 없으면 실행될 길이 없다
+    if src is null then
+      raise exception '기한까지 진행(default) 카드에는 맡을 세션(source_session)이 필요합니다.' using errcode = '22023';
     end if;
     if dflt is null or length(dflt) > 500 then
       raise exception '기한까지 진행(default) 카드에는 default_action(답이 없으면 할 일, 500자 이내)이 필요합니다.' using errcode = '22023';

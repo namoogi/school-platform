@@ -64,6 +64,8 @@ describe('결정 카드', () => {
     await expect(file({ ...b, changes: '' })).rejects.toThrow('changes(승인하면 바뀌는 것');
     await expect(file({ ...b, ask: '카드로 바꿉니다.' })).rejects.toThrow('물음표로 끝남');
     await expect(file({ ...b, ask: `${'가'.repeat(120)}?` })).rejects.toThrow('120자 이내');
+    await expect(file({ ...b, ask: '첫 질문?\n실제로는 다른 질문?' })).rejects.toThrow('한 줄 질문');
+    await expect(file({ ...b, source_session: null })).rejects.toThrow('맡을 세션(source_session)');
     await expect(file({ ...b, undo: '' })).rejects.toThrow('undo(되돌리는 길)');
     await expect(file({ ...b, due_at: day(-1) })).rejects.toThrow('30일 안의 due_at');
     await expect(file({ ...b, due_at: day(31) })).rejects.toThrow('30일 안의 due_at');

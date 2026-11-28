@@ -3148,6 +3148,7 @@ export const CATALOG = {
   'db.cardUnchangedUndo': '결정 카드에는 unchanged(안 바뀌는 것)와 undo(되돌리는 길)가 필요합니다(각 300자 이내).',
   'db.cardDue': '기한까지 진행(default) 카드에는 앞으로 30일 안의 due_at(ISO 8601, 시간대 포함)이 필요합니다.',
   'db.cardOneWayDefault': 'default_action 은 기한까지 진행(default) 카드에만 씁니다. 한쪽 문(one_way)은 사람의 답을 기다립니다.',
+  'db.cardDefaultSession': '기한까지 진행(default) 카드에는 맡을 세션(source_session)이 필요합니다.',
   'db.cardNoticeAsk': '알림(notice) 카드에는 ask·default_action·recommended 를 두지 않습니다. 물을 것이 있으면 default 나 one_way 로 올려 주세요.',
   'db.cardDefaultAction': '기한까지 진행(default) 카드에는 default_action(답이 없으면 할 일, 500자 이내)이 필요합니다.',
   'db.cardDueOnlyDefault': '기한(due_at)은 기한까지 진행(default) 카드에만 씁니다.',
