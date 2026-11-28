@@ -71,6 +71,8 @@ describe('템플릿 새 판 제안', () => {
     expect((await offer(B))!.status).toBe('declined');
     await expect(decide(B, 'accepted', 3)).rejects.toMatchObject({ code: 'P0409' });
     await expect(decide(B, 'accepted', 2, 0)).rejects.toMatchObject({ code: 'P0409' });
+    // 보류·거절도 본 판에 묶인다(그 사이 학교 판이 바뀌었으면 409)
+    await expect(decide(B, 'held', 2, 0)).rejects.toMatchObject({ code: 'P0409' });
     // 거절한 뒤에도 수락할 수 있다
     const r = await decide(B, 'accepted', 2);
     expect(r).toMatchObject({ decision: 'accepted', to_version: 2, applied: { made: { scales: ['kr_pf_v2'] } } });
