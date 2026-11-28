@@ -473,7 +473,20 @@ const SAMPLE_PHOTO_ALT: Record<string, string> = {
   "kinder-class-1": "쿠션과 그림책, 나무 블록이 놓인 새싹반 교실",
   "kinder-class-2": "작은 나무 부엌과 장난감이 놓인 역할 놀이 공간",
   "kinder-class-3": "크레용으로 그림을 그리는 아이들의 손",
-  "kinder-play": "텃밭에 작은 모종을 심는 아이들의 손"
+  "kinder-play": "텃밭에 작은 모종을 심는 아이들의 손",
+  "notice-hero": "나무 그늘 아래 벤치와 붉은 벽돌 학교 건물 정문",
+  "admissions-hero": "밝은 교실에서 손을 드는 학생들의 뒷모습",
+  "admissions-class": "둥근 책상에 책이 펼쳐진 소규모 수업 교실",
+  "admissions-books": "햇살 드는 책상 위에 쌓인 책과 지구본",
+  "admissions-mentor": "창가 책상에서 학생과 함께 공책을 보는 선생님의 뒷모습",
+  "mission-hero": "해 질 녘 산자락에 불을 밝힌 작은 학교",
+  "mission-village": "계단식 논 사이 산길을 걷는 아이들의 뒷모습",
+  "international-hero": "야자수와 잔디 마당이 있는 유리창 학교 건물",
+  "international-early": "나무 블록과 그림책이 놓인 유아 교실",
+  "international-primary": "세계 지도 앞에서 공부하는 초등 학생들의 뒷모습",
+  "international-secondary": "현미경과 실험 도구가 놓인 과학 실험실",
+  "single-study": "스탠드 불빛 아래 책상에서 함께 공부하는 손",
+  "single-outing": "바구니를 들고 텃밭 길을 걷는 아이들의 뒷모습"
 };
 /** 그림 이름 → 블록 검사를 통과하는 고정 UUID(예시 전용, 학교 그림과 겹치지 않는 대역) */
 const sampleId = (name: string) => {

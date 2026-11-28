@@ -77,12 +77,13 @@ describe('템플릿 예시 내용', () => {
       const obj = value as Record<string, unknown>;
       return [...(typeof obj.asset === 'string' ? [obj as { asset: string; alt?: { ko?: string } }] : []), ...Object.values(obj).flatMap(assets)];
     };
-    for (const key of ['story', 'project', 'kinder']) {
+    for (const key of SITE_TEMPLATES.map((t) => t.key)) {
       const template = SITE_TEMPLATES.find((t) => t.key === key)!;
       expect(assets(template.pages), '실제 적용 템플릿에 예시 자산을 넣지 않음').toEqual([]);
       for (const [page, content] of Object.entries(samplePages(template))) {
         const photos = assets(content);
-        expect(photos.length, `${key}/${page}`).toBeGreaterThan(0);
+        // 사진 중심 3종은 모든 쪽에 사진이 있다. 나머지 5종은 사진 없는 글 쪽도 있다(있으면 모두 JPG + 설명)
+        if (['story', 'project', 'kinder'].includes(key)) expect(photos.length, `${key}/${page}`).toBeGreaterThan(0);
         for (const photo of photos) {
           expect(sampleAssetUrl(photo.asset)).toMatch(/\.jpg$/);
           expect(photo.alt?.ko).toContain('AI 예시 사진');
