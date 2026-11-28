@@ -513,8 +513,7 @@ label.radio.module:not(.pv-root *), .module { align-items: flex-start; }
 
 /* ── 16. 개발·연구소 ───────────────────────────────────── */
 .quick-add { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; background: var(--surface-default); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--ds-space-3); }
-.quick-add input:first-child { flex: 1 1 260px; }
-.quick-add select, .quick-add input[type=date] { width: auto; max-width: 100%; min-width: 0; }
+/* UI 점검(lab, ADR 0045): 칸 너비·배치는 공용 .form-grid > .ff[data-size] 규칙을 쓴다(따로 두지 않음, Codex #229) */
 .items { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-default); }
 .item { padding: var(--ds-space-3) var(--ds-space-4); border-top: 1px solid var(--border-subtle); }
 .item:first-child { border-top: 0; }
@@ -1968,6 +1967,8 @@ label.radio { display: flex; align-items: center; gap: var(--ds-space-2); font-w
    - 위 막대: 화면 형식 단추를 숨기고(설정은 넓은 화면에서), 대화 단추는 아이콘만, 학교 이름은 줄임표 */
 @media (max-width: 768px) {
   .app[data-ui] .sidebar { overflow-x: auto; overflow-y: hidden; }
+  /* UI 점검(lab): 메뉴가 위 줄로 올라가도 분석형의 '메뉴 칸 + 경계선' 배경 줄무늬가 남아 본문에 세로줄이 그어졌다 */
+  .app[data-ui] { background: var(--surface-canvas); }
 }
 @media (max-width: 600px) {
   .topbar .ui-controls { display: none; }
