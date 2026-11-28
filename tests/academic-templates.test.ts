@@ -143,12 +143,14 @@ describe('학사 관리 템플릿', () => {
     await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 9, base_version: await ver(B) }))).rejects.toThrow();
     // 학년 체계를 커스텀으로 바꾼 뒤 템플릿 2판을 채워도 커스텀이 남는다
     await asUser(B.userId, async (db) => gs.applyGradeScheme(db, B.schoolId, { scheme: 'custom', levels: ['high'], base_version: await ver(B) }, 'en'));
-    const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 2, base_version: await ver(B) }, 'en'));
+    // 125차: 같은 템플릿의 다른 판은 새 판 제안 수락으로만 옮긴다(수락이 쓰는 길과 같은 viaOffer)
+    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 2, base_version: await ver(B) }, 'en'))).rejects.toThrow('제안');
+    const r = await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 2, base_version: await ver(B) }, 'en', { viaOffer: true }));
     expect(r.kept.scheme).toBe('custom');
     expect((await asUser(B.userId, (db) => gs.schemeView(db, B.schoolId, 'en'))).scheme).toBe('custom');
     expect(await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId))).toMatchObject({ key: 'us_k12', version: 2 });
-    // 최신이 2판이어도 1판을 이름 대면 1판이 들어간다(화면이 본 판)
-    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 1, base_version: await ver(B) }, 'en'));
-    expect(await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId))).toMatchObject({ key: 'us_k12', version: 1, latest: { version: 2 } });
+    // 같은 템플릿의 낮은 판으로 내리는 것도 막힌다(125차)
+    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'us_k12', version: 1, base_version: await ver(B) }, 'en'))).rejects.toThrow('제안');
+    expect(await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId))).toMatchObject({ key: 'us_k12', version: 2 });
   });
 });

@@ -10,10 +10,12 @@ import { ApplyTemplate } from './ApplyTemplate';
 import { HiddenSectionsForm } from './HiddenSectionsForm';
 import { hiddenSections } from '@/lib/sections';
 import { AcademicsTabs, academicsTabCounts } from '../AcademicsTabs';
+import { openTemplateOffer, templateDecisions } from '@/lib/template-offers';
+import { ActionForm } from '@/components/ActionForm';
 
 /** 113차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
 export default async function TemplatesPage() {
-  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts } = await loadForPage(async ({ db, school }) => ({
+  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts, offer, decisions } = await loadForPage(async ({ db, school }) => ({
     templates: await listTemplates(db),
     current: await schoolTemplate(db, school.id),
     steps: await setupChecklist(db, school.id),
@@ -21,6 +23,8 @@ export default async function TemplatesPage() {
     hidden: [...(await hiddenSections(db, school.id))],
     uiLang: await userLang(db),
     counts: await academicsTabCounts(db, school.id),
+    offer: await openTemplateOffer(db, school.id),
+    decisions: await templateDecisions(db, school.id),
   }), { module: 'records' });
   const { t, lang } = await getI18n(uiLang, school.locale);
   const admin = school.isAdmin;
@@ -45,6 +49,54 @@ export default async function TemplatesPage() {
         meta={<>{current ? <span>{t('atpl.metaCurrent', { name: pick(current.latest?.title ?? { ko: current.key }), v: current.version })}</span> : <span>{t('atpl.metaNone')}</span>}
           <span>{t('atpl.metaCount', { n: templates.length })}</span></>} />
       <AcademicsTabs current="templates" t={t} counts={counts} />
+
+      {(offer || decisions.length > 0) && (
+        <section className="card stack" id="template-offers" data-testid="template-offers">
+          <h2>{t('tplOffer.title')}</h2>
+          <p className="fine">{t('tplOffer.lead')}</p>
+          {offer && (() => {
+            const name = pick(offer.title);
+            const add = [
+              ...offer.plan.add.levels.map((k) => t(`scheme.level.${k}` as MsgKey)),
+              ...(offer.plan.add.grades ? [t('tplOffer.grades', { n: offer.plan.add.grades })] : []),
+              ...(offer.plan.add.periods.length ? [t('tplOffer.periods', { list: offer.plan.add.periods.join(' · ') })] : []),
+              ...offer.plan.add.scales.map((c) => t('tplOffer.scale', { code: c })),
+            ];
+            const keep = [
+              ...(offer.plan.keep.scheme ? [t('tplOffer.keepScheme', { scheme: t(`scheme.${offer.plan.keep.scheme}` as MsgKey) })] : []),
+              ...(offer.plan.keep.periods ? [t('tplOffer.keepPeriods')] : []),
+              ...(offer.plan.keep.hidden ? [t('tplOffer.keepHidden')] : []),
+              ...offer.plan.keep.scales.map((c) => t('tplOffer.scale', { code: c })),
+            ];
+            return (
+              <div className="stack" data-testid={`tpl-offer-${offer.to}`}>
+                <span><strong>{t('tplOffer.versions', { name, from: offer.from, to: offer.to })}</strong>{' '}
+                  <StatusBadge tone={offer.status === 'offered' ? 'info' : 'neutral'}>{t(`offer.status.${offer.status}` as MsgKey)}</StatusBadge>
+                  {offer.note && <small className="muted"> · {offer.note}</small>}</span>
+                {offer.why && <p className="fine">{t('tplOffer.why', { why: offer.why })}</p>}
+                <dl className="facts">
+                  <dt>{t('tplOffer.add')}</dt><dd data-testid={`tpl-offer-add-${offer.to}`}>{add.length ? add.join(' · ') : t('tplOffer.nothingToAdd')}</dd>
+                  <dt>{t('tplOffer.keep')}</dt><dd data-testid={`tpl-offer-keep-${offer.to}`}>{keep.length ? keep.join(' · ') : t('atpl.none')}</dd>
+                </dl>
+                {/* ADR 0045 양식 규약: 공용 ActionForm(결정 고르기 + 메모). 수락하면 새 판을 적용하므로 확인을 받는다 */}
+                {admin && <ActionForm key={`${offer.to}-${profileVersion}`} url="/api/academics" action="template-offer" inline
+                  extra={{ to_version: offer.to, base_version: profileVersion }} testId={`tpl-offer-form-${offer.to}`}
+                  submitLabel={t('settings.decide')} successText={t('settings.decided')} confirmText={t('tplOffer.confirm', { name, to: offer.to })}
+                  fields={[{ name: 'decision', label: t('settings.decision'), type: 'select', width: 'sm',
+                    options: ['accepted', 'held', 'declined'].filter((d) => d !== offer.status).map((d) => ({ value: d, label: t(`offer.status.${d}` as MsgKey) })) },
+                  { name: 'note', label: t('settings.memoOptional'), width: 'lg' }]} />}
+              </div>);
+          })()}
+          {decisions.length > 0 && (
+            <details data-testid="tpl-decisions">
+              <summary>{t('tplOffer.history', { n: decisions.length })}</summary>
+              <ul className="offer-list">{decisions.map((d) => (
+                <li key={d.id}><span>{t('tplOffer.versionsShort', { from: d.from_version, to: d.to_version })}{' '}
+                  <StatusBadge tone={d.decision === 'accepted' ? 'success' : 'neutral'}>{t(`offer.status.${d.decision}` as MsgKey)}</StatusBadge>
+                  <small className="muted"> · {d.decided_at.slice(0, 10)}{d.note ? ` · ${d.note}` : ''}</small></span></li>))}</ul>
+            </details>)}
+        </section>
+      )}
 
       <section className="card stack" data-testid="setup-checklist">
         <h2>{t('atpl.checklist')}</h2>
@@ -78,7 +130,10 @@ export default async function TemplatesPage() {
               <dl className="facts">
                 {rows.map((r) => <Fragment key={r.label}><dt>{r.label}</dt><dd>{r.value(tp)}</dd></Fragment>)}
               </dl>
-              {admin && <ApplyTemplate templateKey={tp.key} templateVersion={tp.version} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />}
+              {/* 125차: 새 판으로 바꾸는 길은 제안 수락 하나다(위 '새 판 제안' 카드) */}
+              {admin && (mode === 'update'
+                ? <a className="btn btn-primary" href="#template-offers" data-testid={`tpl-to-offer-${tp.key}`}>{t('tplOffer.see')}</a>
+                : <ApplyTemplate templateKey={tp.key} templateVersion={tp.version} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />)}
             </section>);
         })}
       </div>

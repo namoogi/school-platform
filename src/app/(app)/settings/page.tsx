@@ -57,7 +57,7 @@ export default async function SettingsPage() {
           <MembersPanel members={JSON.parse(JSON.stringify(team.members))} invitations={JSON.parse(JSON.stringify(team.invitations))}
             seats={license.current?.seats ?? 0} used={license.seatsUsed} />
         </section>
-        <section className="card" data-testid="portal-accounts">
+        <section className="card" id="portal-accounts" data-testid="portal-accounts">
           <PortalAccountsPanel accounts={JSON.parse(JSON.stringify(portal))} people={people} />
         </section>
         <section className="card" data-testid="school-dev-links">

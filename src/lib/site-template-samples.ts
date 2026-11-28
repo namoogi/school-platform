@@ -55,8 +55,10 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
   story: {
     school: '숲속이야기학교',
     images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'story-hero' }, { at: ['home', 'blocks', 2, 'asset'], name: 'story-day' }, { at: ['admission', 'blocks', 4, 'asset'], name: 'story-learning' }, { at: ['learning', 'blocks', 0, 'asset'], name: 'story-learning' },
-      { at: ['learning', 'blocks', 1, 'asset'], name: 'story-season-3' }, { at: ['philosophy', 'blocks', 2, 'asset'], name: 'story-hero' }, { at: ['community', 'blocks', 0, 'asset'], name: 'story-season-5' },
-      ...[1, 2, 3, 4, 5].map((n) => ({ at: ['home', 'blocks', 3, 'items', n - 1, 'asset'], name: `story-season-${n}` }))],
+      { at: ['learning', 'blocks', 1, 'asset'], name: 'story-season-3' }, { at: ['philosophy', 'blocks', 2, 'asset'], name: 'story-hero' }, { at: ['community', 'blocks', 0, 'asset'], name: 'story-season-2' },
+      ...[1, 2, 3, 4].map((n) => ({ at: ['home', 'blocks', 3, 'items', n - 1, 'asset'], name: `story-season-${n}` })),
+      // 124차 뒤(선생님): 풍성한 밥상 사진은 학교 모습과 어긋나 사계절 다섯째 칸·공동체 쪽에서 뺐다
+      { at: ['home', 'blocks', 3, 'items', 4, 'asset'], name: 'story-learning' }],
     text: {
       ...contact('숲속이야기학교', '000-000-0000', 'hello@example.org', '가상시 숲길면 오솔길 7', '숲에서 묻고, 함께 답을 찾는 학교'),
       // 107차: 바로가기·숫자 띠·일정·목소리·입학 안내(가상 예시)
@@ -82,7 +84,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
       '[다가오는 행사 — 예: 5월 12일 학교 여는 날]': '5월 12일 · 학교 여는 날',
       '[행사 한 줄 안내]': '오전 10시, 숲길 산책과 수업 둘러보기. 가족 누구나 오세요.',
       '[사진으로 보는 우리 학교]': '사진으로 보는 숲속의 한 해',
-      '[사진 이름 1]': '봄 숲길', '[사진 이름 2]': '여름 텃밭', '[사진 이름 3]': '가을 공방', '[사진 이름 4]': '겨울 도서실', '[사진 이름 5]': '함께 짓는 밥',
+      '[사진 이름 1]': '봄 숲길', '[사진 이름 2]': '여름 텃밭', '[사진 이름 3]': '가을 공방', '[사진 이름 4]': '겨울 도서실', '[사진 이름 5]': '숲 관찰 시간',
       '[학교를 처음 만나는 분께 드리는 두 문장]': '우리는 아이의 질문에서 수업을 시작합니다. 숲과 마을이 교실이고, 어른은 함께 걷는 안내자입니다.',
       '[아침부터 저녁까지, 우리 학교의 하루]': '아침 숲길에서 저녁 나눔까지',
       '[하루 흐름을 이야기처럼]': '아침에는 숲길을 걸으며 하루를 엽니다. 오전에는 학년이 섞인 모둠으로 프로젝트를 하고, 점심은 함께 지은 밥을 나눕니다. 오후에는 악기·목공·텃밭 가운데 하나를 고르고, 하루 끝에는 둥글게 앉아 배운 것을 이야기합니다.',
