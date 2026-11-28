@@ -70,19 +70,20 @@ describe('템플릿 예시 내용', () => {
     const fits = recommendTemplates([{ name: '/', text: '햇님 유치원 · 만 3세 새싹반, 만 4세 꽃잎반 · 놀이 중심 · 등원 시간 9시' }], {});
     expect(fits[0].key).toBe('kinder');
   });
-  it('#143: 대표 3종의 모든 쪽이 등록된 JPG와 설명을 쓰며 사진은 실제 학교에 자동 적용되지 않는다', () => {
-    expect(SAMPLE_PHOTOS.size).toBe(22);
+  it('#143: 8종의 모든 예시 사진이 등록된 JPG와 설명을 쓰며 사진은 실제 학교에 자동 적용되지 않는다', () => {
+    expect(SAMPLE_PHOTOS.size).toBe(35);
     const assets = (value: unknown): { asset: string; alt?: { ko?: string } }[] => {
       if (!value || typeof value !== 'object') return [];
       const obj = value as Record<string, unknown>;
       return [...(typeof obj.asset === 'string' ? [obj as { asset: string; alt?: { ko?: string } }] : []), ...Object.values(obj).flatMap(assets)];
     };
-    for (const key of ['story', 'project', 'kinder']) {
+    for (const key of SITE_TEMPLATES.map((t) => t.key)) {
       const template = SITE_TEMPLATES.find((t) => t.key === key)!;
       expect(assets(template.pages), '실제 적용 템플릿에 예시 자산을 넣지 않음').toEqual([]);
       for (const [page, content] of Object.entries(samplePages(template))) {
         const photos = assets(content);
-        expect(photos.length, `${key}/${page}`).toBeGreaterThan(0);
+        // 사진 중심 3종은 모든 쪽에 사진이 있다. 나머지 5종은 사진 없는 글 쪽도 있다(있으면 모두 JPG + 설명)
+        if (['story', 'project', 'kinder'].includes(key)) expect(photos.length, `${key}/${page}`).toBeGreaterThan(0);
         for (const photo of photos) {
           expect(sampleAssetUrl(photo.asset)).toMatch(/\.jpg$/);
           expect(photo.alt?.ko).toContain('AI 예시 사진');

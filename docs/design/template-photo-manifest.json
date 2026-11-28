@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-27",
+  "generatedAt": "2026-11-28",
   "generator": "Codex built-in image generation (subscription)",
   "fictional": true,
   "usage": "Template previews only; no school uploads or published content modified",
@@ -157,6 +157,97 @@
       "height": 1200,
       "bytes": 273329,
       "prompt": "Single photorealistic commercial-quality editorial photograph for a fictional school website. Asset kinder-play.jpg. Children's hands planting seedlings in a small garden bed with tiny unbranded watering cans, sunny gentle morning, close-up showing only hands and soil, center composition safe for circular cropping. Square 1:1 at least 1200x1200. Natural photographic light and realistic materials. Absolutely no visible or identifiable faces, no text or letters, no numerals, no labels, signs, brand logos or watermarks anywhere. Original fictional setting, not an identifiable real school or building. One full photo, not a collage, not a web mockup."
+    },
+    {
+      "name": "notice-hero.jpg",
+      "width": 1600,
+      "height": 900,
+      "bytes": 295678,
+      "prompt": "Photorealistic wide shot of a friendly public elementary school building on a clear blue morning, red-brick and white walls, a tidy schoolyard with a few trees, blue sky with soft clouds, calm and welcoming mood, 16:9"
+    },
+    {
+      "name": "admissions-hero.jpg",
+      "width": 1600,
+      "height": 900,
+      "bytes": 238673,
+      "prompt": "Photorealistic bright modern classroom with large windows, a few students seen from behind raising hands toward a whiteboard, warm sunlight, energetic and optimistic mood, 16:9"
+    },
+    {
+      "name": "admissions-class.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 286736,
+      "prompt": "Photorealistic small circle of eight chairs around a round table in a cozy classroom, open books on the table, soft daylight, 4:3"
+    },
+    {
+      "name": "admissions-books.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 206548,
+      "prompt": "Photorealistic stack of picture books and notebooks on a desk with two different colored bookmarks, a globe in the background, warm light, 4:3"
+    },
+    {
+      "name": "admissions-mentor.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 190885,
+      "prompt": "Photorealistic two people seen from behind sitting side by side at a desk looking at a notebook together, window light, calm mentoring mood, 4:3"
+    },
+    {
+      "name": "mission-hero.jpg",
+      "width": 1600,
+      "height": 900,
+      "bytes": 299937,
+      "prompt": "Photorealistic small rural school building on a hillside at dusk with warm light glowing from the windows, mountains in the background, gentle and hopeful mood, warm amber tones, 16:9"
+    },
+    {
+      "name": "mission-village.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 293455,
+      "prompt": "Photorealistic dirt path through a mountain village with small houses and terraced fields, children seen far away from behind walking to school, soft morning light, 4:3"
+    },
+    {
+      "name": "international-hero.jpg",
+      "width": 1600,
+      "height": 900,
+      "bytes": 293888,
+      "prompt": "Photorealistic modern school campus with glass and wood buildings surrounded by tropical trees and a green lawn, clear sky, airy and international atmosphere, teal tones, 16:9"
+    },
+    {
+      "name": "international-early.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 297972,
+      "prompt": "Photorealistic bright early-years classroom corner with wooden blocks, soft rugs and picture books, no people, 4:3"
+    },
+    {
+      "name": "international-primary.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 223016,
+      "prompt": "Photorealistic primary classroom with world map, small desks and colorful books, students seen from behind, daylight, 4:3"
+    },
+    {
+      "name": "international-secondary.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 196131,
+      "prompt": "Photorealistic secondary school science lab with microscopes and notebooks on white benches, large windows, 4:3"
+    },
+    {
+      "name": "single-study.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 213412,
+      "prompt": "Photorealistic cozy living-room study table with children's hands writing in notebooks, a plant and a lamp, homeschool atmosphere, soft green tones, 4:3"
+    },
+    {
+      "name": "single-outing.jpg",
+      "width": 1200,
+      "height": 900,
+      "bytes": 299627,
+      "prompt": "Photorealistic small group of children seen from behind walking into a sunny farm field with baskets, light green tones, 4:3"
     }
   ]
 }
