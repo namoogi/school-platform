@@ -59,7 +59,7 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
         <Link className="btn btn-primary btn-sm" href={`/site/templates/${t.key}`} data-testid="template-live-start">{tr('site.tpl.live.start')}</Link>
       </nav>}
       {!bare && view === 'sample' && !sp.thumb && <p className="template-live-note">{tr('site.tpl.live.sampleNote', { school: sample.school })} {t.langs.length > 1 ? `${tr('site.tpl.detail.langs')} ${t.langs.map((l) => LANG_LABEL[l as Lang]).join('·')}` : ''}</p>}
-      <SiteFrame site={site} lang={lang} current={pg.key === 'home' ? 'home' : `p:${pg.key}`} path={pg.key === 'home' ? '/' : `/p/${pg.key}`}
+      <SiteFrame site={site} lang={lang} current={sampleNewsPage(sp.news) ? 'news' : pg.key === 'home' ? 'home' : `p:${pg.key}`} path={sampleNewsPage(sp.news) ? '/news' : pg.key === 'home' ? '/' : `/p/${pg.key}`}
         profile={home.site} assetUrl={sampleAssetUrl} preview={{ link, langHref: (l) => href({ lang: l }) }}>
         <div data-testid="template-live">
           <PageHead content={content} lang={lang} fallback={fallback} asset={sampleAssetUrl} link={link} />

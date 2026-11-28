@@ -85,7 +85,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   const langList = langs ?? site.langs;
   const langLinks = langList.map((l) => <Link key={l} href={preview ? preview.langHref(l) : `${sitePath(site, path || '/')}${q(l)}`} aria-current={l === lang ? 'true' : undefined} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link>);
   return (
-    <div className="site" data-theme={site.theme} data-hidden={hidden || undefined} lang={lang}>
+    <div className="site" data-theme={site.theme} data-home={current === 'home' || undefined} data-hidden={hidden || undefined} lang={lang}>
       <a className="skip-link" href="#site-main">{siteText('skip', lang)}</a>
       {(site.viewer_admin || site.viewer_staff) && (
         <nav className="site-admin-bar" aria-label={site.viewer_admin ? '학교 관리자' : '학교 교직원'} data-testid="site-admin-bar" data-role={site.viewer_admin ? 'admin' : 'staff'}>
