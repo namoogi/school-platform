@@ -2434,7 +2434,8 @@ label.check input { margin-top: 0.25em; }
 @media (pointer: coarse) {
   html body :is(button, .btn, .btn-sm, .small, .link-button, select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])):not(.pv-root *):not(.site *),
   html body :is(.le-bar, .le-switch, .le-note, .le-picker, .le-guide) :is(button, .btn, select, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])),
-  html body .le-grip { min-height: 44px; }
+  html body .le-grip,
+  html body .tabs :is(a, button) { min-height: 44px; } /* 119차: 탭 줄도 손가락 기기에서 44px(Codex 198번 PR 검토) */
   html body .le-bar :is(.btn-sm, button), html body .le-grip { min-width: 44px; }
 }
 
