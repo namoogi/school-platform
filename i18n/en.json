@@ -3092,5 +3092,9 @@
   "tplAi.docLink": "Read the full report-card analysis guide",
   "tplAi.tokenLink": "Issue an academic-package token in Website → AI workspace",
   "tplAi.tokenNoHomepage": "Academic-package tokens are issued in the AI workspace of the homepage module. This school has the homepage module off, so ask the control center for one through ‘New conversation’ in the chat.",
-  "err.site.anchorTitle": "Block {n}: a menu anchor can only be set on a section, heading, news list or inquiry block that has a title."
+  "err.site.anchorTitle": "Block {n}: a menu anchor can only be set on a section, heading, news list or inquiry block that has a title.",
+  "usage.clearDb": "Empty DB copies (25 at a time, {n} left)",
+  "usage.clearConfirm": "This empties the DB copies of {n} files that already exist in R2 with the same content. It cannot be undone (files remain only in R2). Continue?",
+  "usage.clearResult": "Emptied {cleared} DB copies · skipped {skipped} (content differs) · {left} copies left",
+  "usage.clearNoR2": "R2 is not configured, so DB copies cannot be emptied."
 }

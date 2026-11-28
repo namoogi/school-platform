@@ -3154,6 +3154,12 @@ export const CATALOG = {
   'tplAi.tokenNoHomepage': '학사 꾸러미 작업 토큰은 홈페이지 기능의 AI 작업 공간에서 발급합니다. 이 학교는 홈페이지 기능이 꺼져 있어, 대화창의 ‘새 대화’로 관제에 발급을 요청합니다.',
   // 126차: 두 단계 메뉴
   'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
+  // R2 DB 사본 비우기 (128차)
+  'usage.clearDb': 'DB 사본 비우기 (25개씩, 남은 {n}개)',
+  'usage.clearConfirm': 'R2에 같은 내용이 있는 파일 {n}개의 DB 사본을 비웁니다. 되돌릴 수 없습니다(R2에만 남습니다). 계속할까요?',
+  // R2 DB 사본 비우기 (128차)
+  'usage.clearResult': 'DB 사본 {cleared}개 비움 · 내용이 달라 건너뜀 {skipped}개 · 남은 사본 {left}개',
+  'usage.clearNoR2': 'R2 설정이 없어 DB 사본을 비울 수 없습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
