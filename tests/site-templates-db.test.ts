@@ -39,7 +39,7 @@ describe('템플릿 적용', () => {
       expect(e).toMatchObject({ live_version: null, latest_version: 1, status: 'draft' });
     }
     const home = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, r.created[0].id));
-    expect(home.versions[0].note).toBe('템플릿 알림 중심형 v4');
+    expect(home.versions[0].note).toBe('템플릿 알림 중심형 v5');
     expect(home.versions[0].content.site?.footer?.ko).toContain('[학교 이름]');
   });
 
@@ -73,7 +73,7 @@ describe('66차 학교 자료로 빈 칸 채우기', () => {
     expect(by.about).toMatchObject({ version: null, kept: ['goals'] }); // 학교가 먼저 쓴 소개 쪽(템플릿 블록 없음)은 그대로
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const home = entries.find((e) => e.key === 'home')!;
-    expect(home).toMatchObject({ live_version: null, meta: { template: 'notice@4' } });
+    expect(home).toMatchObject({ live_version: null, meta: { template: 'notice@5' } });
     const v = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, home.id));
     expect(v.versions[0].content.site?.address).toEqual({ ko: '경기도 예시시 꿈마을로 12' });
     expect(v.versions[0].note).toContain('자료로 빈 칸 채움');
