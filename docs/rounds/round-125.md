@@ -31,7 +31,7 @@
 - `src/lib/template-offers.ts`: 열린 제안 계산 `openTemplateOffer`, 미리 보기 `planTemplate`(적용 규칙과 같음), 결정 `decideTemplateOffer`(수락 = 적용 + 기록), 결정 기록 `templateDecisions`, 관제 `publishAcademicTemplate`.
 - `applyTemplate`: 같은 템플릿의 다른 판으로 옮기기(올리기·내리기)는 제안 수락만(`viaOffer`). 처음 고르기·같은 판 다시 채우기·다른 템플릿으로 바꾸기는 그대로.
 - API: `POST /api/academics` `template-offer`(to_version), `POST /api/admin/academic-templates`(관제 새 판 내기).
-- 화면: 템플릿 화면 맨 위 제안 카드 + 결정 기록(접힘), 템플릿 탭 옆 '새 판'(거절하면 사라짐), 새 판 카드의 버튼은 '새 판 제안 보기'.
+- 화면: 템플릿 화면 맨 위 제안 카드(결정은 공용 `ActionForm` — 결정 고르기 + 메모, ADR 0045 양식 규약, 설정 화면의 기본판 제안과 같은 모양) + 결정 기록(접힘), 템플릿 탭 옆 '새 판'(거절하면 사라짐), 새 판 카드의 버튼은 '새 판 제안 보기'.
 
 - 버튼 줄(`.form-actions`)이 좁은 화면에서 줄바꿈(영어 결정 버튼 세 개가 카드를 밀던 가로 넘침). 123차(ADR 0045) 토큰 이름(`--ds-space-*`)에 맞춤.
 - 차시 번호: 121·122·123은 다른 세션이 먼저 써서 125로, 마이그레이션은 001500.

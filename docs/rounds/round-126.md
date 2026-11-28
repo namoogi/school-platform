@@ -27,6 +27,7 @@ AI 지시문 | AI 대화창에 그대로 붙여 넣는 작업 설명서 | "우�
 - `src/lib/template-ai-guide.ts`: 순수 함수 `buildTemplateGuideText`(학교 사본 요약·절차·저장할 화면 주소·지킬 것, 토큰 없음). 절차는 `docs/agents/grade-intake.md` 그대로.
 - `schoolCopySummary`(`src/lib/academic-templates.ts`): 템플릿이 아니라 지금 학교 값으로 요약.
 - 화면: 템플릿 화면 카드(학교 관리자, 템플릿을 고른 뒤), 지시문 복사·보기, 절차 문서 링크, AI 작업 공간 링크(`/site#agent-tokens`).
+- 단추·글상자는 Radix(`Button`·`TextArea`, ADR 0045).
 - 클립보드 복사를 `src/lib/clipboard.ts` 하나로(AI 연결 글과 같이 씀).
 - `.form-actions`가 좁은 화면에서 줄바꿈(영어 버튼 두 개가 카드를 밀던 가로 넘침).
 - 이름표 13개(ko·en).

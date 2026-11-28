@@ -11,7 +11,7 @@ import { HiddenSectionsForm } from './HiddenSectionsForm';
 import { hiddenSections } from '@/lib/sections';
 import { AcademicsTabs, academicsTabCounts } from '../AcademicsTabs';
 import { openTemplateOffer, templateDecisions } from '@/lib/template-offers';
-import { OfferActions } from './OfferActions';
+import { ActionForm } from '@/components/ActionForm';
 import { TemplateAiGuide } from './TemplateAiGuide';
 
 /** 113차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
@@ -80,7 +80,13 @@ export default async function TemplatesPage() {
                   <dt>{t('tplOffer.add')}</dt><dd data-testid={`tpl-offer-add-${offer.to}`}>{add.length ? add.join(' · ') : t('tplOffer.nothingToAdd')}</dd>
                   <dt>{t('tplOffer.keep')}</dt><dd data-testid={`tpl-offer-keep-${offer.to}`}>{keep.length ? keep.join(' · ') : t('atpl.none')}</dd>
                 </dl>
-                {admin && <OfferActions key={`${offer.to}-${profileVersion}`} title={name} from={offer.from} to={offer.to} baseVersion={profileVersion} canAccept status={offer.status} />}
+                {/* ADR 0045 양식 규약: 공용 ActionForm(결정 고르기 + 메모). 수락하면 새 판을 적용하므로 확인을 받는다 */}
+                {admin && <ActionForm key={`${offer.to}-${profileVersion}`} url="/api/academics" action="template-offer" inline
+                  extra={{ to_version: offer.to, base_version: profileVersion }} testId={`tpl-offer-form-${offer.to}`}
+                  submitLabel={t('settings.decide')} successText={t('settings.decided')} confirmText={t('tplOffer.confirm', { name, to: offer.to })}
+                  fields={[{ name: 'decision', label: t('settings.decision'), type: 'select', width: 'sm',
+                    options: ['accepted', 'held', 'declined'].filter((d) => d !== offer.status).map((d) => ({ value: d, label: t(`offer.status.${d}` as MsgKey) })) },
+                  { name: 'note', label: t('settings.memoOptional'), width: 'lg' }]} />}
               </div>);
           })()}
           {decisions.length > 0 && (

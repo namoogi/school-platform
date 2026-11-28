@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { ClipboardCopy } from 'lucide-react';
+import { Button, TextArea } from '@radix-ui/themes';
 import { useI18n } from '@/components/I18nProvider';
 import { copyText } from '@/lib/clipboard';
 import { buildTemplateGuideText, GRADE_INTAKE_URL, type GuideInput } from '@/lib/template-ai-guide';
@@ -17,16 +18,16 @@ export function TemplateAiGuide({ summary, schoolName }: { summary: Omit<GuideIn
   return (
     <div className="stack">
       <div className="form-actions">
-        <button type="button" className="btn btn-primary" data-testid="tpl-ai-copy"
-          onClick={async () => setState((await copyText(text())) ? 'copied' : 'fail')}>
+        {/* ADR 0045: 단추는 Radix. 주 행동(복사)은 solid, 보기는 soft */}
+        <Button type="button" data-testid="tpl-ai-copy" onClick={async () => setState((await copyText(text())) ? 'copied' : 'fail')}>
           <ClipboardCopy size={16} aria-hidden="true" />{t('tplAi.copy')}
-        </button>
-        <button type="button" className="btn btn-secondary" aria-expanded={open} onClick={() => setOpen((v) => !v)} data-testid="tpl-ai-show">
+        </Button>
+        <Button type="button" variant="soft" aria-expanded={open} onClick={() => setOpen((v) => !v)} data-testid="tpl-ai-show">
           {open ? t('tplAi.hide') : t('tplAi.show')}
-        </button>
+        </Button>
       </div>
       {state !== 'idle' && <p className={state === 'copied' ? 'notice' : 'alert'} role="status">{state === 'copied' ? t('tplAi.copied') : t('tplAi.copyFailed')}</p>}
-      {open && <textarea readOnly rows={14} value={text()} aria-label={t('tplAi.textLabel')} data-testid="tpl-ai-text" onFocus={(e) => e.currentTarget.select()} />}
+      {open && <TextArea readOnly rows={14} value={text()} aria-label={t('tplAi.textLabel')} data-testid="tpl-ai-text" onFocus={(e) => e.currentTarget.select()} />}
       <p className="fine"><a href={GRADE_INTAKE_URL} target="_blank" rel="noopener noreferrer">{t('tplAi.docLink')}</a></p>
     </div>
   );
