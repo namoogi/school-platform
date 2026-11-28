@@ -922,6 +922,8 @@
   "req.metaOverdue": "{n} overdue",
   "req.list": "Requests",
   "req.empty": "No requests yet.",
+  "req.emptyBody": "When a student or guardian asks to inspect or amend a record from their portal account (/my), the request appears here with its due date. They need a portal account first.",
+  "req.emptyAction": "Create portal accounts",
   "req.byGuardian": "Guardian request",
   "req.bySelf": "Student request",
   "req.kind.amend": "Amendment",

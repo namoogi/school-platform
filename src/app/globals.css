@@ -1750,6 +1750,7 @@ label.radio { display: flex; align-items: center; gap: var(--ds-space-2); font-w
 
 /* 61차 F5: 학사 꾸러미 검사 결과 목록 */
 .issue-list { list-style: none; padding: 0; margin: var(--ds-space-3) 0; display: grid; gap: var(--ds-space-2); }
+.issue-list:empty { display: none; } /* UI 점검(requests): 빈 목록이 카드 아래에 빈 여백을 남겼다 */
 .issue-list li { display: flex; gap: var(--ds-space-2); align-items: baseline; }
 .preview { margin-top: var(--ds-space-3); }
 .preview[open] { display: grid; gap: var(--ds-space-3); }
