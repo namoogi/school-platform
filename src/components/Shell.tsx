@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Theme } from '@radix-ui/themes';
 import { Bell } from 'lucide-react';
 import { Nav, type NavGroup } from './Nav';
 import { LeaveSchoolButton, SchoolSwitcher } from './SchoolSwitcher';
@@ -35,6 +36,9 @@ export function Shell({ i18n, account, current, schools, groups, roleLabel, inSc
   const { t } = i18n;
   return (
     <I18nProvider value={{ lang: i18n.lang, dir: i18n.dir, dict: i18n.dict, languages: i18n.languages.filter((l) => l.active).map((l) => ({ code: l.code, native_name: l.native_name })) }}>
+    {/* ADR 0045: Radix Themes. 명암은 화면 선택을 따르고, 색·서체·높이는 globals.css 가 우리 토큰으로 덮는다(.app 안에서 다시 정의) */}
+    <Theme appearance={ui.choice.mode === 'dark' ? 'dark' : 'light'} accentColor={ui.choice.ui === 'analytics' ? 'blue' : 'teal'}
+      grayColor={ui.choice.ui === 'analytics' ? 'slate' : 'sand'} radius="medium" scaling="100%" panelBackground="solid" hasBackground={false}>
     <div className="app" data-ui={ui.choice.ui} data-mode={ui.choice.mode} data-scope={ui.scope} lang={i18n.lang} dir={i18n.dir}>
       <a className="skip-link" href="#content">{t('shell.skipToContent')}</a>
       <aside className="sidebar" aria-label={t('shell.menu')}>
@@ -69,6 +73,7 @@ export function Shell({ i18n, account, current, schools, groups, roleLabel, inSc
         <main className="content-inner">{children}</main>
       </div>
     </div>
+    </Theme>
     </I18nProvider>
   );
 }

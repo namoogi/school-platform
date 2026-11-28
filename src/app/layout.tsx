@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/500.css';
+// ADR 0045: Radix Themes(MIT) 부품 스타일. 우리 globals.css 가 뒤에 와서 토큰·배치를 덮는다
+import '@radix-ui/themes/styles.css';
 import './globals.css';
 
 export const metadata: Metadata = {
