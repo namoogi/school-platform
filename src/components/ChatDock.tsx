@@ -19,10 +19,13 @@ import {
  */
 type Scope = 'platform' | 'school';
 type Tab = 'need' | 'flow' | 'closed' | 'all';
-const TABS: { key: Tab; match: (s: Status) => boolean }[] = [
-  { key: 'need', match: (s) => BADGE.includes(s) },
-  { key: 'flow', match: (s) => !BADGE.includes(s) && !CLOSED.includes(s) },
-  { key: 'closed', match: (s) => CLOSED.includes(s) },
+// 기한 진행 결정 카드(ADR 0048)는 상태가 '추천안 진행 중'이어도 기한 전에 반대할 수 있게 '답 필요'에 둔다
+type Th = { status: Status; door?: string | null };
+const needs = (x: Th) => BADGE.includes(x.status) || (x.status === 'proceeding' && x.door === 'default');
+const TABS: { key: Tab; match: (x: Th) => boolean }[] = [
+  { key: 'need', match: needs },
+  { key: 'flow', match: (x) => !needs(x) && !CLOSED.includes(x.status) },
+  { key: 'closed', match: (x) => CLOSED.includes(x.status) },
   { key: 'all', match: () => true },
 ];
 // 글 종류 표시(보통 글 message 는 표시 없음)
@@ -110,7 +113,7 @@ export function ChatDock({ scope }: { scope: Scope }) {
   }
 
   const threads = data?.threads ?? [];
-  const shown = threads.filter((th) => TABS.find((x) => x.key === tab)!.match(th.status));
+  const shown = threads.filter((th) => TABS.find((x) => x.key === tab)!.match(th));
 
   return (
     <>
@@ -133,7 +136,7 @@ export function ChatDock({ scope }: { scope: Scope }) {
               <div className="chatdock-tabs" role="tablist">
                 {TABS.map((tb) => (
                   <button key={tb.key} role="tab" aria-selected={tab === tb.key} className={tab === tb.key ? 'active' : ''} onClick={() => setTab(tb.key)}>
-                    {t(`chat.tab.${tb.key}`)}<span className="count">{threads.filter((x) => tb.match(x.status)).length}</span>
+                    {t(`chat.tab.${tb.key}`)}<span className="count">{threads.filter((x) => tb.match(x)).length}</span>
                   </button>
                 ))}
               </div>

@@ -101,7 +101,7 @@ const firstLine = (s: string) => s.trim().split('\n')[0].slice(0, TITLE_MAX) || 
 
 export async function listThreads(db: Db, scope: ChatScope): Promise<ThreadSummary[]> {
   const { rows } = await db.query<ThreadSummary>(
-    `select r.id, r.no, r.kind, r.title, r.status, r.topic, r.school_id, r.assignee_session,
+    `select r.id, r.no, r.kind, r.title, r.status, r.topic, r.school_id, r.assignee_session, r.door,
             (select name from public.schools s where s.id = r.school_id) as school_name,
             greatest(r.updated_at, coalesce(l.created_at, r.updated_at)) as activity_at,
             case when l.id is null then null else jsonb_build_object('author', l.author, 'body', left(l.body, 140), 'kind', l.kind) end as last
@@ -213,7 +213,10 @@ export async function chatAction(db: Db, scope: ChatScope, id: string, action: u
 export async function chatBadge(db: Db, scope: ChatScope) {
   const { rows: [c] } = await db.query<{ n: number }>(
     `select count(*)::int as n from public.control_requests r
-      where ($1::uuid is null or r.school_id = $1) and (r.status in ('open', 'parked', 'review') or (r.status = 'pending' and $2))`,
+      where ($1::uuid is null or r.school_id = $1)
+        and (r.status in ('open', 'parked', 'review') or (r.status = 'pending' and $2)
+             -- 기한 진행 결정 카드: 기한 전에 반대할 수 있게 숫자에 넣는다(ADR 0048)
+             or (r.status = 'proceeding' and r.door = 'default'))`,
     [scope.schoolId, scope.isPlatform]);
   return c.n;
 }

@@ -45,6 +45,6 @@ export type Request = {
   author: string; created_at: string; updated_at: string; messages: Message[];
 };
 export type Session = { id: string; name: string; role: string; tags: string[]; active: boolean; school_id?: string | null };
-export type ThreadSummary = Pick<Request, 'id' | 'no' | 'kind' | 'title' | 'status' | 'topic' | 'school_id' | 'school_name' | 'assignee_session'> & {
+export type ThreadSummary = Pick<Request, 'id' | 'no' | 'kind' | 'title' | 'status' | 'topic' | 'school_id' | 'school_name' | 'assignee_session' | 'door'> & {
   activity_at: string; last: { author: string; body: string; kind: string } | null;
 };
