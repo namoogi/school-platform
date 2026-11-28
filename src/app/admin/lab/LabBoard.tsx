@@ -138,14 +138,14 @@ function QuickAdd({ kind: initialKind, kinds, parents, onAdd, pickKind }: { kind
       await onAdd({ ...(pickKind ? { kind } : {}), title, priority, due_date: due || null, parent_id: kind === 'todo' && parent ? parent : null });
       setTitle(''); setDue('');
     }}>
-      {pickKind && <select value={pick} onChange={(e) => setPick(e.target.value as Kind)} aria-label={t('lab.kindAria')}>{ORDER.map((k) => <option key={k} value={k}>{kinds[k].label}</option>)}</select>}
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('lab.newTitle', { kind: kinds[kind].label })} aria-label={t('lab.newTitleAria')} />
-      <select value={priority} onChange={(e) => setPriority(e.target.value)} aria-label={t('lab.priority')}>
+      {pickKind && <select data-size="sm" value={pick} onChange={(e) => setPick(e.target.value as Kind)} aria-label={t('lab.kindAria')}>{ORDER.map((k) => <option key={k} value={k}>{kinds[k].label}</option>)}</select>}
+      <input data-size="lg" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('lab.newTitle', { kind: kinds[kind].label })} aria-label={t('lab.newTitleAria')} />
+      <select data-size="xs" value={priority} onChange={(e) => setPriority(e.target.value)} aria-label={t('lab.priority')}>
         {(['high', 'normal', 'low'] as const).map((p) => <option key={p} value={p}>{t(`lab.priority.${p}`)}</option>)}
       </select>
-      <input type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label={t('lab.dueAria')} />
+      <input data-size="sm" type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label={t('lab.dueAria')} />
       {kind === 'todo' && (
-        <select value={parent} onChange={(e) => setParent(e.target.value)} aria-label={t('lab.parentAria')}>
+        <select data-size="md" value={parent} onChange={(e) => setParent(e.target.value)} aria-label={t('lab.parentAria')}>
           <option value="">{t('lab.noParent')}</option>
           {parents.map((p) => <option key={p.id} value={p.id}>[{kinds[p.kind].label}] {p.title.slice(0, 30)}</option>)}
         </select>
