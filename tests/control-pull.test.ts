@@ -99,7 +99,9 @@ describe('관제 지시 당겨 오기', () => {
     await asAgent((db) => c.control.post(db, T, d.id, { kind: 'report', body: '받음, 반영함', status: 'done', author_session: RAS }));
     expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(false);
     // 덧붙이면 다시 나온다. 다른 세션이 맡은 요청에는 덧붙일 수 없다
-    await asAgent((db) => c.control.direct(db, T, { session: RAS, request: d.id, body: '하나 더' }));
+    const again = await asAgent((db) => c.control.direct(db, T, { session: RAS, request: d.id, body: '하나 더' })) as { status: string };
+    expect(again.status).toBe('delivered'); // 닫혔던 요청이 다시 열린 상태를 그대로 돌려준다
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: 'not-a-uuid', body: 'x' }))).rejects.toThrow('요청을 찾을 수 없습니다');
     expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(true);
     await expect(asAgent((db) => c.control.direct(db, T, { session: OTHER, request: d.id, body: 'x' }))).rejects.toThrow('그 요청을 맡은 세션에게만');
     await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, title: 't', body: '' }))).rejects.toThrow('지시 본문');

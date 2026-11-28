@@ -27,6 +27,10 @@ begin
 
   if nullif(p ->> 'request', '') is not null then
     -- 이미 있는 요청에 덧붙인다: 그 세션이 맡은(또는 올린) 요청이어야 한다
+    -- 형식이 틀린 값을 그대로 캐스팅하면 입력값이 담긴 오류(22P02)가 기록에 남는다. 값 없는 문구로 거부한다
+    if (p ->> 'request') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+      raise exception '요청을 찾을 수 없습니다.' using errcode = '22023';
+    end if;
     rid := (p ->> 'request')::uuid;
     select * into r from public.control_requests x where x.id = rid;
     if not found then raise exception '요청을 찾을 수 없습니다.' using errcode = '22023'; end if;
@@ -47,7 +51,7 @@ begin
     values (r.id, 'control', 'directive', body, '0c1a0de0-0000-4000-8000-000000000001')
     returning id into mid;
   if r.status in ('done', 'dropped', 'answered', 'review', 'open', 'parked', 'proceeding') and r.kind <> 'decision' then
-    update public.control_requests set status = 'delivered' where id = r.id;
+    update public.control_requests set status = 'delivered' where id = r.id returning * into r;
   end if;
   return private.control_request_json(r) || jsonb_build_object('message_id', mid, 'to', sess);
 end $$;
