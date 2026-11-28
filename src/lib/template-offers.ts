@@ -92,9 +92,14 @@ export async function decideTemplateOffer(db: Db, schoolId: string, input: { to_
   const to = Number(input.to_version);
   if (!Number.isInteger(to) || to < 2) throw new ValidationError('err.template.version');
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 500) : null;
-  const offer = await openTemplateOffer(db, schoolId);
   // 문구는 DB 함수와 같은 글이라 db.* 이름표로 요청한 사람 언어가 된다(409)
   const conflict = (m: string) => Object.assign(new Error(m), { code: 'P0409' });
+  // 모든 결정은 화면이 본 학교 관할 판(base_version)에 묶는다(지침 10). 그 사이 다른 관리자가 템플릿을 바꿨으면 다른 제안에 결정이 남지 않게 거부(Codex 199번 PR 검토)
+  const base = Number(input.base_version);
+  if (input.base_version == null || input.base_version === '' || !Number.isInteger(base) || base < 0) throw new ValidationError('err.baseVersion');
+  const prof = await schoolProfile(db, schoolId);
+  if ((prof?.version ?? 0) !== base) throw conflict('그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.');
+  const offer = await openTemplateOffer(db, schoolId);
   if (!offer) throw conflict('학교가 이미 그 판 이상을 써서 지난 제안입니다.');
   if (offer.to !== to) throw conflict('그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.');
   let applied: ApplyResult | null = null;
