@@ -110,6 +110,12 @@ describe('관제 지시 당겨 오기', () => {
     await expect(asAgent((db) => c.control.direct(db, T, { session: OTHER, request: d.id, body: 'x' }))).rejects.toThrow('그 요청을 맡은 세션에게만');
     await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, title: 't', body: '' }))).rejects.toThrow('지시 본문');
     await expect(asAgent((db) => c.control.direct(db, T, { title: 't', body: 'x' }))).rejects.toThrow('지시를 받을 세션');
+    // 새 DB 문구는 모두 같은 글자의 db.* 이름표가 있다(영·태 응답이 한국어로 새지 않게)
+    const { CATALOG } = await import('@/lib/i18n/catalog');
+    const fs = await import('node:fs');
+    const sql = fs.readFileSync('supabase/migrations/20261128002000_control_direct.sql', 'utf8');
+    const values = new Set<string>(Object.values(CATALOG));
+    for (const [, m] of sql.matchAll(/raise exception '([^']+)'/g)) expect(values.has(m), m).toBe(true);
   });
 
   it('토큰·세션 id 가 없으면 거부', async () => {
