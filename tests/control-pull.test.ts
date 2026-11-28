@@ -102,6 +102,20 @@ describe('관제 지시 당겨 오기', () => {
     const again = await asAgent((db) => c.control.direct(db, T, { session: RAS, request: d.id, body: '하나 더' })) as { status: string };
     expect(again.status).toBe('delivered'); // 닫혔던 요청이 다시 열린 상태를 그대로 돌려준다
     await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: 'not-a-uuid', body: 'x' }))).rejects.toThrow('요청을 찾을 수 없습니다');
+    // 기한 지난 기한 진행 카드에 관제가 지시를 덧붙이면 추천안(due)이 아니라 그 지시로 나온다
+    const dd = await asAgent((db) => c.control.file(db, T, {
+      title: '기한 지난 카드에 지시', source_session: RAS, door: 'default', ask: '목록을 카드로 바꿀까요?',
+      changes: '카드 3열', unchanged: '글 그대로', undo: '목록형 다시 고르기',
+      options: [{ key: 'a', label: '카드' }, { key: 'b', label: '목록' }], recommended: 'a',
+      due_at: new Date(Date.now() + 3600000).toISOString(), default_action: '카드로 바꿈',
+    })) as { id: string };
+    const cl0 = new pg.Client({ connectionString: TEST_URL }); await cl0.connect();
+    await backdate(cl0, `now() - interval '1 minute'`, dd.id); await cl0.end();
+    expect(((await mine(RAS)).body as { id: string; due?: boolean }[]).find((x) => x.id === dd.id)?.due).toBe(true);
+    await asAgent((db) => c.control.direct(db, T, { session: RAS, request: dd.id, body: '목록 유지로 가자' }));
+    const hit = ((await mine(RAS)).body as { id: string; due?: boolean }[]).find((x) => x.id === dd.id);
+    expect(hit).toBeTruthy();
+    expect(hit?.due).toBeUndefined();
     // 닫힌 결정 카드에는 덧붙이지 않는다(받을 길이 없어 조용히 사라지지 않게)
     const dec = await asAgent((db) => c.control.file(db, T, { title: '닫힐 카드', source_session: RAS, door: 'notice', changes: '알림' })) as { id: string };
     await asAgent((db) => c.control.post(db, T, dec.id, { kind: 'status', status: 'done', author_session: RAS }));

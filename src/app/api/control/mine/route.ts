@@ -24,7 +24,8 @@ export async function GET(req: Request) {
       // 메모만 남긴 경우까지 포함해 추천안을 실행할 차례다. 세션이 실행하고 상태를 done·review 로 바꿀 때까지 계속 나온다
       // (보고 글만으로는 빼지 않는다: 빼면 관제 센터 '답 필요'에 영영 남는다).
       // 사람이 선택지를 골랐으면(메모로만 남겼어도) 그 답이 우선이다. 아래 보통 답 흐름으로 간다
-      const chosen = msgs.some((m) => m.author === 'user' && !!m.choice);
+      // 관제가 그 카드에 지시를 덧붙였어도(ADR 0050) 그 지시가 우선이다
+      const chosen = msgs.some((m) => (m.author === 'user' && !!m.choice) || (m.author === 'control' && m.kind === 'directive'));
       if (!chosen && r.door === 'default' && r.status === 'proceeding' && !!r.due_at && Date.parse(r.due_at) <= now) {
         return [{ ...r, due: true }];
       }
