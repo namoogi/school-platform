@@ -3141,6 +3141,9 @@ export const CATALOG = {
   // R2 DB 사본 비우기 (125차)
   'usage.clearDb': 'DB 사본 비우기 (25개씩, 남은 {n}개)',
   'usage.clearConfirm': 'R2에 같은 내용이 있는 파일 {n}개의 DB 사본을 비웁니다. 되돌릴 수 없습니다(R2에만 남습니다). 계속할까요?',
+  // R2 DB 사본 비우기 (127차)
+  'usage.clearResult': 'DB 사본 {cleared}개 비움 · 내용이 달라 건너뜀 {skipped}개 · 남은 사본 {left}개',
+  'usage.clearNoR2': 'R2 설정이 없어 DB 사본을 비울 수 없습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

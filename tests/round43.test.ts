@@ -156,8 +156,12 @@ describe('R2 파일 저장소', () => {
     const [gone] = await sql(`select mime, sha256, object_key from public.site_assets where object_key is not null and bytes is null limit 1`);
     const res = await storage.assetResponse({ mime: gone.mime, bytes: null, sha256: gone.sha256, object_key: gone.object_key }, {}, 'x');
     expect(res.status).toBe(302);
+    // 건너뛴 파일이 한 번에 보는 수(limit)를 채워도 다음 차례는 그 뒤부터 본다(Codex #223)
+    const p1 = await asUser(P, (db) => usage.clearDbCopies(db, 1));
+    expect(p1).toMatchObject({ cleared: 0, skipped: 1, next: bad.id });
+    expect(await asUser(P, (db) => usage.clearDbCopies(db, 1, p1.next))).toMatchObject({ cleared: 0, skipped: 0, next: null });
     useR2(false);
-    expect((await asUser(P, (db) => usage.clearDbCopies(db))).cleared).toBe(0); // R2 설정이 없으면 아무것도 비우지 않는다
+    expect(await asUser(P, (db) => usage.clearDbCopies(db))).toMatchObject({ cleared: 0, configured: false }); // R2 설정이 없으면 아무것도 비우지 않는다
   });
 });
 

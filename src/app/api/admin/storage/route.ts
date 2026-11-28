@@ -10,10 +10,10 @@ export async function GET(req: Request) {
 /** {action: 'check'} 연결 확인 · {action: 'copy'} DB 파일을 R2로 25개씩 복사(DB 사본 유지) · {action: 'clear-db'} R2 내용이 같은 것만 DB 사본 비우기(125차) */
 export async function POST(req: Request) {
   return handlePlatform(req, async ({ db }) => {
-    const body = await req.json().catch(() => ({})) as { action?: string };
+    const body = await req.json().catch(() => ({})) as { action?: string; after?: string | null };
     if (body.action === 'check') return checkStorage();
     if (body.action === 'copy') return copyToStorage(db);
-    if (body.action === 'clear-db') return clearDbCopies(db);
+    if (body.action === 'clear-db') return clearDbCopies(db, 25, typeof body.after === 'string' ? body.after : null);
     throw new ValidationError('err.notAllowed');
   });
 }
