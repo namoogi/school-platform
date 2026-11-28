@@ -239,6 +239,9 @@ export const control = {
     if (!isUuid(id)) throw new NotFoundError('db.requestNotFound');
     return q(db, 'select control.thread($1, $2) as r', [t, id]);
   },
+  /** 134차 ADR 0051: 차시·ADR·마이그레이션 번호 받기 {kind, session, title, floor?} */
+  reserve: (db: Db, t: string, body: unknown) => q(db, 'select control.reserve_number($1, $2) as r', [t, JSON.stringify(body ?? {})]),
+  numbers: (db: Db, t: string, kind: string | null) => q(db, 'select control.numbers($1, $2) as r', [t, kind]),
   assign: (db: Db, t: string, id: string, session: unknown) => {
     if (!isUuid(id)) throw new NotFoundError('db.requestNotFound');
     return q(db, 'select control.assign($1, $2, $3) as r', [t, id, session ? String(session) : null]);

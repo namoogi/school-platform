@@ -112,7 +112,7 @@ npm test             # DB·RLS·발행본 보존 통합 테스트 (로컬 Postgr
 npm run build && npm run test:e2e   # 브라우저 전체 흐름
 ```
 
-마이그레이션은 `supabase/migrations/`에 날짜 접두어로 추가한다. 이미 적용된 파일은 고치지 않는다.
+마이그레이션은 `supabase/migrations/`에 날짜 접두어로 추가한다. 이미 적용된 파일은 고치지 않는다. 차시·ADR·마이그레이션 번호는 직접 정하지 않고 `npm run number`로 관제에서 받는다(`docs/COLLABORATION.md` 2절 '번호 받기', ADR 0051).
 
 <!-- BEGIN:nextjs-agent-rules -->
 

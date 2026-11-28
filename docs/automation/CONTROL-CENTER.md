@@ -34,6 +34,11 @@ B=https://onschools.vercel.app/api/control
 - 관제의 `send_message`는 깨우는 신호일 뿐이다. 그 메시지가 막혀도(Claude의 '신뢰 기기 확인' 보안 등) 지시는 여기서 그대로 가져갈 수 있다.
 - 가져간 일에 답을 남기면(`POST $B/requests/<id>/messages`, `author_session` 필수) 목록에서 빠진다.
 
+## 세션: 번호 받기 (134차, ADR 0051)
+- 차시·결정 기록·마이그레이션 번호는 관제가 나눠 준다. 보통은 `npm run number -- <round|adr|migration> "<제목>"` 한 줄(본 번호 floor를 스크립트가 셈).
+- 직접 부를 때: `curl -s -X POST "$B/numbers" -H 'content-type: application/json' -d '{"kind":"round","session":"<내 세션 id>","title":"<제목>","floor":<본 가장 큰 번호>}'` → `{"kind","value","label"}`(`134차`·`0051`·`20261128002100`).
+- `GET "$B/numbers?kind=round"`: 최근에 나간 번호(누가·무엇에). 받은 번호는 고치거나 지우지 않는다. 쓰지 않으면 빈 번호로 남는다.
+
 ## 세션: 대화에 답하기 (대화창에 보인다)
 - 맥락 읽기: `curl -s "$B/requests/<요청 id>"` (대화 전체). inbox 항목의 `recent`에 앞 10줄이 있다.
 - 답: `curl -s -X POST "$B/requests/<요청 id>/messages" -H 'content-type: application/json' -d '{"kind":"message","body":"…","author_session":"<내 세션 id>"}'`

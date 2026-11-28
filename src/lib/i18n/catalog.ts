@@ -3297,6 +3297,12 @@ export const CATALOG = {
   'calc.preset.rounded_twice_bands': '드리미포털 방식: 영역 합 Σ(점수÷만점×비율)을 정규화하지 않고 소수 2자리 → 정수(원점수) 반올림 → 원점수로 성취도 A~E. 학생 판정 = 입력 행의 성취도, 입력 행이 없을 때만 이전 기록의 성취도(계승). P/F면 원점수만 비우고 성취도는 남긴다',
   'calc.preset.us_letter_pf': '미국식 글자 성적 A·B·C·D·F(F는 한국식 E와 같은 맨 아래 등급). 가중 평균 → 정수 반올림 → 90/80/70/60, 그 밖 F. F는 성적 등급이므로 학생 판정 F를 P/F로 읽지 않는다. P/F는 과목 속성이거나 학생 판정이 P·NP일 때만',
   'calc.preset.peer_teacher_mix': '동료평가 20% + 교사평가 80%, 둘 중 하나라도 비면 계산하지 않음(null)',
+  // db
+  'db.numKind': '번호 종류는 round·adr·migration 가운데 하나입니다.',
+  'db.numTitle': '번호에 붙일 제목은 1~120자입니다.',
+  'db.numFloor': 'floor는 0 이상의 정수입니다.',
+  'db.numMigrationFull': '오늘 마이그레이션 번호를 다 썼습니다.',
+  'db.numGuard': 'control_numbers: 받은 번호는 고치거나 지우지 않습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
