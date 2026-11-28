@@ -427,6 +427,7 @@ label.radio.module:not(.pv-root *), .module { align-items: flex-start; }
 .tabs button, .tabs a { display: inline-flex; align-items: center; gap: var(--ds-space-2); background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: var(--ds-space-2) var(--ds-space-3); color: var(--text-muted); font-weight: 600; text-decoration: none; }
 .tabs button:hover, .tabs a:hover { color: var(--text-default); }
 .tabs .active, .tabs [aria-selected="true"], .tabs [aria-current="page"] { color: var(--brand-700); border-bottom-color: var(--brand-600); }
+.picker-panel { margin-top: var(--ds-space-4); }
 .toolbar { display: flex; gap: var(--ds-space-3); align-items: center; flex-wrap: wrap; }
 .toolbar input[type=search] { max-width: 320px; }
 

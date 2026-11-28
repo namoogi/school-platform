@@ -3352,6 +3352,10 @@ export const CATALOG = {
   'db.numFloor': 'floor는 0 이상의 정수입니다.',
   'db.numMigrationFull': '오늘 마이그레이션 번호를 다 썼습니다.',
   'db.numGuard': 'control_numbers: 받은 번호는 고치거나 지우지 않습니다.',
+  // 홈페이지 템플릿 탭
+  'site.tpl.tab.label': '시작 방법',
+  'site.tpl.tab.templates': '템플릿',
+  'site.tpl.tab.import': '기존 홈페이지 가져오기',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
