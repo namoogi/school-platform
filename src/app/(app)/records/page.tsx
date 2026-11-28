@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { loadForPage } from '@/lib/page';
 import { listAcademicYears, listPeople } from '@/lib/people';
-import { recordClosures } from '@/lib/records';
+import { listOutputProfiles, recordClosures } from '@/lib/records';
 import { countReports } from '@/lib/qualifications';
 import { documentsOf, externalResultsOf, qualificationsOf } from '@/lib/recordbook';
 import { isUuid } from '@/lib/services';
 import { PageHeader, StatusBadge, withLink } from '@/components/ui';
 import { ActionForm } from '@/components/ActionForm';
+import { jsonText } from '@/lib/json-text';
 import { getI18n, userLang } from '@/lib/i18n/server';
 import type { MsgKey } from '@/lib/i18n/catalog';
 
@@ -30,10 +31,10 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
       docs: person ? await documentsOf(db, school.id, person.id) : [],
       external: person ? await externalResultsOf(db, school.id, person.id) : [],
       quals: person ? await qualificationsOf(db, school.id, person.id) : [],
-      schoolDocs: await documentsOf(db, school.id, null), reports: await countReports(db, school.id),
+      schoolDocs: await documentsOf(db, school.id, null), reports: await countReports(db, school.id), profiles: await listOutputProfiles(db, school.id),
     };
   }, { module: 'records', admin: true });
-  const { people, person, years, closures, docs, external, quals, schoolDocs, reports, uiLang, school } = data;
+  const { people, person, years, closures, docs, external, quals, schoolDocs, reports, uiLang, school, profiles } = data;
   const { t, lang, locale } = await getI18n(uiLang, school.locale);
   const FORMAT = Object.fromEntries(FORMATS.map((f) => [f, t(`rec.format.${f}` as MsgKey)]));
   const REPORTS = REPORT_CODES.map((value) => ({ value, label: t(`rec.report.${value}` as MsgKey) }));
@@ -43,6 +44,12 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
   const closedByYear = Object.fromEntries(closures.map((c) => [c.academic_year_id, c]));
   const reportBases = Object.fromEntries(reports.map((r) => [r.code, Math.max(...reports.filter((x) => x.code === r.code).map((x) => x.version))]));
   const latestReports = reports.filter((r) => r.version === reportBases[r.code]);
+  // 128차: 발행 때 고를 출력 프로필(서버가 서식이 맞는지 다시 본다). 없으면 기본 표기
+  const profileField = (formats: string[]) => (profiles.some((p) => formats.includes(p.format))
+    ? [{ name: 'profileCode', label: t('rec.profileCode'), type: 'select' as const, options: [{ value: '', label: t('rec.profileDefault') },
+        ...profiles.filter((p) => formats.includes(p.format)).map((p) => ({ value: p.code, label: `${p.code} (${FORMAT[p.format] ?? p.format}) ${t('common.version', { v: p.version })}` }))] }]
+    : []);
+  const why = { name: 'why', label: t('academics.reason'), required: true, placeholder: t('gset.whyPlaceholder'), width: 'lg' as const };
   return (
     <>
       <PageHeader title={t('nav.records')} crumbs={[{ label: t('intake.crumb') }, { label: t('nav.records') }]}
@@ -81,7 +88,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
                   <ActionForm url="/api/records" action="publish" inline testId="publish-form" submitLabel={t('rec.issue')} successText={t('rec.issued')}
                     extra={{ personId: person.id }}
                     fields={[{ name: 'format', label: t('rec.format'), type: 'select', options: PERSON_FORMATS.map((f) => ({ value: f, label: FORMAT[f] })) },
-                      { name: 'blind', label: t('rec.blind'), type: 'select', options: yesNo }]} />)}
+                      { name: 'blind', label: t('rec.blind'), type: 'select', options: yesNo }, ...profileField(PERSON_FORMATS)]} />)}
                 {docs.length === 0 ? <p className="muted">{t('rec.noDocs')}</p> : (
                   <ul className="issue-list">{docs.map((d) => (
                     <li key={d.id}><span><Link href={`/records/doc/${d.id}`}>{d.title ?? FORMAT[d.format]}</Link> <small className="muted">{FORMAT[d.format] ?? d.format} · {new Date(d.published_at).toLocaleString(locale)}{d.blind ? t('rec.blindSuffix') : ''}{t('rec.docMeta', { q: d.issues.filter((i) => i.level === 'question').length, d: d.disclosures })}</small></span></li>))}</ul>)}
@@ -113,7 +120,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
               <h2>{t('rec.profile')}</h2>
               {schoolDocs.length === 0 ? <p className="muted">{t('rec.noDocs')}</p> : <ul className="issue-list">{schoolDocs.slice(0, 5).map((d) => (
                 <li key={d.id}><span><Link href={`/records/doc/${d.id}`}>{d.title ?? FORMAT[d.format]}</Link> <small className="muted">{new Date(d.published_at).toLocaleDateString(locale)}</small></span></li>))}</ul>}
-              <ActionForm url="/api/records" action="publish" extra={{ format: 'us_school_profile' }} fields={[]} submitLabel={t('rec.issueProfile')} successText={t('rec.profileIssued')} testId="profile-publish" />
+              <ActionForm url="/api/records" action="publish" extra={{ format: 'us_school_profile' }} fields={profileField(['us_school_profile'])} submitLabel={t('rec.issueProfile')} successText={t('rec.profileIssued')} testId="profile-publish" />
             </section>
             <section className="card stack" data-testid="count-reports">
               <h2>{t('rec.reports')} <small className="muted">{t('rec.reportsSub')}</small></h2>
@@ -128,6 +135,27 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
                   { name: 'reason', label: t('rec.reasonWhenReclosing') }]} />
             </section>
           </div>
+          <section className="card stack" data-testid="output-profiles">
+            <h2>{t('oprof.title')}</h2>
+            <p className="fine">{t('oprof.lead')}</p>
+            {profiles.length === 0 ? <p className="muted">{t('oprof.none')}</p> : (
+              <ul className="record-list">{profiles.map((p) => (
+                <li key={p.id}>
+                  <span><strong>{p.code}</strong> <small className="muted">{FORMAT[p.format] ?? p.format} · {t('common.version', { v: p.version })}{p.why ? ` · ${p.why}` : ''}</small></span>
+                  <details data-testid={`oprof-edit-${p.code}`}><summary>{t('oprof.edit')}</summary>
+                    <ActionForm url="/api/records" action="output-profile" extra={{ code: p.code, format: p.format, base_version: p.version }} keep
+                      submitLabel={t('gset.saveVersion', { v: p.version + 1 })} successText={t('gset.saved')}
+                      fields={[{ name: 'settings', label: t('oprof.settings'), type: 'json', required: true, defaultValue: jsonText(p.settings) }, why]} />
+                  </details>
+                </li>))}</ul>)}
+            <details data-testid="oprof-new"><summary>{t('oprof.new')}</summary>
+              <p className="fine">{t('oprof.keys')}</p>
+              <ActionForm url="/api/records" action="output-profile" extra={{ base_version: 0 }} submitLabel={t('oprof.create')} successText={t('gset.saved')}
+                fields={[{ name: 'format', label: t('rec.format'), type: 'select', options: FORMATS.map((f) => ({ value: f, label: FORMAT[f] })) },
+                  { name: 'code', label: t('common.code'), required: true, placeholder: 'transcript_en', width: 'sm' },
+                  { name: 'settings', label: t('oprof.settings'), type: 'json', required: true, defaultValue: '{}' }, why]} />
+            </details>
+          </section>
         </div>
       </div>
     </>

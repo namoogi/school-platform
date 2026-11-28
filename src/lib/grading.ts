@@ -101,12 +101,28 @@ export async function subjectLabel(db: Db, schoolId: string, subjectId: unknown,
 }
 
 // ── 척도·정책 ────────────────────────────────────────────
+export const SCALE_KINDS = ['letter', 'level', 'pass_fail', 'percent', 'points'] as const;
+/** 128차: 척도 띠 검사(화면·AI 초안 공통). 코드 겹침·숫자 아닌 하한/평점을 DB 전에 막는다. 표기가 없으면 코드를 표기로 쓴다 */
+export function checkBands(raw: unknown): Band[] {
+  if (!Array.isArray(raw) || !raw.length || raw.length > 40) throw new ValidationError('err.grade.bands');
+  const seen = new Set<string>();
+  const num = (v: unknown, code: string) => {
+    if (v == null || v === '') return null;
+    const n = Number(v);
+    if (!Number.isFinite(n)) throw new ValidationError('err.grade.bandNumber', { code });
+    return n;
+  };
+  return raw.map((b) => {
+    const code = str(b?.code).trim();
+    if (!code) throw new ValidationError('err.grade.bands');
+    if (seen.has(code)) throw new ValidationError('err.grade.bandDup', { code });
+    seen.add(code);
+    const label = b?.label == null ? { ko: code, en: code } : ltext(b.label, '척도 띠');
+    return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
+  });
+}
 export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }) {
-  if (!Array.isArray(input.bands) || !input.bands.length) throw new ValidationError('err.grade.bands');
-  const bands = (input.bands as Band[]).map((b) => ({
-    code: str(b?.code), label: ltext(b?.label, '척도 띠'), min: b?.min == null ? null : Number(b.min),
-    points: b?.points == null ? null : Number(b.points), earns_credit: b?.earns_credit !== false,
-  }));
+  const bands = checkBands(input.bands);
   return one<{ id: string; version: number }>(db, 'select app.save_scale($1, $2) as v',
     [schoolId, JSON.stringify({ code: str(input.code), kind: str(input.kind), bands, why: str(input.why), base_version: base(input.base_version ?? 0) })]);
 }
@@ -120,7 +136,47 @@ export type GradingPolicy = {
   narrative_limits?: Record<string, number>;
   gpa?: { enabled?: boolean; level_bonus?: Record<string, number> };
   rank?: { enabled?: boolean };
+  attendance?: { day_absent_ratio?: number; chronic_ratio?: number; min_attendance_ratio?: number };
+  requests?: { due_days?: number };
 };
+/**
+ * 128차: 성적 정책 전체 검사(화면 'JSON으로 고치기'·AI 초안). 플랫폼이 읽는 칸만 받는다 — 모르는 칸은 아무 데서도 쓰이지 않아 조용히 무시되므로 막는다.
+ * 읽는 곳: 마감(score_digits·final_digits·stats·narrative_limits), 발행(gpa·rank), 출결 요약(attendance), 열람 요청 기한(requests)
+ */
+export const POLICY_KEYS = ['score_digits', 'final_digits', 'stats', 'narrative_limits', 'gpa', 'rank', 'attendance', 'requests'] as const;
+export function checkGradingPolicy(raw: unknown): GradingPolicy {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('err.grade.policyObject');
+  const p = raw as Record<string, unknown>;
+  const bad = (key: string) => { throw new ValidationError('err.grade.policyField', { key }); };
+  const isObj = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const int = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
+  const ratio = (v: unknown) => typeof v === 'number' && v >= 0 && v <= 1;
+  for (const k of Object.keys(p)) if (!(POLICY_KEYS as readonly string[]).includes(k)) throw new ValidationError('err.grade.policyUnknown', { key: k, keys: POLICY_KEYS.join(', ') });
+  for (const k of ['score_digits', 'final_digits']) if (k in p && !int(p[k], 0, 4)) bad(k);
+  if ('stats' in p) {
+    const st = p.stats as Record<string, unknown>;
+    if (!isObj(st) || ('sd' in st && st.sd !== 'population' && st.sd !== 'sample') || ('digits' in st && !int(st.digits, 0, 4))) bad('stats');
+  }
+  if ('narrative_limits' in p) {
+    const n = p.narrative_limits as Record<string, unknown>;
+    if (!isObj(n) || Object.values(n).some((x) => !int(x, 1, 100000))) bad('narrative_limits');
+  }
+  if ('gpa' in p) {
+    const g = p.gpa as Record<string, unknown>;
+    if (!isObj(g) || ('enabled' in g && typeof g.enabled !== 'boolean')
+      || ('level_bonus' in g && (!isObj(g.level_bonus) || Object.values(g.level_bonus as object).some((x) => typeof x !== 'number')))) bad('gpa');
+  }
+  if ('rank' in p && (!isObj(p.rank) || ('enabled' in (p.rank as object) && typeof (p.rank as Record<string, unknown>).enabled !== 'boolean'))) bad('rank');
+  if ('attendance' in p) {
+    const a = p.attendance as Record<string, unknown>;
+    if (!isObj(a) || Object.values(a).some((x) => !ratio(x))) bad('attendance');
+  }
+  if ('requests' in p) {
+    const r = p.requests as Record<string, unknown>;
+    if (!isObj(r) || ('due_days' in r && !int(r.due_days, 1, 365))) bad('requests');
+  }
+  return p as GradingPolicy;
+}
 export function saveGradingPolicy(db: Db, schoolId: string, policy: GradingPolicy, input: { why?: unknown; base_version?: unknown }) {
   return one<number>(db, 'select app.save_grading_policy($1, $2) as v',
     [schoolId, JSON.stringify({ policy, why: str(input.why), base_version: base(input.base_version) })]);

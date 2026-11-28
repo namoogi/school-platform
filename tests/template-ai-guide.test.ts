@@ -32,22 +32,29 @@ describe('학교 AI 맞춤 지시문', () => {
     expect(s).toContain(GRADE_INTAKE_URL);
     expect(s).toContain('https://example.test/academics?tab=terms');
     expect(s).toContain('https://example.test/grades');
+    expect(s).toContain('https://example.test/records');
     expect(s).not.toContain('example.test//');
   });
 
   it('작업 토큰이 못 읽는 주소로 보내지 않고, 견본은 지시문 안에 담는다(Codex 220번 PR 검토)', () => {
     const s = buildTemplateGuideText(base);
-    // 학교 AI 토큰은 로그인 쿠키 전용 /api/calc-rules 를 읽지 못하고, /records 에는 출력 프로필 저장이 없다
+    // 학교 AI 토큰은 로그인 쿠키 전용 /api/calc-rules 를 읽지 못한다
     expect(s).not.toContain('/api/calc-rules');
-    expect(s).not.toContain('/records');
     expect(s).toContain('weighted_average — ');
     expect(s).toContain('pass_fail_project (이 템플릿 견본)');
     expect(s).toMatch(/- pass_fail_project: \{"lets"|- pass_fail_project: \{"outputs"/);
-    // 화면이 없는 계산식 판·출력 프로필은 대화창 → 관제가 저장
-    expect(s).toContain("대화창의 '새 대화'로 초안을 관제에 보내면");
-    // 화면이 받는 것은 견본 추가·정책 세 칸뿐 — 맞춤 척도 구간·그 밖의 정책 칸은 관제 묶음
-    expect(s).toMatch(/척도 견본 추가\(정해진 견본만, 구간은 못 고침\)/);
-    expect(s).toMatch(/나\. [\s\S]*맞춤 척도\(구간 경계·평점·이수 여부\), 위 세 칸 밖의 성적 정책/);
+  });
+
+  it('128차: 네 가지 모두 화면 경로로 저장하고, 관제를 거치는 묶음은 없다', () => {
+    const s = buildTemplateGuideText(base);
+    expect(s).not.toContain('관제');
+    expect(s).not.toMatch(/고치는 화면이 아직 없/);
+    expect(s).toContain("https://example.test/grades '척도'");
+    expect(s).toContain("'정책 전체 고치기(JSON)'");
+    expect(s).toContain("https://example.test/grades '계산식 판'");
+    expect(s).toContain('89.5·59.5·39.5');
+    expect(s).toContain("https://example.test/records '출력 프로필'");
+    expect(s).toMatch(/'왜' 칸이 필수/);
   });
 
   it('지킬 것(실명 금지·추측 금지·학교 값 유지·유료 분석 없음)이 있고 토큰은 담지 않는다', () => {

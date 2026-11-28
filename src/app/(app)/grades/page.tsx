@@ -1,21 +1,22 @@
 import Link from 'next/link';
 import { loadForPage } from '@/lib/page';
 import { roster } from '@/lib/courses';
-import { currentResults, offeringClosure, SCALE_PRESETS } from '@/lib/grading';
+import { currentResults, offeringClosure } from '@/lib/grading';
 import { assessmentsOf, latestPolicy, listScales, narrativesOf, offeringContext } from '@/lib/gradebook';
 import { isUuid } from '@/lib/services';
 import { listCalcRules } from '@/lib/calc-rules';
 import { PageHeader, StatusBadge } from '@/components/ui';
 import { ActionForm, type FieldSpec } from '@/components/ActionForm';
 import { ResultGrid } from '@/components/ResultGrid';
+import { GradeSettings } from './GradeSettings';
 import { getI18n, userLang } from '@/lib/i18n/server';
 import type { MsgKey } from '@/lib/i18n/catalog';
 
 // 이름은 사전의 grade.preset.* · grade.attempt.* · grade.kind.*
 const KINDS = ['exam', 'assignment', 'project', 'performance'];
 
-/** 73차: 성적 — 척도·성적 정책 판(관리자), 수업별 평가 항목·점수 입력·과목 서술·수업 마감 판 */
-export default async function GradesPage({ searchParams }: { searchParams: Promise<{ o?: string }> }) {
+/** 73차: 성적 — 척도·성적 정책 판·계산식 판(관리자, 128차 GradeSettings), 수업별 평가 항목·점수 입력·과목 서술·수업 마감 판 */
+export default async function GradesPage({ searchParams }: { searchParams: Promise<{ o?: string; calcFrom?: string }> }) {
   const sp = await searchParams;
   const o = sp.o && isUuid(sp.o) ? sp.o : null;
   const data = await loadForPage(async ({ db, school }) => {
@@ -27,7 +28,7 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
       results: ctx && o && ctx.can_grade ? await currentResults(db, school.id, o) : [],
       narratives: ctx && o && ctx.can_grade ? await narrativesOf(db, school.id, o) : [],
       closure: ctx && o ? await offeringClosure(db, school.id, o) : null,
-      calcRules: ctx && o && school.isAdmin ? await listCalcRules(db, school.id) : [],
+      calcRules: school.isAdmin ? await listCalcRules(db, school.id) : [],
     };
   }, { module: 'records' });
   const { school, scales, policy, ctx, assessments, students, results, narratives, closure, uiLang, calcRules } = data;
@@ -124,28 +125,7 @@ export default async function GradesPage({ searchParams }: { searchParams: Promi
           )}
         </>
       )}
-      {admin && (
-        <div className="settings-grid">
-          <section className="card stack" data-testid="scales">
-            <h2>{t('grades.scales')}</h2>
-            {scales.length === 0 ? <p className="muted">{t('grades.noScales')}</p> : (
-              <ul className="issue-list">{scales.map((s) => (
-                <li key={s.id}><span><strong>{s.code}</strong> <small className="muted">{t('common.version', { v: s.version })} · {s.bands.map((b) => `${b.code}${b.min != null ? `≥${b.min}` : ''}`).join(' ')}</small></span></li>))}</ul>)}
-            {Object.keys(SCALE_PRESETS).some((k) => !scales.some((s) => s.code === k)) && (
-              <ActionForm url="/api/grades" action="scale-preset" inline submitLabel={t('grades.addScale')} successText={t('grades.scaleAdded')} testId="scale-preset"
-                fields={[{ name: 'preset', label: t('grades.preset'), type: 'select', options: Object.keys(SCALE_PRESETS).filter((k) => !scales.some((s) => s.code === k)).map((k) => ({ value: k, label: tk('grade.preset', k) })) }]} />)}
-          </section>
-          <section className="card stack" data-testid="policy">
-            <h2>{t('grades.policy')}</h2>
-            <p className="fine">{policy ? `${t('common.version', { v: policy.version })}${policy.why ? ` · ${policy.why}` : ''}` : t('grades.noPolicy')}</p>
-            <ActionForm url="/api/grades" action="policy" extra={{ base_version: policy?.version ?? 0 }} inline submitLabel={t('grades.newPolicy')} successText={t('grades.policySaved')}
-              fields={[{ name: 'score_digits', label: t('grades.scoreDigits'), type: 'number', defaultValue: String(policy?.policy.score_digits ?? 2) },
-                { name: 'final_digits', label: t('grades.finalDigits'), type: 'number', defaultValue: String(policy?.policy.final_digits ?? 0) },
-                { name: 'sd', label: t('grades.sd'), type: 'select', options: [{ value: 'population', label: t('grades.sdPopulation') }, { value: 'sample', label: t('grades.sdSample') }] },
-                { name: 'why', label: t('academics.reason'), required: true, placeholder: t('grades.policyPlaceholder') }]} />
-          </section>
-        </div>
-      )}
+      {admin && <GradeSettings t={t} lang={lang} scales={scales} policy={policy} calcRules={calcRules} calcFrom={sp.calcFrom ?? null} offering={o} />}
     </>
   );
 }

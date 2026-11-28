@@ -60,12 +60,22 @@ export async function saveOutputProfile(db: Db, schoolId: string, input: { forma
   const { rows: [r] } = await db.query('select app.save_output_profile($1, $2) as v', [schoolId, JSON.stringify(input)]);
   return r.v as { id: string; version: number };
 }
-async function profileSettings(db: Db, schoolId: string, code: string | undefined) {
+/** 128차: 출력 프로필마다 최신 판(관리 화면·AI 지시문 요약이 같이 쓴다) */
+export type OutputProfileRow = { id: string; code: string; format: Format; version: number; settings: Record<string, unknown>; why: string | null; created_at: string };
+export async function listOutputProfiles(db: Db, schoolId: string): Promise<OutputProfileRow[]> {
+  return (await db.query<OutputProfileRow>(
+    `select distinct on (p.code) p.id, p.code, p.format, v.version, v.settings, v.why, v.created_at from public.output_profiles p
+       join public.output_profile_versions v on v.profile_id = p.id
+      where p.school_id = $1 order by p.code, v.version desc`, [schoolId])).rows;
+}
+async function profileSettings(db: Db, schoolId: string, code: string | undefined, format?: Format) {
   if (!code) return { id: null, version: null, settings: {} as Record<string, unknown> };
   const { rows: [p] } = await db.query(
-    `select p.id, v.version, v.settings from public.output_profiles p join public.output_profile_versions v on v.profile_id = p.id
+    `select p.id, p.format, v.version, v.settings from public.output_profiles p join public.output_profile_versions v on v.profile_id = p.id
       where p.school_id = $1 and p.code = $2 order by v.version desc limit 1`, [schoolId, code]);
   if (!p) throw new NotFoundError('err.rec.profileNotFound');
+  // 서식마다 설정 칸이 달라 다른 서식의 프로필로 그리지 않는다(128차: 발행 양식에서 프로필을 고르게 되면서)
+  if (format && p.format !== format) throw new ValidationError('err.rec.profileFormat', { code });
   return p as { id: string; version: number; settings: Record<string, unknown> };
 }
 
@@ -254,7 +264,7 @@ export function hideInDocument(format: Format, out: { content: Record<string, un
 
 // ── 발행 ─────────────────────────────────────────────────
 export async function publishRecordDocument(db: Db, schoolId: string, input: { format: Format; personId?: string; lang?: string; blind?: boolean; profileCode?: string }) {
-  const prof = await profileSettings(db, schoolId, input.profileCode);
+  const prof = await profileSettings(db, schoolId, input.profileCode || undefined, input.format);
   let closureIds: string[] = [];
   let out: { content: Record<string, unknown>; issues: Issue[] };
   let secrets: string[] = [];

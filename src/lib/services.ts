@@ -481,3 +481,11 @@ function sanitizeName(name: string) {
   const base = String(name || '이름 없는 파일').split(/[\\/]/).pop()!.replace(/[\u0000-\u001f]/g, '').trim();
   return base.slice(0, 160) || '이름 없는 파일';
 }
+
+/** 128차: 판으로 쌓는 설정 저장(척도·성적 정책·계산식·출력 프로필)의 '왜' 칸. 화면·API 쓰기 길에서 비우지 못하게 한다(DB 칸은 500자) */
+export function requireWhy(v: unknown): string {
+  const s = typeof v === 'string' ? v.trim() : '';
+  if (!s) throw new ValidationError('err.whyRequired');
+  if (s.length > 500) throw new ValidationError('err.whyTooLong');
+  return s;
+}
