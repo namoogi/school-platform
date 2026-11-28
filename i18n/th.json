@@ -3280,5 +3280,8 @@
   "site.facet.content.international": "นานาชาติ",
   "site.facet.content.kinder": "อนุบาล",
   "site.facet.content.small": "กลุ่มเรียนรู้ขนาดเล็ก",
-  "site.profile.layoutHint": "วิธีที่ผู้เยี่ยมชมเปลี่ยนหน้า (ดีไซน์ Campus และ Dawn ใช้เมนูด้านบนเสมอ)"
+  "site.profile.layoutHint": "วิธีที่ผู้เยี่ยมชมเปลี่ยนหน้า (ดีไซน์ Campus และ Dawn ใช้เมนูด้านบนเสมอ)",
+  "site.tpl.tab.label": "วิธีเริ่มต้น",
+  "site.tpl.tab.templates": "เทมเพลต",
+  "site.tpl.tab.import": "นำเข้าเว็บไซต์เดิม"
 }

@@ -1739,6 +1739,18 @@ try {
     assert.equal(await h.locator('[data-testid=template-grid] article').count(), 12);
     assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 12);
     assert.equal((await h.request.get(`${BASE}/site-templates/story.jpg`)).status(), 200);
+    // 138차 후속: 거르기는 쪽을 다시 부르지 않고 화면 안에서 바로 걸러진다(화면 상태 유지, 주소는 바뀜)
+    await h.evaluate(() => { window.__noReload = true; });
+    await h.click('[data-facet="nav:onepage"]');
+    await h.waitForURL(/\/site\/templates\?nav=onepage$/);
+    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 3);
+    await h.click('[data-facet="content:kinder"]');
+    await h.waitForURL(/nav=onepage&content=kinder$/);
+    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 1);
+    assert.equal(await h.evaluate(() => window.__noReload === true), true);
+    await h.goto(`${BASE}/site/templates?first=tiles`); // 주소로 바로 열어도 같은 거르기(서버가 먼저 그림)
+    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 1);
+    await h.goto(`${BASE}/site/templates`);
     // 89차(ADR 0034): 미리보기는 관리 화면 밖 전체 화면 — 디자인(테마)·메뉴 그대로, 쪽을 넘겨 본다
     await h.click('[data-testid=template-live-project]');
     await h.waitForURL(/\/templates\/project/);
@@ -1905,11 +1917,16 @@ try {
     await shot(h, '91-inquiries-admin.png');
     await ctx.close();
   });
-  await step('87차: 주소만 넣고 새 디자인으로 옮기기 — 둘러보기 위 패널, 내부 주소는 서버가 거부해 화면에 알린다', async () => {
+  await step('87차: 주소만 넣고 새 디자인으로 옮기기 — 둘째 탭(138차 후속), 내부 주소는 서버가 거부해 화면에 알린다', async () => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const h = await ctx.newPage();
     await login(h, 'admin-a@school-a.test', 'demo-pass-a');
     await h.goto(`${BASE}/site/templates`);
+    // 138차 후속: 템플릿이 첫 탭, 가져오기는 둘째 탭(누르면 쪽을 다시 부르지 않고 주소만 ?tab=import)
+    assert.equal(await h.getAttribute('[data-testid=picker-tab-templates]', 'aria-selected'), 'true');
+    assert.equal(await h.locator('[data-testid=migrate-start]').isVisible(), false);
+    await h.click('[data-testid=picker-tab-import]');
+    await h.waitForURL(/\?tab=import$/);
     const panel = h.locator('[data-testid=migrate-start]');
     await panel.waitFor();
     await panel.locator('[data-testid=migrate-start-url]').fill(`${BASE}/`);
