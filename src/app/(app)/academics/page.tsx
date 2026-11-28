@@ -59,7 +59,7 @@ export default async function AcademicsPage() {
               : <dl className="facts">{terms[y.id].map((tm) => (
                 <Fragment key={tm.id}><dt>{tm.label}</dt><dd>
                   {tm.starts_on ? `${tm.starts_on} ~ ${tm.ends_on}` : <span className="muted">{t('academics.noDates')}</span>}
-                  {admin && <ActionForm url="/api/academics" action="term-dates" extra={{ termId: tm.id }} inline submitLabel={t('academics.saveDates')} successText={t('academics.datesSaved')}
+                  {admin && <ActionForm url="/api/academics" action="term-dates" extra={{ termId: tm.id }} inline tone="secondary" submitLabel={t('academics.saveDates')} successText={t('academics.datesSaved')}
                     fields={[{ name: 'startsOn', label: t('common.start'), type: 'date', required: true, defaultValue: tm.starts_on ?? '' }, { name: 'endsOn', label: t('common.end'), type: 'date', required: true, defaultValue: tm.ends_on ?? '' }]} />}
                 </dd></Fragment>))}</dl>}
           </div>
