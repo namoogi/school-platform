@@ -11,15 +11,17 @@ import { isUuid, NotFoundError, ValidationError } from './services';
  * 관제가 템플릿 새 판을 내면 그 템플릿을 쓰는 학교마다 제안이 생긴다(DB 함수). 학교는 미리 보기를 보고 수락·보류·거절한다.
  * 수락은 기존 적용 길(applyTemplate)로 새 판을 적용한 뒤 같은 트랜잭션에서 기록한다. 갱신하는 길은 이것 하나다.
  */
-export type TemplateOffer = { id: string; template_key: string; from_version: number; to_version: number; status: 'offered' | 'accepted' | 'declined' | 'held'; note: string | null; created_at: string; decided_at: string | null };
+export type TemplateOffer = { id: string; template_key: string; from_version: number; to_version: number; status: 'offered' | 'accepted' | 'declined' | 'held'; note: string | null; included_in: number | null; created_at: string; decided_at: string | null };
 
 /** 지금 쓰는 템플릿의 제안(열린 것 먼저, 높은 판 먼저). 다른 템플릿으로 바꾼 뒤 남은 옛 제안은 보이지 않는다 */
 export async function templateOffers(db: Db, schoolId: string): Promise<TemplateOffer[]> {
   const p = await schoolProfile(db, schoolId);
   if (!p?.template_key) return [];
+  // 열린 제안은 지금 쓰는 판보다 높은 것만(다른 템플릿을 거쳐 최신 판으로 돌아오면 옛 제안은 지난 것, Codex 199번 PR 검토)
   return (await db.query<TemplateOffer>(
-    `select id, template_key, from_version, to_version, status, note, created_at::text, decided_at::text from public.academic_template_offers
-      where school_id = $1 and template_key = $2 order by (status in ('offered', 'held')) desc, to_version desc`, [schoolId, p.template_key])).rows;
+    `select id, template_key, from_version, to_version, status, note, included_in, created_at::text, decided_at::text from public.academic_template_offers
+      where school_id = $1 and template_key = $2 and (status = 'accepted' or to_version > $3)
+      order by (status <> 'accepted') desc, to_version desc`, [schoolId, p.template_key, p.template_version ?? 0])).rows;
 }
 
 export type TemplatePlan = {
@@ -67,8 +69,15 @@ export async function decideTemplateOffer(db: Db, schoolId: string, input: { off
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 500) : null;
   const { rows: [o] } = await db.query<TemplateOffer>('select * from public.academic_template_offers where id = $1 and school_id = $2', [input.offerId, schoolId]);
   if (!o) throw new NotFoundError('err.tplOffer.notFound');
+  // 적용 전에 지금 학교가 그 템플릿의 더 낮은 판을 쓰는지 본다. 아니면 지난 제안이다(판을 내리는 적용을 막음, Codex 199번 PR 검토)
+  const cur = await schoolProfile(db, schoolId);
+  // 문구는 DB 함수와 같은 글이라 db.* 이름표로 요청한 사람 언어가 된다(409)
+  const conflict = (m: string) => Object.assign(new Error(m), { code: 'P0409' });
+  if (o.status === 'accepted') throw conflict('이미 수락한 제안입니다.');
+  if (cur?.template_key !== o.template_key) throw conflict('학교가 다른 템플릿으로 바꿔 이 제안은 쓸 수 없습니다.');
+  if (Number(cur?.template_version ?? 0) >= o.to_version) throw conflict('학교가 이미 그 판 이상을 써서 지난 제안입니다.');
   let applied: ApplyResult | null = null;
-  if (decision === 'accepted') applied = await applyTemplate(db, schoolId, { key: o.template_key, version: o.to_version, base_version: input.base_version }, locale);
+  if (decision === 'accepted') applied = await applyTemplate(db, schoolId, { key: o.template_key, version: o.to_version, base_version: input.base_version }, locale, { viaOffer: true });
   const { rows: [r] } = await db.query('select app.decide_template_offer($1, $2, $3, $4) as v', [schoolId, o.id, decision, note]);
   return { ...(r.v as { status: string; to_version: number }), applied };
 }

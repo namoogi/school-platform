@@ -3060,5 +3060,8 @@
   "db.tplOfferNotFound": "That template version offer can't be found.",
   "db.tplOfferAccepted": "This offer has already been accepted.",
   "db.tplOfferOtherTemplate": "The school switched to another template, so this offer no longer applies.",
-  "db.tplOfferApplyFirst": "Apply the new template version before accepting."
+  "db.tplOfferApplyFirst": "Apply the new template version before accepting.",
+  "err.template.useOffer": "To move to another version of the same template, accept it under 'New template version offers'.",
+  "db.tplOfferStale": "The school already uses this version or newer, so the offer is out of date.",
+  "tplOffer.includedIn": "Included with v{v}"
 }

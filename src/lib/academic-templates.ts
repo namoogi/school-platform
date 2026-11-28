@@ -42,7 +42,7 @@ export type ApplyResult = {
  * 템플릿을 학교에 적용한다(학교 관리자). base_version = 지금 학교 관할 판 번호(지침 10).
  * 같은 템플릿을 다시 적용해도 빠진 것만 더한다. 다른 템플릿으로 바꾸면 새 학교급·학년·척도만 더해지고 있던 것은 그대로다.
  */
-export async function applyTemplate(db: Db, schoolId: string, input: { key?: unknown; version?: unknown; base_version?: unknown }, locale = 'ko'): Promise<ApplyResult> {
+export async function applyTemplate(db: Db, schoolId: string, input: { key?: unknown; version?: unknown; base_version?: unknown }, locale = 'ko', opts: { viaOffer?: boolean } = {}): Promise<ApplyResult> {
   const key = String(input.key ?? '');
   // 늘 이름 댄 판 그대로 적용한다(판 번호 필수). 그 사이 새 판이 나와도 본 판이 들어가고, 보지 않은 판은 들어가지 않는다(Codex #180)
   const ver = Number(input.version);
@@ -56,6 +56,9 @@ export async function applyTemplate(db: Db, schoolId: string, input: { key?: unk
   // 1) 학교급·학년 + 관할 판(학년 체계·템플릿 키·판을 한 판에).
   //    학교가 이미 학년 체계를 정했으면 그 체계를 지킨다(학교 값 유지, Codex #180). 처음일 때만 템플릿 체계를 쓴다
   const cur = await schoolProfile(db, schoolId);
+  // 121차: 같은 템플릿의 다른 판으로 옮기는 길은 새 판 제안 수락 하나다(미리 보기·기록 없이 판이 바뀌지 않게, Codex 199번 PR 검토).
+  // 처음 고르기·다시 채우기(같은 판)·다른 템플릿으로 바꾸기는 그대로 된다
+  if (!opts.viaOffer && cur?.template_key === key && cur.template_version != null && cur.template_version !== t.version) throw new ValidationError('err.template.useOffer');
   const keepScheme = (cur?.grade_scheme ?? null) as GradeScheme | null;
   // 118차: 숨길 구획은 학교가 아직 정하지 않았을 때(null)만 템플릿에서 복사한다.
   // 한 번 정해지면(템플릿 복사든 학교가 직접 저장이든) 다시 채우기·새 판·다른 템플릿에도 학교 값을 지킨다(Codex #191)

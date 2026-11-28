@@ -93,6 +93,26 @@ describe('템플릿 새 판 제안', () => {
     expect(await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId))).toEqual([]);
     const o5 = (await su.query(`select id from public.academic_template_offers where school_id = $1 and to_version = 5`, [B.schoolId])).rows[0].id;
     await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'held')`, [B.schoolId, o5]))).rejects.toThrow('다른 템플릿');
+    // 최신 판(5판)으로 다시 고르면 옛 제안은 지난 것: 보이지 않고, 결정하면 판을 내리지 않고 거부(Codex 199번 PR 검토)
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 5, base_version: await ver(B) }));
+    expect((await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId))).filter((x) => x.status !== 'accepted')).toEqual([]);
+    await expect(asUser(B.userId, async (db) => off.decideTemplateOffer(db, B.schoolId, { offerId: o5, decision: 'accepted', base_version: await ver(B) }))).rejects.toThrow('지난 제안');
+    await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'held')`, [B.schoolId, o5]))).rejects.toThrow('지난 제안');
+    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(5);
+    // 함께 닫힌 제안은 언어와 상관없는 판 번호를 남긴다
+    expect(after.find((x) => x.id === o3.id)!.included_in).toBe(4);
+  });
+
+  it('같은 템플릿의 다른 판으로 바로 적용하는 길은 막힌다(제안 수락만)', async () => {
+    await publish(6, 'kr_pf_v6');
+    await expect(asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 6, base_version: await ver(B) }))).rejects.toThrow();
+    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(5);
+    // 같은 판 다시 채우기는 된다
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 5, base_version: await ver(B) }));
+    const [o6] = (await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId))).filter((x) => x.status !== 'accepted');
+    expect(o6.to_version).toBe(6);
+    await asUser(B.userId, async (db) => off.decideTemplateOffer(db, B.schoolId, { offerId: o6.id, decision: 'accepted', base_version: await ver(B) }));
+    expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(6);
   });
 
   it('제안 행은 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {

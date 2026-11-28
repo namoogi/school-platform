@@ -12,6 +12,8 @@ create table public.academic_template_offers (
   to_version integer not null check (to_version > from_version),
   status text not null default 'offered' check (status in ('offered', 'accepted', 'declined', 'held')),
   note text check (note is null or length(note) <= 500),
+  -- 더 높은 판을 수락할 때 함께 닫힌 제안은 그 판 번호를 남긴다(화면이 언어마다 '새 판과 함께 반영'으로 그림)
+  included_in integer check (included_in is null or included_in > to_version),
   decided_by uuid,
   decided_at timestamptz,
   created_at timestamptz not null default now(),
@@ -83,8 +85,11 @@ begin
       raise exception '템플릿 새 판을 먼저 적용해야 수락할 수 있습니다.' using errcode = '22023';
     end if;
     -- 더 낮은 판의 열린 제안은 이번 판에 함께 담겼다
-    update public.academic_template_offers set status = 'accepted', note = '새 판과 함께 반영', decided_by = app.uid(), decided_at = now()
+    update public.academic_template_offers set status = 'accepted', included_in = o.to_version, decided_by = app.uid(), decided_at = now()
      where school_id = target and template_key = o.template_key and to_version < o.to_version and status <> 'accepted';
+  elsif cur.template_version >= o.to_version then
+    -- 학교가 이미 그 판 이상을 쓰면(다른 템플릿을 거쳐 최신 판으로 돌아온 경우 등) 지난 제안이다(Codex 199번 PR 검토)
+    raise exception '학교가 이미 그 판 이상을 써서 지난 제안입니다.' using errcode = 'P0409';
   end if;
   update public.academic_template_offers set status = decision, note = nullif(trim(decision_note), ''), decided_by = app.uid(), decided_at = now() where id = offer;
   return jsonb_build_object('status', decision, 'to_version', o.to_version);

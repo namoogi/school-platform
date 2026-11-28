@@ -72,6 +72,7 @@ export default async function TemplatesPage() {
               <li key={o.id} data-testid={`tpl-offer-${o.to_version}`}>
                 <span><strong>{t('tplOffer.versions', { name, from: o.from_version, to: o.to_version })}</strong>{' '}
                   <StatusBadge tone={o.status === 'accepted' ? 'success' : o.status === 'offered' ? 'info' : 'neutral'}>{t(`offer.status.${o.status}` as MsgKey)}</StatusBadge>
+                  {o.included_in != null && <small className="muted"> · {t('tplOffer.includedIn', { v: o.included_in })}</small>}
                   {o.note && <small className="muted"> · {o.note}</small>}</span>
                 {o.why && <p className="fine">{t('tplOffer.why', { why: o.why })}</p>}
                 {o.plan && <dl className="facts">
