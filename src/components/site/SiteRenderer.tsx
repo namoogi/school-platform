@@ -233,7 +233,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             {show(b.caption) && <figcaption>{T(at('caption'), b.caption, '사진 설명')}</figcaption>}
           </figure>
         ) : null;
-        // 115차: 안내 띠(cta)의 그림은 사진이 아니라 장식이다 — 대체 글 없이 띠 오른쪽에 번지듯 깐다(선생님 지시: 변형 그림은 디자인 요소로만)
+        // 116차: 안내 띠(cta)의 그림은 사진이 아니라 장식이다 — 대체 글 없이 띠 오른쪽에 번지듯 깐다(선생님 지시: 변형 그림은 디자인 요소로만)
         // eslint-disable-next-line @next/next/no-img-element
         const decorImg = b.asset ? <img src={assetUrl(b.asset)} alt="" loading="lazy" /> : null;
         const decor = b.template === 'cta' && (b.asset || ed) ? (

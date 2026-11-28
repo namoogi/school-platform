@@ -9,7 +9,8 @@ import { safeBack } from '@/lib/next-path';
  * 48차: 공개 화면에서 '교직원 로그인'(이 화면 편집) → 로그인 → 그 쪽의 화면 편집으로 바로 간다 (ADR 0011 1단계 남은 일).
  * ?slug=<학교 주소 이름>&kind=page|news|story&key=<주소 이름>&back=<돌아갈 공개 화면>
  * - 로그인 안 했으면 로그인 화면으로(끝나면 이 주소로 돌아옴).
- * - 그 학교의 관리자만(RLS·app.is_school_admin). 학교 id는 주소 이름에서 서버가 정하고, 작업 학교 쿠키도 그 학교로 맞춘다.
+ * - 그 학교 구성원(교사 포함, 115차 사용자 지시)이면 들어간다. 교사는 시안 저장까지, 공개는 관리자(편집 화면·RLS가 정함).
+ *   학교 id는 주소 이름에서 서버가 정하고(RLS: 구성원만 그 학교 설정이 보임), 작업 학교 쿠키도 그 학교로 맞춘다.
  * - 항목이 없거나 목록 화면이면 홈페이지 관리로.
  */
 export async function GET(req: Request) {
@@ -24,8 +25,8 @@ export async function GET(req: Request) {
   if (!userId) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(url.pathname + url.search)}`, url), 303);
   if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(slug)) return NextResponse.redirect(new URL('/site', url), 303);
   const found = await asUser(userId, async (db) => {
-    const { rows: [s] } = await db.query<{ school_id: string; admin: boolean }>(
-      'select school_id, app.is_school_admin(school_id) as admin from public.site_settings where public_slug = $1', [slug]);
+    const { rows: [s] } = await db.query<{ school_id: string; admin: boolean; member: boolean }>(
+      'select school_id, app.is_school_admin(school_id) as admin, app.is_member(school_id) as member from public.site_settings where public_slug = $1', [slug]);
     if (!s) return null;
     // 전체 관리자가 다른 학교에 들어가면 입장 기록이 남는다(학교 전환과 같은 길)
     if (s.admin) await enterSchool(db, s.school_id);
@@ -33,10 +34,10 @@ export async function GET(req: Request) {
     const { rows: [e] } = ok
       ? await db.query<{ id: string }>('select id from public.site_entries where school_id = $1 and kind = $2 and key = $3 and archived_at is null', [s.school_id, kind, key])
       : { rows: [] as { id: string }[] };
-    return { school: s.school_id, admin: s.admin, entry: e?.id ?? null };
+    return { school: s.school_id, admin: s.admin, member: s.member, entry: e?.id ?? null };
   }).catch(() => null);
   if (!found) return NextResponse.redirect(new URL('/locked?reason=admin', url), 303);
-  if (!found.admin) return NextResponse.redirect(new URL('/locked?reason=admin', url), 303);
+  if (!found.member) return NextResponse.redirect(new URL('/locked?reason=admin', url), 303);
   const to = goto === 'news' ? '/site?box=news&new=1'
     : goto === 'manage' ? '/site'
     : goto === 'chat' ? '/site?chat=1'
