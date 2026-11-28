@@ -131,3 +131,22 @@ export async function setupChecklist(db: Db, schoolId: string): Promise<SetupSte
     { key: 'courses', done: Number(c.offerings) > 0, href: '/courses' },
   ];
 }
+
+/** 119·121차: 학교 구조 탭 옆 개수·판 번호(두 화면이 같은 길로 읽음, 학교 사용자 권한으로 읽히는 것만 씀) */
+export type TabCounts = { levels: number; rule: number | null; years: number; template: number | null; offers: number };
+
+/** offers(121차) = 지금 열린 새 판 제안(최신 판 > 학교 판, 마지막 결정이 거절이 아님)이 있으면 1. 최신 판은 학교가 읽는 함수로 본다. 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
+export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabCounts> {
+  const { rows: [c] } = await db.query<TabCounts>(
+    `select (select count(*)::int from public.school_levels where school_id = $1) as levels,
+            (select max(version)::int from public.school_rules where school_id = $1 and topic = 'period_structure') as rule,
+            (select count(*)::int from public.academic_years where school_id = $1) as years,
+            (select p.template_version from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) as template,
+            (select count(*)::int from
+                    (select p.template_key, p.template_version from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) cur
+                    join lateral (select t.version as v from app.academic_templates() t where t.key = cur.template_key) l on true
+              where l.v > cur.template_version
+                and coalesce((select d.decision from public.academic_template_decisions d where d.school_id = $1 and d.template_key = cur.template_key
+                                and d.to_version = l.v order by d.decided_at desc limit 1), 'offered') <> 'declined') as offers`, [schoolId]);
+  return c;
+}

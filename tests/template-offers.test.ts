@@ -94,11 +94,14 @@ describe('템플릿 새 판 제안', () => {
 
   it('DB 함수를 직접 불러도 적용 없는 수락·지난 제안·다른 템플릿 결정은 거부', async () => {
     await publish(5, 'kr_pf_v5');
-    const rec = (s: S, from: number, to: number, d: string) => asUser(s.userId, (db) =>
-      db.query(`select app.record_template_decision($1, 'kr_general', $2, $3, $4)`, [s.schoolId, from, to, d]));
-    await expect(rec(B, 4, 5, 'accepted')).rejects.toThrow('먼저 적용');
-    await expect(rec(B, 3, 4, 'held')).rejects.toMatchObject({ code: 'P0409' });
-    await expect(rec(A, 1, 5, 'held')).rejects.toThrow('다른 템플릿');
+    const rec = (s: S, to: number, d: string) => asUser(s.userId, (db) =>
+      db.query(`select app.record_template_decision($1, 'kr_general', $2, $3)`, [s.schoolId, to, d]));
+    await expect(rec(B, 5, 'accepted')).rejects.toThrow('먼저 적용');
+    await expect(rec(B, 4, 'held')).rejects.toMatchObject({ code: 'P0409' });
+    await expect(rec(A, 5, 'held')).rejects.toThrow('다른 템플릿');
+    // '어느 판에서'는 DB가 학교 판에서 정한다(지금 4판)
+    await rec(B, 5, 'held');
+    expect((await asUser(B.userId, (db) => off.templateDecisions(db, B.schoolId)))[0]).toMatchObject({ from_version: 4, to_version: 5, decision: 'held' });
   });
 
   it('같은 템플릿의 다른 판으로 바로 적용하는 길은 막힌다(제안 수락만), 같은 판 다시 채우기는 된다', async () => {
@@ -116,8 +119,21 @@ describe('템플릿 새 판 제안', () => {
     expect(await offer(B)).toBeNull();
     await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 1, base_version: await ver(B) }));
     expect(await offer(B)).toMatchObject({ from: 1, to: 5 });
+    // 보류(5판) → 수락 → 다른 템플릿 → 1판으로 돌아오면, 예전 보류가 되살아나지 않고 새로 열린 제안이다
     await decide(B, 'accepted', 5);
     expect(await tv(B)).toBe(5);
+    expect((await asUser(B.userId, (db) => off.templateDecisions(db, B.schoolId)))[0]).toMatchObject({ from_version: 1, to_version: 5, decision: 'accepted' });
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'homeschool', version: 1, base_version: await ver(B) }));
+    await asUser(B.userId, async (db) => at.applyTemplate(db, B.schoolId, { key: 'kr_general', version: 1, base_version: await ver(B) }));
+    expect(await offer(B)).toMatchObject({ from: 1, to: 5, status: 'offered', note: null });
+  });
+
+  it('학교 사용자 권한으로도 탭 옆 \'새 판\' 표시가 열린 제안을 센다(거절하면 0)', async () => {
+    const count = (s: S) => asUser(s.userId, async (db) => (await at.academicsTabCounts(db, s.schoolId)).offers);
+    expect(await count(B)).toBe(1);
+    await decide(B, 'declined', 5);
+    expect(await count(B)).toBe(0);
+    expect(await count(A)).toBe(1);
   });
 
   it('결정 기록은 고치거나 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {

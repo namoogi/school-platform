@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import type { Db } from '@/lib/db';
+import type { TabCounts } from '@/lib/academic-templates';
+export { academicsTabCounts } from '@/lib/academic-templates';
 import type { MsgKey } from '@/lib/i18n/catalog';
 
 /**
@@ -10,24 +11,6 @@ export const ACADEMICS_TABS = ['levels', 'terms', 'years'] as const;
 export type AcademicsTab = (typeof ACADEMICS_TABS)[number] | 'templates';
 
 export const academicsTabHref = (tab: AcademicsTab) => (tab === 'templates' ? '/academics/templates' : tab === 'levels' ? '/academics' : `/academics?tab=${tab}`);
-
-export type TabCounts = { levels: number; rule: number | null; years: number; template: number | null; offers: number };
-
-/** offers(121차) = 지금 열린 새 판 제안(최신 판 > 학교 판, 거절하지 않음)이 있으면 1. 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
-export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabCounts> {
-  const { rows: [c] } = await db.query<TabCounts>(
-    `select (select count(*)::int from public.school_levels where school_id = $1) as levels,
-            (select max(version)::int from public.school_rules where school_id = $1 and topic = 'period_structure') as rule,
-            (select count(*)::int from public.academic_years where school_id = $1) as years,
-            (select p.template_version from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) as template,
-            (select count(*)::int from
-                    (select p.template_key, p.template_version from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) cur
-                    join lateral (select max(t.version) as v from public.academic_templates t where t.key = cur.template_key) l on true
-              where l.v > cur.template_version
-                and coalesce((select d.decision from public.academic_template_decisions d where d.school_id = $1 and d.template_key = cur.template_key
-                                and d.to_version = l.v and d.decision <> 'accepted' order by d.decided_at desc limit 1), 'offered') <> 'declined') as offers`, [schoolId]);
-  return c;
-}
 
 export function AcademicsTabs({ current, t, counts: c }: {
   current: AcademicsTab; t: (k: MsgKey, v?: Record<string, string | number>) => string; counts: TabCounts;

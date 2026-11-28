@@ -32,13 +32,15 @@ export async function openTemplateOffer(db: Db, schoolId: string): Promise<OpenO
   const { rows: [t] } = await db.query<{ version: number; title: Record<string, string> }>(
     'select version, title from app.academic_templates() where key = $1', [p.template_key]);
   if (!t || t.version <= p.template_version) return null;
-  const { rows: [last] } = await db.query<{ decision: OfferStatus; note: string | null }>(
+  // 그 판에 대한 마지막 결정(수락 포함). 마지막이 수락인데 지금 판이 다시 낮으면(다른 템플릿을 거쳐 돌아옴) 새로 열린 제안이다(Codex 199번 PR 검토)
+  const { rows: [last] } = await db.query<{ decision: OfferStatus | 'accepted'; note: string | null }>(
     `select decision, note from public.academic_template_decisions
-      where school_id = $1 and template_key = $2 and to_version = $3 and decision <> 'accepted' order by decided_at desc limit 1`,
+      where school_id = $1 and template_key = $2 and to_version = $3 order by decided_at desc limit 1`,
     [schoolId, p.template_key, t.version]);
+  const fresh = !last || last.decision === 'accepted';
   const { rows: [w] } = await db.query<{ why: string | null }>('select why from app.academic_template($1, $2)', [p.template_key, t.version]);
   return {
-    key: p.template_key, from: p.template_version, to: t.version, status: last?.decision ?? 'offered', note: last?.note ?? null,
+    key: p.template_key, from: p.template_version, to: t.version, status: fresh ? 'offered' : last.decision as OfferStatus, note: fresh ? null : last.note,
     title: t.title, why: w?.why ?? null, plan: await planTemplate(db, schoolId, p.template_key, t.version),
   };
 }
@@ -90,7 +92,6 @@ export async function decideTemplateOffer(db: Db, schoolId: string, input: { to_
   const to = Number(input.to_version);
   if (!Number.isInteger(to) || to < 2) throw new ValidationError('err.template.version');
   const note = typeof input.note === 'string' && input.note.trim() ? input.note.trim().slice(0, 500) : null;
-  const p = await schoolProfile(db, schoolId);
   const offer = await openTemplateOffer(db, schoolId);
   // 문구는 DB 함수와 같은 글이라 db.* 이름표로 요청한 사람 언어가 된다(409)
   const conflict = (m: string) => Object.assign(new Error(m), { code: 'P0409' });
@@ -98,8 +99,8 @@ export async function decideTemplateOffer(db: Db, schoolId: string, input: { to_
   if (offer.to !== to) throw conflict('그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.');
   let applied: ApplyResult | null = null;
   if (decision === 'accepted') applied = await applyTemplate(db, schoolId, { key: offer.key, version: offer.to, base_version: input.base_version }, locale, { viaOffer: true });
-  const { rows: [r] } = await db.query('select app.record_template_decision($1, $2, $3, $4, $5, $6) as v',
-    [schoolId, offer.key, p!.template_version, offer.to, decision, note]);
+  const { rows: [r] } = await db.query('select app.record_template_decision($1, $2, $3, $4, $5) as v',
+    [schoolId, offer.key, offer.to, decision, note]);
   return { id: r.v as string, decision, to_version: offer.to, applied };
 }
 
