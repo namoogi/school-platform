@@ -204,6 +204,12 @@ export function putProposal(content: Content, slot: Slot, value: Proposal['value
       const prev = prevItems[k] ?? ({} as SectionItem);
       const it: SectionItem = { ...prev, title: { ...(prev.title ?? {}), [l]: i.title } as LText };
       if (i.body) it.body = { ...(prev.body ?? {}), [l]: i.body } as LText;
+      else if (prev.body) {
+        // 제목만 있는 항목: 이 언어의 안내 자리('[근거]' 등)는 지우고 다른 언어는 남긴다(Codex 검토)
+        const rest = { ...prev.body } as Record<string, string>;
+        delete rest[l];
+        if (Object.keys(rest).length) it.body = rest as LText; else delete it.body;
+      }
       return it;
     });
     return true;

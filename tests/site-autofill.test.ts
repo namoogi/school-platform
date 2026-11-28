@@ -113,4 +113,19 @@ describe('69차 운영 시험 반영', () => {
     expect(items[0].body).toEqual({ ko: '한 반 15명 이하', en: '[One fact that shows it]' });
     expect(items).toHaveLength(2);
   });
+
+  it('117차: 제목만 있는 목록 항목은 그 언어의 안내 자리를 지우고 다른 언어는 남긴다', () => {
+    const t = templateByKey('admissions');
+    const home = structuredClone(t.pages.find((p) => p.key === 'home')!.content);
+    const slot = t.slots.find((s) => s.id === 'differences')!;
+    expect(putProposal(home, slot, [{ title: '작은 학급', body: '' }])).toBe(true);
+    const item = (home.blocks[slot.path[1] as number] as { items: { title: Record<string, string>; body?: Record<string, string> }[] }).items[0];
+    expect(item.title).toEqual({ ko: '작은 학급', en: '[Difference 1]' });
+    expect(item.body).toEqual({ en: '[One fact that shows it]' });
+    const k = templateByKey('kinder');
+    const kh = structuredClone(k.pages[0].content);
+    const ks = k.slots.find((s) => s.id === 'classes')!;
+    expect(putProposal(kh, ks, [{ title: '새싹반', body: '' }])).toBe(true);
+    expect((kh.blocks[ks.path[1] as number] as { items: { body?: unknown }[] }).items[0].body).toBeUndefined();
+  });
 });
