@@ -176,3 +176,17 @@ describe('89차 템플릿 = 완성 디자인(ADR 0034)', () => {
     expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('campus');
   });
 });
+
+describe('133차 예전 판 상위 쪽과 겹치지 않게', () => {
+  it('상위 쪽이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면 그 아래 새 하위 쪽은 만들지 않는다(다른 묶음은 만든다)', async () => {
+    // B학교: 예전 판처럼 '학교 생활' 쪽이 구역 하위 메뉴를 쓴다
+    await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'school-life', content: { title: { ko: '학교 생활' },
+      blocks: [{ type: 'section', template: 'text', title: { ko: '급식' }, body: { ko: '예전 판 급식 안내' }, anchor: 'lunch' } as never] } }));
+    const r = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'notice'));
+    const kidsOf = (parent: string) => tpl.SITE_TEMPLATES.find((t) => t.key === 'notice')!.pages.filter((p) => p.content.menu?.parent === parent).map((p) => p.key);
+    expect(r.skipped).toEqual(expect.arrayContaining(['school-life', ...kidsOf('school-life')]));
+    for (const k of kidsOf('school-life')) expect(r.created.map((c) => c.key)).not.toContain(k);
+    // 새 구조인 상위 쪽(about: 국제형으로 만든 쪽, 메뉴 주소 없음) 아래는 만든다
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['greeting', 'way']));
+  });
+});

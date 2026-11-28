@@ -22,7 +22,8 @@ export function splitSubmenuPages(pages: SplitPage[]): { pages: SplitPage[]; mov
     const blocks = p.content.blocks;
     const anchored = blocks.map((b, i) => ({ b, i })).filter(({ b }) => (b as { anchor?: string }).anchor);
     const nested = p.key === 'home' || Boolean(p.content.menu?.parent);
-    if (!anchored.length || nested) {
+    const existingKids = pages.filter((x) => x.content.menu?.parent === p.key);
+    if (nested || (!anchored.length && !existingKids.length)) {
       blocks.forEach((_, i) => moves.set(`${p.key}:${i}`, [p.key, i]));
       out.push({ ...p, sort: (sort += 10), content: { ...p.content, blocks: blocks.map(withoutAnchor) } });
       continue;
@@ -33,15 +34,16 @@ export function splitSubmenuPages(pages: SplitPage[]): { pages: SplitPage[]; mov
       taken.add(key);
       hrefOf.set(`/p/${p.key}#${anchor}`, `/p/${key}`);
       moves.set(`${p.key}:${i}`, [key, 0]);
-      // 구역 제목은 쪽 제목이 된다(같은 제목을 쪽 머리와 구역에 두 번 쓰지 않게 구역 제목은 뗀다. 제목 글 블록은 그대로)
+      // 구역 제목은 쪽 제목이 된다. 구역 제목은 그대로 두고(표 설명·제목 구조), 쪽 제목과 같으면 화면이 보이는 제목만 감춘다(SiteRenderer).
+      // 신청 칸은 제목이 없으면 기본 제목을 쓰므로 뗀다
       const moved = withoutAnchor(b) as Block & { title?: LText };
-      const body = b.type === 'section' || b.type === 'inquiry' || b.type === 'news_list' ? (({ title: _t, ...r }) => { void _t; return r as Block; })(moved) : moved;
+      const body = b.type === 'inquiry' ? (({ title: _t, ...r }) => { void _t; return r as Block; })(moved) : moved;
       return { kind: 'page' as const, key, sort: 0, content: { title: titleOf(b) ?? p.content.title, blocks: [body], menu: { parent: p.key } } as Content };
     });
     // 상위 쪽: 메뉴 주소 없는 구역은 그대로 두고, 맨 앞에 하위 쪽 바로 가기를 둔다(상위 메뉴를 누른 사람이 길을 잃지 않게)
     const rest = blocks.map((b, i) => ({ b, i })).filter(({ b }) => !(b as { anchor?: string }).anchor);
     const links: Block = { type: 'section', template: 'cards', variant: 'quicklinks',
-      items: [...children, ...pages.filter((x) => x.content.menu?.parent === p.key)] // 원래부터 하위였던 쪽도 함께
+      items: [...children, ...existingKids] // 원래부터 하위였던 쪽도 함께
         .map((c) => ({ title: c.content.title, href: `/p/${c.key}` })) };
     rest.forEach(({ i }, k) => moves.set(`${p.key}:${i}`, [p.key, k + 1]));
     out.push({ ...p, sort: (sort += 10), content: { ...p.content, blocks: [links, ...rest.map(({ b }) => b)] } });

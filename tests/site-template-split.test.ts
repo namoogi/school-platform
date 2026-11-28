@@ -4,6 +4,9 @@ import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages } from '@/lib/site-template-samples';
 import { splitSubmenuPages } from '@/lib/site-template-split';
 import { validateContent, type Block } from '@/lib/site';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { SiteBlocks } from '@/components/site/SiteRenderer';
 
 const anchorsOf = (blocks: Block[]) => blocks.filter((b) => (b as { anchor?: string }).anchor);
 const hrefs = (v: unknown, out: string[] = []): string[] => {
@@ -33,7 +36,9 @@ describe('하위 메뉴 = 별도 쪽', () => {
   it('상위 쪽 맨 앞에 하위 쪽 바로 가기가 있고, 옛 "쪽#구역" 링크는 새 쪽 주소로 바뀐다', () => {
     for (const t of SITE_TEMPLATES.filter((x) => x.key !== 'single')) {
       // 원본에서 메뉴 주소 구역이 있던 상위 쪽(나눈 쪽)
-      const split = new Set((t.source ?? []).filter((x) => x.key !== 'home' && !x.content.menu?.parent && anchorsOf(x.content.blocks).length).map((x) => x.key));
+      const src = t.source ?? [];
+      const split = new Set(src.filter((x) => x.key !== 'home' && !x.content.menu?.parent
+        && (anchorsOf(x.content.blocks).length || src.some((c) => c.content.menu?.parent === x.key))).map((x) => x.key));
       expect(split.size, t.key).toBeGreaterThan(0);
       for (const p of t.pages.filter((x) => split.has(x.key))) {
         const kids = t.pages.filter((c) => c.content.menu?.parent === p.key).map((c) => `/p/${c.key}`);
@@ -47,6 +52,26 @@ describe('하위 메뉴 = 별도 쪽', () => {
     }
     const story = SITE_TEMPLATES.find((t) => t.key === 'story')!;
     expect(hrefs(story.pages.find((p) => p.key === 'home')!.content)).toContain('/p/day');
+  });
+  it('하위 쪽의 구역 제목은 남기고(표 설명·제목 구조), 화면에서 쪽 제목과 겹치는 제목만 감춘다', () => {
+    const story = SITE_TEMPLATES.find((t) => t.key === 'story')!;
+    const grades = story.pages.find((p) => p.key === 'grades')!.content;
+    expect((grades.blocks[0] as { title?: { ko?: string } }).title?.ko).toBe('학년별 배움');
+    const html = renderToStaticMarkup(createElement(SiteBlocks, { content: grades, lang: 'ko', fallback: 'ko', assetUrl: () => '' }));
+    expect(html).toContain('<h2 class="site-h2 sr-only">학년별 배움</h2>');
+    expect(html).toContain('<caption class="sr-only">학년별 배움</caption>');
+    const other = renderToStaticMarkup(createElement(SiteBlocks, { content: { ...grades, title: { ko: '다른 제목' } }, lang: 'ko', fallback: 'ko', assetUrl: () => '' }));
+    expect(other).toContain('<h2 class="site-h2">학년별 배움</h2>');
+    // 신청 칸은 제목을 떼어 기본 제목을 쓴다
+    const apply = story.pages.find((p) => p.key === 'apply')!.content.blocks[0] as { type: string; title?: unknown };
+    expect(apply.type).toBe('inquiry');
+    expect(apply.title).toBeUndefined();
+  });
+  it('프로젝트형: 원래 하위 쪽(학생 작품)만 있는 상위 쪽에도 바로 가기가 붙는다', () => {
+    const project = SITE_TEMPLATES.find((t) => t.key === 'project')!;
+    const first = project.pages.find((p) => p.key === 'projects')!.content.blocks[0] as { variant?: string; items?: { href?: string }[] };
+    expect(first.variant).toBe('quicklinks');
+    expect(first.items?.map((i) => i.href)).toEqual(['/p/works']);
   });
   it('한 쪽 구조(single)는 구역 차례를 그대로 쓴다', () => {
     const single = SITE_TEMPLATES.find((t) => t.key === 'single')!;

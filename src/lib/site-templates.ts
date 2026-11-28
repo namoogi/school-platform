@@ -495,8 +495,21 @@ export async function applyTemplate(db: Db, schoolId: string, key: string, opts:
   const existing = new Set((await listEntries(db, schoolId)).filter((e) => e.kind === 'page').map((e) => e.key));
   const created: { key: string; id: string }[] = [];
   const skipped: string[] = [];
+  // 133차(Codex 검토): 예전 판으로 만든 상위 쪽이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면, 그 아래 새 하위 쪽은 만들지 않는다.
+  // 만들면 공개 뒤 같은 하위 메뉴가 두 번(구역·쪽) 보인다. 학교가 상위 쪽을 새 구조로 옮긴 뒤 다시 적용하면 만들어진다
+  const sourceKeys = new Set((t.source ?? t.pages).map((p) => p.key));
+  const oldStyle = new Set<string>();
+  for (const parent of new Set(t.pages.filter((p) => !sourceKeys.has(p.key)).map((p) => p.content.menu?.parent).filter((k): k is string => !!k && existing.has(k)))) {
+    const { rows: [r] } = await db.query<{ anchored: boolean }>(
+      `select exists (select 1 from public.site_entries e
+         join lateral (select content from public.site_entry_versions x where x.entry_id = e.id order by x.version desc limit 1) v on true
+         cross join lateral jsonb_array_elements(case when jsonb_typeof(v.content -> 'blocks') = 'array' then v.content -> 'blocks' else '[]'::jsonb end) b
+         where e.school_id = $1 and e.kind = 'page' and e.key = $2 and coalesce(b ->> 'anchor', '') <> '') as anchored`, [schoolId, parent]);
+    if (r?.anchored) oldStyle.add(parent);
+  }
   for (const p of t.pages) {
     if (existing.has(p.key)) { skipped.push(p.key); continue; }
+    if (!sourceKeys.has(p.key) && oldStyle.has(p.content.menu?.parent ?? '')) { skipped.push(p.key); continue; }
     const { id } = (await createEntry(db, schoolId, { kind: 'page', key: p.key, sort: p.sort, content: validateContent(p.content), note: `템플릿 ${t.name} v${t.version}` }))!;
     created.push({ key: p.key, id });
     // 66차: 어느 템플릿에서 왔는지 남긴다(자동 배치가 빈 칸 목록을 찾는 데 씀)

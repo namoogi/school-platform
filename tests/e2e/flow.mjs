@@ -1777,7 +1777,7 @@ try {
     await h.getByRole('link', { name: '소식 목록', exact: true }).click();
     await h.waitForURL(/news=all/);
     assert.equal(await h.locator('.lb-board li').count(), 3);
-    await h.goto(`${BASE}/templates/kinder?page=admission`);
+    await h.goto(`${BASE}/templates/kinder?page=apply`); // 133차: 방문·상담 신청은 '입학 안내' 아래 하위 쪽
     await h.locator('[data-testid=site-inquiry] input[name=name]').fill('가상 방문자');
     await h.locator('[data-testid=site-inquiry] input[name=contact]').fill('visitor@example.org');
     await h.locator('[data-testid=site-inquiry] input[name=consent]').check();
