@@ -213,6 +213,11 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     base.tables = {};
     const wrong = { ...base, academic_templates: base.academic_templates.map((t: object) => ({ ...t, manifest: { changed: true } })) };
     await expect(importSchool(dst, wrong)).rejects.toThrow(/학사 관리 템플릿/);
+    // 내용(manifest)이 같아도 제목·바뀐 이유가 다르면 넣지 않는다
+    const wrongTitle = { ...base, academic_templates: base.academic_templates.map((t: object) => ({ ...t, title: { ko: '다른 제목' } })) };
+    await expect(importSchool(dst, wrongTitle)).rejects.toThrow(/학사 관리 템플릿/);
+    const wrongWhy = { ...base, academic_templates: base.academic_templates.map((t: object) => ({ ...t, why: '다른 이유' })) };
+    await expect(importSchool(dst, wrongWhy)).rejects.toThrow(/학사 관리 템플릿/);
     // 맞는 묶음은 운영 중에 낸 판까지 대상 DB에 넣는다(대상에서도 학교 판 = 최신 판이라 제안이 없다)
     const before = (await dst.query(`select count(*)::int as n from public.academic_templates where key = 'us_k12' and version = $1`, [latest + 1])).rows[0].n;
     await importSchool(dst, { ...base, school: { ...base.school, slug: 'school-a-tpl-move', public_slug: null } });
