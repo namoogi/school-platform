@@ -2442,6 +2442,26 @@ label.check input { margin-top: 0.25em; }
   html body .le-bar :is(.btn-sm, button), html body .le-grip { min-width: 44px; }
 }
 
+/* 120차: 메뉴 막대 펼치기 — 아이콘 레일에 마우스를 올리거나 키보드로 들어오면 아이콘 옆에 전체 이름이 보이는 넓은 막대로 펼친다.
+   본문을 밀지 않고 위에 겹친다(레일 칸 너비는 그대로). 잠깐 스칠 때 깜빡이지 않게 펼침만 조금 늦춘다. 휴대폰 폭·터치 화면은 제외 */
+.nav-full { display: none; }
+@media (hover: hover) and (min-width: 769px) {
+  .sidebar { width: var(--sidebar-w); transition: width .16s ease, box-shadow .16s ease; }
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) { width: 232px; box-shadow: var(--shadow-3); overflow-x: hidden; transition-delay: .12s; }
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-item { justify-items: stretch; text-align: start; padding-inline: var(--space-3); }
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-label { grid-auto-flow: column; grid-template-columns: 22px minmax(0, 1fr); justify-items: start; align-items: center; gap: var(--space-3); }
+  /* 짧은 이름은 눈에만 숨긴다(접근 이름으로 남아야 한다. 전체 이름 .nav-full 은 aria-hidden — Codex #196) */
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-full { display: block; font-size: var(--fs-body-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-item .count-badge { top: 50%; right: var(--space-3); transform: translateY(-50%); }
+  /* 묶음 이름도 글자로 보인다(분석형은 평소 가는 선만) */
+  .sidebar:is(:hover, :has(.nav-item:focus-visible)) .menu-label { text-align: start; padding: var(--space-3) var(--space-3) var(--space-1); margin-inline: var(--space-2); }
+  .app[data-ui="analytics"] .sidebar:is(:hover, :has(.nav-item:focus-visible)) .menu-label { font-size: 11px; height: auto; background: none; border-top: 1px solid var(--border-default); color: var(--text-muted); }
+  .app[data-ui="analytics"] .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-group:first-child .menu-label { display: block; border-top: 0; }
+  /* 펼치면 이름이 보이므로 항목별 이름 풍선은 끈다 */
+  .app[data-ui="analytics"] .sidebar:is(:hover, :has(.nav-item:focus-visible)) .nav-item::after { display: none; }
+}
+@media (hover: hover) and (min-width: 769px) and (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
 /* 119차: 학교 구조 탭 4개는 좁은 휴대폰에서 2×2 칸으로 놓아 가로로 밀려 숨는 탭이 없게 한다 */
 @media (max-width: 480px) {
   .academics-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
