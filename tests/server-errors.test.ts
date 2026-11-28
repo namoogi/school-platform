@@ -47,7 +47,7 @@ describe('서버 오류 이름표', () => {
   it("'db.' 이름표의 기준 문구는 마이그레이션의 raise 문구와 글자까지 같다(어긋나면 번역이 조용히 멈춘다)", () => {
     const dir = path.resolve(__dirname, '..', 'supabase', 'migrations');
     const sql = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
-    const keys = (Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('db.'));
+    const keys = (Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('db.') && !k.startsWith('db.v.'));
     for (const k of keys) {
       const ko = CATALOG[k] as string;
       expect(sql.includes(`'${ko.replace(/'/g, "''")}'`), `${k}: ${ko}`).toBe(true);
@@ -114,5 +114,23 @@ describe('편집기 칸 이름 (104차)', () => {
     expect(literal.length + numbered.length).toBeGreaterThan(30); // 찾는 식이 칸 이름을 실제로 잡는지
     const missing = [...literal, ...numbered].filter((l) => fieldLabel(tEn, l) === l);
     expect(missing).toEqual([]);
+  });
+});
+
+describe('값이 든 DB 문구 (113차)', () => {
+  it("'db.v.' 문구는 {vN}을 %로 바꾸면 마이그레이션의 raise 문구와 같다", () => {
+    const dir = path.resolve(__dirname, '..', 'supabase', 'migrations');
+    const sql = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
+    for (const k of (Object.keys(CATALOG) as MsgKey[]).filter((x) => x.startsWith('db.v.'))) {
+      const raw = (CATALOG[k] as string).replace(/\{v\d\}/g, '%');
+      expect(sql.includes(`'${raw.replace(/'/g, "''")}'`), `${k}: ${raw}`).toBe(true);
+    }
+  });
+
+  it('DB가 채운 값을 그대로 옮겨 그 언어 문구로 낸다', () => {
+    expect(errorBody({ code: 'P0001', message: '좌석이 모두 찼습니다(12석). 좌석 수를 늘린 뒤 초대해 주세요.' }, 'en', enDict))
+      .toEqual({ status: 409, body: { error: 'All seats are taken (12). Add seats, then invite.', code: 'db.v.seatsFull' } });
+    expect(errorBody({ code: '22023', message: '흐름에 없는 전환입니다(draft → done).' }, 'en', enDict).body.error)
+      .toBe("This transition isn't in the flow (draft → done).");
   });
 });

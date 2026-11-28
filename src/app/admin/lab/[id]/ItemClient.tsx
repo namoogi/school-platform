@@ -74,7 +74,7 @@ export function ItemControls({ item, kinds, priorities }: { item: Item; kinds: K
             <button type="button" role="tab" aria-selected={!preview} className={`btn btn-sm${!preview ? ' btn-primary' : ''}`} onClick={() => setPreview(false)}>{t('lab.write')}</button>
             <button type="button" role="tab" aria-selected={preview} className={`btn btn-sm${preview ? ' btn-primary' : ''}`} onClick={() => setPreview(true)}>{t('lab.preview')}</button>
           </div>
-          {preview ? <div className="lab-preview"><RichDoc body={f.body} /></div>
+          {preview ? <div className="lab-preview"><RichDoc body={f.body} t={t} /></div>
             : <label>{t('lab.body')}<textarea rows={16} value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} /></label>}
           <details><summary>{t('lab.help')}</summary><pre className="copy-box">{HELP}</pre></details>
           <label>{t('lab.tags')}<input value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} /></label>

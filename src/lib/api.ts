@@ -75,11 +75,30 @@ const hangul = /[가-힣]/;
  * DB 함수가 낸 고정 문구 → 이름표. 'db.'·'err.' 이름표의 기준 문구가 DB 문구와 글자까지 같을 때만 바꾼다.
  * 값이 든 문구(format)는 맞는 이름표가 없어 한국어 그대로 간다. 'db.' 문구가 마이그레이션과 같은지는 tests/server-errors.test.ts 가 본다.
  */
-let dbKeys: Map<string, MsgKey> | null = null;
-export function dbMessageKey(text: string): MsgKey | undefined {
-  dbKeys ??= new Map((Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('err.') || k.startsWith('db.')).map((k) => [CATALOG[k] as string, k]));
-  return dbKeys.get(text);
+let dbKeys: { exact: Map<string, MsgKey>; withValues: { re: RegExp; key: MsgKey; names: string[] }[] } | null = null;
+const esc = (x: string) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** 값이 든 DB 문구('db.v.*'): 기준 문구의 {v1}·{v2} 자리를 DB의 % 값으로 보고 맞춘다 → 값은 그대로 옮겨 싣는다 */
+export function dbMessage(text: string): { key: MsgKey; vars?: Vars } | undefined {
+  if (!dbKeys) {
+    const keys = (Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('err.') || k.startsWith('db.'));
+    dbKeys = {
+      exact: new Map(keys.filter((k) => !k.startsWith('db.v.')).map((k) => [CATALOG[k] as string, k])),
+      withValues: keys.filter((k) => k.startsWith('db.v.')).map((k) => {
+        const ko = CATALOG[k] as string;
+        const names = [...ko.matchAll(/\{(v\d)\}/g)].map((m) => m[1]);
+        return { key: k, names, re: new RegExp(`^${ko.split(/\{v\d\}/).map(esc).join('(.+?)')}$`, 's') };
+      }),
+    };
+  }
+  const exact = dbKeys.exact.get(text);
+  if (exact) return { key: exact };
+  for (const { re, key, names } of dbKeys.withValues) {
+    const m = text.match(re);
+    if (m) return { key, vars: Object.fromEntries(names.map((n, i) => [n, m[i + 1]])) };
+  }
+  return undefined;
 }
+export const dbMessageKey = (text: string): MsgKey | undefined => dbMessage(text)?.key;
 
 type Classified = { status: number; text: string; key?: MsgKey; vars?: Vars };
 
@@ -91,7 +110,7 @@ function classify(e: unknown): Classified {
   if (e instanceof NoSchoolError) return of(409, e);
   const code = (e as { code?: string })?.code;
   const msg = (e as Error)?.message ?? '';
-  const db = (status: number): Classified => ({ status, text: msg, key: dbMessageKey(msg) });
+  const db = (status: number): Classified => { const hit = dbMessage(msg); return { status, text: msg, key: hit?.key, vars: hit?.vars }; };
   // DB 함수가 낸 한국어 안내는 그대로(또는 이름표가 있으면 번역해) 보여 준다. (값·비밀은 담지 않음)
   if (code === '22023') return db(400);
   if (code === 'P0002') return db(404);
