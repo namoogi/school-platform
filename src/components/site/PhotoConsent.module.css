@@ -1,8 +1,8 @@
 /* 122차 공개 창(사진 공개 허가 확인). 틀은 ConfirmDialog.module.css 를 그대로 쓰고, 넓이·사진 칸·확인 칸만 더한다. 의미 토큰만 쓴다. */
 .wide { width: min(640px, calc(100vw - 32px)); }
-.grid { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--space-2); max-height: 40vh; overflow: auto; }
+.grid { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--ds-space-2); max-height: 40vh; overflow: auto; }
 .grid li { display: grid; gap: 2px; }
 .grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-default); background: var(--surface-subtle); }
 .grid span { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.check { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-3); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-subtle); font-weight: 600; cursor: pointer; }
+.check { display: flex; gap: var(--ds-space-2); align-items: flex-start; padding: var(--ds-space-3); border: 1px solid var(--border-input); border-radius: var(--radius-md); background: var(--surface-subtle); font-weight: 600; cursor: pointer; }
 .check input { margin-top: 3px; min-width: 20px; min-height: 20px; }

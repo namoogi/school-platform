@@ -4,7 +4,7 @@
     "src/app/globals.css: .btn-danger { background: var(--action-danger-bg); color: #fff; }",
     "src/app/globals.css: .le-picker::backdrop { background: rgb(16 24 40 / .45); }",
     "src/app/globals.css: .paper hr { border: 0; border-top: 3px double #d1d4c9; width: 100%; margin: 8px 0; }",
-    "src/app/globals.css: .paper { background: #fff; color: #202f2b; padding: clamp(20px, 4vw, 48px); box-shadow: var(--shadow-1); min-height: 420px; display: flex; flex-direction: colum",
+    "src/app/globals.css: .paper { background: #fff; color: #202f2b; padding: clamp(20px, 4vw, 48px); box-shadow: var(--ds-shadow-1); min-height: 420px; display: flex; flex-direction: co",
     "src/app/globals.css: .paper-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid #d1d4c9; display: flex; justify-content: space-between; gap: 10px; font-size: 12px; col",
     "src/app/globals.css: .paper-mark span { width: 28px; height: 30px; border: 1px solid #346247; display: grid; place-items: center; color: #21583f; font-family: var(--font-serif); }",
     "src/app/globals.css: .paper-meta { color: #49574f; font-size: 14px; }",
