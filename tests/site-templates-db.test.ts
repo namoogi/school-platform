@@ -169,6 +169,28 @@ describe('89차 템플릿 = 완성 디자인(ADR 0034)', () => {
     expect(kept.design).toBe('kept');
     expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('studio');
   });
+  it('136차: 디자인도 바꾸면 이미 있는 홈에 메뉴 구조만 바꾼 새 시안 판을 쌓고, 위 메뉴형으로 돌아가면 지운다', async () => {
+    const homeOf = async () => {
+      const h = (await asUser(A.userId, (db) => site.listEntries(db, A.schoolId))).find((e) => e.kind === 'page' && e.key === 'home')!;
+      return asUser(A.userId, (db) => site.getEntry(db, A.schoolId, h.id));
+    };
+    const before = await homeOf();
+    const r = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'notice', { design: true })); // 옆 메뉴형
+    expect(r.layout).toBe('applied');
+    const after = await homeOf();
+    expect(after.versions[0].version).toBe(before.versions[0].version + 1);
+    expect(after.versions[0].content.site?.layout).toBe('side');
+    expect(after.versions[0].content.title).toEqual(before.versions[0].content.title); // 다른 칸은 그대로
+    expect(after.versions[0].content.blocks).toEqual(before.versions[0].content.blocks);
+    expect(after.liveVersionId).toBe(before.liveVersionId); // 공개는 사람이 한다
+    // 같은 구조면 판을 늘리지 않는다
+    expect((await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'notice', { design: true }))).layout).toBe('kept');
+    // 위 메뉴형 템플릿으로 바꾸면 메뉴 구조를 지운다. 디자인을 바꾸지 않으면 메뉴 구조도 그대로
+    expect((await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'story'))).layout).toBe('kept');
+    expect((await homeOf()).versions[0].content.site?.layout).toBe('side');
+    expect((await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'story', { design: true }))).layout).toBe('applied');
+    expect((await homeOf()).versions[0].content.site?.layout).toBeUndefined();
+  });
   it('설정 저장은 목록에 있는 모양만 받고, 모르는 값은 학사 기본으로', async () => {
     await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'design-a', langs: ['ko'], default_lang: 'ko', theme: 'horizon', site_title: { ko: 'A' }, is_open: false }));
     expect((await asUser(A.userId, (db) => site.getSettings(db, A.schoolId)))!.theme).toBe('horizon');

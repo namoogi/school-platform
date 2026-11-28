@@ -2642,3 +2642,45 @@ label.check input { margin-top: 0.25em; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run="next"] { padding-top: var(--ds-space-6); border-top: 1px solid var(--t-line); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run] { padding-bottom: var(--ds-space-6); }
 }
+
+/* ───────── 136차(ADR 0052): 메뉴 구조 — 옆 메뉴형(side)·한 쪽 스크롤형(onepage) (키트 테마만) ───────── */
+/* 옆 메뉴: 하위 쪽이 있는 묶음 안에서 형제 쪽 목록. 넓은 화면은 왼쪽 세로, 휴대폰은 본문 위 가로 띠(가로 넘김) */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-sidenav-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ds-space-6); padding-block: var(--ds-space-6); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-sidenav-layout > .site-main { min-width: 0; padding: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav { border-bottom: 1px solid var(--t-line); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav-title { display: flex; align-items: center; min-height: 44px; padding-bottom: var(--ds-space-2); color: var(--t-ink); font-weight: 700; font-size: 1.125rem; text-decoration: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav ul { display: flex; gap: var(--ds-space-1); margin: 0; padding: 0 0 var(--ds-space-2); list-style: none; overflow-x: auto; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav li a { display: flex; align-items: center; min-height: 44px; padding: 0 var(--ds-space-3); border-radius: var(--t-radius-sm); color: var(--t-ink); text-decoration: none; white-space: nowrap; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav a:is(:hover, :focus-visible) { background: var(--t-accent-soft); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav a[aria-current="page"] { color: var(--t-link); font-weight: 700; background: var(--t-accent-soft); }
+@media (min-width: 901px) {
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-sidenav-layout { grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr); align-items: start; gap: var(--L-gutter); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav { position: sticky; top: var(--ds-space-6); max-height: calc(100vh - 2 * var(--ds-space-6)); overflow-y: auto; overscroll-behavior: contain; border-bottom: 0; border-top: 3px solid var(--t-link); padding-top: var(--ds-space-3); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav ul { flex-direction: column; overflow: visible; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-localnav li a { white-space: normal; }
+}
+/* 따라오는 차례: 넓은 화면(1200px 이상)에서 오른쪽에 붙는다. 그보다 좁으면 머리글 메뉴의 '홈' 아래 차례를 쓴다 */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc { display: none; }
+@media (min-width: 1200px) {
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc { display: block; position: fixed; right: var(--ds-space-5); top: 50%; transform: translateY(-50%); z-index: 30; max-width: 12rem; max-height: calc(100vh - 2 * var(--ds-space-6)); overflow-y: auto; overscroll-behavior: contain; padding: var(--ds-space-3); background: var(--t-surface); border: 1px solid var(--t-line); border-radius: var(--t-radius-sm); box-shadow: var(--ds-shadow-1); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc-label { margin: 0 0 var(--ds-space-2); font-size: .8125rem; color: var(--t-muted); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc ol { margin: 0; padding: 0; list-style: none; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc a { display: flex; align-items: center; min-height: 44px; padding: var(--ds-space-1) var(--ds-space-2); border-left: 2px solid transparent; color: var(--t-ink); text-decoration: none; font-size: .9375rem; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc a:is(:hover, :focus-visible) { background: var(--t-accent-soft); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc a[aria-current="location"] { border-left-color: var(--t-link); color: var(--t-link); font-weight: 700; }
+}
+/* 차례가 본문을 가리지 않게: 양옆 여백이 차례보다 좁은 화면(1200~1699px)에서는 본문 오른쪽을 비운다 */
+@media (min-width: 1200px) and (max-width: 1699px) { .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]):has(.site-toc) > .site-main { padding-right: 13rem; } }
+html:has(.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc) { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html:has(.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-toc) { scroll-behavior: auto; } }
+
+/* 136차(ADR 0052): 템플릿 고르기 — 메뉴 구조·첫 화면·내용 거르기(관리 화면) */
+.facet-filter { display: grid; gap: var(--ds-space-2); margin-bottom: var(--ds-space-5); }
+.facet-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-space-2); }
+.facet-label { min-width: 6.5rem; color: var(--text-muted); font-weight: 600; font-size: var(--fs-body-sm, .875rem); }
+.facet-row a, .facet-off { display: inline-flex; align-items: center; gap: var(--ds-space-1); min-height: 36px; padding: 0 var(--ds-space-3); border: 1px solid var(--border-default); border-radius: var(--ds-radius-full); background: var(--surface-default); color: var(--text-default); text-decoration: none; font-size: var(--fs-body-sm, .875rem); }
+.facet-row a:is(:hover, :focus-visible) { border-color: var(--brand-600); }
+.facet-row a[aria-current="true"] { border-color: var(--brand-600); background: var(--brand-50, var(--surface-subtle)); color: var(--brand-700); font-weight: 700; }
+.facet-off { color: var(--text-subtle); border-style: dashed; cursor: not-allowed; }
+@media (pointer: coarse) { .facet-row a, .facet-off { min-height: 44px; } }
+@media (max-width: 640px) { .facet-label { min-width: 100%; } }
