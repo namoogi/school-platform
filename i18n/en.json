@@ -3280,5 +3280,8 @@
   "site.facet.content.international": "International",
   "site.facet.content.kinder": "Kindergarten",
   "site.facet.content.small": "Small learning group",
-  "site.profile.layoutHint": "How visitors move between pages (Campus and Dawn designs always use the top menu)"
+  "site.profile.layoutHint": "How visitors move between pages (Campus and Dawn designs always use the top menu)",
+  "site.tpl.tab.label": "How to start",
+  "site.tpl.tab.templates": "Templates",
+  "site.tpl.tab.import": "Import an existing site"
 }
