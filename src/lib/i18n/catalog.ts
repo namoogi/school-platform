@@ -3141,6 +3141,8 @@ export const CATALOG = {
   'tplAi.tokenLink': '학사 꾸러미 작업 토큰은 홈페이지 → AI 작업 공간에서 발급합니다',
   // 125차 템플릿 새 판 제안 결정 확인
   'tplOffer.confirm': '결정을 남길까요? \'수락\'이면 {name} {to}판을 지금 적용해 위의 \'수락하면 더해지는 것\'을 학교 사본에 더합니다(학교 값은 그대로).',
+  // tplAi
+  'tplAi.tokenNoHomepage': '학사 꾸러미 작업 토큰은 홈페이지 기능의 AI 작업 공간에서 발급합니다. 이 학교는 홈페이지 기능이 꺼져 있어, 대화창의 ‘새 대화’로 관제에 발급을 요청합니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

@@ -123,7 +123,10 @@ export default async function TemplatesPage() {
             <li>{t('tplAi.step3')}</li>
           </ol>
           <TemplateAiGuide summary={copy} schoolName={school.name} />
-          <p className="fine"><Link href="/site#agent-tokens">{t('tplAi.tokenLink')}</Link></p>
+          {/* 토큰 발급은 /site 의 설정 칸에만 있다(box=settings 일 때만 불러옴). 홈페이지 기능이 꺼진 학교는 /site 가 잠김 화면이다(Codex 220번 PR 검토) */}
+          <p className="fine">{school.modules.includes('homepage')
+            ? <Link href="/site?box=settings#agent-tokens">{t('tplAi.tokenLink')}</Link>
+            : t('tplAi.tokenNoHomepage')}</p>
         </section>
       )}
 

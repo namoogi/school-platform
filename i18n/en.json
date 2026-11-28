@@ -3082,5 +3082,6 @@
   "tplAi.copyFailed": "Couldn't copy. Open 'Show instructions' and copy it by hand.",
   "tplAi.textLabel": "School AI fitting instructions",
   "tplAi.docLink": "Read the full report-card analysis guide",
-  "tplAi.tokenLink": "Issue an academic-package token in Website → AI workspace"
+  "tplAi.tokenLink": "Issue an academic-package token in Website → AI workspace",
+  "tplAi.tokenNoHomepage": "Academic-package tokens are issued in the AI workspace of the homepage module. This school has the homepage module off, so ask the control center for one through ‘New conversation’ in the chat."
 }
