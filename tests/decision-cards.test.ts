@@ -51,6 +51,9 @@ describe('결정 카드', () => {
     const r = await file({ source_session: RAS, door: 'notice', changes: '번역 40개를 채웠습니다.' });
     expect(r).toMatchObject({ status: 'proceeding', door: 'notice', ask: null });
     await expect(file({ source_session: RAS, door: 'notice', changes: 'x', options: [{ key: 'a', label: 'a' }] })).rejects.toThrow('알림(notice) 카드에는 선택지를');
+    // 질문을 알림에 실어 결정 흐름을 건너뛰지 못한다
+    await expect(file({ source_session: RAS, door: 'notice', changes: 'x', ask: '학생 자료를 공개할까요?' })).rejects.toThrow('ask·default_action·recommended');
+    await expect(file({ source_session: RAS, door: 'notice', changes: 'x', default_action: '공개합니다' })).rejects.toThrow('ask·default_action·recommended');
   });
 
   it('형식이 빠지면 무엇이 빠졌는지 알려 주며 거부한다', async () => {
@@ -64,11 +67,19 @@ describe('결정 카드', () => {
     await expect(file({ ...b, due_at: day(-1) })).rejects.toThrow('30일 안의 due_at');
     await expect(file({ ...b, due_at: day(31) })).rejects.toThrow('30일 안의 due_at');
     await expect(file({ ...b, due_at: '다음 주' })).rejects.toThrow('30일 안의 due_at');
+    // 시간대 없는 값·날짜만·특수 값은 DB 시간대로 해석되므로 받지 않는다
+    await expect(file({ ...b, due_at: 'tomorrow' })).rejects.toThrow('30일 안의 due_at');
+    await expect(file({ ...b, due_at: day(2).slice(0, 10) })).rejects.toThrow('30일 안의 due_at');
+    await expect(file({ ...b, due_at: day(2).replace('Z', '') })).rejects.toThrow('30일 안의 due_at');
+    await expect(file({ ...b, due_at: Date.now() + 86400000 })).rejects.toThrow('30일 안의 due_at');
     await expect(file({ ...b, default_action: '' })).rejects.toThrow('default_action');
     await expect(file({ ...b, options: [{ key: 'a', label: 'a' }] })).rejects.toThrow('2~4개');
     await expect(file({ ...b, recommended: null })).rejects.toThrow('2~4개');
     await expect(file({ ...b, recommended: 'zzz' })).rejects.toThrow('선택지 key 가운데');
     await expect(file({ ...b, reversible: false })).rejects.toThrow('reversible 과 door 가 엇갈립니다');
+    await expect(file({ ...b, reversible: 'false' })).rejects.toThrow('reversible 과 door 가 엇갈립니다');
+    expect(await file({ ...b, reversible: null })).toMatchObject({ reversible: true });
+    expect(await file({ ...b, due_at: day(2).replace('Z', '+09:00') })).toMatchObject({ door: 'default' });
   });
 
   it('같은 세션·같은 제목의 열린 요청은 새로 만들지 않고 돌려준다', async () => {

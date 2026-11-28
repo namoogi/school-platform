@@ -3111,11 +3111,12 @@
   "db.cardChanges": "A decision card needs changes (what changes if approved, up to 300 characters).",
   "db.cardAsk": "A decision card's ask is a one-line yes/no question (up to 120 characters, ending with a question mark).",
   "db.cardUnchangedUndo": "A decision card needs unchanged (what stays the same) and undo (how to undo), up to 300 characters each.",
-  "db.cardDue": "A default card needs a due_at within the next 30 days.",
+  "db.cardDue": "A default card needs a due_at within the next 30 days (ISO 8601 with a time zone).",
   "db.cardDefaultAction": "A default card needs default_action (what happens without an answer, up to 500 characters).",
   "db.cardDueOnlyDefault": "due_at is only for default cards.",
   "db.cardReversible": "reversible and door disagree. Hard to undo is one_way; reversible is default or notice.",
   "db.cardOptions": "A decision card has 2 to 4 options and one recommended option.",
   "db.cardNoticeOptions": "A notice card has no options. If there is something to choose, file it as default.",
-  "dc.changesNotice": "What changed"
+  "dc.changesNotice": "What changed",
+  "db.cardNoticeAsk": "A notice card has no ask, default_action or recommended. If you need to ask something, file it as default or one_way."
 }

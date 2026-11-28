@@ -76,7 +76,7 @@ export function ControlCenter({ requests, sessions, lab }: { requests: Request[]
         <div className="tabs" role="tablist" aria-label={t('cc.tabs')}>
           {TABS.map((x) => (
             <button key={x.key} role="tab" aria-selected={tab === x.key} className={tab === x.key ? 'active' : ''} onClick={() => setTab(x.key)}>
-              {t(`cc.tab.${x.key}` as MsgKey)}<span className="count">{requests.filter((r) => x.statuses.includes(r.status)).length}</span>
+              {t(`cc.tab.${x.key}` as MsgKey)}<span className="count">{requests.filter((r) => x.statuses.includes(r.status) && !(x.key === 'need' && r.door === 'notice')).length}</span>
             </button>
           ))}
         </div>

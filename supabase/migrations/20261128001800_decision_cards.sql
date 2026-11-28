@@ -73,19 +73,24 @@ begin
     if unchg is null or und is null or length(unchg) > 300 or length(und) > 300 then
       raise exception '결정 카드에는 unchanged(안 바뀌는 것)와 undo(되돌리는 길)가 필요합니다(각 300자 이내).' using errcode = '22023';
     end if;
-  elsif q is not null and length(q) > 120 then
-    raise exception '결정 카드의 ask 는 예/아니오로 답할 수 있는 한 줄 질문(120자 이내, 물음표로 끝남)입니다.' using errcode = '22023';
+  elsif q is not null or dflt is not null or nullif(p ->> 'recommended', '') is not null then
+    -- 알림에 질문·기본 동작·추천안을 실으면 결정이 알림 묶음에 숨는다
+    raise exception '알림(notice) 카드에는 ask·default_action·recommended 를 두지 않습니다. 물을 것이 있으면 default 나 one_way 로 올려 주세요.' using errcode = '22023';
   end if;
   if (unchg is not null and length(unchg) > 300) or (und is not null and length(und) > 300) then
     raise exception '결정 카드에는 unchanged(안 바뀌는 것)와 undo(되돌리는 길)가 필요합니다(각 300자 이내).' using errcode = '22023';
   end if;
   if dr = 'default' then
-    begin
-      due := (p ->> 'due_at')::timestamptz;
-    exception when others then due := null;
-    end;
+    -- ISO 8601 + 시간대 표시(Z 또는 +09:00)만 받는다. 'tomorrow'·날짜만 같은 값은 DB 시간대로 해석돼 기한이 어긋난다
+    if jsonb_typeof(p -> 'due_at') = 'string'
+       and p ->> 'due_at' ~ '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,6})?)?(Z|[+-]\d{2}:?\d{2})$' then
+      begin
+        due := (p ->> 'due_at')::timestamptz;
+      exception when others then due := null;
+      end;
+    end if;
     if due is null or due <= now() or due > now() + interval '30 days' then
-      raise exception '기한까지 진행(default) 카드에는 앞으로 30일 안의 due_at 이 필요합니다.' using errcode = '22023';
+      raise exception '기한까지 진행(default) 카드에는 앞으로 30일 안의 due_at(ISO 8601, 시간대 포함)이 필요합니다.' using errcode = '22023';
     end if;
     if dflt is null or length(dflt) > 500 then
       raise exception '기한까지 진행(default) 카드에는 default_action(답이 없으면 할 일, 500자 이내)이 필요합니다.' using errcode = '22023';
@@ -95,7 +100,8 @@ begin
   end if;
   -- 문 종류와 되돌릴 수 있는지는 같은 말이다. 엇갈리면 분류를 다시 보게 한다
   rev := dr <> 'one_way';
-  if p ? 'reversible' and jsonb_typeof(p -> 'reversible') = 'boolean' and (p ->> 'reversible')::boolean <> rev then
+  if p ? 'reversible' and jsonb_typeof(p -> 'reversible') <> 'null'
+     and (jsonb_typeof(p -> 'reversible') <> 'boolean' or (p ->> 'reversible')::boolean <> rev) then
     raise exception 'reversible 과 door 가 엇갈립니다. 되돌리기 어려우면 one_way, 되돌릴 수 있으면 default·notice 입니다.' using errcode = '22023';
   end if;
   st := case dr when 'one_way' then 'parked' else 'proceeding' end;
