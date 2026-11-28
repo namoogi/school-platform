@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { handleControl } from '@/lib/control-api';
 import { control } from '@/lib/control';
 
-type Msg = { author: string; author_session: string | null; kind: string; created_at: string };
+type Msg = { author: string; author_session: string | null; kind: string; choice?: string | null; created_at: string };
 type Req = { id: string; no: number; status: string; door?: string | null; due_at?: string | null; assignee_session: string | null; source_session: string | null; messages: Msg[] };
 
 /**
@@ -23,7 +23,9 @@ export async function GET(req: Request) {
       // 기한 지남은 앞선 글과 따로 본다. 사람이 실제로 답하면 상태가 answered 로 바뀌므로, 아직 proceeding 이면
       // 메모만 남긴 경우까지 포함해 추천안을 실행할 차례다. 세션이 실행하고 상태를 done·review 로 바꿀 때까지 계속 나온다
       // (보고 글만으로는 빼지 않는다: 빼면 관제 센터 '답 필요'에 영영 남는다).
-      if (r.door === 'default' && r.status === 'proceeding' && !!r.due_at && Date.parse(r.due_at) <= now) {
+      // 사람이 선택지를 골랐으면(메모로만 남겼어도) 그 답이 우선이다. 아래 보통 답 흐름으로 간다
+      const chosen = msgs.some((m) => m.author === 'user' && !!m.choice);
+      if (!chosen && r.door === 'default' && r.status === 'proceeding' && !!r.due_at && Date.parse(r.due_at) <= now) {
         return [{ ...r, due: true }];
       }
       const lastUser = msgs.map((m) => m.author).lastIndexOf('user');

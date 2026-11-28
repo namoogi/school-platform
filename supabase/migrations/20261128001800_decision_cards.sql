@@ -63,6 +63,10 @@ begin
   chg := nullif(trim(coalesce(p ->> 'changes', '')), '');
   unchg := nullif(trim(coalesce(p ->> 'unchanged', '')), '');
   und := nullif(trim(coalesce(p ->> 'undo', '')), '');
+  -- 바뀌는 것·안 바뀌는 것·되돌리는 길은 훑어 읽는 한 줄이다
+  if chg ~ '[\r\n]' or unchg ~ '[\r\n]' or und ~ '[\r\n]' then
+    raise exception '결정 카드의 changes·unchanged·undo 는 각각 한 줄로 씁니다. 자세한 설명은 detail 에 둡니다.' using errcode = '22023';
+  end if;
   if chg is null or length(chg) > 300 then
     raise exception '결정 카드에는 changes(승인하면 바뀌는 것, 300자 이내)가 필요합니다.' using errcode = '22023';
   end if;
