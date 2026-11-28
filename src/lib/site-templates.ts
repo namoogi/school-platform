@@ -218,7 +218,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'project', version: 6, name: '프로젝트형', theme: 'studio', langs: ['ko'],
+    key: 'project', version: 7, name: '프로젝트형', theme: 'studio', langs: ['ko'],
     summary: '학생 프로젝트와 작품을 사진 묶음으로 보여 주는 PBL 학교용입니다.',
     fits: ['PBL·프로젝트 중심 대안학교', '발표회·전시가 많은 학교'], firstScreen: '프로젝트 소개 · 발표회 소식',
     mustHave: ['배움의 방식(PBL 흐름)', '프로젝트 목록', '학생 작품 공개 허가'],
@@ -237,18 +237,18 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         news(ko('발표회·전시 소식'), 3),
       ], { site: contact({ label: '입학 안내', href: '/p/admission' }) }),
       page('how-we-learn', 1, ko('배움의 방식'), [
-        section({ template: 'media-left', eyebrow: ko('질문에서 세상으로'), title: ko('왜 프로젝트로 배우나요'), body: ko('[학교의 설명]') }),
-        section({ template: 'facts', variant: 'curriculum', title: ko('한 학기 흐름'), items: [1, 2, 3, 4].map(() => ({ title: ko('[주차]'), body: ko('[활동]') })) }),
-        section({ template: 'cards', variant: 'mentors', eyebrow: ko('함께하는 사람'), title: ko('멘토와 교사'), items: [
+        section({ anchor: 'why', template: 'media-left', eyebrow: ko('질문에서 세상으로'), title: ko('왜 프로젝트로 배우나요'), body: ko('[학교의 설명]') }),
+        section({ anchor: 'semester', template: 'facts', variant: 'curriculum', title: ko('한 학기 흐름'), items: [1, 2, 3, 4].map(() => ({ title: ko('[주차]'), body: ko('[활동]') })) }),
+        section({ anchor: 'mentors', template: 'cards', variant: 'mentors', eyebrow: ko('함께하는 사람'), title: ko('멘토와 교사'), items: [
           { title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') }, { title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') }, { title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') }] }),
       ]),
       page('projects', 2, ko('프로젝트'), [
-        section({ template: 'cards', variant: 'feature-filter', eyebrow: ko('질문을 끝까지 따라간 기록'), title: ko('이번 학기 프로젝트'), items: [{ title: ko('[프로젝트 이름]'), body: ko('[질문 · 결과물 · 참여 학년]'), tag: ko('[학년 1]') }, { title: ko('[프로젝트 이름]'), body: ko('[설명]'), tag: ko('[학년 2]') }, { title: ko('[프로젝트 이름]'), body: ko('[프로젝트 확장 설명]'), tag: ko('[학년 1]') }] }),
+        section({ anchor: 'current', template: 'cards', variant: 'feature-filter', eyebrow: ko('질문을 끝까지 따라간 기록'), title: ko('이번 학기 프로젝트'), items: [{ title: ko('[프로젝트 이름]'), body: ko('[질문 · 결과물 · 참여 학년]'), tag: ko('[학년 1]') }, { title: ko('[프로젝트 이름]'), body: ko('[설명]'), tag: ko('[학년 2]') }, { title: ko('[프로젝트 이름]'), body: ko('[프로젝트 확장 설명]'), tag: ko('[학년 1]') }] }),
       ]),
       page('works', 3, ko('학생 작품'), [
         section({ template: 'cards', variant: 'portfolio', eyebrow: ko('작은 시도, 새로운 발견'), title: ko('학생 작품 아카이브'), body: ko('[학생·보호자 공개 허가를 받은 작품만 올립니다]'), items: [1, 2, 3, 4, 5, 6].map((n) => ({ title: ko(`[작품 이름 ${n}]`), tag: ko(`[분야 ${(n - 1) % 3 + 1}]`), body: ko(`[작품 설명 ${n}]`) })) }),
-      ]),
-      admissionPage('프로젝트', 4),
+      ], { menu: { parent: 'projects' } }), // 126차(ADR 0046): 프로젝트 아래 하위 쪽
+      admissionPage('프로젝트', 4, true),
     ],
     slots: [
       ...commonSlots(),
