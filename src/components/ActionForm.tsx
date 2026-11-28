@@ -45,6 +45,11 @@ export type PreviewSpec = { action: string; label: string; columns: { key: strin
 type PreviewResult = { issues: { path: string; message: string }[]; results: Record<string, unknown>[] };
 const cell = (v: unknown, t: (k: 'common.yes' | 'common.no') => string) => (v == null ? '-' : v === true ? t('common.yes') : v === false ? t('common.no') : String(v));
 
+/** 판 번호처럼 '보고 시작한 때' 값을 지켜야 하는 칸, 매번 새로 만드는 요청 키. 나머지 extra 는 대상(학생·수업 id 등) */
+const VERSION_KEYS = ['base_version', 'bases'];
+const VOLATILE_KEYS = [...VERSION_KEYS, 'requestKey'];
+const identity = (e: Record<string, unknown>) => Object.fromEntries(Object.entries(e).filter(([k]) => !VOLATILE_KEYS.includes(k)));
+
 export function ActionForm({ url, action, fields, extra = {}, submitLabel, successText, testId, inline = false, confirmText, keep = false, tone = 'primary', preview }: {
   url: string; action?: string; fields: FieldSpec[]; extra?: Record<string, unknown>; submitLabel: string; successText?: string; testId?: string; inline?: boolean;
   /** 되돌리기 어려운 일이면 확인 창 문구 */
@@ -59,6 +64,9 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
   const { t } = useI18n();
   const init = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? (f.type === 'select' ? f.options?.[0]?.value ?? '' : '')]));
   const [v, setV] = useState<Record<string, string>>(init);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  const [shown, setShown] = useState<{ key: string; r: PreviewResult } | null>(null);
   // 130차(Codex #228): 보고 시작한 판. 화면이 새로 고쳐져 extra(base_version 등)·처음 값이 바뀌면, 손대지 않은 양식만 새 값을 받는다.
   // 고치던 양식은 처음 본 판 번호를 그대로 보내 그 사이 생긴 새 판을 409로 알린다(옛 내용으로 새 판을 조용히 되돌리지 않게)
   const [base, setBase] = useState(extra);
@@ -67,11 +75,15 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
   const [seen, setSeen] = useState(propsKey);
   if (seen !== propsKey) {
     setSeen(propsKey);
-    if (!dirty) { setBase(extra); setV(init); }
+    const same = JSON.stringify(identity(extra)) === JSON.stringify(identity(base));
+    if (!dirty || !same) {
+      // 손대지 않았거나 대상(학생·수업 id 등)이 바뀌면 새 값으로 다시 시작한다(옛 대상에 쓰지 않게, Codex #228)
+      setBase(extra); setV(init); setDirty(false); setShown(null);
+    } else {
+      // 같은 대상을 고치던 중: 판 번호만 처음 본 값으로 두고 나머지(요청 키 등)는 새 값
+      setBase({ ...extra, ...Object.fromEntries(VERSION_KEYS.filter((k) => k in base).map((k) => [k, base[k]])) });
+    }
   }
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
-  const [shown, setShown] = useState<{ key: string; r: PreviewResult } | null>(null);
   /** 보낼 몸. json 칸을 읽지 못하면 그 칸 이름과 함께 오류 문구를 돌려준다 */
   function bodyOf(act: string | undefined): { body?: Record<string, unknown>; error?: string } {
     const body: Record<string, unknown> = { ...(act ? { action: act } : {}), ...base };
