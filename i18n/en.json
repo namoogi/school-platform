@@ -2883,6 +2883,7 @@
   "site.pal.hint.video": "A YouTube, Vimeo or Google Drive address",
   "site.field.sectionBody": "Section text",
   "site.field.sectionPhoto": "Section photo",
+  "site.field.decorImage": "Decorative image (not a photo)",
   "site.field.sectionTitle": "Section title",
   "site.field.imageCaption": "Image caption",
   "site.field.downloadDesc": "Download description",
