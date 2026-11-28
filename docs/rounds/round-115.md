@@ -24,7 +24,7 @@
 ## 한 일
 - 마이그레이션 `20261128001300_hidden_sections.sql`: `school_profiles.hidden_sections`(정해진 4개 안에서만, 보내지 않으면 직전 판 값을 이음). `app.set_school_profile`은 `app_writer` 역할로 다시 정의.
 - `src/lib/sections.ts`: `hiddenSections`(읽는 길 하나), `setHiddenSections`(학교 관리자, base_version 필수).
-- `applyTemplate`: 학교가 처음 템플릿을 고를 때만 템플릿 `hide`를 복사(다시 채우기·새 판·다른 템플릿에는 학교 값 유지).
+- `applyTemplate`: 학교가 아직 숨김을 정하지 않았을 때(`null`)만 템플릿 `hide`를 복사(한 번 정하면 다시 채우기·새 판·다른 템플릿에도 학교 값 유지). 이미 템플릿을 고른 학교는 마이그레이션이 고른 판의 `hide`를 새 관할 판으로 복사(Codex #191).
 - `publishRecordDocument`: 그린 뒤 `hideInDocument`로 GPA 칸을 뺀다(스냅샷은 그대로, 지침 5).
 - 화면 `/academics/templates`: '우리 학교가 숨기는 구획' 카드(체크 4개 + 저장). 이름표 5개(ko·en).
 

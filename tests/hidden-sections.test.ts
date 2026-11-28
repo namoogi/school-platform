@@ -44,6 +44,13 @@ describe('숨길 구획', () => {
     expect(await hidden(B)).toEqual(['gpa']);
   });
 
+  it('템플릿을 고르기 전에 학교가 정한 숨김은 템플릿이 덮지 않는다', async () => {
+    const { A } = await lookupIds();
+    await asUser(A.userId, async (db) => sec.setHiddenSections(db, A.schoolId, { sections: ['period_attendance'], base_version: await ver(A) }));
+    await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'homeschool', version: 1, base_version: await ver(A) }));
+    expect(await hidden(A)).toEqual(['period_attendance']);
+  });
+
   it('모르는 구획·판 번호 없음·낡은 판·다른 학교는 거부', async () => {
     await expect(asUser(B.userId, async (db) => sec.setHiddenSections(db, B.schoolId, { sections: ['grades'], base_version: await ver(B) }))).rejects.toThrow();
     await expect(asUser(B.userId, (db) => db.query(`select app.set_school_profile($1, '{"hidden_sections":["grades"]}')`, [B.schoolId]))).rejects.toThrow('숨길 구획');
@@ -72,5 +79,6 @@ describe('숨길 구획', () => {
     // 학교 소개서도 GPA 방식을 싣지 않는다
     const profile = await asUser(platformId, (db) => rec.publishRecordDocument(db, r.schoolId, { format: 'us_school_profile' }));
     expect((profile.content as { gpa_policy: string }).gpa_policy).toBe('GPA is not reported by this school.');
+    expect((profile.content as { grading_scale: Record<string, unknown>[] }).grading_scale.every((g) => !('points' in g))).toBe(true);
   }, 120_000);
 });

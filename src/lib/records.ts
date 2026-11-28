@@ -243,7 +243,7 @@ export function hideInDocument(format: Format, out: { content: Record<string, un
   const c = structuredClone(out.content) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   if (Array.isArray(c.years)) for (const y of c.years) if (y && typeof y === 'object') delete y.gpa;
   if (c.cumulative && typeof c.cumulative === 'object') { delete c.cumulative.gpa; delete c.cumulative.gpa_scale; }
-  if (Array.isArray(c.key)) for (const k of c.key) if (k && typeof k === 'object') delete k.points;
+  for (const list of [c.key, c.grading_scale]) if (Array.isArray(list)) for (const k of list) if (k && typeof k === 'object') delete k.points;
   if ('gpax' in c) delete c.gpax;
   if (format === 'us_school_profile') c.gpa_policy = 'GPA is not reported by this school.';
   // GPA 점수가 없는 등급 질문은 GPA를 싣지 않으면 뜻이 없다

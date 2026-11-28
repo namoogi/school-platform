@@ -3,7 +3,8 @@
 -- 화면·발행본은 템플릿이 아니라 이 학교 값만 읽는다(ADR 0027: 학교는 기본판·템플릿을 실시간으로 읽지 않는다).
 select set_config('request.jwt.claims', '{}', true);
 
-alter table public.school_profiles add column hidden_sections text[] not null default '{}'
+-- null = 학교가 아직 정하지 않음(템플릿을 고르면 그 hide 를 복사). 빈 배열 = 학교가 '숨김 없음'으로 정함(Codex #191)
+alter table public.school_profiles add column hidden_sections text[]
   check (hidden_sections <@ array['rank', 'gpa', 'rank_grade', 'period_attendance']::text[]);
 
 -- app_writer 소유 함수는 그 역할로 다시 정의한다(#171·#173)
@@ -50,7 +51,7 @@ begin
     end if;
     select coalesce(array_agg(distinct x order by x), '{}') into hidden from jsonb_array_elements_text(p -> 'hidden_sections') x;
   else
-    hidden := coalesce(prev.hidden_sections, '{}');
+    hidden := prev.hidden_sections;
   end if;
   insert into public.school_profiles(school_id, version, country, sector, accreditation, external_codes, why, grade_scheme, grade_labels, template_key, template_version, hidden_sections)
   values (target, v, nullif(upper(p ->> 'country'), ''), nullif(p ->> 'sector', ''), nullif(trim(p ->> 'accreditation'), ''),
@@ -59,3 +60,13 @@ begin
 end $$;
 reset role;
 revoke create on schema app from app_writer;
+
+-- 이미 템플릿을 고른 학교: 고른 판의 hide 를 학교 사본으로 새 관할 판에 복사한다(이전 판은 고치지 않음, Codex #191)
+insert into public.school_profiles(school_id, version, country, sector, accreditation, external_codes, why, grade_scheme, grade_labels, template_key, template_version, hidden_sections, created_by)
+select p.school_id, p.version + 1, p.country, p.sector, p.accreditation, p.external_codes, '115차: 고른 템플릿의 숨길 구획 복사',
+       p.grade_scheme, p.grade_labels, p.template_key, p.template_version,
+       (select coalesce(array_agg(distinct x order by x), '{}') from jsonb_array_elements_text(coalesce(t.manifest -> 'hide', '[]')) x),
+       p.created_by
+  from (select distinct on (school_id) * from public.school_profiles order by school_id, version desc) p
+  join public.academic_templates t on t.key = p.template_key and t.version = p.template_version
+ where p.hidden_sections is null;
