@@ -53,6 +53,21 @@ describe('언어 목록·번역 사전', () => {
     expect((await su.query(`select text from public.ui_messages where lang = 'en' and key = 'login.submit'`)).rows[0].text).toBe('Log in');
   });
 
+  it('104차: 묶음이 넣은 번역은 묶음 글이 바뀌면 새 글로 바뀌고, 사람이 고친 번역은 그대로 둔다', async () => {
+    const fs = await import('node:fs');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'packs-'));
+    // 묶음이 넣은 행(updated_by 없음)과 사람이 고친 행(login.submit, 위 시험에서 전체 관리자가 저장)
+    await su.query(`update public.ui_messages set text = 'Old pack text', updated_by = null where lang = 'en' and key = 'common.cancel'`);
+    fs.writeFileSync(path.join(dir, 'en.json'), JSON.stringify({ 'common.cancel': 'Cancel', 'login.submit': 'Pack sign in' }));
+    await applyPacks(su, dir, () => {});
+    const get = async (k: string) => (await su.query(`select text from public.ui_messages where lang = 'en' and key = $1`, [k])).rows[0].text;
+    expect(await get('common.cancel')).toBe('Cancel');
+    expect(await get('login.submit')).toBe('Log in');
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
   it('언어 코드·이름 검사', async () => {
     await expect(asUser(platformId, (db) => lg.saveLanguage(db, { code: 'Vietnamese', native_name: 'x' }))).rejects.toThrow(/BCP 47/);
     await expect(asUser(platformId, (db) => lg.saveLanguage(db, { code: 'en-12', native_name: 'x' }))).rejects.toThrow(/BCP 47/); // 모양은 맞지만 Intl 이 못 받는 코드

@@ -1,4 +1,5 @@
 'use client';
+import { Field } from '@/components/Field';
 import { useI18n } from '@/components/I18nProvider';
 import { baseT } from '@/lib/i18n/base';
 import { useState } from 'react';
@@ -114,7 +115,7 @@ export function DirectiveForm({ item, sessions }: { item: { id: string; title: s
   }
   return (
     <form className="stack lab-directive-form" onSubmit={send} data-testid="directive-form">
-      <label>{t('lab.newDirective')}<textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} placeholder={t('lab.directivePlaceholder')} required /></label>
+      <Field label={t('lab.newDirective')} required><textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} placeholder={t('lab.directivePlaceholder')} /></Field>
       <div className="row-wrap">
         <label>{t('lab.toSession')}<select value={to} onChange={(e) => setTo(e.target.value)}>
           {sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}

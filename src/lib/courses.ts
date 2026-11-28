@@ -12,7 +12,7 @@ export type Offering = {
   id: string; term_id: string; subject_id: string; subject_name: string; course_type_id: string; course_type_name: string;
   rule_id: string; rule_version: number; creation_trigger: CreationTrigger; school_level_id: string; section: string;
   credits: string; pass_fail: boolean; capacity: number | null; status: 'planned' | 'open' | 'active' | 'closed' | 'cancelled';
-  revision: number; enrolled: number;
+  revision: number; enrolled: number; grade_level_id: string | null; grade_ordinal: number | null; grade_label: Record<string, string> | null;
 };
 export type EnrollmentEntry = { person_id: string; name: string; status: string; source: string; pass_fail_choice: boolean | null };
 
@@ -52,15 +52,17 @@ export function setCourseTypeRule(db: Db, schoolId: string, typeId: unknown,
 
 export function createOffering(db: Db, schoolId: string, input: {
   termId?: unknown; subjectId?: unknown; typeId?: unknown; levelId?: unknown; credits?: unknown; passFail?: unknown;
-  section?: unknown; capacity?: unknown;
+  section?: unknown; capacity?: unknown; gradeLevelId?: unknown;
 }) {
   const credits = Number(input.credits);
   if (!Number.isFinite(credits)) throw new ValidationError('err.course.credits');
   const capacity = input.capacity == null || input.capacity === '' ? null : Number(input.capacity);
   if (capacity !== null && !Number.isInteger(capacity)) throw new ValidationError('err.course.capacity');
-  return one<string>(db, 'select app.create_offering($1, $2, $3, $4, $5, $6, $7, $8, $9) as v',
+  // 110차: 학년(빈 값 = 학교급 전체). 학교급의 학년인지는 DB가 본다
+  const grade = input.gradeLevelId == null || input.gradeLevelId === '' ? null : id(input.gradeLevelId, '학년');
+  return one<string>(db, 'select app.create_offering($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) as v',
     [schoolId, id(input.termId, '학기'), id(input.subjectId, '과목'), id(input.typeId, '갈래'), id(input.levelId, '학교급'),
-      credits, input.passFail === true, text(input.section), capacity]);
+      credits, input.passFail === true, text(input.section), capacity, grade]);
 }
 
 export async function assignStaff(db: Db, schoolId: string, offeringId: unknown, personId: unknown, role: unknown) {
@@ -103,14 +105,18 @@ export async function offeringsOfTerm(db: Db, schoolId: string, termId: unknown,
   const { rows } = await db.query<Offering>(
     `select c.id, c.term_id, c.subject_id, s.name as subject_name, c.course_type_id, t.name as course_type_name,
             c.rule_id, r.version as rule_version, r.creation_trigger, c.school_level_id, c.section, c.credits::text as credits,
-            c.pass_fail, c.capacity, c.status, c.revision,
-            (select count(*)::int from public.offering_enrollments e where e.offering_id = c.id and e.school_id = c.school_id and e.status = 'enrolled') as enrolled
+            c.pass_fail, c.capacity, c.revision,
+            -- 110차: 마감 판이 있으면 '마감'으로 보인다(마감은 판으로만 남고 개설 행의 상태는 그대로라서)
+            case when exists (select 1 from public.offering_closures oc where oc.offering_id = c.id and oc.school_id = c.school_id) then 'closed' else c.status end as status,
+            (select count(*)::int from public.offering_enrollments e where e.offering_id = c.id and e.school_id = c.school_id and e.status = 'enrolled') as enrolled,
+            c.grade_level_id, g.ordinal as grade_ordinal, g.label as grade_label
        from public.course_offerings c
+       left join public.grade_levels g on g.id = c.grade_level_id and g.school_id = c.school_id
        join public.subjects s on s.id = c.subject_id and s.school_id = c.school_id
        join public.course_types t on t.id = c.course_type_id and t.school_id = c.school_id
        join public.course_type_rules r on r.id = c.rule_id and r.school_id = c.school_id
       where c.school_id = $1 and c.term_id = $2 and c.school_level_id = $3
-      order by s.name, c.section, c.id`, [schoolId, id(termId, '학기'), id(levelId, '학교급')]);
+      order by g.ordinal nulls first, s.name, c.section, c.id`, [schoolId, id(termId, '학기'), id(levelId, '학교급')]);
   return rows;
 }
 

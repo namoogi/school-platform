@@ -1,4 +1,5 @@
 'use client';
+import { Field } from '@/components/Field';
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
@@ -76,9 +77,9 @@ export function SiteSettingsForm({ initial, schoolName, saved = false }: { initi
   return (
     <form className="card site-form" onSubmit={save} data-testid="site-settings">
       <h2>{t('site.settings.title')}</h2>
-      <label>{t('site.settings.slug')} <span className="fine">onschools.vercel.app/s/<b>{s.public_slug || t('site.settings.slugPlaceholder')}</b></span>
-        <input value={s.public_slug} onChange={(e) => setS({ ...s, public_slug: e.target.value })} placeholder={t('site.settings.slugExample')} required />
-      </label>
+      <Field label={t('site.settings.slug')} required hint={<>onschools.vercel.app/s/<b>{s.public_slug || t('site.settings.slugPlaceholder')}</b></>}>
+        <input value={s.public_slug} onChange={(e) => setS({ ...s, public_slug: e.target.value })} placeholder={t('site.settings.slugExample')} />
+      </Field>
       <fieldset><legend>{t('site.settings.langs')}</legend>
         <div className="row-wrap">{LANGS.map((l) => (
           <label key={l} className="radio"><input type="checkbox" checked={s.langs.includes(l)} onChange={() => toggleLang(l)} /> {LANG_LABEL[l]}</label>))}</div>
@@ -125,9 +126,9 @@ export function NewEntryForm({ kind, disabled, initialOpen = false }: { kind: En
   if (!open) return <div className="site-new"><button type="button" className="btn btn-secondary btn-sm" onClick={() => setOpen(true)} disabled={disabled} data-testid="new-entry"><Plus size={16} aria-hidden="true" />{t(labelKey('new', kind))}</button></div>;
   return (
     <form className="site-new site-form" onSubmit={create}>
-      <label>{t('site.field.title')}<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required /></label>
-      <label>{t('site.settings.slug')} <span className="fine">{t('site.entry.keyHint')}{kind === 'page' ? t('site.entry.keyHintHome') : ''}</span>
-        <input value={f.key} onChange={(e) => setF({ ...f, key: e.target.value })} placeholder={kind === 'story' ? 'what-rain-cannot-erase' : kind === 'page' ? 'about' : 'open-day'} required /></label>
+      <Field label={t('site.field.title')} required><input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field>
+      <Field label={t('site.settings.slug')} required hint={<>{t('site.entry.keyHint')}{kind === 'page' ? t('site.entry.keyHintHome') : ''}</>}>
+        <input value={f.key} onChange={(e) => setF({ ...f, key: e.target.value })} placeholder={kind === 'story' ? 'what-rain-cannot-erase' : kind === 'page' ? 'about' : 'open-day'} /></Field>
       {kind === 'story' && <>
         <label>{t('site.story.virtue')}<input value={f.virtue} onChange={(e) => setF({ ...f, virtue: e.target.value })} placeholder={t('site.story.virtueExample')} /></label>
         <label>{t('site.story.character')}<input value={f.character} onChange={(e) => setF({ ...f, character: e.target.value })} /></label>
@@ -410,7 +411,7 @@ function SectionFields({ b, langs, assets, onUploaded, onChange }: { b: SectionB
         <li key={k} className="block-card">
           <LangFields label={`${k + 1}. ${t('site.field.title')}`} value={it.title} langs={langs} onChange={(title) => setItem(k, { ...it, title })} />
           {b.template !== 'photos' && <LangFields label={`${k + 1}. ${t('site.field.text')}`} value={it.body} langs={langs} multiline onChange={(body) => setItem(k, { ...it, body })} />}
-          {['filter', 'feature-filter', 'portfolio'].includes(b.variant ?? '') && (b.template === 'cards' || b.template === 'photos') && <LangFields label={`${k + 1}. ${t('site.section.tag')}`} value={it.tag} langs={langs} onChange={(tag) => setItem(k, { ...it, tag })} />}
+          {['filter', 'feature-filter', 'portfolio', 'events'].includes(b.variant ?? '') && (b.template === 'cards' || b.template === 'photos') && <LangFields label={`${k + 1}. ${t(b.variant === 'events' ? 'site.section.eventDate' : 'site.section.tag')}`} value={it.tag} langs={langs} onChange={(tag) => setItem(k, { ...it, tag })} />}
           {(b.template === 'cards' || b.template === 'photos') && <AssetPick label={`${k + 1}. ${t('site.field.photo')}`} value={it.asset} assets={assets} onUploaded={onUploaded} onChange={(asset) => setItem(k, { ...it, asset: asset || undefined })} />}
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => onChange({ ...b, items: items.filter((_, j) => j !== k) })}>{t('site.section.removeItem', { n: k + 1 })}</button>
         </li>))}</ol>

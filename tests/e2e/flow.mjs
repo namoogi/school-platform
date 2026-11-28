@@ -1562,7 +1562,7 @@ try {
     await login(a, 'admin-a@school-a.test', 'demo-pass-a');
     await a.goto(`${BASE}/settings`);
     const form = a.locator('[data-testid=portal-account-form]');
-    await form.locator('select[aria-label="사람"]').selectOption({ label: 'E2E 열람 학생' });
+    await form.locator('.field select').first().selectOption({ label: 'E2E 열람 학생' });
     await form.locator('input[type=email]').fill('e2e-student@family.test');
     await form.locator('label:has-text("동의 연령 미만") input').check();
     await form.locator('button[type=submit]').click();
@@ -1606,7 +1606,7 @@ try {
     await login(a, 'admin-a@school-a.test', 'demo-pass-a');
     await a.goto(`${BASE}/settings`);
     const form = a.locator('[data-testid=portal-account-form]');
-    await form.locator('select[aria-label="사람"]').selectOption({ label: 'E2E 요청 학생' });
+    await form.locator('.field select').first().selectOption({ label: 'E2E 요청 학생' });
     await form.locator('input[type=email]').fill('e2e-request@family.test');
     await form.locator('button[type=submit]').click();
     await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 요청 학생' }).waitFor();
@@ -1740,6 +1740,19 @@ try {
       await h.locator('.sec-filter-bar button', { hasText: '학교 생태 탐구' }).click();
       await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
     }
+    // 112차(Codex 검토): 행사 구역은 날짜 배지(분류 칸)를 편집기에서 고칠 수 있다
+    const ev = await h.evaluate(async () => (await (await fetch('/api/site/entries', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kind: 'page', key: 'e2e-events', content: { title: { ko: 'E2E 행사 쪽' }, blocks: [{ type: 'section', template: 'cards', variant: 'events', items: [{ title: { ko: '학교 여는 날' }, tag: { ko: '[날짜]' } }] }] } }) })).json()));
+    assert.ok(ev.id, '행사 쪽 시안');
+    await h.goto(`${BASE}/site?box=page`);
+    await h.locator('.triage-list a').filter({ hasText: 'E2E 행사 쪽' }).first().click();
+    const date = h.getByLabel('1. 날짜(행사 배지) 한국어', { exact: true });
+    assert.equal(await date.inputValue(), '[날짜]');
+    await date.fill('5.12');
+    await h.getByRole('button', { name: '새 판으로 저장', exact: true }).click();
+    await h.getByRole('status').filter({ hasText: '새 판으로 저장했습니다' }).waitFor();
+    await h.reload();
+    assert.equal(await date.inputValue(), '5.12');
     await ctx.close();
   });
   await step('66차: 학교 자료로 빈 칸 채우기 — 이야기형 미리보기에서 소개서 올리기 → 제안 확인 → 넣기 → 교육철학 쪽 새 시안 판', async () => {
@@ -1752,7 +1765,6 @@ try {
     const text = ['우리가 소중히 여기는 가치', '- 질문: 스스로 묻고 탐구한다', '- 공동체: 서로 돌본다', '- 나눔: 배운 것을 마을과 나눈다', '',
       '하루 일과', '아침 산책으로 하루를 열고 오전에는 탐구 수업, 오후에는 프로젝트를 합니다.'].join('\n');
     await panel.locator('[data-testid=autofill-files]').setInputFiles({ name: 'E2E-소개서.txt', mimeType: 'text/plain', buffer: Buffer.from(text) });
-    await panel.locator('[data-testid=autofill-read]').click();
     await panel.locator('[data-testid=autofill-proposals] li', { hasText: '소중히 여기는 것' }).waitFor();
     await shot(h, '66-autofill.png');
     await panel.locator('[data-testid=autofill-apply]').click();
@@ -2075,6 +2087,46 @@ try {
     await shot(p, '81-lab-detail.png');
     await ctx.close();
   });
+  await step('37차 후속: 손가락 기기 — 전체 관리·연구소·자료 첨부·화면 편집의 입력과 단추가 모두 44px, 필수 칸은 * 표시', async () => {
+    const { devices } = require('playwright');
+    // 화면에 보이는 입력·단추 중 44px 미만(화면 편집 막대 포함, 공개 홈페이지 본문 .site 의 테마 요소는 제외)
+    const under44 = (page) => page.evaluate(() => [...document.querySelectorAll('main :is(button, .btn, select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file]))')]
+      .filter((e) => (!e.closest('.site') || e.closest('.le-bar, .le-switch, .le-note, .le-picker, .le-guide')) && !e.closest('.pv-root'))
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.height < 43.5; })
+      .map((e) => `${e.tagName}.${(e.className || '').toString().split(' ')[0]}「${(e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 10)}」:${Math.round(e.getBoundingClientRect().height)}`));
+    const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    for (const path of ['/admin', '/admin/lab']) {
+      await p.goto(`${BASE}${path}`);
+      await p.locator('main').waitFor();
+      const small = await under44(p);
+      assert.deepEqual(small, [], `${path} 44px 미만: ${small.join(' ')}`);
+      assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${path} 390px 가로 넘침`);
+    }
+    await p.goto(`${BASE}/admin/languages`);
+    await p.locator('[data-testid=language-form] .field-req').first().waitFor();
+    await ctx.close();
+    // 학교 관리자: 자료 첨부(FileDrop 단추)와 화면 편집(구역 막대)
+    const ctxA = await browser.newContext({ ...devices['iPhone 13'] });
+    const a2 = await ctxA.newPage();
+    await login(a2, 'admin-a@school-a.test', 'demo-pass-a');
+    await a2.goto(`${BASE}/intake`);
+    await a2.waitForSelector('[data-testid=dropzone][data-ready]');
+    assert.deepEqual(await under44(a2), [], '자료 첨부 44px 미만');
+    await a2.goto(`${BASE}/site?box=page`);
+    await a2.locator('[data-testid=row-live-edit]').first().click();
+    await a2.waitForURL(/\/site\/edit\/[0-9a-f-]{36}$/);
+    await a2.locator('[data-testid=live-editor] .le-bar').first().waitFor();
+    const smallEd = await under44(a2);
+    assert.deepEqual(smallEd, [], `화면 편집 44px 미만: ${smallEd.join(' ')}`);
+    await ctxA.close();
+  });
+
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

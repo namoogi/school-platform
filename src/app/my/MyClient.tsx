@@ -1,4 +1,5 @@
 'use client';
+import { Field } from '@/components/Field';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
@@ -29,9 +30,9 @@ export function RequestForm({ personId }: { personId: string }) {
         <label className="radio"><input type="radio" name="req-kind" checked={kind === 'amend'} onChange={() => setKind('amend')} />{t('my.kindAmend')}</label>
         <label className="radio"><input type="radio" name="req-kind" checked={kind === 'inspect'} onChange={() => setKind('inspect')} />{t('my.kindInspect')}</label>
       </div></fieldset>
-      <label>{t('my.body')}<textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} required
-        placeholder={t(kind === 'amend' ? 'my.amendPlaceholder' : 'my.inspectPlaceholder')} /></label>
-      <p className="fine">{t('my.requestNote')}</p>
+      <Field label={t('my.body')} required hint={t('my.requestNote')} count={{ value: body.length, max: 2000 }}>
+        <textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000}
+          placeholder={t(kind === 'amend' ? 'my.amendPlaceholder' : 'my.inspectPlaceholder')} /></Field>
       <div className="form-actions"><button type="submit" className="btn btn-primary" disabled={!body.trim()}>{t('my.send')}</button></div>
       {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}</p>}
     </form>
@@ -51,7 +52,7 @@ export function AnnotateForm({ requestId }: { requestId: string }) {
   }
   return (
     <form className="stack" onSubmit={send}>
-      <label>{t('my.statement')}<textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} required placeholder={t('my.statementPlaceholder')} /></label>
+      <Field label={t('my.statement')} required count={{ value: body.length, max: 2000 }}><textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} placeholder={t('my.statementPlaceholder')} /></Field>
       <div className="form-actions"><button type="submit" className="btn" disabled={!body.trim()}>{t('my.attach')}</button></div>
       {msg && <p className={msg.error ? 'alert' : 'notice'} role="status">{msg.text}</p>}
     </form>

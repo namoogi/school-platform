@@ -1,4 +1,5 @@
 'use client';
+import { FileDrop } from '@/components/FileDrop';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Field } from '@/components/Field';
@@ -68,15 +69,18 @@ export function AutofillPanel({ templateKey }: { templateKey: string }) {
   const [pick, setPick] = useState<Record<string, boolean>>({});
   const [edit, setEdit] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
-  async function read() {
+  async function read(list: File[] = files, signal?: AbortSignal) {
     setBusy(true); setMsg(null); setRes(null);
     const fd = new FormData();
     fd.set('key', templateKey);
-    files.forEach((f) => fd.append('files', f));
-    const r = await fetch('/api/site/templates/autofill', { method: 'POST', body: fd });
+    list.forEach((f) => fd.append('files', f));
+    const r = await fetch('/api/site/templates/autofill', { method: 'POST', body: fd, signal }).finally(() => setBusy(false));
     const body = await r.json().catch(() => ({}));
-    setBusy(false);
-    if (!r.ok) return setMsg({ text: body.error ?? t('site.tpl.autofill.readFailed'), error: true });
+    if (!r.ok) {
+      // 끌어 놓기로 읽을 때는 FileDrop이 칸 아래에 오류를 보여 준다
+      if (signal) throw new Error(body.error ?? t('site.tpl.autofill.readFailed'));
+      return setMsg({ text: body.error ?? t('site.tpl.autofill.readFailed'), error: true });
+    }
     setRes(body);
     setPick(Object.fromEntries((body as ProposeResult).proposals.map((p) => [p.slotId, p.confidence === 'high'])));
     setEdit(Object.fromEntries((body as ProposeResult).proposals.filter((p) => typeof p.value === 'string' && p.kind !== 'image').map((p) => [p.slotId, p.value as string])));
@@ -98,8 +102,14 @@ export function AutofillPanel({ templateKey }: { templateKey: string }) {
     <section className="stack" data-testid="autofill-panel" aria-label={t('site.tpl.autofill.title')}>
       <h2>{t('site.tpl.autofill.title')}</h2>
       <p className="fine">{t('site.tpl.autofill.intro')}</p>
-      <label>{t('site.tpl.autofill.files')}<input type="file" multiple accept=".pdf,.docx,.txt,.md" onChange={(e) => setFiles(Array.from(e.target.files ?? []))} data-testid="autofill-files" /></label>
-      <div className="form-actions"><button type="button" className="btn" disabled={busy || !files.length} onClick={read} data-testid="autofill-read">{t('site.tpl.autofill.read')}</button></div>
+      <FileDrop
+        label={t('site.tpl.autofill.files')} multiple maxFiles={5} maxSize={8 * 1024 * 1024}
+        accept={['.pdf', '.docx', '.txt', '.md']} typeLabel="PDF·DOCX·TXT·MD" disabled={busy}
+        inputTestId="autofill-files" testId="autofill-drop"
+        onFiles={async (list, { signal }) => { setFiles(list); await read(list, signal); }}
+      />
+      {/* 고른 자료를 다시 읽기(끌어 놓으면 바로 읽는다) */}
+      <div className="form-actions"><button type="button" className="btn" disabled={busy || !files.length} onClick={() => read()} data-testid="autofill-read">{t('site.tpl.autofill.read')}</button></div>
       {res && (
         <div className="stack">
           {res.notes.filter((n) => !n.ok).map((n) => <p key={n.file} className="alert">{n.file}: {n.note}</p>)}

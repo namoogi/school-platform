@@ -1,4 +1,4 @@
-# 다음 세션 인계 (2026-11-27, 109차 끝)
+# 다음 세션 인계 (2026-11-27, 113차 끝)
 
 새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-91.md`(86~91차: `round-86.md`~`round-90.md`도) → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
@@ -7,7 +7,7 @@
 선생님께 쓰는 모든 설명은 **핵심 요약 → 왜 필요한가 → 용어 풀이(쉬운 말 + 학교 예시) → 필요하면 도식**. 승인을 구할 때는 바뀌는 것/안 바뀌는 것/되돌릴 수 있는지. AGENTS.md '선생님께 설명할 때'.
 
 ## 언어 (93차, ADR 0037)
-화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개), 98차 4묶음(설정·/my·/locked), 100차 5묶음(전체 관리) 완료, 남은 한글 줄 541(대부분 `/site`·템플릿 = 홈페이지 세션 몫). 101차 6묶음(서버 오류 이름표, ADR 0039: 앱 오류 전부 + 자주 나오는 DB 안내 29개) 완료, 102차 6c(DB 고정 문구 301개 영어), 103차(홈페이지 관리·템플릿, 한글 줄 76) 완료. 남은 것은 값이 든 DB 문구와 홈페이지 쪽 오류. 서버 오류는 `new ValidationError('err.이름', { 값 })`로 던진다. 셸 밖 화면은 `providerValue(i18n)`로 공급자를 둔다. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db), school.locale)`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
+화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개), 98차 4묶음(설정·/my·/locked), 100차 5묶음(전체 관리) 완료. 101차 6묶음(서버 오류 이름표, ADR 0039: 앱 오류 전부 + 자주 나오는 DB 안내 29개) 완료, 102차 6c(DB 고정 문구 301개 영어), 103차(홈페이지 관리·템플릿, 한글 줄 76), 112차(편집기 블록·칸 이름, 번역 묶음 갱신 규칙) 완료. 홈페이지 관리 화면의 공용 값·템플릿·편집기 칸 이름은 `src/lib/site-labels.ts`로 그린다(공개 홈페이지는 학교 언어). 번역 묶음은 배포 때 빈 칸을 채우고 묶음이 넣은 번역은 새 글로 바꾸며, 사람이 고친 번역은 그대로 둔다. 남은 것은 값이 든 DB 문구와 홈페이지 쪽 오류. 서버 오류는 `new ValidationError('err.이름', { 값 })`로 던진다. 셸 밖 화면은 `providerValue(i18n)`로 공급자를 둔다. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db), school.locale)`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
 
 ## 성적 계산 (104·105차, ADR 0040·0041)
 - 계산식 판(`calc_rules`, `src/lib/calc/expr.ts`): 학교마다 이수 기준·성적 산출을 선언형 식으로 쓴다. 자료 없음은 3값이다(합·평균도 null).
@@ -27,10 +27,15 @@
   - 출력 프로필 연결
   - 첫 실습: 드리미학교 성적표 분석
 
+## 출석인정 판정 (111차)
+`app.attendance_days`가 출석인정 사유를 그 날짜에 유효한 코드 판으로만 본다(`docs/rounds/round-111.md`). 코드 판을 읽는 새 SQL은 항상 `[effective_from, effective_to)` 조건을 넣는다.
+
 ## 학사 템플릿·학년 체계·시연 학교 (109차, ADR 0043, 학사 시스템 개발 세션)
 - 학년 체계: 학교가 한국식(초1~고3)·미국식(K·Grade 1~12)·커스텀을 고르면 학교급·학년을 빠진 것만 만든다(`/academics`, `src/lib/grade-schemes.ts`). 체계는 학교 관할 판 `grade_scheme`, 표기는 서수에서. 반은 학년 행을 가리킨다(`app.add_grade_homeroom`).
 - 시연 학교: 전체 관리 → '시연 학교 만들기'(`POST /api/admin/demo-school`) → `온누리 시연학교 (가상)`(`demo-academy`, 가명 '가상 ○○' 48명, 수업 36·마감·학년도 기록 마감·발행본). 감추려면 정지.
-- 조사 `docs/research/sis-ux-2026-11.md`. 다음(2단계): 템플릿 5종(한국 일반·한국 대안·미국 K-12·국제·홈스쿨) = 관제 기본판 갈래 + 고르기·비교·사본·점검표 화면, 개설에 학년(학기 시작 자동 수강, 관제 협의), 무학년·학년 넘기기.
+- 110차: 수업에 학년 칸(빈 값 = 학교급 전체), 학기 시작 자동 수강은 학년 학생만, 마감 판이 있으면 목록에 '마감'.
+- 113차: 학사 관리 템플릿 5종(`/academics/templates`): 관제 표 `academic_templates`(판), 고르면 학교급·학년·학기 구조·척도를 학교 사본으로(있는 것은 그대로), 관할 판에 템플릿 키·판, 남은 설정 점검표, 나란히 비교. 시연 학교는 '한국 일반' 템플릿으로 시작.
+- 조사 `docs/research/sis-ux-2026-11.md`. 다음: 숨길 구획을 성적·기록 화면이 읽기, 템플릿 새 판 → 학교 제안, 학교 AI 맞춤 안내 연결, 무학년·학년 넘기기. 관제 확인 대기: 마감한 수업의 수강 상태 쓰기를 막을지.
 
 ## 공개 저장소 (2026-11-27)
 저장소를 공개로 바꿨다(Actions 무료 시간). 비밀값·실제 연락처·학생 정보를 하드코딩하지 않는다. `npm run check:repo`(CI)가 비밀값 모양·개인 메일·커밋된 `.env`를 막는다. 전환 때 전체 기록 180개 커밋을 검사해 실제 비밀값은 없었다. 이슈 #143에서 `@codex`로 Codex 클라우드에 일을 맡기는 길이 작동한다(👀 반응 = 착수).
@@ -38,8 +43,8 @@
 ## 홈페이지 템플릿 (99차, Codex 협업)
 대표 3종(이야기·프로젝트·유치원)에 Codex가 생성한 예시 사진 22장(`public/site-templates/img/`, 프롬프트·규격 `docs/design/template-photo-manifest.json`)과 쪽마다 다른 배치(홈 + 안쪽 9쪽)가 들어갔다. 판: story 3, project 4, kinder 3. 다음은 골격 B·E와 나머지 5종 사진(16장, `docs/design/template-image-prompts.md`), 새 템플릿(재외 한글학교·기숙형·진로 특성화). Codex에게 맡기는 길은 `docs/COLLABORATION.md` 8절.
 
-## 홈페이지 레이아웃 (106·107차)
-키트 테마에 레이아웃 층(1200px 격자·구역 띠·구역 머리·한 줄 머리글·4칸 바닥글)이 들어갔다(`globals.css` 끝 '100차'·'107차' 주석 블록, `SiteFrame` kit 분기). 107차: 새 구역 모양 5가지(quicklinks·stages·stats·events·voices), 머리글 위 작은 줄, 대표 3종 홈 순서·입학 쪽. 다음: 나머지 5종 템플릿에 적용, 로고 줄. Codex 연결: Mac 폴더는 클라우드 세션에 제공되지 않음(`docs/COLLABORATION.md` 8절) → Claude 구현 + Codex PR 검토.
+## 홈페이지 레이아웃 (106·107·114차)
+키트 테마에 레이아웃 층(1200px 격자·구역 띠·구역 머리·한 줄 머리글·4칸 바닥글)이 들어갔다(`globals.css` 끝 '100차'·'107차' 주석 블록, `SiteFrame` kit 분기). 107차: 새 구역 모양 5가지(quicklinks·stages·stats·events·voices), 머리글 위 작은 줄, 대표 3종 홈 순서·입학 쪽. 114차: 나머지 5종에도 적용(알림 v3·입학 v4·사명 v3·국제 v3·한 쪽 v3). 다음: 5종 예시 사진 16장, 로고 줄. Codex 연결: Mac 폴더는 클라우드 세션에 제공되지 않음(`docs/COLLABORATION.md` 8절) → Claude 구현 + Codex PR 검토.
 
 ## 학교 이전 (92차, ADR 0035)
 공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
@@ -64,7 +69,7 @@ UI를 바꾸면 `docs/UI_REVIEW.md`: 로컬 서버 → `npm run ui:review -- <�
 - 학교 화면: 학사 업무형(ADR 0006). 전체 관리: 분석 대시보드형 다크 + 화이트 반전(ADR 0007). 사용자별 화면 선택은 DB에 저장된다.
 - 학교 홈페이지·성품 동화 모듈(ADR 0008): `/site` 관리, `/s/<주소>` 공개.
 - 룽아룬숙사: 운영 홈페이지가 새벽빛 테마로 열려 있다(`/s/rungarunsuksa`, 쪽 7·후원자 숨은 쪽 6·소식 4·동화 1). 옛 주소 호환 경로가 있다(31차).
-- AI 작업 공간(ADR 0012·0013·0014·0016, 34·36·38·40·83차): 83차부터 사용 기록에 세션 이름·작업자(자기 신고, 머리 x-agent-session·x-agent-operator)가 남고, 한 토큰을 여러 세션이 쓰면 경고. 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive·publish, 기한 7~365일·무기한·연장)을 발급한다. 학교의 Claude Code·Codex가 새 항목·새 판(구조 포함)·항목 정보·보관을 하고, 이것들은 저절로 공개되지 않는다. `publish` 권한이 있으면 사람이 공개를 지시했을 때 바로 공개·공개 내림. 되살리기·설정은 사람. 안내 `docs/agents/README.md`, 스크립트 `scripts/agent-story-upload.mjs --create --publish`. 46차(ADR 0022): 발급 직후 **AI 연결** 글(지시문 + 토큰)을 '한 번에 복사'해 AI 대화창에 붙여 넣으면 연결된다. 이미 발급한 토큰은 목록의 '지시문만 복사'.
+- AI 작업 공간(ADR 0012·0013·0014·0016, 34·36·38·40·83차): 83차부터 사용 기록에 세션 이름·작업자(자기 신고, 머리 x-agent-session·x-agent-operator)가 남고, 한 토큰을 여러 세션이 쓰면 경고. 학교 관리자가 `/site` 설정에서 범위 토큰(종류 story·page·news × 주소 × 권한 read·upload·create·edit·archive·publish, 기한 7~365일·무기한·연장)을 발급한다. 학교의 Claude Code·Codex가 새 항목·새 판(구조 포함)·항목 정보·보관을 하고, 이것들은 저절로 공개되지 않는다. `publish` 권한이 있으면 사람이 공개를 지시했을 때 바로 공개·공개 내림. 되살리기·설정은 사람. 안내 `docs/agents/README.md`, 스크립트 `scripts/agent-story-upload.mjs --create --publish`. 46차(ADR 0022): 발급 직후 **AI 연결** 글(지시문 + 토큰)을 '한 번에 복사'해 AI 대화창에 붙여 넣으면 연결된다. 이미 발급한 토큰은 목록의 '지시문만 복사'. 새 토큰 종류·외부 AI 연동도 같은 꼴(지시문 + 비밀 값 한 덩어리, 비밀 값은 한 번, 짧은 기한·폐기로 보완)로 만든다 — `docs/design/PLATFORM-PATTERNS.md` 5절(#177).
 - Claude 점검 접근(ADR 0010)
   - 작업 환경(Default)의 Network secret `onschools.vercel.app`(머리 `x-inspector-token`)이 들어 있다.
   - 클라우드 세션은 로그인 없이 **전체 관리자(관제 세션)**로 운영 화면·API를 쓴다(ADR 0024, 51차).
@@ -79,7 +84,12 @@ UI를 바꾸면 `docs/UI_REVIEW.md`: 로컬 서버 → `npm run ui:review -- <�
 - **관제 센터**(39차, ADR 0015): 서브 세션은 승인을 기다리며 멈추지 않고 결정 요청을 `/admin/control`에 올린다. 사용자는 거기서 답·지시하고, 관제 세션은 대화할 때마다 `GET /api/control/inbox`부터 확인해 세션에 전달한다. 절차 `docs/automation/CONTROL-CENTER.md`.
 - 선생님 Mac의 옛 사이트 세션은 답장 도구가 없어 파일을 대화 기록에 조각 출력(`=== 조각 n/N ===` + sha256)하게 하고 `list_events`로 읽는다(31차 방식).
 
-- 관리 화면 입력(37차): 파일 첨부는 모두 `FileDrop`(끌어 놓기·키보드·붙여넣기), 입력은 전역 최신 모양 + `Field`·`Switch`. 규칙 `docs/design/DESIGN-SYSTEM.md` '입력·파일 첨부'.
+## 관리 화면 입력 (37차 + 후속, 2026-11-23·27, 입력 정리 세션 `session_013RZyUnWMuX7Qrr66XcgDMw`)
+- 파일 첨부는 모두 `FileDrop`(끌어 놓기·키보드·붙여넣기·검사·진행·취소·미리보기), 입력은 전역 최신 모양 + `Field`(라벨이 입력을 감쌈, 필수 `*`)·`Switch`. 규칙 `docs/design/DESIGN-SYSTEM.md` '입력·파일 첨부', 기록 `docs/rounds/round-37.md`(#44·#45·#182·#183).
+- **새 화면 규칙**: 파일 입력은 `FileDrop`, `required` 칸은 `Field`로(날 `<label>`에 `required`만 두면 `*`가 없다). 전역 입력 기본 규칙은 `:where()`(특이성 0)라 화면별 크기 규칙이 이긴다.
+- **손가락 기기 44px**: `globals.css` 맨 끝 '37차 후속 2' 블록이 `pointer: coarse`에서 단추·입력을 모두 44px로 올린다(공개 홈페이지 본문 `.site` 제외, 화면 편집 도구 `.le-*` 포함). 이 블록은 **파일 끝에 두어야 한다** — 뒤에 CSS를 더할 때는 그 위에 넣는다. E2E '37차 후속: 손가락 기기' 단계가 전체 관리·연구소·자료 첨부·화면 편집에서 44px 미만을 잡는다.
+- 운영 확인(2026-11-27, iPhone 13 흉내): `/admin` 45개·`/admin/lab` 13개 단추·입력 모두 44px 이상, 390px 가로 넘침 없음.
+- 남은 것: 실제 터치 기기·화면낭독기 청취(장비 필요). 로그인 화면 두 칸은 관례상 `*` 없음.
 
 ## 이어서 할 일 (순서대로)
 0. **학사 화면(71~76차)**: 71차 학교 구조(`/academics`)·사람·학적(`/people`), 72차 수업(`/courses`: 과목·표기 판·갈래 규칙 판·개설·담당·명단), 73차 성적(`/grades`: 평가 항목·점수 표·과목 서술·수업 마감 판·척도·정책), 74차 출결(`/attendance`: 하루 출결부·수업일 달력·기간 요약), 75차 기록(`/records`: 학년도 기록 마감 판·발행·발행본 보기·인쇄·공개 기록·외부 결과·자격·학교 소개서·지정일 보고), 76차 기본판 제안 수락(학교 설정)·기본판·보고(`/admin/baseline`) 완료 — 학사 화면 71~76차 끝. 다음 후보: 출력 프로필 편집, 학교 정의 기록 입력, 학생 수업 신청(`/my`), 반나절·교시 출결. 관제 센터 #17(마이그레이션 Actions): 79차 전환 완료 — 운영 배포는 main CI 통과 → GitHub Actions '운영 DB 마이그레이션' → Vercel 배포 훅으로만 일어난다(main 자동 배포 끔, `MIGRATIONS_BY_ACTIONS=1`). 운영 배포 확인은 Vercel 배포의 `deployHookName=after-migrate`로 본다. 미리보기 DB 분리는 아직(`docs/SETUP-MIGRATIONS-CI.md` 4번). 되돌리기도 같은 문서. **학교별 커스텀 백엔드(결정 대기)**: `docs/research/backend-tenancy-2026-11.md` — 드리미포털 방식(한 프로젝트 안 앱마다 스키마 + Vercel 프로젝트) 분석, 추천 4안 계층형(핵심 공용·확장 학교만 전용 Supabase 프로젝트). 80차 RLS 문(`tests/rls-gate.test.ts`, 일부러 깨 보기 포함). 시스템 구성안(공용·확장·전용·독립 등급 × 규모 단계, 가격 뼈대) `docs/research/system-tiers-2026-11.md` = 연구소 항목 '시스템 구성안'. 81차 연구소 개편: 카드 보드 · 상세(표·지표·흐름도·막대·계단, `src/lib/richdoc.ts`) · 하단 지침 → 관제 센터 → 세션(절차 `CONTROL-CENTER.md` '연구소 지침 처리'). **학교 홈페이지 템플릿(ADR 0031)**: 65차 형식 조사·템플릿 7종·둘러보기·미리보기·적용 완료(`/site/templates`). 66차 학교 자료로 빈 칸 채우기(규칙 기반 + 학교 AI 길, 플랫폼 유료 분석은 만들지 않음: ADR 0032). 67차 기존 사이트에서 옮기기(SSRF 방지·robots.txt·8쪽). 68차 카피 문구(`docs/marketing/COPY.md`)·홍보 페이지(`/intro`) 완료. 69차 운영 시험 반영(경로 안만 읽기·태국어 단서·주소·전화, 목록 쪽 탭 제목). 70차 사용자 결정 반영: AI는 구독 계정으로(ADR 0032, 플랫폼 유료 API 분석 없음), 이름 onschools(추후 재결정), 홍보 큰 제목 "AI로 직접 만드는 우리학교 홈페이지, 우리학교 시스템". 추후 결정: 문의 창구, 홍보 페이지 주소 정리(지금 `/intro`). **86~88차(홈페이지 세션 `session_013RZyUom6xS67hpTPYHpecQ`, 2026-11-27)**: 86차 템플릿 카드 썸네일(`public/site-templates/*.jpg`, `npm run templates:thumbs`)·가상 학교 예시 내용 미리보기(`site-template-samples.ts`, 적용에는 안 씀)·쪽 탭. 87차 `/site/templates` 맨 위 '기존 홈페이지를 새 디자인으로 옮기기'(주소 → 8쪽 읽기 → 규칙 기반 템플릿 추천 → 시작 + 제안 넣기, 공개 안 함) + '학교 AI에게 맡길 글'(`docs/agents/site-migrate.md`). 88차 설정 '저장했습니다' 표시 경쟁 상태(e2e 27차 불안정 원인) 고침. **89차(ADR 0034) 템플릿 = 완성 디자인**: 화면 모양 8종(맑은 하늘·힘찬 시작·작업실·등불·지평·씨앗 추가), 템플릿마다 고유 디자인, 전체 화면 미리보기 `/templates/<key>`, 겹친 썸네일, 적용 때 디자인 함께. 예시 사진은 선생님 확인·생성 대기(`docs/design/template-image-prompts.md`, 대표 3종 22장 먼저). **90차 골격**: 상용 수준 계획 `docs/design/homepage-commercial-plan.md` — 배치 6종(editorial·mosaic·mask·filter·timeline·tiles)·항목 분류, 대표 3종(이야기=아이보리 편집, 프로젝트=작품 거르기, 유치원 새 템플릿=놀이터). **91차 방문·상담 신청(ADR 0036)**: 설정 '신청 받기' + 블록 '방문·상담 신청' → 방문자는 `asVisitor` 안 검사 함수로만 넣고, 학교 관리자만 `/site/inquiries`에서 보고 처리·가리기. 다음 후보(관제 요청 #23): 새 템플릿 4종(재외 한글학교·유치원·기숙형·진로 특성화), 적용 뒤 남은 `[ ]` 진행표, 로컬 시드 예시학교에 homepage 기능이 없어 `ui:review site`가 '꺼짐'만 찍히는 문제.

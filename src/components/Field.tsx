@@ -41,18 +41,19 @@ export function Field({ label, required, optional, hint, error, count, children,
     })
     : children;
 
+  // 라벨이 입력을 감싼다(누르면 입력으로, 기존 'label:has-text(..) input' 선택자와도 맞음). 글자 수는 이름에 섞이지 않게 라벨 밖
   return (
     <div className={`field${className ? ` ${className}` : ''}`} data-invalid={error || over ? true : undefined} data-testid={testId}>
-      <div className="field-head">
-        <label htmlFor={id} className="field-label">
+      <label htmlFor={id} className="field-wrap">
+        <span className="field-label">
           {label}
           {required && <span className="field-req" aria-hidden="true"> *</span>}
           {required && <span className="sr-only">{t('field.required')}</span>}
           {optional && !required && <span className="field-opt">{t('field.optional')}</span>}
-        </label>
-        {count && <span id={countId} className="field-count num" data-over={over || undefined} aria-live="polite">{count.value}/{count.max}</span>}
-      </div>
-      {control}
+        </span>
+        {control}
+      </label>
+      {count && <span id={countId} className="field-count num" data-over={over || undefined} aria-live="polite">{count.value}/{count.max}</span>}
       {hint && <p id={hintId} className="field-hint">{hint}</p>}
       {error && <p id={errId} className="field-error"><AlertCircle size={14} aria-hidden="true" /> <span className="sr-only">{t('file.errorPrefix')}</span>{error}</p>}
     </div>

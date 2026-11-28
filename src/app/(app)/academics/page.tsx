@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Fragment } from 'react';
 import { loadForPage } from '@/lib/page';
 import { listAcademicYears, listSchoolLevels, listTerms } from '@/lib/people';
@@ -34,6 +35,7 @@ export default async function AcademicsPage() {
           {levels.length === 0 ? <p className="muted">{t('academics.levelsEmpty')}</p>
             : <ul className="issue-list">{view.levels.map((l) => <li key={l.id}><strong>{l.name}</strong> <small className="muted">{l.code}</small>
               {l.grades.length > 0 && <ul className="grade-chips" aria-label={t('scheme.gradesOf', { level: l.name })}>{l.grades.map((g) => <li key={g.id}><StatusBadge tone="neutral">{g.label}</StatusBadge></li>)}</ul>}</li>)}</ul>}
+          <p className="fine"><Link href="/academics/templates">{t('atpl.toTemplates')}</Link></p>
           {admin && <GradeSchemeForm current={view.scheme} baseVersion={view.profileVersion} presets={presets} />}
           {admin && <details><summary>{t('scheme.addOther')}</summary><ActionForm url="/api/academics" action="level" inline submitLabel={t('academics.addLevel')} successText={t('academics.levelAdded')} testId="level-form"
             fields={[{ name: 'name', label: t('common.name'), required: true, placeholder: t('academics.levelPlaceholder') }, { name: 'code', label: t('academics.codeLabel'), required: true, placeholder: 'middle' }]} /></details>}

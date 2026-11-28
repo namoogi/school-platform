@@ -288,6 +288,8 @@ select:disabled, input:disabled, textarea:disabled { background-color: var(--sur
 input[readonly]:not([type=checkbox]):not([type=radio]) { background-color: var(--surface-subtle); }
 /* 숫자: 위아래 화살표 대신 키보드 ↑↓ (오른쪽 정렬·고정폭 숫자) */
 input[type=number]:not(.pv-root *) { font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+/* UI 점검(records, 390px): 날짜 칸이 자체 최소 폭 때문에 두 칸 격자에서 옆 칸보다 넓어져 카드 여백을 넘었다. 격자 칸 폭을 따르게 한다 */
+input[type=date]:not(.pv-root *), input[type=time]:not(.pv-root *) { min-width: 0; max-width: 100%; }
 input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* 날짜·시간: 달력 단추를 흐린 아이콘으로 (다크 화면은 .app의 color-scheme이 달력 창도 어둡게) */
 input[type=date]::-webkit-calendar-picker-indicator, input[type=time]::-webkit-calendar-picker-indicator, input[type=datetime-local]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; border-radius: var(--radius-sm); padding: 2px; }
@@ -348,9 +350,11 @@ input[aria-invalid="true"]:not(.pv-root *), select[aria-invalid="true"], textare
 input[aria-invalid="true"]:focus, select[aria-invalid="true"]:focus, textarea[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--danger-bg); }
 
 /* Field: 라벨 · 필수 · 도움말 · 오류 · 글자 수 (src/components/Field.tsx) */
-.field { display: grid; gap: 6px; min-width: 0; }
-.field-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
-label.field-label { display: inline; font-weight: 600; font-size: var(--fs-body); }
+.field { position: relative; display: grid; gap: 6px; min-width: 0; }
+label.field-wrap:not(.pv-root *) { display: grid; gap: 6px; font-weight: 400; }
+.field-label { font-weight: 600; font-size: var(--fs-body); }
+.field:has(> .field-count) .field-label { padding-right: 4.5em; }
+.field-count { position: absolute; top: 2px; right: 0; }
 .field-req { color: var(--danger-fg); }
 .field-opt { color: var(--text-muted); font-weight: 400; font-size: var(--fs-body-sm); }
 .field-hint { margin: 0; color: var(--text-muted); font-size: var(--fs-body-sm); line-height: var(--lh-body-sm); font-weight: 400; }
@@ -369,8 +373,15 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
 
 /* 터치 기기: 입력·버튼 44px (분석형의 34px 밀도도 손가락에는 44px) */
 @media (pointer: coarse) {
-  .app, :root { --control-h: 44px; }
+  /* 분석형(34px)·촘촘히(32px)보다 특이성을 높여 손가락 기기에서는 항상 44px */
+  :root, html .app.app, html .app.app[data-ui], html [data-density][data-density] { --control-h: 44px; }
   label:has(> input[type=checkbox]):not(.pv-root *), label:has(> input[type=radio]):not(.pv-root *), label.switch-row { min-height: 44px; }
+  /* 라벨로 감싸지 않은 체크·라디오(표·카드 안)는 상자를 24px로(WCAG 2.5.8 최소 대상) */
+  input[type=checkbox]:not(.pv-root *):not(.switch), input[type=radio]:not(.pv-root *) { width: 24px; height: 24px; }
+  input.switch { width: 46px; height: 28px; background: radial-gradient(circle at 12px 50%, var(--text-muted) 8px, transparent 8.5px), var(--surface-subtle); }
+  input.switch:checked { background: radial-gradient(circle at calc(100% - 12px) 50%, var(--text-on-brand) 8px, transparent 8.5px), var(--action-primary-bg); }
+  /* 표 안 작은 select(행 동작)도 손가락 기기에서는 컨트롤 높이로 */
+  html .actions select, html select.small, html input.small { min-height: var(--control-h); }
 }
 .choices { border: 0; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
 .choices legend { font-weight: 600; margin-bottom: var(--space-1); }
@@ -2390,3 +2401,28 @@ label.check { display: flex; gap: var(--space-2); align-items: flex-start; }
 label.check input { margin-top: 0.25em; }
 .scheme-grades { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: var(--space-2); padding-left: var(--space-5); }
 .grade-chips { display: flex; flex-wrap: wrap; gap: var(--space-1); list-style: none; padding: 0; margin: var(--space-1) 0 0; }
+
+/* 110차: 칸이 많은 표는 글자를 꺾지 않고 표 틀 안에서 옆으로 넘긴다(휴대폰 폭에서 한 글자씩 꺾이던 수업 목록) */
+.grid-table.nowrap-cells td, .grid-table.nowrap-cells th { white-space: nowrap; }
+/* UI 점검(attendance, 390px): 출결부는 고른 값(결석·질병)이 잘리지 않게 최소 폭을 지키고 표 안에서만 옆으로 넘긴다. 학생 이름은 한 줄 */
+.register-table { min-width: 36rem; }
+.register-table th[scope="row"] { white-space: nowrap; }
+
+/* 113차: 학사 관리 템플릿 — 남은 설정 점검표(세로 목록) */
+.setup-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.setup-list li { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.setup-list .dot { width: 24px; height: 24px; border-radius: var(--radius-full); display: grid; place-items: center; font-size: var(--fs-caption); font-weight: 700; border: 1px solid var(--border-default); background: var(--surface-default); color: var(--text-subtle); }
+.setup-list .done .dot { background: var(--success-bg); border-color: var(--success-border); color: var(--success-fg); }
+.setup-list [aria-current="step"] .dot { border-color: var(--brand-600); color: var(--brand-700); }
+.tpl-confirm { display: grid; gap: var(--space-2); }
+.tpl-confirm > span { display: block; }
+
+/* 37차 후속 2: 손가락 기기 누르는 대상 44px — 파일 끝에 두고 특이성을 높여, 화면별 작은 높이 규칙(.btn-sm 28px,
+   .le-bar 32px, .item-meta select 24px 등)보다 항상 이긴다. 모양(글자 크기·여백)은 그대로, 누르는 높이만 올린다.
+   공개 홈페이지(.site)는 테마 세션 몫이라 빼되, 그 위에 얹는 화면 편집 도구(.le-*)는 넣는다. 시안(.pv-root)은 제외 */
+@media (pointer: coarse) {
+  html body :is(button, .btn, .btn-sm, .small, .link-button, select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])):not(.pv-root *):not(.site *),
+  html body :is(.le-bar, .le-switch, .le-note, .le-picker, .le-guide) :is(button, .btn, select, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file])),
+  html body .le-grip { min-height: 44px; }
+  html body .le-bar :is(.btn-sm, button), html body .le-grip { min-width: 44px; }
+}
