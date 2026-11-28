@@ -3074,7 +3074,7 @@
   "tplAi.lead": "The template is a starting point. The school's own AI (subscription) analyses report cards and assessment rules, and a school admin saves the changes as new versions on each screen.",
   "tplAi.step1": "Copy the instructions below into your school AI chat (they include the current school copy and the steps).",
   "tplAi.step2": "Give the AI a blank report-card template and the assessment rules; it drafts a mapping table and the values to change on each screen, with reasons.",
-  "tplAi.step3": "Review the draft, then save new versions on the term, scale, calculation and output screens. For extra records, the AI can build definitions with an academic-package token.",
+  "tplAi.step3": "Review the draft, then save new versions of the term structure, scales and grading policy on their screens. Calculation rules and output formats have no edit screen yet: send the draft through \u2018New conversation\u2019 in the chat and the control center saves it. For extra records, the AI can build definitions with an academic-package token.",
   "tplAi.copy": "Copy AI instructions",
   "tplAi.show": "Show instructions",
   "tplAi.hide": "Hide instructions",

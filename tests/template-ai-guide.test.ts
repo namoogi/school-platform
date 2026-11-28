@@ -24,8 +24,19 @@ describe('학교 AI 맞춤 지시문', () => {
     expect(s).toContain(GRADE_INTAKE_URL);
     expect(s).toContain('https://example.test/academics?tab=terms');
     expect(s).toContain('https://example.test/grades');
-    expect(s).toContain('https://example.test/records');
     expect(s).not.toContain('example.test//');
+  });
+
+  it('작업 토큰이 못 읽는 주소로 보내지 않고, 견본은 지시문 안에 담는다(Codex 220번 PR 검토)', () => {
+    const s = buildTemplateGuideText(base);
+    // 학교 AI 토큰은 로그인 쿠키 전용 /api/calc-rules 를 읽지 못하고, /records 에는 출력 프로필 저장이 없다
+    expect(s).not.toContain('/api/calc-rules');
+    expect(s).not.toContain('/records');
+    expect(s).toContain('weighted_average — ');
+    expect(s).toContain('pass_fail_project (이 템플릿 견본)');
+    expect(s).toMatch(/- pass_fail_project: \{"lets"|- pass_fail_project: \{"outputs"/);
+    // 화면이 없는 계산식 판·출력 프로필은 대화창 → 관제가 저장
+    expect(s).toContain("대화창의 '새 대화'로 초안을 관제에 보내면");
   });
 
   it('지킬 것(실명 금지·추측 금지·학교 값 유지·유료 분석 없음)이 있고 토큰은 담지 않는다', () => {
