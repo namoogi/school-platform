@@ -513,14 +513,7 @@ label.radio.module:not(.pv-root *), .module { align-items: flex-start; }
 
 /* ── 16. 개발·연구소 ───────────────────────────────────── */
 .quick-add { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; background: var(--surface-default); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: var(--ds-space-3); }
-/* UI 점검(lab, ADR 0045 양식 배치): 칸 너비 = 내용 길이. 제목만 줄 전체로 늘던 것을 lg로, 단추는 마지막 칸 옆. 휴대폰 폭은 칸이 줄 전체 */
-.quick-add { align-items: end; }
-.quick-add > [data-size] { flex: none; max-width: 100%; min-width: 0; }
-.quick-add > [data-size="xs"] { width: 7rem; }
-.quick-add > [data-size="sm"] { width: 11rem; }
-.quick-add > [data-size="md"] { width: 16rem; }
-.quick-add > [data-size="lg"] { width: 24rem; }
-@media (max-width: 600px) { .quick-add > [data-size] { width: 100%; } }
+/* UI 점검(lab, ADR 0045): 칸 너비·배치는 공용 .form-grid > .ff[data-size] 규칙을 쓴다(따로 두지 않음, Codex #229) */
 .items { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-default); }
 .item { padding: var(--ds-space-3) var(--ds-space-4); border-top: 1px solid var(--border-subtle); }
 .item:first-child { border-top: 0; }
