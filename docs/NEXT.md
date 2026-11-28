@@ -1,6 +1,6 @@
-# 다음 세션 인계 (2026-11-28, 125차 끝)
+# 다음 세션 인계 (2026-11-28, 126차 끝)
 
-새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-91.md`(86~91차: `round-86.md`~`round-90.md`도) → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
+새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-126.md`(최근 차시는 `docs/rounds/`의 가장 큰 번호부터 거꾸로, 맡은 영역의 절을 먼저) → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
 
 ## 설명 방식 (82차, 꼭 지킬 것)
