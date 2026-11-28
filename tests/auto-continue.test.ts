@@ -25,4 +25,10 @@ describe('멈춤 방지 훅', () => {
     expect(decide(msg('   ')).block).toBe(false);
     expect(decide(null).block).toBe(false);
   });
+  it('표시는 마지막 줄에서만 인정한다: 본문·인용·코드 블록의 표시는 끝내는 표시가 아니다(Codex #192)', () => {
+    expect(decide(msg('끝 글에는 [완료]를 붙입니다.\n이제 시험을 돌리겠습니다.')).block).toBe(true);
+    expect(decide(msg('설명:\n> [대기] 는 기다릴 때')).block).toBe(true);
+    expect(decide(msg('예시\n```\n[결정 필요]\n```')).block).toBe(true);
+    expect(decide(msg('정리했습니다.\n\n[대기] CI 감시를 걸어 두었습니다.\n')).block).toBe(false);
+  });
 });

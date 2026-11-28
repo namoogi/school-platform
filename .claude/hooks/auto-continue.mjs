@@ -3,7 +3,7 @@
 // 사람 판단이 꼭 필요한 일이 아니면 다음 단계를 그 자리에서 진행시킨다. (Claude Code Stop 훅, .claude/settings.json)
 //
 // 차례를 끝내도 되는 경우(멈춤 허용)
-//  - 마지막 글에 [결정 필요] · [대기] · [완료] 표시가 있다
+//  - 마지막 글의 끝맺음(마지막 줄)에 [결정 필요] · [대기] · [완료] 표시가 있다
 //    [결정 필요] 되돌리기 어려운 일·사용자 결정이 필요한 일(AGENTS.md '변경 원칙')
 //    [대기] CI·배포·다른 세션을 기다리며, 깨울 장치(감시·예약·PR 구독)를 걸어 두었다
 //    [완료] 맡은 일이 끝났거나, 사용자의 질문에 답만 하는 차례였다
@@ -31,7 +31,9 @@ export function decide(input, env = {}) {
   if (Array.isArray(input?.session_crons) && input.session_crons.length) return { block: false, why: 'crons' };
   const msg = typeof input?.last_assistant_message === 'string' ? input.last_assistant_message : '';
   if (!msg.trim()) return { block: false, why: 'empty' };
-  if (MARKERS.some((m) => msg.includes(m))) return { block: false, why: 'marker' };
+  // 표시는 끝맺음(마지막 줄)에서만 인정한다. 본문·인용·코드 블록에서 표시를 설명한 경우는 끝내는 표시가 아니다(Codex #192)
+  const lastLine = msg.trimEnd().split('\n').map((l) => l.trim()).filter(Boolean).pop() ?? '';
+  if (!lastLine.startsWith('```') && !lastLine.startsWith('>') && MARKERS.some((m) => lastLine.includes(m))) return { block: false, why: 'marker' };
   return { block: true, reason: REASON };
 }
 
