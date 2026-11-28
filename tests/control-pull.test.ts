@@ -12,6 +12,13 @@ const route = await import('@/app/api/control/mine/route');
 let P: string; let T: string;
 const RAS = 'session_013RZyUq3bukJr2ggdSiQ2vt';
 const OTHER = 'session_013RZyUqUFVPBGjdxpiXsrU2';
+// 카드 칸은 고칠 수 없으므로(가드 트리거) 시험에서 기한만 옮길 때는 트리거를 건너뛴다(슈퍼유저 연결)
+const backdate = async (cl: pg.Client, expr: string, id: string) => {
+  await cl.query('begin');
+  await cl.query("set local session_replication_role = replica");
+  await cl.query(`update public.control_requests set due_at = ${expr} where id = $1`, [id]);
+  await cl.query('commit');
+};
 const mine = async (s: string, token = T) => {
   const res = await route.GET(new Request(`http://x/api/control/mine?session=${s}`, { headers: { 'x-inspector-token': token } }));
   return { status: res.status, body: await res.json() };
@@ -51,7 +58,7 @@ describe('관제 지시 당겨 오기', () => {
     await asUser(P, (db) => c.answerRequest(db, r.id, { body: '메모만', target_session: null }));
     await asAgent((db) => c.control.post(db, T, r.id, { kind: 'note', body: '기한 전 메모', author_session: RAS }));
     const cl = new pg.Client({ connectionString: TEST_URL }); await cl.connect();
-    await cl.query(`update public.control_requests set due_at = clock_timestamp() + interval '300 milliseconds' where id = $1`, [r.id]);
+    await backdate(cl, `clock_timestamp() + interval '300 milliseconds'`, r.id);
     expect((await cl.query('select status from public.control_requests where id = $1', [r.id])).rows[0].status).toBe('proceeding');
     await cl.end();
     await new Promise((ok) => setTimeout(ok, 500));
@@ -77,7 +84,7 @@ describe('관제 지시 당겨 오기', () => {
     })) as { id: string };
     await asUser(P, (db) => c.answerRequest(db, r.id, { choice: 'b', target_session: null }));
     const cl = new pg.Client({ connectionString: TEST_URL }); await cl.connect();
-    await cl.query(`update public.control_requests set due_at = now() - interval '1 minute' where id = $1`, [r.id]);
+    await backdate(cl, `now() - interval '1 minute'`, r.id);
     await cl.end();
     const got = ((await mine(RAS)).body as { id: string; due?: boolean }[]).find((x) => x.id === r.id);
     expect(got).toBeTruthy();

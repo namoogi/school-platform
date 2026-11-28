@@ -30,6 +30,22 @@ language sql stable set search_path = pg_catalog, public, pg_temp as $$
     'created_at', r.created_at, 'updated_at', r.updated_at)
 $$;
 
+-- 카드 칸은 올린 뒤 고치지 않는다. 검사는 control.file_request 에만 있으므로, 직접 UPDATE(학교 관리자 RLS 경로 포함)로
+-- 알림을 기한 지난 기한 진행 카드로 바꾸거나 default_action 을 갈아 끼우지 못하게 한다.
+create or replace function private.control_card_guard() returns trigger
+language plpgsql set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if (new.door, new.ask, new.default_action, new.due_at, new.changes, new.unchanged, new.undo)
+     is distinct from (old.door, old.ask, old.default_action, old.due_at, old.changes, old.unchanged, old.undo)
+     -- 카드의 선택지·추천안도 결정의 일부다
+     or (old.door is not null and (new.options, new.recommended, new.reversible) is distinct from (old.options, old.recommended, old.reversible)) then
+    raise exception '결정 카드의 내용은 올린 뒤 고칠 수 없습니다. 새 카드로 올려 주세요.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+create trigger control_requests_card_guard before update on public.control_requests
+  for each row execute function private.control_card_guard();
+
 grant create on schema control to control_writer;
 -- 함수는 control_writer 소유다(41차). 마이그레이션 사용자는 이 역할로 SET ROLE 만 할 수 있으므로 바꿔서 다시 만든다
 set local role control_writer;

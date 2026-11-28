@@ -3121,5 +3121,6 @@
   "db.cardNoticeAsk": "A notice card has no ask, default_action or recommended. If you need to ask something, file it as default or one_way.",
   "db.cardOneWayDefault": "default_action is only for default cards. A one_way card waits for a person to answer.",
   "db.cardDefaultSession": "A default card needs a session to own it (source_session).",
-  "db.cardOneLine": "A decision card writes changes, unchanged and undo on one line each. Put details in detail."
+  "db.cardOneLine": "A decision card writes changes, unchanged and undo on one line each. Put details in detail.",
+  "db.cardImmutable": "A decision card cannot be changed after it is filed. File a new card instead."
 }

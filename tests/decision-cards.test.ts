@@ -88,6 +88,19 @@ describe('결정 카드', () => {
     expect(await file({ ...b, due_at: day(2).replace('Z', '+09:00') })).toMatchObject({ door: 'default' });
   });
 
+  it('카드 칸은 올린 뒤 직접 고칠 수 없다(전체 관리자·DB 직접 수정 모두). 상태는 바꿀 수 있다', async () => {
+    const r = await file({ source_session: RAS, door: 'notice', changes: '알림' }) as { id: string };
+    const cl = new pg.Client({ connectionString: TEST_URL }); await cl.connect();
+    try {
+      await expect(cl.query(`update public.control_requests set door = 'default', due_at = now() - interval '1 minute', default_action = 'x' where id = $1`, [r.id]))
+        .rejects.toThrow('결정 카드의 내용은 올린 뒤 고칠 수 없습니다');
+      await expect(cl.query(`update public.control_requests set changes = '다른 말' where id = $1`, [r.id])).rejects.toThrow('결정 카드의 내용은');
+      await cl.query(`update public.control_requests set status = 'done' where id = $1`, [r.id]);
+      const d = await file(base()) as { id: string };
+      await expect(cl.query(`update public.control_requests set recommended = 'list' where id = $1`, [d.id])).rejects.toThrow('결정 카드의 내용은');
+    } finally { await cl.end(); }
+  });
+
   it('같은 세션·같은 제목의 열린 요청은 새로 만들지 않고 돌려준다', async () => {
     const r = await asAgent((db) => c.control.file(db, T, { title: '겹치는 카드', ...base() })) as { id: string };
     const again = await asAgent((db) => c.control.file(db, T, { title: '겹치는 카드', source_session: RAS })) as { id: string; existing: boolean };
