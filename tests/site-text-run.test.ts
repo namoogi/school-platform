@@ -28,6 +28,11 @@ describe('짧은 글 구역 묶음', () => {
     const news = { type: 'news_list', count: 3, title: { ko: '소식' } } as unknown as Block;
     expect(runs(render([text('하나'), closed, news, text('둘')]))).toEqual(['first+head', 'next+head']);
   });
+  it('방문자 화면의 그리는 차례(그림책 쪽은 PNG 그림 모음을 맨 뒤로)로 이웃을 판정한다', () => {
+    const scene = { type: 'story_page', text: { ko: '장면' } } as unknown as Block;
+    const pngs = { type: 'gallery', download: 'png', assets: [] } as unknown as Block;
+    expect(runs(render([scene, text('하나'), pngs, text('둘')]))).toEqual(['first+head', 'next+head']);
+  });
   it('모양이 있는 구역은 묶지 않는다', () => {
     expect(runs(render([text('하나'), text('카드', { variant: 'overview' } as Partial<Block>), text('둘')]))).toEqual(['-', '-', '-']);
   });
