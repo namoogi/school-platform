@@ -198,6 +198,17 @@ async function identityCollisions(db, bundle) {
  *   옛 연결이 새 로그인과 맞지 않아 거부되므로, 비워 두고 첫 로그인 때 확인된 메일로 다시 잇는다(초대와 같은 길, src/lib/google.ts).
  *   'keep' 은 같은 로그인 서버를 계속 쓸 때(전용형 + 공용 로그인)만.
  */
+// 123차 학사 관리 템플릿: 같은 키·판인데 내용 칸(내용·제목·설명·바뀐 이유·순서)이 하나라도 다르면 넣지 않는다.
+// 넣기 트랜잭션 안에서 새 판 내기(app.publish_academic_template)와 같은 키 잠금을 잡고 본다(그 사이 공개된 판을 놓치지 않게, Codex 199번 PR 검토)
+async function checkTemplates(db, templates) {
+  const snap = (x) => JSON.stringify(sortKeys({ manifest: x.manifest, title: x.title, summary: x.summary, why: x.why ?? null, sort_order: x.sort_order }));
+  for (const t of templates) {
+    await db.query(`select pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext($1))`, [t.key]);
+    const { rows: [d] } = await db.query('select manifest, title, summary, why, sort_order from public.academic_templates where key = $1 and version = $2', [t.key, t.version]);
+    if (d && snap(d) !== snap(t)) throw new Error(`대상의 학사 관리 템플릿 ${t.key} ${t.version}판이 원본과 내용이 다릅니다. 템플릿을 맞춘 뒤 넣으세요.`);
+  }
+}
+
 export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) {
   if (!['reset', 'keep'].includes(auth)) throw new Error('로그인 연결은 reset·keep 중 하나입니다.');
   if (bundle.format !== 'school-move/1') throw new Error('묶음 형식이 다릅니다.');
@@ -221,15 +232,6 @@ export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) 
       throw new Error(`대상의 기본판 ${b.version}판이 원본과 내용이 다릅니다. 기본판을 맞춘 뒤 넣으세요.`);
     }
   }
-  // 123차 학사 관리 템플릿: 같은 키·판인데 내용이 다르면 넣지 않는다(학교가 엉뚱한 템플릿 판에 묶이지 않게)
-  for (const t of bundle.academic_templates ?? []) {
-    // 내용 칸 모두(내용·제목·설명·바뀐 이유·순서)를 본다. 하나라도 다르면 대상 행이 남아 학교가 다른 판을 보게 된다(Codex 199번 PR 검토)
-    const { rows: [d] } = await db.query('select manifest, title, summary, why, sort_order from public.academic_templates where key = $1 and version = $2', [t.key, t.version]);
-    const snap = (x) => JSON.stringify(sortKeys({ manifest: x.manifest, title: x.title, summary: x.summary, why: x.why ?? null, sort_order: x.sort_order }));
-    if (d && snap(d) !== snap(t)) {
-      throw new Error(`대상의 학사 관리 템플릿 ${t.key} ${t.version}판이 원본과 내용이 다릅니다. 템플릿을 맞춘 뒤 넣으세요.`);
-    }
-  }
   // 계정: 같은 메일인데 다른 id 인 계정이 대상에 있으면 넣지 않는다(연결이 끊긴 채 되돌려지기 전에 이유를 알린다)
   const { rows: [{ n: emailClash }] } = await db.query(
     `select count(*)::int as n from private.app_users t join json_populate_recordset(null::private.app_users, $1::json) u
@@ -241,6 +243,7 @@ export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) 
   try {
     await db.query('set local session_replication_role = replica');
     await insertRows(db, 'public', 'baselines', bundle.baselines, { onConflictNothing: true });
+    await checkTemplates(db, bundle.academic_templates ?? []);
     await insertRows(db, 'public', 'academic_templates', bundle.academic_templates ?? [], { onConflictNothing: true });
     await insertRows(db, 'private', 'app_users', auth === 'reset' ? bundle.users.map((u) => ({ ...u, auth_subject: null })) : bundle.users, { onConflictNothing: true });
     await insertRows(db, 'public', 'schools', [school]);
