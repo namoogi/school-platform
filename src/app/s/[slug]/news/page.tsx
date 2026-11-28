@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { storyTerm } from '@/lib/story-language';
 import { pick, publicList } from '@/lib/site';
 import { SiteFrame, siteText } from '@/components/site/SiteFrame';
 import { loadSite } from '@/components/site/load';
@@ -22,7 +23,7 @@ export default async function List({ params, searchParams }: P) {
           <li key={s.key}><Link href={link(`/news/${s.key}`)}>
             {s.cover && /* eslint-disable-next-line @next/next/no-img-element */ <img src={asset(s.cover)} alt="" />}
             <b>{t(s.title)}</b>
-            {s.meta.virtue && <small>{s.meta.virtue}</small>}
+            {s.meta.virtue && <small>{storyTerm(s.meta.virtue, lang)}</small>}
             {s.summary && <span>{t(s.summary)}</span>}
           </Link></li>
         ))}
