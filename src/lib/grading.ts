@@ -126,7 +126,7 @@ export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[]
     if (b?.earns_credit != null && typeof b.earns_credit !== 'boolean') throw new ValidationError('err.grade.bandCredit', { code });
     return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
   });
-  // floor(화면·API 쓰기 길): 점수 구간이 있으면 0점까지 덮어야 한다. 템플릿 적용은 관제가 낸 판을 그대로 옮기므로 여기서 막지 않는다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
+  // floor(화면·API 쓰기 길, 템플릿 적용 길 — 131차부터 템플릿 판 검사 app.academic_template_ok 도 같은 규칙): 0점까지 덮는 바닥 구간(min ≤ 0)이 있어야 한다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
   // 같은 하한이 둘이면 마감 때 어느 띠를 고를지 정해지지 않는다(app.band_for 는 하한 순으로 하나만, Codex #228)
   const mins = out.filter((b) => b.min != null).map((b) => b.min as number);
   const dup = mins.find((m, i) => mins.indexOf(m) !== i);

@@ -65,4 +65,4 @@ base_version | '내가 보고 고친 판 번호'. 그 사이 다른 사람이 �
 | P2(7차) 정책 `gpa`·`rank`는 아무 데서도 읽지 않는데 저장됨 | 수용 | 받는 칸에서 뺌(평점·석차 숨김은 '숨기는 구획') |
 | P2(7차) `char_limits` 안쪽 칸 오타면 한도가 안 걸림 | 수용 | 렌더러가 읽는 `subject_detail`만 |
 
-- 남은 것: 템플릿 적용(관제가 낸 판)은 바닥 구간을 막지 않는다. 템플릿 판 검사(`app.academic_template_ok`)에 같은 규칙을 넣을지는 관제 몫(시험용 판에 `min: null` 나머지 띠가 있음).
+- ~~남은 것: 템플릿 적용(관제가 낸 판)은 바닥 구간을 막지 않는다.~~ 131차 완료: 템플릿 판 검사(`private.academic_template_ok`)와 템플릿 적용 길(`applyTemplate` → `saveScale({ floor: true })`) 모두 바닥 구간 필수(`docs/rounds/round-131.md`).
