@@ -391,7 +391,7 @@ p.field-error, .field-error li { display: flex; gap: 6px; align-items: flex-star
 label.radio.module:not(.pv-root *), .module { align-items: flex-start; }
 .module input { margin-top: 3px; }
 .module .badge, .module .tag { margin-left: 6px; }
-.form-actions { display: flex; gap: var(--ds-space-2); }
+.form-actions { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; } /* 125차: 좁은 화면에서 버튼이 넘치면 다음 줄로(카드가 밀려 가로 스크롤이 생기지 않게) */
 .estimate { display: flex; align-items: baseline; gap: var(--ds-space-2); flex-wrap: wrap; background: var(--surface-subtle); border-radius: var(--radius-md); padding: var(--ds-space-3) var(--ds-space-4); }
 .estimate strong { font-size: var(--fs-heading-sm); font-variant-numeric: tabular-nums; }
 
@@ -2520,6 +2520,10 @@ label.check input { margin-top: 0.25em; }
 .record-list > li { display: grid; gap: var(--ds-space-2); padding-bottom: var(--ds-space-3); border-bottom: 1px dashed var(--border-subtle); }
 .record-list > li:last-child { border-bottom: 0; padding-bottom: 0; }
 
+/* 125차: 템플릿 새 판 제안 목록 — 제안 하나가 세로로 쌓인 묶음(제목·이유·더해지는 것·결정) */
+.offer-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--ds-space-4); }
+.offer-list > li { display: grid; gap: var(--ds-space-3); min-width: 0; padding-bottom: var(--ds-space-4); border-bottom: 1px solid var(--border-subtle); }
+.offer-list > li:last-child { padding-bottom: 0; border-bottom: 0; }
 /* ───────── 124차: 템플릿 모바일 정리 — 머리글 한 줄·메뉴 펼침판·첫 화면 글 가독성·바닥글 링크·소식 목록 (키트 테마만, campus·dawn 제외) ───────── */
 /* 홈(data-home) 첫 구역이 큰 사진 띠면 쪽 제목(학교 이름)은 작은 이름표로 — 머리글 학교 이름과 같은 큰 글자가 두 번 나오지 않게 */
 .site[data-theme][data-home]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-head:has(+ .site-blocks > .sec[data-template="banner"]:first-child) { padding-block: 0 var(--ds-space-4); }

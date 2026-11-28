@@ -642,6 +642,8 @@ try {
     await p.click('aside a[href="/admin/integrations"]');
     await p.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await p.waitForURL(/\/admin\/integrations/);
+    // 사이드바 링크를 누른 마우스가 메뉴 위에 남으면 펼쳐진 메뉴가 본문 단추를 가린다(CI 흔들림 두 번) — 본문으로 옮긴다
+    await p.mouse.move(1000, 600);
     await p.fill('[data-testid=add-link] input >> nth=0', 'E2E 전용 저장소');
     await p.fill('[data-testid=add-link] input[aria-label="연동 주소"]', 'https://github.com/example-org/e2e-school');
     await p.click('[data-testid=add-link] button:text-is("연동 추가")');
