@@ -1,4 +1,4 @@
-/** 126차: 학교 AI 맞춤 지시문 — 학교 사본 요약·절차·저장할 화면 주소·지킬 것이 들어가고 토큰·실명 자리는 없다 */
+/** 127차: 학교 AI 맞춤 지시문 — 학교 사본 요약·절차·저장할 화면 주소·지킬 것이 들어가고 토큰·실명 자리는 없다 */
 import { describe, expect, it } from 'vitest';
 import { buildTemplateGuideText, GRADE_INTAKE_URL } from '@/lib/template-ai-guide';
 

@@ -12,7 +12,7 @@ import { photoAssetIds } from './site-photos';
  */
 import {
   LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type SectionVariant, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
-  type GalleryItem, type Lang, type LanguageImages, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, isSiteTheme,
+  type GalleryItem, type Lang, type LanguageImages, type LText, type NavEntry, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, isSiteTheme, RESERVED_ANCHORS, ANCHOR_BLOCKS, anchorTitle,
 } from './site-shared';
 export * from './site-shared';
 
@@ -168,11 +168,24 @@ export function validateContent(raw: unknown): Content {
   if (!Object.values(title).some(Boolean)) throw new ValidationError('제목을 한 언어 이상 적어 주세요.');
   const blocksRaw = Array.isArray(r.blocks) ? r.blocks : [];
   if (blocksRaw.length > 200) throw new ValidationError('블록은 200개까지 넣을 수 있습니다.');
+  const anchors = new Set<string>();
   const blocks: Block[] = blocksRaw.map((b, i) => {
     const x = (b ?? {}) as Record<string, unknown>;
-    const out = blockOf(x, `${i + 1}번째 블록`);
-    return x.hidden === true ? { ...out, hidden: true } : out;
+    const out: Block = blockOf(x, `${i + 1}번째 블록`);
+    if (x.hidden === true) out.hidden = true;
+    // 126차(ADR 0046): 메뉴 주소 — 이 쪽 안에서 하나뿐, 영문 소문자·숫자·하이픈
+    const anchor = typeof x.anchor === 'string' ? x.anchor.trim().toLowerCase() : '';
+    if (anchor) {
+      if (!/^[a-z][a-z0-9-]{0,39}$/.test(anchor) || RESERVED_ANCHORS.includes(anchor)) throw new ValidationError('err.site.anchorFormat', { n: i + 1 });
+      if (!(ANCHOR_BLOCKS as readonly string[]).includes(out.type) || !Object.values(anchorTitle(out) ?? {}).some(Boolean)) throw new ValidationError('err.site.anchorTitle', { n: i + 1 });
+      if (anchors.has(anchor)) throw new ValidationError('err.site.anchorDuplicate', { anchor });
+      anchors.add(anchor); out.anchor = anchor;
+    }
+    return out;
   });
+  const menuRaw = (r.menu ?? null) as Record<string, unknown> | null;
+  const parent = menuRaw && typeof menuRaw.parent === 'string' ? menuRaw.parent.trim().toLowerCase() : '';
+  if (parent && (parent === 'home' || !/^[a-z0-9][a-z0-9-]{0,59}$/.test(parent))) throw new ValidationError('err.site.menuParent');
   const headRaw = (r.head ?? null) as Record<string, unknown> | null;
   const head = headRaw ? {
     eyebrow: opt(text(headRaw.eyebrow, '머리말', 120), noText),
@@ -183,6 +196,7 @@ export function validateContent(raw: unknown): Content {
     title, summary: text(r.summary, '요약', 1000),
     cover: r.cover ? asset(r.cover, '표지') : undefined, blocks,
     site: siteProfile(r.site), head: head && (head.eyebrow || head.layout || head.link || head.note) ? head : undefined,
+    ...(parent ? { menu: { parent } } : {}),
   };
 }
 
@@ -475,7 +489,8 @@ export async function memberAsset(db: Db, schoolId: string, id: string) {
 export type PublicSite = {
   slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme; title: LText;
   /** 91차: 방문·상담 신청 받음 */ inquiry_open?: boolean;
-  stories: boolean; has_news: boolean; nav: { key: string; title: LText }[];
+  stories: boolean; has_news: boolean; nav: NavEntry[];
+  /** 126차(ADR 0046): 홈 쪽의 메뉴 주소 구역 — '홈' 아래 하위 메뉴 */ home_sections?: { anchor: string; title: LText }[];
   /** 47차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
   on_own_host?: boolean;
   /** 49차: 로그인한 이 학교 관리자가 보는 중이면 true — 공개 화면 위에 관리 막대를 보인다 */

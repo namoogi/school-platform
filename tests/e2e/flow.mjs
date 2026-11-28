@@ -1752,15 +1752,19 @@ try {
     assert.equal(await h.locator('.sec[data-variant="filter"] .sec-photos li:visible').count(), 2);
     await h.click('.sec-filter-bar button:has-text("전체")');
     assert.equal(await h.locator('.sec[data-variant="filter"] .sec-photos li:visible').count(), 6);
-    await h.click('.site-nav a:has-text("프로젝트")');
+    await h.click('.site-nav-tree > li > a:text-is("프로젝트")');
     await h.waitForURL(/page=projects/);
     assert.match(await h.textContent('[data-testid=template-live]'), /마을 하천 지도/);
     await shot(h, '89-template-live.png');
     // #143: client-side page navigation must clear the previous page's filter and hidden DOM state.
-    await h.click('.site-nav a:has-text("학생 작품")');
+    // 126차(ADR 0046): 학생 작품은 '프로젝트' 아래 하위 쪽 — 상위 메뉴에 손을 대면 하위 판이 열린다
+    await h.hover('.site-nav-tree > li:has(> a:text-is("프로젝트")) > a');
+    await h.click('.site-nav-tree .site-subnav a:text-is("학생 작품")');
+    await h.waitForURL(/page=works/);
+    assert.equal(await h.getAttribute('.site-nav-tree > li:has(> a:text-is("프로젝트")) > a', 'aria-current'), 'true');
     await h.locator('.sec-filter-bar button', { hasText: '예술' }).press('Enter');
     await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 2);
-    await h.click('.site-nav a:has-text("프로젝트")');
+    await h.click('.site-nav-tree > li > a:text-is("프로젝트")');
     await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 3);
     assert.equal(await h.getAttribute('.sec-filter-bar button:first-child', 'aria-pressed'), 'true');
     await h.locator('.sec-filter-bar button', { hasText: '3~4학년' }).click();

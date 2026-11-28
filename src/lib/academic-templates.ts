@@ -153,7 +153,7 @@ export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabC
   return c;
 }
 
-/** 126차: 학교 AI 맞춤 지시문에 넣을 학교 사본 요약(템플릿이 아니라 지금 학교 값). 고른 템플릿이 없으면 null */
+/** 127차: 학교 AI 맞춤 지시문에 넣을 학교 사본 요약(템플릿이 아니라 지금 학교 값). 고른 템플릿이 없으면 null */
 export async function schoolCopySummary(db: Db, schoolId: string, lang = 'ko') {
   const p = await schoolProfile(db, schoolId);
   if (!p?.template_key || p.template_version == null) return null;

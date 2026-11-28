@@ -112,7 +112,7 @@ export default async function TemplatesPage() {
         </ol>
       </section>
 
-      {/* 126차: 템플릿으로 만든 학교 사본을 학교 구독 AI가 학교 자료(성적표·규정)에 맞추도록 지시문을 건넨다(ADR 0043 5단계) */}
+      {/* 127차: 템플릿으로 만든 학교 사본을 학교 구독 AI가 학교 자료(성적표·규정)에 맞추도록 지시문을 건넨다(ADR 0043 5단계) */}
       {admin && copy && (
         <section className="card stack" data-testid="tpl-ai-guide">
           <h2>{t('tplAi.title')}</h2>

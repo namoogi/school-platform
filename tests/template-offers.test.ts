@@ -141,7 +141,7 @@ describe('템플릿 새 판 제안', () => {
     expect(await count(A)).toBe(1);
   });
 
-  it('학교 AI 맞춤 지시문은 템플릿이 아니라 지금 학교 사본 값을 요약한다(126차)', async () => {
+  it('학교 AI 맞춤 지시문은 템플릿이 아니라 지금 학교 사본 값을 요약한다(127차)', async () => {
     const c = await asUser(B.userId, (db) => at.schoolCopySummary(db, B.schoolId, 'ko'));
     expect(c).toMatchObject({ template: { key: 'kr_general', version: 1 }, scheme: 'kr', periods: ['1학기', '2학기'] });
     expect(c!.scales.map((x) => x.code)).toEqual(expect.arrayContaining(['kr_achievement', 'kr_elective', 'kr_pf_v5']));

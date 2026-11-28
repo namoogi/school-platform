@@ -6,7 +6,7 @@ import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, Plus, Trash2 } from 'lucide-react';
-import { LANG_LABEL, LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
+import { ANCHOR_BLOCKS, LANG_LABEL, LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
 import { usePhotoConsent, PublishCancelled } from '@/components/site/PhotoConsent';
 import { useI18n } from '@/components/I18nProvider';
 import type { MsgKey } from '@/lib/i18n/catalog';
@@ -225,7 +225,10 @@ function AssetPick({ value, onChange, assets, onUploaded, label, pdf = false, la
   );
 }
 
-export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, publicHref }: { detail: Detail; langs: Lang[]; canPublish: boolean; assets: Asset[]; publicHref: string | null }) {
+export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, publicHref, menuParents = [] }: {
+  detail: Detail; langs: Lang[]; canPublish: boolean; assets: Asset[]; publicHref: string | null;
+  /** 126차(ADR 0046): 상위 메뉴로 고를 수 있는 쪽(이 쪽·홈 제외) */ menuParents?: { key: string; title: string }[];
+}) {
   const router = useRouter();
   const { t, locale } = useI18n();
   const latest = detail.versions[0];
@@ -299,6 +302,16 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
         <LangFields label={t('site.field.title')} value={content.title} langs={langs} onChange={(title) => setContent({ ...content, title })} />
         <LangFields label={t('site.field.summary')} value={content.summary} langs={langs} multiline onChange={(summary) => setContent({ ...content, summary })} />
         <AssetPick label={t('site.field.cover')} value={content.cover} assets={assets} onUploaded={uploaded} onChange={(cover) => setContent({ ...content, cover: cover || undefined })} />
+        {detail.entry.kind === 'page' && detail.entry.key !== 'home' && (
+          <label>{t('site.menu.parent')}
+            <select value={content.menu?.parent ?? ''} data-testid="menu-parent"
+              onChange={(e) => setContent({ ...content, menu: e.target.value ? { parent: e.target.value } : undefined })}>
+              <option value="">{t('site.menu.parentNone')}</option>
+              {menuParents.map((p) => <option key={p.key} value={p.key}>{p.title}</option>)}
+              <option value="news">{t('site.menu.parentNews')}</option>
+            </select>
+          </label>
+        )}
       </div>
       {detail.entry.kind === 'page' && detail.entry.key === 'home' && (
         <ProfileFields value={content.site ?? {}} langs={langs} assets={assets} onUploaded={uploaded} onChange={(site) => setContent({ ...content, site })} />
@@ -339,6 +352,13 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
             </>}
             {b.type === 'gallery' && b.items && <p className="fine">{t('site.gallery.itemsNote', { n: b.items.length, filters: b.filters ? t('site.gallery.filters', { n: b.filters.length }) : '' })}</p>}
             {b.type === 'section' && <SectionFields b={b} langs={langs} assets={assets} onUploaded={uploaded} onChange={(nb) => setBlock(i, nb)} />}
+            {detail.entry.kind === 'page' && (ANCHOR_BLOCKS as readonly string[]).includes(b.type) && (
+              <label>{t('site.menu.anchor')}
+                <input value={b.anchor ?? ''} maxLength={40} pattern="[a-z][a-z0-9\-]*" data-testid="block-anchor" aria-describedby={`anchor-hint-${i}`}
+                  onChange={(e) => setBlock(i, { ...b, anchor: e.target.value.trim().toLowerCase() || undefined })} />
+                <span className="fine" id={`anchor-hint-${i}`}>{t('site.menu.anchorHint')}</span>
+              </label>
+            )}
             {b.type === 'inquiry' && <>
               <LangFields label={t('site.inqBlock.title')} value={b.title} langs={langs} onChange={(title) => setBlock(i, { ...b, title })} />
               <LangFields label={t('site.inqBlock.body')} value={b.body} langs={langs} multiline onChange={(body) => setBlock(i, { ...b, body })} />

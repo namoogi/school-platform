@@ -57,7 +57,9 @@ export type Block = (
   | { type: 'download'; asset: string; label?: LText; note?: LText; file_name?: string; size_bytes?: number }
   /** 91차(ADR 0036): 방문·상담 신청 칸. 학교가 설정에서 '신청 받기'를 켰을 때만 방문자에게 보인다 */
   | { type: 'inquiry'; title?: LText; body?: LText }
-) & { hidden?: boolean };
+) & { hidden?: boolean;
+  /** 126차(ADR 0046): 메뉴 주소. 있으면 이 구역이 그 쪽 상위 메뉴 아래 하위 메뉴로 보이고 `/p/쪽#주소`로 바로 간다 */
+  anchor?: string };
 
 /** 사이트 머리·바닥 정보. 'home' 쪽 내용에 두어 판·공개 흐름을 그대로 따른다(로고 그림도 공개된 판이 가리킬 때만 보임). */
 export type SiteProfile = {
@@ -65,7 +67,57 @@ export type SiteProfile = {
 };
 /** 쪽 머리 꾸밈(dawn): 작은 머리말과 화면 모양. 42차: 여는 머리의 링크(link)와 표지 사진 날짜표(note) */
 export type PageHead = { eyebrow?: LText; layout?: 'editorial' | 'opening'; link?: Button; note?: LText };
-export type Content = { title: LText; summary?: LText; cover?: string; blocks: Block[]; site?: SiteProfile; head?: PageHead };
+/** 126차(ADR 0046): 이 쪽이 들어갈 상위 메뉴. 다른 쪽의 주소 이름이나 'news'(소식). 비우면 상위 메뉴 자신 */
+export type PageMenu = { parent?: string };
+export type Content = { title: LText; summary?: LText; cover?: string; blocks: Block[]; site?: SiteProfile; head?: PageHead; menu?: PageMenu };
+
+/** 공개 사이트 메뉴 재료: 공개된 쪽 하나(홈 제외)와 그 쪽의 상위 메뉴·메뉴 주소가 있는 구역 */
+export type NavEntry = { key: string; title: LText; parent?: string | null; sections?: { anchor: string; title: LText }[] };
+export type NavNode = { key: string; href: string; title: LText; children: { key: string; href: string; title: LText }[] };
+/** 쪽 내용들에서 메뉴 재료를 만든다(템플릿 미리보기처럼 DB 없이 그릴 때). 공개 사이트는 app.public_site가 같은 규칙으로 만든다 */
+/** 한 쪽 내용에서 메뉴에 실을 구역. app.public_site(private.site_menu_sections)와 같은 규칙:
+ *  숨김·방문자에게 그려지지 않는 구역(닫힌 신청 칸, 소식 없는 소식 목록)은 빼고, 제목이 있는 것만 */
+export function menuSectionsOf(content: Content, shown: { inquiry: boolean; news: boolean }): { anchor: string; title: LText }[] {
+  const visible = (b: Block) => b.anchor && !b.hidden && (b.type !== 'inquiry' || shown.inquiry) && (b.type !== 'news_list' || shown.news)
+    && Object.values(anchorTitle(b) ?? {}).some(Boolean);
+  return content.blocks.filter(visible).map((b) => ({ anchor: b.anchor!, title: anchorTitle(b)! }));
+}
+export function navEntriesOf(pages: { key: string; content: Content }[], shown: { inquiry: boolean; news: boolean }): NavEntry[] {
+  return pages.filter((p) => p.key !== 'home').map((p) => ({
+    key: p.key, title: p.content.title, parent: p.content.menu?.parent ?? null, sections: menuSectionsOf(p.content, shown),
+  }));
+}
+/** 메뉴 주소를 달 수 있는 블록(제목이 있고 화면 요소로 그려지는 것)과 그 메뉴 이름 */
+export const ANCHOR_BLOCKS = ['section', 'heading', 'news_list', 'inquiry'] as const;
+export function anchorTitle(b: Block): LText | undefined {
+  if (b.type === 'heading') return b.text;
+  if (b.type === 'section' || b.type === 'news_list' || b.type === 'inquiry') return b.title;
+  return undefined;
+}
+/** 메뉴 주소로 쓸 수 없는 이름(화면에 이미 있는 id) */
+export const RESERVED_ANCHORS = ['site-main'];
+
+/**
+ * 126차(ADR 0046): 두 단계 메뉴 나무. 상위 = 상위 메뉴가 없는(또는 없는 쪽을 가리키는) 쪽, 'news'(소식이 있을 때).
+ * 하위 = 그 쪽의 메뉴 주소 구역(쪽 안 순서) 다음에 그 쪽을 상위로 둔 쪽들(메뉴 순서). 한 단계만: 하위 쪽의 구역·하위는 펴지 않는다.
+ * pageHref(key, anchor?)로 링크를 만든다. news는 소식 목록 링크와 제목을 받는다.
+ */
+export function buildNavTree(entries: NavEntry[], pageHref: (key: string, anchor?: string) => string, news?: { href: string; title: LText }): NavNode[] {
+  // 'news'는 늘 소식 목록(상위 '소식')을 뜻한다. 주소 이름이 news인 쪽이 있어도 그 쪽은 상위 메뉴가 되지 못한다(한 쪽 = 한 부모)
+  const keys = new Set(entries.map((e) => e.key).filter((k) => k !== 'news'));
+  const parentOf = (e: NavEntry) => {
+    if (!e.parent || e.parent === e.key) return null;
+    if (e.parent === 'news') return news ? 'news' : null;
+    return keys.has(e.parent) && !entries.find((x) => x.key === e.parent)?.parent ? e.parent : null;
+  };
+  const childPages = (k: string) => entries.filter((e) => parentOf(e) === k).map((e) => ({ key: `p:${e.key}`, href: pageHref(e.key), title: e.title }));
+  const tops: NavNode[] = entries.filter((e) => !parentOf(e)).map((e) => ({
+    key: `p:${e.key}`, href: pageHref(e.key), title: e.title,
+    children: [...(e.sections ?? []).map((s) => ({ key: `p:${e.key}#${s.anchor}`, href: pageHref(e.key, s.anchor), title: s.title })), ...(e.key === 'news' ? [] : childPages(e.key))],
+  }));
+  if (news) tops.push({ key: 'news', href: news.href, title: news.title, children: childPages('news') });
+  return tops;
+}
 export type EntryKind = 'page' | 'news' | 'story';
 export const KIND_LABEL: Record<EntryKind, string> = { page: '쪽', news: '소식', story: '성품 동화' };
 export const BLOCK_LABEL: Record<Block['type'], string> = {

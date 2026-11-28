@@ -3100,6 +3100,15 @@ export const CATALOG = {
   'academics.tab.terms': '학기 구조',
   'academics.tab.years': '학년도·학기',
   'academics.tab.templates': '템플릿',
+  // 126차: 두 단계 메뉴
+  'site.menu.parent': '상위 메뉴',
+  'site.menu.parentNone': '없음 — 이 쪽이 상위 메뉴',
+  'site.menu.parentNews': '소식',
+  'site.menu.anchor': '메뉴 주소 (비우면 메뉴에 안 보임)',
+  'site.menu.anchorHint': '영문 소문자·숫자·하이픈. 이 쪽 상위 메뉴 아래 하위 메뉴로 보이고, 누르면 이 구역으로 바로 옵니다.',
+  'err.site.anchorFormat': '{n}번째 블록: 메뉴 주소는 영문 소문자로 시작하고 영문 소문자·숫자·하이픈 40자 이하로 씁니다.',
+  'err.site.anchorDuplicate': '메뉴 주소 \'{anchor}\'가 이 쪽에 두 번 있습니다.',
+  'err.site.menuParent': '상위 메뉴는 다른 쪽의 주소 이름이나 news(소식)여야 합니다.',
   // 125차 템플릿 새 판 제안
   'tplOffer.title': '템플릿 새 판 제안',
   'tplOffer.lead': '관제가 우리 학교 템플릿의 새 판을 냈습니다. 수락하면 빠진 것만 더하고, 학교가 정한 값은 그대로 둡니다. 보류·거절해도 학교 사본은 바뀌지 않습니다.',
@@ -3125,7 +3134,7 @@ export const CATALOG = {
   // 125차 템플릿 새 판 제안 기록
   'tplOffer.history': '결정 기록 {n}건',
   'tplOffer.versionsShort': '{from}판 → {to}판',
-  // 126차 학교 AI로 템플릿 맞추기
+  // 127차 학교 AI로 템플릿 맞추기
   'tplAi.title': '학교 AI로 우리 학교에 맞추기',
   'tplAi.lead': '템플릿은 시작점입니다. 학교 성적표·평가 규정에 맞추는 분석은 학교가 쓰는 AI(구독)가 하고, 저장은 학교 관리자가 화면에서 새 판으로 합니다.',
   'tplAi.step1': '아래 지시문을 복사해 학교 AI 대화창에 붙여 넣습니다(지금 학교 사본과 할 일이 담겨 있습니다).',
@@ -3143,6 +3152,8 @@ export const CATALOG = {
   'tplOffer.confirm': '결정을 남길까요? \'수락\'이면 {name} {to}판을 지금 적용해 위의 \'수락하면 더해지는 것\'을 학교 사본에 더합니다(학교 값은 그대로).',
   // tplAi
   'tplAi.tokenNoHomepage': '학사 꾸러미 작업 토큰은 홈페이지 기능의 AI 작업 공간에서 발급합니다. 이 학교는 홈페이지 기능이 꺼져 있어, 대화창의 ‘새 대화’로 관제에 발급을 요청합니다.',
+  // 126차: 두 단계 메뉴
+  'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
