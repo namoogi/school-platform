@@ -55,3 +55,13 @@
 | 좌석 | Seat | ที่นั่ง |
 | 저장 | Save | บันทึก |
 | 취소 | Cancel | ยกเลิก |
+| 갈래 | Track | สายการเรียน |
+| 기수 | Cohort | รุ่น |
+| 역량 / 역량 틀 | Competency / framework | สมรรถนะ / กรอบสมรรถนะ |
+| 기본판 | Base version | ฉบับพื้นฐาน |
+| 출력 프로필 | Output profile | โปรไฟล์เอกสาร |
+| 공개 거부 | Directory opt-out | การปฏิเสธการเปิดเผยข้อมูล |
+| 폐기(토큰) | Revoke | เพิกถอน |
+| 지침(연구소) | Instruction | คำแนะนำ |
+| 지시(관제) | Directive | คำสั่ง |
+| 격리 등급 | Isolation tier | ใช้ร่วม / ขยาย / เฉพาะ / อิสระ |
