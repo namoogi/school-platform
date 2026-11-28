@@ -106,6 +106,12 @@ async function exportSnapshot(db, key) {
   const baselineIds = new Set([...(tables.school_baselines ?? []).map((r) => r.version), ...(tables.baseline_offers ?? []).map((r) => r.to_version)]);
   const { rows: [{ data: baselines }] } = await db.query(
     `select coalesce(json_agg(b), '[]'::json) as data from public.baselines b where b.version = any($1::int[])`, [[...baselineIds].filter((v) => v != null)]);
+  // 125차: 학교 관할 판이 가리키는 학사 관리 템플릿 판(관제 표). 운영 중에 낸 판이 대상 DB에 없을 수 있어 함께 옮긴다
+  const tplPairs = [...new Set((tables.school_profiles ?? []).filter((r) => r.template_key && r.template_version != null)
+    .map((r) => `${r.template_key}:${r.template_version}`))].map((x) => { const [k, v] = x.split(':'); return { k, v: Number(v) }; });
+  const { rows: [{ data: academicTemplates }] } = await db.query(
+    `select coalesce(json_agg(t order by t.key, t.version), '[]'::json) as data from public.academic_templates t
+      join json_to_recordset($1::json) as p(k text, v int) on p.k = t.key and p.v = t.version`, [JSON.stringify(tplPairs)]);
   return {
     format: 'school-move/1',
     exported_at: new Date().toISOString(),
@@ -114,6 +120,7 @@ async function exportSnapshot(db, key) {
     school: JSON.parse(JSON.stringify(school)),
     users: exported,
     baselines,
+    academic_templates: academicTemplates,
     normalized,
     tables,
   };
@@ -191,6 +198,20 @@ async function identityCollisions(db, bundle) {
  *   옛 연결이 새 로그인과 맞지 않아 거부되므로, 비워 두고 첫 로그인 때 확인된 메일로 다시 잇는다(초대와 같은 길, src/lib/google.ts).
  *   'keep' 은 같은 로그인 서버를 계속 쓸 때(전용형 + 공용 로그인)만.
  */
+// 125차 학사 관리 템플릿: 같은 키·판인데 내용 칸(내용·제목·설명·바뀐 이유·순서)이 하나라도 다르면 넣지 않는다.
+// 넣기 트랜잭션 안에서 새 판 내기(app.publish_academic_template)와 같은 키 잠금을 잡고 본다(그 사이 공개된 판을 놓치지 않게, Codex 199번 PR 검토)
+async function checkTemplates(db, templates) {
+  const snap = (x) => JSON.stringify(sortKeys({ manifest: x.manifest, title: x.title, summary: x.summary, why: x.why ?? null, sort_order: x.sort_order }));
+  // 키 잠금은 정렬·중복 제거한 순서로 먼저 모두 잡는다(동시에 두 학교를 옮겨도 서로 기다리다 멈추지 않게, Codex 199번 PR 검토)
+  for (const key of [...new Set(templates.map((t) => t.key))].sort()) {
+    await db.query(`select pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext($1))`, [key]);
+  }
+  for (const t of templates) {
+    const { rows: [d] } = await db.query('select manifest, title, summary, why, sort_order from public.academic_templates where key = $1 and version = $2', [t.key, t.version]);
+    if (d && snap(d) !== snap(t)) throw new Error(`대상의 학사 관리 템플릿 ${t.key} ${t.version}판이 원본과 내용이 다릅니다. 템플릿을 맞춘 뒤 넣으세요.`);
+  }
+}
+
 export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) {
   if (!['reset', 'keep'].includes(auth)) throw new Error('로그인 연결은 reset·keep 중 하나입니다.');
   if (bundle.format !== 'school-move/1') throw new Error('묶음 형식이 다릅니다.');
@@ -225,6 +246,8 @@ export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) 
   try {
     await db.query('set local session_replication_role = replica');
     await insertRows(db, 'public', 'baselines', bundle.baselines, { onConflictNothing: true });
+    await checkTemplates(db, bundle.academic_templates ?? []);
+    await insertRows(db, 'public', 'academic_templates', bundle.academic_templates ?? [], { onConflictNothing: true });
     await insertRows(db, 'private', 'app_users', auth === 'reset' ? bundle.users.map((u) => ({ ...u, auth_subject: null })) : bundle.users, { onConflictNothing: true });
     await insertRows(db, 'public', 'schools', [school]);
     const counts = {};
