@@ -34,7 +34,7 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
   const site: PublicSite = {
     slug: `template-${t.key}`, school: view === 'sample' ? sample.school : '[학교 이름]', default_lang: fallback, langs: t.langs as Lang[], theme: t.theme,
     title: home.title, stories: false, has_news: false,
-    nav: navEntriesOf(t.pages.map((p) => ({ key: p.key, content: pages[p.key] }))),
+    nav: navEntriesOf(t.pages.map((p) => ({ key: p.key, content: pages[p.key] })), { inquiry: true, news: view === 'sample' }),
   };
   const link = (path: string) => {
     if (path === '/' || path === '') return href({ page: 'home' });
