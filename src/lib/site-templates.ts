@@ -331,7 +331,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ anchor: 'safeguarding', template: 'text', title: { en: 'Safeguarding', ko: '아동 보호', th: 'การคุ้มครองเด็ก' }, body: { en: '[Intl safeguarding]' } }),
       ]),
       page('curriculum', 2, { en: 'Curriculum', ko: '교육과정', th: 'หลักสูตร' }, [
-        section({ anchor: 'pathway', template: 'steps', title: { en: 'Pathway', ko: '경로' }, // 127차: 경로는 세 단계, 학비는 세 줄(실제 안내 길이)
+        section({ anchor: 'pathway', template: 'steps', title: { en: 'Pathway', ko: '경로' }, // 129차: 경로는 세 단계, 학비는 세 줄(실제 안내 길이)
           items: [1, 2, 3].map((i) => ({ title: { en: `[Intl stage ${i}]` }, body: { en: `[Intl stage ${i} programme]` } })) }),
         section({ anchor: 'languages', template: 'cards', title: { en: 'Language support', ko: '언어 지원', th: 'การสนับสนุนด้านภาษา' }, items: [1, 2].map((i) => ({ title: { en: `[Intl language ${i}]` }, body: { en: `[Intl language ${i} note]` } })) }),
       ]),
