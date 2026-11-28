@@ -110,7 +110,7 @@ async function exportSnapshot(db, key) {
   const tplPairs = [...new Set((tables.school_profiles ?? []).filter((r) => r.template_key && r.template_version != null)
     .map((r) => `${r.template_key}:${r.template_version}`))].map((x) => { const [k, v] = x.split(':'); return { k, v: Number(v) }; });
   const { rows: [{ data: academicTemplates }] } = await db.query(
-    `select coalesce(json_agg(t), '[]'::json) as data from public.academic_templates t
+    `select coalesce(json_agg(t order by t.key, t.version), '[]'::json) as data from public.academic_templates t
       join json_to_recordset($1::json) as p(k text, v int) on p.k = t.key and p.v = t.version`, [JSON.stringify(tplPairs)]);
   return {
     format: 'school-move/1',
@@ -202,8 +202,11 @@ async function identityCollisions(db, bundle) {
 // 넣기 트랜잭션 안에서 새 판 내기(app.publish_academic_template)와 같은 키 잠금을 잡고 본다(그 사이 공개된 판을 놓치지 않게, Codex 199번 PR 검토)
 async function checkTemplates(db, templates) {
   const snap = (x) => JSON.stringify(sortKeys({ manifest: x.manifest, title: x.title, summary: x.summary, why: x.why ?? null, sort_order: x.sort_order }));
+  // 키 잠금은 정렬·중복 제거한 순서로 먼저 모두 잡는다(동시에 두 학교를 옮겨도 서로 기다리다 멈추지 않게, Codex 199번 PR 검토)
+  for (const key of [...new Set(templates.map((t) => t.key))].sort()) {
+    await db.query(`select pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext($1))`, [key]);
+  }
   for (const t of templates) {
-    await db.query(`select pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext($1))`, [t.key]);
     const { rows: [d] } = await db.query('select manifest, title, summary, why, sort_order from public.academic_templates where key = $1 and version = $2', [t.key, t.version]);
     if (d && snap(d) !== snap(t)) throw new Error(`대상의 학사 관리 템플릿 ${t.key} ${t.version}판이 원본과 내용이 다릅니다. 템플릿을 맞춘 뒤 넣으세요.`);
   }
