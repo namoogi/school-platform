@@ -28,7 +28,7 @@
 - `src/lib/template-offers.ts`: 제안 목록, 미리 보기 `planTemplate`(적용 규칙과 같음), 결정 `decideTemplateOffer`, 관제 `publishAcademicTemplate`.
 - API: `POST /api/academics` `template-offer`, `POST /api/admin/academic-templates`(관제 새 판 내기).
 - 화면: 템플릿 화면 맨 위 제안 카드, 템플릿 탭 옆 '새 판' 표시, 새 판 카드의 버튼은 '새 판 제안 보기'(갱신하는 길은 제안 수락 하나).
-- 이름표 29개(ko·en, DB 안내 5개 포함). 같은 템플릿의 다른 판으로 바로 적용하는 길은 막음(제안 수락만), 지난 제안(학교가 이미 그 판 이상)은 숨기고 결정 거부, 함께 닫힌 제안은 `included_in` 판 번호(Codex 199번 PR 검토).
+- 이름표 29개(ko·en, DB 안내 5개 포함). 같은 템플릿의 다른 판으로 바로 적용하는 길은 막음(제안 수락만), 지난 제안(학교가 이미 그 판 이상)은 숨기고 결정 거부, 함께 닫힌 제안은 `included_in` 판 번호. DB 수락은 '이 트랜잭션에서 낮은 판 → 그 판으로 적용됨'을 확인하고, 학교 관할 판이 생길 때마다 트리거가 높은 판 제안을 만든다(Codex 199번 PR 검토).
 
 ## 시험
 - `tests/template-offers.test.ts` 5개: 쓰는 학교에만 제안·학교 사본 그대로·다른 학교 못 봄, 미리 보기, 보류·거절·낡은 판 409·다른 학교 거부·수락 적용, 적용 없는 수락 거부·낮은 판 제안 닫힘·다른 템플릿으로 바꾸면 거부, 지우기·직접 쓰기 막힘

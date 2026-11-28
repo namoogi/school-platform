@@ -98,6 +98,8 @@ describe('템플릿 새 판 제안', () => {
     expect((await asUser(B.userId, (db) => off.templateOffers(db, B.schoolId))).filter((x) => x.status !== 'accepted')).toEqual([]);
     await expect(asUser(B.userId, async (db) => off.decideTemplateOffer(db, B.schoolId, { offerId: o5, decision: 'accepted', base_version: await ver(B) }))).rejects.toThrow('지난 제안');
     await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'held')`, [B.schoolId, o5]))).rejects.toThrow('지난 제안');
+    // DB 함수를 직접 불러 '수락'만 남기는 것도 막힌다(이 트랜잭션에서 그 판으로 적용되지 않았음)
+    await expect(asUser(B.userId, (db) => db.query(`select app.decide_template_offer($1, $2, 'accepted')`, [B.schoolId, o5]))).rejects.toThrow('지난 제안');
     expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(5);
     // 함께 닫힌 제안은 언어와 상관없는 판 번호를 남긴다
     expect(after.find((x) => x.id === o3.id)!.included_in).toBe(4);
@@ -113,6 +115,14 @@ describe('템플릿 새 판 제안', () => {
     expect(o6.to_version).toBe(6);
     await asUser(B.userId, async (db) => off.decideTemplateOffer(db, B.schoolId, { offerId: o6.id, decision: 'accepted', base_version: await ver(B) }));
     expect((await asUser(B.userId, (db) => at.schoolTemplate(db, B.schoolId)))!.version).toBe(6);
+  });
+
+  it('옛 화면에서 본 낮은 판을 고르면, 이미 나온 높은 판 제안이 곧바로 생긴다', async () => {
+    // A는 홈스쿨을 쓰는 중. 한국 일반은 이미 6판까지 나왔는데, A가 예전에 본 1판 카드를 고른다(다른 템플릿으로 바꾸기)
+    await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'kr_general', version: 1, base_version: await ver(A) }));
+    const offers = (await asUser(A.userId, (db) => off.templateOffers(db, A.schoolId))).filter((x) => x.status !== 'accepted');
+    expect(offers).toHaveLength(1);
+    expect(offers[0]).toMatchObject({ from_version: 1, to_version: 6, status: 'offered' });
   });
 
   it('제안 행은 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {

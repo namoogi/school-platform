@@ -43,6 +43,25 @@ begin
 end $$;
 revoke all on function private.offer_academic_template(text, integer) from public, anon, authenticated;
 
+-- 학교 관할 판이 새로 생길 때마다(처음 고르기·다른 템플릿으로 바꾸기·옛 화면에서 본 판 고르기 등 어떤 길이든)
+-- 그 템플릿의 더 높은 판이 이미 있으면 제안을 만든다(새 판 공개와 학교 선택이 엇갈려도 빠지지 않게, Codex 199번 PR 검토)
+create or replace function private.offer_on_school_profile() returns trigger
+language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
+declare v integer;
+begin
+  if new.template_key is null or new.template_version is null then return null; end if;
+  select max(version) into v from public.academic_templates where key = new.template_key;
+  if v > new.template_version then
+    insert into public.academic_template_offers(school_id, template_key, from_version, to_version)
+    values (new.school_id, new.template_key, new.template_version, v)
+    on conflict (school_id, template_key, to_version) do nothing;
+  end if;
+  return null;
+end $$;
+revoke all on function private.offer_on_school_profile() from public, anon, authenticated;
+create trigger school_profiles_template_offer after insert on public.school_profiles
+  for each row execute function private.offer_on_school_profile();
+
 create or replace function app.publish_academic_template(p jsonb)
 returns integer language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
 declare k text := p ->> 'key'; v integer; so integer;
@@ -69,24 +88,32 @@ end $$;
 -- 거절·보류한 제안은 나중에 수락으로 바꿀 수 있다. 수락은 끝 상태다.
 create or replace function app.decide_template_offer(target uuid, offer uuid, decision text, decision_note text default null)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public, pg_temp as $$
-declare o record; cur record;
+declare o record; cur record; before record;
 begin
   if not app.is_school_admin(target) then raise exception '학교 관리자만 결정합니다.' using errcode = '42501'; end if;
   if decision not in ('accepted', 'declined', 'held') then raise exception '결정은 accepted·declined·held 입니다.' using errcode = '22023'; end if;
   select * into o from public.academic_template_offers where id = offer and school_id = target for update;
   if o.id is null then raise exception '템플릿 새 판 제안을 찾을 수 없습니다.' using errcode = 'P0002'; end if;
   if o.status = 'accepted' then raise exception '이미 수락한 제안입니다.' using errcode = 'P0409'; end if;
-  select template_key, template_version into cur from public.school_profiles where school_id = target order by version desc limit 1;
-  if cur.template_key is distinct from o.template_key then
-    raise exception '학교가 다른 템플릿으로 바꿔 이 제안은 쓸 수 없습니다.' using errcode = 'P0409';
-  end if;
+  -- 이 트랜잭션 전의 학교 판(before)과 지금 판(cur). 관할 판의 created_at 은 트랜잭션 시작 시각(now())이다
+  select template_key, template_version, created_at into cur from public.school_profiles where school_id = target order by version desc limit 1;
+  select template_key, template_version into before from public.school_profiles where school_id = target and created_at < now() order by version desc limit 1;
   if decision = 'accepted' then
-    if cur.template_version < o.to_version then
+    -- 수락은 '이 트랜잭션에서 그 템플릿의 낮은 판 → 바로 이 판'으로 적용된 경우만(적용 없이 기록만 남기거나 지난 제안을 수락하지 못하게, Codex 199번 PR 검토)
+    if before.template_key is distinct from o.template_key or cur.template_key is distinct from o.template_key then
+      raise exception '학교가 다른 템플릿으로 바꿔 이 제안은 쓸 수 없습니다.' using errcode = 'P0409';
+    end if;
+    if before.template_version >= o.to_version then
+      raise exception '학교가 이미 그 판 이상을 써서 지난 제안입니다.' using errcode = 'P0409';
+    end if;
+    if cur.created_at <> now() or cur.template_version <> o.to_version then
       raise exception '템플릿 새 판을 먼저 적용해야 수락할 수 있습니다.' using errcode = '22023';
     end if;
     -- 더 낮은 판의 열린 제안은 이번 판에 함께 담겼다
     update public.academic_template_offers set status = 'accepted', included_in = o.to_version, decided_by = app.uid(), decided_at = now()
      where school_id = target and template_key = o.template_key and to_version < o.to_version and status <> 'accepted';
+  elsif cur.template_key is distinct from o.template_key then
+    raise exception '학교가 다른 템플릿으로 바꿔 이 제안은 쓸 수 없습니다.' using errcode = 'P0409';
   elsif cur.template_version >= o.to_version then
     -- 학교가 이미 그 판 이상을 쓰면(다른 템플릿을 거쳐 최신 판으로 돌아온 경우 등) 지난 제안이다(Codex 199번 PR 검토)
     raise exception '학교가 이미 그 판 이상을 써서 지난 제안입니다.' using errcode = 'P0409';
