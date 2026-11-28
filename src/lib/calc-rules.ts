@@ -46,7 +46,7 @@ export function previewCalc(spec: unknown, samples: unknown): { issues: ReturnTy
 }
 
 /**
- * 128차: 계산식 편집 화면이 저장 전에 돌리는 경계값 견본(학생 자료 없음).
+ * 130차: 계산식 편집 화면이 저장 전에 돌리는 경계값 견본(학생 자료 없음).
  * 89.5 = A/B(90) 반올림 경계, 59.5 = 이수(60) 반올림 경계, 39.5 = 미이수(40) 반올림 경계. 평가 항목 하나(total, 만점 100)·출석 100%
  */
 export const BOUNDARY_SCORES = [89.5, 59.5, 39.5] as const;

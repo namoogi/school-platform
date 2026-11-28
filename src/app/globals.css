@@ -2505,7 +2505,7 @@ label.check input { margin-top: 0.25em; }
 .form-grid > .ff[data-size="lg"] { width: 24rem; }
 .form-grid > .ff[data-size="full"] { flex-basis: 100%; width: 100%; }
 .form-grid[data-stack] > .ff[data-size="full"] { width: 100%; }
-/* 128차: 위아래 배치는 한 줄로 쌓는다. 세로 방향에서 flex-basis 100%가 높이로 읽혀 긴 칸·결과가 옆 열로 밀리던 것을 막는다 */
+/* 130차: 위아래 배치는 한 줄로 쌓는다. 세로 방향에서 flex-basis 100%가 높이로 읽혀 긴 칸·결과가 옆 열로 밀리던 것을 막는다 */
 .form-grid[data-stack] { flex-wrap: nowrap; }
 .form-grid[data-stack] > * { flex-basis: auto; }
 .form-grid[data-stack] > :is(.preview-result, [role=status]) { width: 100%; }
@@ -2531,7 +2531,7 @@ label.check input { margin-top: 0.25em; }
 
 /* 127차: 템플릿 화면 'AI로 맞추기' 세 단계(번호 목록) */
 .guide-steps { margin: 0; padding-left: var(--ds-space-5); display: grid; gap: var(--ds-space-1); }
-/* 128차: JSON 칸(AI 초안 붙여 넣기)과 저장 전 미리 계산 표 — 양식 줄 전체를 쓴다 */
+/* 130차: JSON 칸(AI 초안 붙여 넣기)과 저장 전 미리 계산 표 — 양식 줄 전체를 쓴다 */
 .form-grid .json-input textarea { font-family: var(--font-mono); font-size: var(--fs-caption); line-height: 1.5; }
 .form-grid > .preview-result { flex-basis: 100%; display: grid; gap: var(--ds-space-2); min-width: 0; }
 .preview-result[data-stale] { opacity: .6; }

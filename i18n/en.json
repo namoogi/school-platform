@@ -3153,5 +3153,9 @@
   "err.grade.bandCredit": "earns_credit of band {code} must be true or false (without quotes).",
   "err.grade.bandField": "Band {code} has an unknown field {key}. Accepted fields: {keys}",
   "err.grade.bandDupMin": "More than one band has the minimum {min}. Give each band a different minimum.",
-  "err.grade.scaleKindChange": "The kind ({kind}) of scale {code} cannot change. Create a new code for another kind."
+  "err.grade.scaleKindChange": "The kind ({kind}) of scale {code} cannot change. Create a new code for another kind.",
+  "usage.clearDb": "Empty DB copies (25 at a time, {n} left)",
+  "usage.clearConfirm": "This empties the DB copies of {n} files that already exist in R2 with the same content. It cannot be undone (files remain only in R2). Continue?",
+  "usage.clearResult": "Emptied {cleared} DB copies · skipped {skipped} (content differs) · {left} copies left",
+  "usage.clearNoR2": "R2 is not configured, so DB copies cannot be emptied."
 }

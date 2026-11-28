@@ -3154,7 +3154,7 @@ export const CATALOG = {
   'tplAi.tokenNoHomepage': '학사 꾸러미 작업 토큰은 홈페이지 기능의 AI 작업 공간에서 발급합니다. 이 학교는 홈페이지 기능이 꺼져 있어, 대화창의 ‘새 대화’로 관제에 발급을 요청합니다.',
   // 126차: 두 단계 메뉴
   'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
-  // 128차 학사 설정 편집(척도·정책·계산식·출력 프로필)
+  // 130차 학사 설정 편집(척도·정책·계산식·출력 프로필)
   'form.jsonInvalid': '‘{field}’ 칸의 JSON을 읽지 못했습니다. 괄호·따옴표·쉼표를 확인해 주세요.',
   'gset.whyPlaceholder': '예: 학업성적관리규정 제12조 — 성취도 구간 변경',
   'gset.kind': '종류',
@@ -3208,19 +3208,25 @@ export const CATALOG = {
   'err.grade.policyUnknown': '성적 정책에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.rec.profileFormat': '출력 프로필 {code}는 이 서식용이 아닙니다.',
   'err.rec.profileSettings': '출력 프로필 설정은 JSON 객체({ … })여야 합니다.',
-  // 128차 Codex 검토
+  // 130차 Codex 검토
   'err.grade.bandFloor': '척도에 0점까지 덮는 바닥 구간(min 0)이 있어야 합니다. 없으면 그 아래 점수는 등급 없이 이수로 마감됩니다.',
   'err.rec.profileUnknown': '이 서식의 출력 프로필에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.rec.profileField': '출력 프로필의 {key} 칸 값이 올바르지 않습니다.',
-  // 128차 Codex 검토 2
+  // 130차 Codex 검토 2
   'err.rec.profileScale': '학교에 {code} 척도가 없습니다. 성적 화면의 척도 코드를 적어 주세요.',
-  // 128차 Codex 검토 4
+  // 130차 Codex 검토 4
   'err.grade.bandCredit': '척도 띠 {code}의 earns_credit은 true 또는 false(따옴표 없이)여야 합니다.',
-  // 128차 Codex 검토 5
+  // 130차 Codex 검토 5
   'err.grade.bandField': '척도 띠 {code}에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.grade.bandDupMin': '하한 {min}인 띠가 둘 이상입니다. 띠마다 하한을 다르게 적어 주세요.',
-  // 128차 Codex 검토 6
+  // 130차 Codex 검토 6
   'err.grade.scaleKindChange': '척도 {code}의 종류({kind})는 바꿀 수 없습니다. 다른 종류는 새 코드로 만들어 주세요.',
+  // R2 DB 사본 비우기 (128차)
+  'usage.clearDb': 'DB 사본 비우기 (25개씩, 남은 {n}개)',
+  'usage.clearConfirm': 'R2에 같은 내용이 있는 파일 {n}개의 DB 사본을 비웁니다. 되돌릴 수 없습니다(R2에만 남습니다). 계속할까요?',
+  // R2 DB 사본 비우기 (128차)
+  'usage.clearResult': 'DB 사본 {cleared}개 비움 · 내용이 달라 건너뜀 {skipped}개 · 남은 사본 {left}개',
+  'usage.clearNoR2': 'R2 설정이 없어 DB 사본을 비울 수 없습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

@@ -5,7 +5,7 @@ import { latestPolicy } from '@/lib/gradebook';
 
 /**
  * 73차: 성적(척도·정책 판·평가 항목·결과·서술·수업 마감 판). 권한(관리자·담당 교사)·마감 뒤 정정·판 충돌은 DB 명령 함수가 판정한다.
- * body.action: scale-preset | scale(128차 맞춤 척도 새 판) | policy | policy-full(128차 정책 전체) | assessment | archive-assessment | results | narrative | close(calcCode: ADR 0042) | remediation
+ * body.action: scale-preset | scale(130차 맞춤 척도 새 판) | policy | policy-full(130차 정책 전체) | assessment | archive-assessment | results | narrative | close(calcCode: ADR 0042) | remediation
  */
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
@@ -15,12 +15,12 @@ export async function POST(req: Request) {
         if (!Object.hasOwn(SCALE_PRESETS, b.preset)) throw new ValidationError('err.grade.unknownScale');
         return await saveScalePreset(db, school.id, b.preset);
       }
-      // 128차: 맞춤 척도(구간 경계·평점·이수 여부). 판은 추가만, 보고 고친 판(base_version)이 최신이 아니면 409
+      // 130차: 맞춤 척도(구간 경계·평점·이수 여부). 판은 추가만, 보고 고친 판(base_version)이 최신이 아니면 409
       case 'scale': {
         if (!(SCALE_KINDS as readonly string[]).includes(b.kind)) throw new ValidationError('err.grade.scaleKind');
         return await saveScale(db, school.id, { code: b.code, kind: b.kind, bands: b.bands, why: requireWhy(b.why), base_version: b.base_version }, { floor: true });
       }
-      // 128차: 성적 정책 전체(JSON). 화면의 세 칸 양식과 같은 판 줄에 쌓인다
+      // 130차: 성적 정책 전체(JSON). 화면의 세 칸 양식과 같은 판 줄에 쌓인다
       case 'policy-full':
         return { version: await saveGradingPolicy(db, school.id, checkGradingPolicy(b.policy), { why: requireWhy(b.why), base_version: b.base_version }) };
       case 'policy': {

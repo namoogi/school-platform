@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 }
 
 /**
- * { action: 'save', code, title, spec, why(필수, 128차), base_version } | { action: 'preview', spec, samples }
+ * { action: 'save', code, title, spec, why(필수, 130차), base_version } | { action: 'preview', spec, samples }
  * title 은 { ko, en } 또는 글 하나(화면 칸: 지금 화면 언어 칸으로 저장, 없으면 이름 그대로)
  */
 export async function POST(req: Request) {

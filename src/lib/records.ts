@@ -57,7 +57,7 @@ export async function recordClosures(db: Db, schoolId: string, personId: unknown
 
 // ── 출력 프로필 ──────────────────────────────────────────
 /**
- * 128차: 서식별 설정 칸 검사. 렌더러가 읽는 칸만, 그 모양대로 받는다(Codex #228: {bands:[null]} 이 저장되면 발행 때 서버 오류).
+ * 130차: 서식별 설정 칸 검사. 렌더러가 읽는 칸만, 그 모양대로 받는다(Codex #228: {bands:[null]} 이 저장되면 발행 때 서버 오류).
  * 모르는 서식은 여기서 보지 않고 DB가 거부한다.
  */
 const text = (v: unknown) => typeof v === 'string' && v.length <= 2000;
@@ -99,7 +99,7 @@ export async function saveOutputProfile(db: Db, schoolId: string, input: { forma
   const { rows: [r] } = await db.query('select app.save_output_profile($1, $2) as v', [schoolId, JSON.stringify(input)]);
   return r.v as { id: string; version: number };
 }
-/** 128차: 출력 프로필마다 최신 판(관리 화면·AI 지시문 요약이 같이 쓴다) */
+/** 130차: 출력 프로필마다 최신 판(관리 화면·AI 지시문 요약이 같이 쓴다) */
 export type OutputProfileRow = { id: string; code: string; format: Format; version: number; settings: Record<string, unknown>; why: string | null; created_at: string };
 export async function listOutputProfiles(db: Db, schoolId: string): Promise<OutputProfileRow[]> {
   return (await db.query<OutputProfileRow>(
@@ -113,7 +113,7 @@ async function profileSettings(db: Db, schoolId: string, code: string | undefine
     `select p.id, p.format, v.version, v.settings from public.output_profiles p join public.output_profile_versions v on v.profile_id = p.id
       where p.school_id = $1 and p.code = $2 order by v.version desc limit 1`, [schoolId, code]);
   if (!p) throw new NotFoundError('err.rec.profileNotFound');
-  // 서식마다 설정 칸이 달라 다른 서식의 프로필로 그리지 않는다(128차: 발행 양식에서 프로필을 고르게 되면서)
+  // 서식마다 설정 칸이 달라 다른 서식의 프로필로 그리지 않는다(130차: 발행 양식에서 프로필을 고르게 되면서)
   if (format && p.format !== format) throw new ValidationError('err.rec.profileFormat', { code });
   return p as { id: string; version: number; settings: Record<string, unknown> };
 }

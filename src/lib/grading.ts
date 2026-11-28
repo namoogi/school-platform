@@ -102,7 +102,7 @@ export async function subjectLabel(db: Db, schoolId: string, subjectId: unknown,
 
 // ── 척도·정책 ────────────────────────────────────────────
 export const SCALE_KINDS = ['letter', 'level', 'pass_fail', 'percent', 'points'] as const;
-/** 128차: 척도 띠 검사(화면·AI 초안 공통). 코드 겹침·숫자 아닌 하한/평점을 DB 전에 막는다. 표기가 없으면 코드를 표기로 쓴다 */
+/** 130차: 척도 띠 검사(화면·AI 초안 공통). 코드 겹침·숫자 아닌 하한/평점을 DB 전에 막는다. 표기가 없으면 코드를 표기로 쓴다 */
 const BAND_KEYS = ['code', 'label', 'min', 'points', 'earns_credit'];
 export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[] {
   // 띠 30개는 DB 칸 제한과 같게
@@ -160,7 +160,7 @@ export type GradingPolicy = {
   requests?: { due_days?: number };
 };
 /**
- * 128차: 성적 정책 전체 검사(화면 'JSON으로 고치기'·AI 초안). 플랫폼이 읽는 칸만 받는다 — 모르는 칸은 아무 데서도 쓰이지 않아 조용히 무시되므로 막는다.
+ * 130차: 성적 정책 전체 검사(화면 'JSON으로 고치기'·AI 초안). 플랫폼이 읽는 칸만 받는다 — 모르는 칸은 아무 데서도 쓰이지 않아 조용히 무시되므로 막는다.
  * 읽는 곳: 마감(score_digits·final_digits·stats·narrative_limits), 출결 요약(attendance), 열람 요청 기한(requests)
  */
 // gpa·rank 는 아무 데서도 읽지 않아 받지 않는다(평점·석차 숨김은 학교 관할 판 hidden_sections, Codex #228)
