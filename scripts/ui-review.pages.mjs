@@ -41,7 +41,7 @@ export const PAGES = {
   review: { login: 'admin-a', states: { default: '/review', rules: '/review?box=rules' } },
   documents: { login: 'admin-a', states: { default: '/documents' } },
   packages: { login: 'admin-a', states: { default: '/packages' } },
-  academics: { login: 'admin-a', states: { default: '/academics' } },
+  academics: { login: 'admin-a', states: { default: '/academics', terms: '/academics?tab=terms', years: '/academics?tab=years' } },
   'academic-templates': { login: 'admin-a', states: { default: '/academics/templates' } },
   people: { login: 'admin-a', states: { default: '/people' } },
   // filled·offering: `npm run ui:seed` 뒤에만 채워진다(없으면 목록 그대로 찍힘)

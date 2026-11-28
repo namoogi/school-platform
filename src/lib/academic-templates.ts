@@ -121,8 +121,8 @@ export async function setupChecklist(db: Db, schoolId: string): Promise<SetupSte
   return [
     { key: 'template', done: !!c.template, href: '/academics/templates' },
     { key: 'grades', done: Number(c.grades) > 0, href: '/academics' },
-    { key: 'terms', done: !!c.rule, href: '/academics' },
-    { key: 'year', done: Number(c.years) > 0 && Number(c.dated_terms) > 0, href: '/academics' },
+    { key: 'terms', done: !!c.rule, href: '/academics?tab=terms' },
+    { key: 'year', done: Number(c.years) > 0 && Number(c.dated_terms) > 0, href: '/academics?tab=years' },
     { key: 'calendar', done: Number(c.days) > 0, href: '/attendance' },
     { key: 'people', done: Number(c.enrolled) > 0 && Number(c.homerooms) > 0, href: '/people' },
     { key: 'courses', done: Number(c.offerings) > 0, href: '/courses' },
