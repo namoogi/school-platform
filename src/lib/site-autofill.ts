@@ -197,10 +197,13 @@ export function putProposal(content: Content, slot: Slot, value: Proposal['value
     return true;
   }
   if (Array.isArray(value)) {
-    p[field] = value.map((i) => {
+    // 115차(Codex 검토): 목록도 항목마다 찾은 언어 칸만 바꾸고, 같은 자리 항목의 다른 언어·링크·사진·분류는 남긴다
+    const prevItems = Array.isArray(cur) ? (cur as SectionItem[]) : [];
+    p[field] = value.map((i, k) => {
       const l = langOf(`${i.title} ${i.body}`);
-      const it: SectionItem = { title: { [l]: i.title } as LText };
-      if (i.body) it.body = { [l]: i.body } as LText;
+      const prev = prevItems[k] ?? ({} as SectionItem);
+      const it: SectionItem = { ...prev, title: { ...(prev.title ?? {}), [l]: i.title } as LText };
+      if (i.body) it.body = { ...(prev.body ?? {}), [l]: i.body } as LText;
       return it;
     });
     return true;

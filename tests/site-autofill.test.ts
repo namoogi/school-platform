@@ -102,4 +102,15 @@ describe('69차 운영 시험 반영', () => {
     expect(putProposal(home, slot, '가상시 새솔구 미래로 30')).toBe(true);
     expect(home.site?.address).toEqual({ ko: '가상시 새솔구 미래로 30', en: '[Address]' });
   });
+
+  it('115차: 두 언어 템플릿의 목록 칸도 영어 안내 자리를 남긴다', () => {
+    const t = templateByKey('admissions');
+    const home = structuredClone(t.pages.find((p) => p.key === 'home')!.content);
+    const slot = t.slots.find((s) => s.id === 'differences')!;
+    expect(putProposal(home, slot, [{ title: '작은 학급', body: '한 반 15명 이하' }, { title: '두 언어 수업', body: '국어·영어 주제 수업' }])).toBe(true);
+    const items = (home.blocks[slot.path[1] as number] as { items: { title: Record<string, string>; body?: Record<string, string> }[] }).items;
+    expect(items[0].title).toEqual({ ko: '작은 학급', en: '[Difference 1]' });
+    expect(items[0].body).toEqual({ ko: '한 반 15명 이하', en: '[One fact that shows it]' });
+    expect(items).toHaveLength(2);
+  });
 });
