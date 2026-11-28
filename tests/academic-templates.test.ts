@@ -119,6 +119,12 @@ describe('학사 관리 템플릿', () => {
     expect((await asUser(B.userId, (db) => at.listTemplates(db))).find((t) => t.key === 'us_k12')!.version).toBe(2);
     await expect(bad({ ...ok, scales: [{ code: 'pass_fail', preset: 'pass_fail' }, { code: 'pass_fail', preset: 'pass_fail' }] })).rejects.toThrow('템플릿 내용');
     await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', why: 'w'.repeat(501), bands: [{ code: 'A', label: { ko: 'A' }, min: 0 }] }] })).rejects.toThrow('템플릿 내용');
+    // 132차: 직접 정한 척도는 0점까지 덮는 바닥 띠(min ≤ 0)가 있어야 한다(없으면 낮은 점수가 등급 없이 이수로 마감됨)
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'A', label: { ko: 'A' }, min: 60 }] }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'level', bands: [{ code: 'A', label: { ko: 'A' }, min: 60 }, { code: 'B', label: { ko: 'B' }, min: null }] }] })).rejects.toThrow('템플릿 내용');
+    await expect(bad({ ...ok, scales: [{ code: 'x', kind: 'pass_fail', bands: [{ code: 'P', label: { ko: 'P' } }] }] })).rejects.toThrow('템플릿 내용');
+    // 시드 판은 모두 새 규칙을 지난다(제약을 다시 걸 때 모든 판을 다시 검사)
+    expect((await su.query(`select count(*)::int as n from public.academic_templates where not private.academic_template_ok(title, summary, manifest)`)).rows[0].n).toBe(0)
     // SCALE_PRESETS 와 DB 검사 목록이 같아야 한다(한쪽만 늘면 템플릿이 막히거나 적용이 깨짐)
     const { SCALE_PRESETS } = await import('@/lib/grading');
     const fn = (await su.query(`select prosrc from pg_proc where proname = 'academic_template_ok'`)).rows[0].prosrc as string;
@@ -126,9 +132,27 @@ describe('학사 관리 템플릿', () => {
     // 템플릿 판은 고칠 수 없다
     await expect(su.query(`update public.academic_templates set why = 'x'`)).rejects.toThrow();
   });
+  it('템플릿 적용 길도 바닥 띠 없는 척도를 거부한다(132차: DB 검사를 지나친 옛 판이 있어도 화면 길과 같은 규칙)', async () => {
+    // 규칙 이전에 들어간 판을 흉내: 제약을 잠시 빼고 바닥 띠 없는 판을 넣는다
+    const manifest = { grade_scheme: 'custom', levels: ['middle'], periods: [{ id: 'q1', label: 'Q1' }],
+      scales: [{ code: 'no_floor', kind: 'level', why: 'old', bands: [{ code: 'A', label: { en: 'A' }, min: 60 }, { code: 'B', label: { en: 'B' }, min: null }] }],
+      calc_samples: [], attendance: 'day', outputs: [], hide: [] };
+    await su.query(`alter table public.academic_templates drop constraint academic_templates_shape`);
+    try {
+      await su.query(`insert into public.academic_templates(key, version, title, summary, manifest) values ('no_floor', 1, '{"ko":"바닥 없음"}', '{}', $1)`, [JSON.stringify(manifest)]);
+      await expect(asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'no_floor', version: 1, base_version: await ver(A) })))
+        .rejects.toMatchObject({ key: 'err.grade.bandFloor' });
+      expect((await su.query(`select count(*)::int as n from public.scales where school_id = $1 and code = 'no_floor'`, [A.schoolId])).rows[0].n).toBe(0);
+    } finally {
+      await su.query(`set session_replication_role = replica`);
+      await su.query(`delete from public.academic_templates where key = 'no_floor'`);
+      await su.query(`set session_replication_role = default`);
+      await su.query(`alter table public.academic_templates add constraint academic_templates_shape check (private.academic_template_ok(title, summary, manifest))`);
+    }
+  });
   it('낼 수 있는 판은 학교에 실제로 적용된다(경계 값: 8자 띠 코드, 영어만 있는 표기, 학기 3개, 직접 정한 척도)', async () => {
     const manifest = { grade_scheme: 'custom', levels: ['middle'], periods: [{ id: 'q1', label: 'Q1' }, { id: 'q2', label: 'Q2' }, { id: 'q3', label: 'Q3' }],
-      scales: [{ code: 'edge_scale', kind: 'level', why: 'edge', bands: [{ code: 'ABCDEFG+', label: { en: 'Top' }, min: 80 }, { code: 'B', label: { en: 'Rest' }, min: null }] }],
+      scales: [{ code: 'edge_scale', kind: 'level', why: 'edge', bands: [{ code: 'ABCDEFG+', label: { en: 'Top' }, min: 80 }, { code: 'B', label: { en: 'Rest' }, min: 0 }] }],
       calc_samples: [], attendance: 'day', outputs: ['en_record'], hide: ['gpa'] };
     await asUser(platformId, (db) => db.query(`select app.publish_academic_template($1)`, [JSON.stringify({
       key: 'edge_case', base_version: 0, title: { ko: '경계', en: 'Edge' }, summary: { en: 'edge' }, manifest })]));

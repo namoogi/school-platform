@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { pick, publicEntry } from '@/lib/site';
+import { subpagesOf } from '@/lib/site-shared';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { SiteFrame, siteText } from '@/components/site/SiteFrame';
 import { loadSite, newsFor, PageHead, robotsFor } from '@/components/site/load';
@@ -22,7 +23,7 @@ export default async function SitePage({ params, searchParams }: P) {
       <PageHead content={entry.content} lang={L.lang} fallback={L.site.default_lang} asset={L.asset} link={L.link}
         crumb={L.site.theme === 'dawn' && !hidden ? { href: L.link('/'), label: siteText('home', L.lang) } : undefined} />
       <SiteBlocks content={entry.content} lang={L.lang} fallback={L.site.default_lang} assetUrl={L.asset} link={L.link} news={await newsFor(L.site, entry.content)}
-        inquiry={{ slug: L.site.slug, open: !!L.site.inquiry_open, page: `/p/${entry.key}` }} />
+        inquiry={{ slug: L.site.slug, open: !!L.site.inquiry_open, page: `/p/${entry.key}` }} subpages={hidden ? [] : subpagesOf(L.site.nav, entry.key)} />
     </SiteFrame>
   );
 }

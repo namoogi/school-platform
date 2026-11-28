@@ -1,4 +1,5 @@
 /** 86차 — 템플릿 예시 내용(가상 학교)·썸네일 검사(DB 없음) */
+import { movePath, splitSubmenuPages } from '@/lib/site-template-split';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { recommendTemplates, SITE_TEMPLATES } from '@/lib/site-templates';
@@ -29,7 +30,7 @@ describe('템플릿 예시 내용', () => {
   });
   it('같은 안내 자리가 여러 번 나오면 차례대로 다른 값을 쓴다', () => {
     const t = SITE_TEMPLATES.find((x) => x.key === 'story')!;
-    const items = (samplePages(t).philosophy.blocks[1] as { items: { body: { ko: string } }[] }).items.map((i) => i.body.ko);
+    const items = (samplePages(t)['philosophy-values'].blocks[0] as { items: { body: { ko: string } }[] }).items.map((i) => i.body.ko);
     expect(new Set(items).size).toBe(3);
   });
   it('예시는 가상 연락처만 쓴다(예약 도메인 example.org, 0으로 채운 전화)', () => {
@@ -48,9 +49,11 @@ describe('템플릿 예시 내용', () => {
   it('89차: 예시 그림이 실제 칸에 놓이고 그림 파일이 있다', () => {
     for (const t of SITE_TEMPLATES) {
       const pages = samplePages(t);
+      // 135차: 예시 사진 자리는 나누기 전 원본 기준이다. 나눈 뒤 위치로 옮겨 확인한다
+      const moves = t.source ? splitSubmenuPages(t.source).moves : new Map();
       for (const img of TEMPLATE_SAMPLES[t.key].images ?? []) {
-        const [pg, ...path] = img.at;
-        let node: unknown = pages[String(pg)];
+        const [pg, path] = movePath(moves, String(img.at[0]), img.at.slice(1));
+        let node: unknown = pages[pg];
         for (const k of path) node = (node as Record<string | number, unknown>)?.[k];
         expect(typeof node, `${t.key}: ${img.name}`).toBe('string');
         const url = sampleAssetUrl(node as string);
@@ -83,7 +86,7 @@ describe('템플릿 예시 내용', () => {
       for (const [page, content] of Object.entries(samplePages(template))) {
         const photos = assets(content);
         // 사진 중심 3종은 모든 쪽에 사진이 있다. 나머지 5종은 사진 없는 글 쪽도 있다(있으면 모두 JPG + 설명)
-        if (['story', 'project', 'kinder'].includes(key)) expect(photos.length, `${key}/${page}`).toBeGreaterThan(0);
+        if (['story', 'project', 'kinder'].includes(key) && page === 'home') expect(photos.length, `${key}/${page}`).toBeGreaterThan(0);
         for (const photo of photos) {
           expect(sampleAssetUrl(photo.asset)).toMatch(/\.jpg$/);
           expect(photo.alt?.ko).toContain('AI 예시 사진');

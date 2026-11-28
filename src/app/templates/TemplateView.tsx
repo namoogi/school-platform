@@ -2,7 +2,7 @@ import type { I18n } from '@/lib/i18n/server';
 import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { LANG_LABEL, menuSectionsOf, navEntriesOf, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
+import { LANG_LABEL, menuSectionsOf, navEntriesOf, SITE_THEMES, subpagesOf, type Content, type Lang, type PublicSite } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages, sampleAssetUrl, sampleNews, sampleNewsPage, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { SiteFrame } from '@/components/site/SiteFrame';
@@ -66,7 +66,7 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
         profile={home.site} assetUrl={sampleAssetUrl} preview={{ link, langHref: (l) => href({ lang: l }) }}>
         <div data-testid="template-live">
           <PageHead content={content} lang={lang} fallback={fallback} asset={sampleAssetUrl} link={link} />
-          <SiteBlocks content={content} lang={lang} fallback={fallback} assetUrl={sampleAssetUrl} link={link} news={news} inquiry={{ slug: null, open: true, page: pg.key }} />
+          <SiteBlocks content={content} lang={lang} fallback={fallback} assetUrl={sampleAssetUrl} link={link} news={news} inquiry={{ slug: null, open: true, page: pg.key }} subpages={subpagesOf(site.nav, pg.key)} />
         </div>
       </SiteFrame>
     </>

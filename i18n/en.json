@@ -3231,5 +3231,13 @@
   "db.numTitle": "The title for the number must be 1–120 characters.",
   "db.numFloor": "floor must be a whole number of 0 or more.",
   "db.numMigrationFull": "Today's migration numbers are used up.",
-  "db.numGuard": "control_numbers: reserved numbers are never changed or deleted."
+  "db.numGuard": "control_numbers: reserved numbers are never changed or deleted.",
+  "db.directClosedDecision": "Closed decisions cannot take more directives. Leave a new directive instead.",
+  "db.directAssignee": "You can only add to a request assigned to that session. Assign the session first (assign).",
+  "db.directBody": "A directive body (body) is required (up to 20000 characters).",
+  "db.directTitle": "A directive title (title) is required (up to 200 characters).",
+  "db.directSession": "A target session (session) is required for the directive.",
+  "db.directSessionInactive": "The target session is not active.",
+  "db.directPending": "Conversations awaiting approval cannot take directives. Approve it first or leave a new directive.",
+  "site.block.subpages": "Subpage shortcuts"
 }

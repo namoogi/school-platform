@@ -80,4 +80,4 @@ base_version | '내가 보고 고친 판 번호'. 그 사이 다른 사람이 �
 
 | P1(14차) 오류 문구에 요청의 칸 이름·코드를 그대로 넣음 | 수용 | `safeId`(허용 글자만, 30자)로 걸러 넣음. 척도·정책·출력 프로필·계산식 저장 오류 모두 |
 
-- 남은 것: 템플릿 적용(관제가 낸 판)은 바닥 구간을 막지 않는다. 템플릿 판 검사(`app.academic_template_ok`)에 같은 규칙을 넣을지는 관제 몫(시험용 판에 `min: null` 나머지 띠가 있음).
+- ~~남은 것: 템플릿 적용(관제가 낸 판)은 바닥 구간을 막지 않는다.~~ 132차 완료: 템플릿 판 검사(`private.academic_template_ok`)와 템플릿 적용 길(`applyTemplate` → `saveScale({ floor: true })`) 모두 바닥 구간 필수(`docs/rounds/round-132.md`).

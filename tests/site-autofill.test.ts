@@ -57,14 +57,17 @@ describe('알림 중심형 빈 칸 제안', () => {
   });
 
   it('안내 자리에만 넣고, 학교가 이미 쓴 칸은 건드리지 않는다', () => {
-    const about = structuredClone(t.pages.find((p) => p.key === 'about')!.content);
+    // 135차: 인사말·교육 목표는 '학교 소개' 아래 각각의 쪽이다(빈 칸도 그 쪽을 가리킨다)
     const greet = t.slots.find((s) => s.id === 'greeting')!;
-    expect(putProposal(about, greet, by.greeting.value)).toBe(true);
-    expect((about.blocks[0] as { body: { ko: string } }).body.ko).toMatch(/^예시꿈학교를/);
-    expect(putProposal(about, greet, '다른 값')).toBe(false); // 이미 채운 칸
     const goals = t.slots.find((s) => s.id === 'goals')!;
-    expect(putProposal(about, goals, by.goals.value)).toBe(true);
-    expect((about.blocks[1] as { items: { title: { ko: string } }[] }).items[0].title.ko).toBe('스스로 배우는 사람');
+    expect([greet.page, goals.page]).toEqual(['about-greeting', 'about-goals']);
+    const greeting = structuredClone(t.pages.find((p) => p.key === greet.page)!.content);
+    expect(putProposal(greeting, greet, by.greeting.value)).toBe(true);
+    expect((greeting.blocks[0] as { body: { ko: string } }).body.ko).toMatch(/^예시꿈학교를/);
+    expect(putProposal(greeting, greet, '다른 값')).toBe(false); // 이미 채운 칸
+    const goalsPage = structuredClone(t.pages.find((p) => p.key === goals.page)!.content);
+    expect(putProposal(goalsPage, goals, by.goals.value)).toBe(true);
+    expect((goalsPage.blocks[0] as { items: { title: { ko: string } }[] }).items[0].title.ko).toBe('스스로 배우는 사람');
     const home = structuredClone(t.pages[0].content);
     expect(putProposal(home, t.slots.find((s) => s.id === 'address')!, by.address.value)).toBe(true);
     expect(home.site?.address).toEqual({ ko: '경기도 예시시 꿈마을로 12' });

@@ -160,6 +160,7 @@ const NEW_BLOCK: Record<Block['type'], () => Block> = {
   section: () => ({ type: 'section', template: 'text', title: {}, body: {} }), news_list: () => ({ type: 'news_list', count: 3, style: 'cards' }),
   download: () => ({ type: 'download', asset: '', label: {} }),
   inquiry: () => ({ type: 'inquiry', title: {}, body: {} }),
+  subpages: () => ({ type: 'subpages' }),
 };
 type SectionBlock = Extract<Block, { type: 'section' }>;
 const HAS_PHOTO: SectionTemplate[] = ['media-left', 'media-right', 'banner'];
