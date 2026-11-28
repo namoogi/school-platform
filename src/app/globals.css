@@ -2600,7 +2600,7 @@ label.check input { margin-top: 0.25em; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > [id] { scroll-margin-top: var(--ds-space-6); }
 @media (prefers-reduced-motion: reduce) { .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree .site-subnav { transition: none; } }
 
-/* ───────── 127차: 템플릿 배치 정돈(123차 배치 규약 — 폭은 내용 길이, 같은 종류는 같은 격자, 빈 칸 없는 흐름) (키트 테마만) ───────── */
+/* ───────── 129차: 템플릿 배치 정돈(123차 배치 규약 — 폭은 내용 길이, 같은 종류는 같은 격자, 빈 칸 없는 흐름) (키트 테마만) ───────── */
 /* 항목이 1~2개인 목록은 줄 끝까지 늘이지 않고 내용 폭(한 칸 최소 20rem)으로 둔다 */
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec:not([data-variant]) :is(.sec-facts, .sec-cards):is(:has(> :only-child), :has(> :nth-child(2):last-child)) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); }
 /* 짧은 글 구역이 이어지면 [제목 | 글] 두 칸으로 촘촘하게 — 학교 생활 안내(급식·방과후·상담)처럼 같은 종류를 같은 격자로 */
