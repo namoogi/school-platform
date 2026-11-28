@@ -91,6 +91,21 @@ describe('관제 지시 당겨 오기', () => {
     expect(got?.due).toBeUndefined();
   });
 
+  it('관제가 남긴 지시(control.direct)도 그 세션의 /mine 에 나오고, 세션이 답하면 빠진다 (133차, ADR 0050)', async () => {
+    const d = await asAgent((db) => c.control.direct(db, T, { session: RAS, title: '결정 카드 형식 알림', body: '이제 결정 요청은 카드 형식으로만 올린다.' })) as { id: string; kind: string; status: string; to: string };
+    expect(d).toMatchObject({ kind: 'directive', status: 'delivered', to: RAS });
+    expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(true);
+    expect(((await mine(OTHER)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(false);
+    await asAgent((db) => c.control.post(db, T, d.id, { kind: 'report', body: '받음, 반영함', status: 'done', author_session: RAS }));
+    expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(false);
+    // 덧붙이면 다시 나온다. 다른 세션이 맡은 요청에는 덧붙일 수 없다
+    await asAgent((db) => c.control.direct(db, T, { session: RAS, request: d.id, body: '하나 더' }));
+    expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(true);
+    await expect(asAgent((db) => c.control.direct(db, T, { session: OTHER, request: d.id, body: 'x' }))).rejects.toThrow('그 요청을 맡은 세션에게만');
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, title: 't', body: '' }))).rejects.toThrow('지시 본문');
+    await expect(asAgent((db) => c.control.direct(db, T, { title: 't', body: 'x' }))).rejects.toThrow('지시를 받을 세션');
+  });
+
   it('토큰·세션 id 가 없으면 거부', async () => {
     expect((await mine(RAS, 'insp_' + '0'.repeat(64))).status).toBe(401);
     const res = await route.GET(new Request('http://x/api/control/mine', { headers: { 'x-inspector-token': T } }));

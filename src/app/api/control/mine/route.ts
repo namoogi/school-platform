@@ -8,7 +8,7 @@ type Req = { id: string; no: number; status: string; door?: string | null; due_a
 
 /**
  * 세션이 자기 일을 직접 가져간다(당겨 오기). 관제의 send_message 가 막혀도(신뢰 기기 확인 등) 관제 지시가 닿게 한다.
- * ?session=<내 세션 id> → 내가 맡았거나 내가 올린 요청 가운데, 마지막 사람 글 뒤에 내 답이 아직 없는 것.
+ * ?session=<내 세션 id> → 내가 맡았거나 내가 올린 요청 가운데, 마지막 지시(사람 글 또는 관제 지시, 133차) 뒤에 내 답이 아직 없는 것.
  * + 기한이 지난 '기한 진행' 결정 카드(ADR 0048) 가운데 아직 추천안 진행 중(proceeding)인 것(`due: true`).
  *   세션이 바뀌어도 다음 차례에 이 목록으로 받아 추천안(default_action)을 실행하고 보고한다.
  */
@@ -28,9 +28,12 @@ export async function GET(req: Request) {
       if (!chosen && r.door === 'default' && r.status === 'proceeding' && !!r.due_at && Date.parse(r.due_at) <= now) {
         return [{ ...r, due: true }];
       }
-      const lastUser = msgs.map((m) => m.author).lastIndexOf('user');
-      if (lastUser < 0) return [];
-      const answered = msgs.slice(lastUser + 1).some((m) => m.author_session === session);
+      // 지시 = 사람이 쓴 글, 또는 관제가 남긴 지시(control.direct, ADR 0050)
+      const isOrder = (m: Msg) => m.author === 'user' || (m.author === 'control' && m.kind === 'directive');
+      let last = -1;
+      msgs.forEach((m, i) => { if (isOrder(m)) last = i; });
+      if (last < 0) return [];
+      const answered = msgs.slice(last + 1).some((m) => m.author_session === session);
       return answered ? [] : [r];
     });
   });
