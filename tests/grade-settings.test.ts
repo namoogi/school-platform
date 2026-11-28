@@ -46,6 +46,8 @@ describe('맞춤 척도', () => {
     expect(() => gr.checkBands([{ code: 'P' }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandFloor' }));
     for (const k of Object.keys(gr.SCALE_PRESETS)) expect(() => gr.checkBands(gr.SCALE_PRESETS[k].bands, { floor: true })).not.toThrow();
     expect(() => gr.checkBands([{ code: 'A', min: 90 }, { code: 'A', min: 80 }])).toThrow(expect.objectContaining({ key: 'err.grade.bandDup' }));
+    expect(() => gr.checkBands([{ code: 'A', min: false }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
+    expect(() => gr.checkBands([{ code: 'A', min: 0, points: true }])).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
     expect(() => gr.checkBands([{ code: 'A', min: 'ninety' }])).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
     expect(() => gr.checkBands([])).toThrow(expect.objectContaining({ key: 'err.grade.bands' }));
   });

@@ -110,6 +110,8 @@ export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[]
   const seen = new Set<string>();
   const num = (v: unknown, code: string) => {
     if (v == null || v === '') return null;
+    // 숫자나 숫자 글자만. 참·거짓(false → 0)이 바닥 구간·평점으로 바뀌지 않게(Codex #228)
+    if (typeof v !== 'number' && !(typeof v === 'string' && v.trim() !== '')) throw new ValidationError('err.grade.bandNumber', { code });
     const n = Number(v);
     if (!Number.isFinite(n)) throw new ValidationError('err.grade.bandNumber', { code });
     return n;
