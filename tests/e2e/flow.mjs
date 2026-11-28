@@ -159,6 +159,20 @@ try {
   };
 
   let bLangChecked = false;
+  // 122차: 공개 단추를 누르면 공개 창이 사진 목록을 묻는다(/api/site/photos). 사진이 있으면 허가 확인을 체크하고 공개한다.
+  async function withConsent(page, action) {
+    const asked = page.waitForResponse((r) => r.url().endsWith('/api/site/photos') && r.request().method() === 'POST', { timeout: 30000 });
+    await action();
+    const data = await (await asked).json();
+    if (data.photos?.length) {
+      await page.waitForSelector('[data-testid=photo-consent-dialog]');
+      assert.equal(await page.isDisabled('[data-testid=photo-consent-confirm]'), true); // 체크 전에는 공개할 수 없다
+      await page.check('[data-testid=photo-consent-check]');
+      await page.click('[data-testid=photo-consent-confirm]');
+    }
+    return data.photos?.length ?? 0;
+  }
+
   async function login(page, email, password) {
     await page.goto(`${BASE}/login`);
     await page.fill('input[name=email]', email);
@@ -802,7 +816,7 @@ try {
     await h.waitForSelector('[data-testid=entry-editor]');
     await h.click('.block-add button:has-text("글")');
     await h.fill('.block-card textarea >> nth=0', '드리미 예시학교는 합성 예시 학교입니다.');
-    await h.click('text=저장하고 공개');
+    await withConsent(h, () => h.click('text=저장하고 공개'));
     await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
     await h.waitForSelector('[data-testid=entry-editor] p.fine:has-text("공개 중 2판")');
     // 새 판(공개 안 함)
@@ -836,7 +850,7 @@ try {
     assert.doesNotMatch(body, /2판 글/);
     assert.equal((await v.goto(`${BASE}/s/dreamy-a/stories/after-rain`)).status(), 404);
     // 관리자가 동화 공개 → 방문자 그림책
-    await h.click('text=최신 판 공개');
+    await withConsent(h, () => h.click('text=최신 판 공개'));
     await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
     await v.goto(`${BASE}/s/dreamy-a/stories`);
     assert.match(await v.textContent('[data-testid=site-list]'), /비 온 뒤의 약속/);
@@ -886,7 +900,7 @@ try {
     const ctxV = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const v = await ctxV.newPage();
     assert.equal((await v.goto(`${BASE}/s/dreamy-a/p/gallery`)).status(), 404);
-    await h.click('[data-testid=import-publish]');
+    await withConsent(h, () => h.click('[data-testid=import-publish]'));
     await h.waitForSelector('[data-testid=import-published]', { timeout: 60000 });
     await shot(h, '31-import.png');
     // 방문자: 새벽빛 첫 화면(태국어 기본), 로고·바닥 정보, 최근 소식
@@ -951,7 +965,7 @@ try {
     await h.waitForSelector('[data-testid=import-done]', { timeout: 60000 });
     assert.match(await h.textContent('[data-testid=import-kept]'), /dawn-story/);
     assert.match(await h.textContent('[data-testid=import-done]'), /시안 \d+개/);
-    await h.click('[data-testid=import-publish]');
+    await withConsent(h, () => h.click('[data-testid=import-publish]'));
     await h.waitForSelector('[data-testid=import-published]', { timeout: 60000 });
     await v.goto(`${BASE}/s/dreamy-a`);
     for (const sel of ['.site-opening .rainbow-signature', '.site-opening .rainbow-arc', '.sec[data-variant=split]', '.sec[data-variant=portrait] .rainbow-arc',
@@ -982,7 +996,7 @@ try {
       const blocks = cur.content.blocks.map((b) => (b.type === 'section' && b.template === 'cta' ? { ...b, asset: decor } : b));
       const send = (url, body) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       await send(`/api/site/entries/${home.id}/versions`, { content: { ...cur.content, blocks }, note: '장식 그림', base_version: cur.version });
-      await send(`/api/site/entries/${home.id}/publish`, {});
+      await send(`/api/site/entries/${home.id}/publish`, { photo_consent: true });
     });
     await v.goto(`${BASE}/s/dreamy-a`);
     assert.ok(await v.locator('.sec[data-template=cta][data-decor] .sec-decor[aria-hidden=true] img[alt=""]').count(), '안내 띠 장식 그림');
@@ -1076,7 +1090,7 @@ try {
     await h.click('.triage-item:has-text("비 온 뒤의 약속")');
     await h.waitForSelector('[data-testid=entry-editor]');
     assert.match(await h.textContent('[data-testid=entry-editor]'), /작업 토큰/);
-    await h.click('text=최신 판 공개');
+    await withConsent(h, () => h.click('text=최신 판 공개'));
     await h.waitForSelector('[data-testid=entry-editor] [role=status]:has-text("공개했습니다")');
     await v.goto(`${BASE}/s/dreamy-a/stories/after-rain?lang=ko`);
     await v.waitForSelector('[data-testid=download-block]');
@@ -1180,7 +1194,7 @@ try {
     await h.goto(`${BASE}/site?box=story`);
     const moonCard = h.locator('.site-entry-card:has(.triage-item-title:text-is("달빛 약속"))');
     assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
-    await moonCard.locator('button:text-is("공개하기")').click();
+    await withConsent(h, () => moonCard.locator('button:text-is("공개하기")').click());
     await moonCard.locator('.badge:text-is("공개 중")').waitFor();
     assert.equal(await h.locator('[data-testid=entry-editor]').count(), 0);
     assert.equal(new URL(h.url()).searchParams.has('id'), false);
@@ -1315,7 +1329,15 @@ try {
     assert.doesNotMatch(await h.textContent('.le-canvas'), /숨길 합성 구역/);
     await h.click('[data-testid=le-mode]');
     // 저장하고 공개 → 방문자
+    // 122차: 공개 창 — 올린 사진이 목록에 보이고, 허가를 체크해야 공개 단추가 켜진다
+    const asked = h.waitForResponse((r) => r.url().endsWith('/api/site/photos'));
     await h.click('[data-testid=le-publish]');
+    assert.ok((await (await asked).json()).photos.some((ph) => ph.id === asset.id));
+    await h.waitForSelector(`[data-testid=photo-consent-dialog] img[src="/site/assets/${asset.id}"]`);
+    assert.equal(await h.isDisabled('[data-testid=photo-consent-confirm]'), true);
+    await shot(h, '122-publish-consent.png');
+    await h.check('[data-testid=photo-consent-check]');
+    await h.click('[data-testid=photo-consent-confirm]');
     await h.waitForSelector('[data-testid=le-msg]:has-text("공개했습니다")');
     // 새로 고침으로 새 판이 오면 '저장 안 한 변경' 표시가 사라지고 공개 판 번호가 최신 판과 같다
     await h.waitForSelector('[data-testid=le-dirty]', { state: 'detached' });
@@ -1504,7 +1526,7 @@ try {
     const first = await post('/api/site/entries', { kind: 'story', key: 'bulk-first', content: content('일괄 첫 동화') });
     const stale = await post('/api/site/entries', { kind: 'story', key: 'bulk-stale', content: content('일괄 바뀐 동화') });
     const hidden = await post('/api/site/entries', { kind: 'story', key: 'bulk-hidden', content: content('일괄 내린 동화') });
-    await post(`/api/site/entries/${hidden.id}/publish`, {});
+    await post(`/api/site/entries/${hidden.id}/publish`, { photo_consent: true });
     await post(`/api/site/entries/${hidden.id}/publish`, { versionId: null });
     await h.goto(`${BASE}/site?box=story`);
     const control = h.locator('[data-testid=bulk-publish-control]');
@@ -1515,7 +1537,7 @@ try {
     await control.getByLabel(/일괄 바뀐 동화/).check();
     // 선택을 확인하는 동안 다른 작업자가 새 판을 저장한다.
     await post(`/api/site/entries/${stale.id}/versions`, { content: content('일괄 바뀐 동화 2'), base_version: 1 });
-    await control.getByRole('button', { name: '선택한 2편 공개', exact: true }).click();
+    await withConsent(h, () => control.getByRole('button', { name: '선택한 2편 공개', exact: true }).click());
     await control.getByRole('status').getByText('공개 1편 · 이미 최신 판 공개 0편 · 확인 필요 1편', { exact: true }).waitFor();
     await control.getByText(/일괄 바뀐 동화: 그 사이 새 판/).waitFor();
     await shot(h, 'bulk-publish-result.png');
@@ -1538,7 +1560,7 @@ try {
       { type: 'story_page', asset: art, images: { en: { asset: art } }, text: { ko: '장면의 이야기', en: 'The scene story', th: 'เรื่องราวในฉาก' } },
     ] };
     const book = await post('/api/site/entries', { kind: 'story', key: 'language-images', text_in_image: true, content: localized });
-    await post(`/api/site/entries/${book.id}/publish`, {});
+    await post(`/api/site/entries/${book.id}/publish`, { photo_consent: true });
     for (const [lang, text] of [['th', 'ฟังสิ่งที่เพื่อนพูด'], ['en', 'Listen to a friend.'], ['ko', '친구의 말을 들어요.']]) {
       await v.goto(`${BASE}/s/dreamy-a/stories/language-images?lang=${lang}`);
       assert.ok(await v.getByTestId('story-synopsis').isVisible());
@@ -1837,7 +1859,7 @@ try {
     const adm = applied.created.find((c) => c.key === 'admission')
       ?? (await h.evaluate(async () => (await (await fetch('/api/site/entries')).json()))).find((e) => e.kind === 'page' && e.key === 'admission');
     assert.ok(adm, '입학 쪽 시안');
-    assert.equal(await h.evaluate(async (id) => (await fetch(`/api/site/entries/${id}/publish`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, adm.id), 200);
+    assert.equal(await h.evaluate(async (id) => (await fetch(`/api/site/entries/${id}/publish`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"photo_consent":true}' })).status, adm.id), 200);
     // 방문자(로그인 없음)
     const vctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const v = await vctx.newPage();

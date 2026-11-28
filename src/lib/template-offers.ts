@@ -7,7 +7,7 @@ import { listSchoolLevels } from './people';
 import { ValidationError } from './services';
 
 /**
- * 121차 ADR 0043 3단계 — 템플릿 새 판 제안(ADR 0027 기본판 제안과 같은 뜻).
+ * 123차 ADR 0043 3단계 — 템플릿 새 판 제안(ADR 0027 기본판 제안과 같은 뜻).
  * 열린 제안은 저장하지 않고 계산한다: 학교가 쓰는 템플릿의 최신 판이 학교 판보다 높으면 '지금 판 → 최신 판'.
  * 참은 학교 관할 판(template_key·template_version) 하나이고, 학교의 결정(수락·보류·거절)만 기록으로 쌓는다.
  * 수락은 기존 적용 길(applyTemplate)로 새 판을 적용한 뒤 같은 트랜잭션에서 기록한다. 같은 템플릿의 판을 옮기는 길은 이것 하나다.

@@ -1,4 +1,4 @@
-# 다음 세션 인계 (2026-11-28, 121차 끝)
+# 다음 세션 인계 (2026-11-28, 124차 끝)
 
 새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-91.md`(86~91차: `round-86.md`~`round-90.md`도) → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
@@ -7,7 +7,7 @@
 선생님께 쓰는 모든 설명은 **핵심 요약 → 왜 필요한가 → 용어 풀이(쉬운 말 + 학교 예시) → 필요하면 도식**. 승인을 구할 때는 바뀌는 것/안 바뀌는 것/되돌릴 수 있는지. AGENTS.md '선생님께 설명할 때'.
 
 ## 언어 (93차, ADR 0037)
-화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개), 98차 4묶음(설정·/my·/locked), 100차 5묶음(전체 관리) 완료. 101차 6묶음(서버 오류 이름표, ADR 0039: 앱 오류 전부 + 자주 나오는 DB 안내 29개) 완료, 102차 6c(DB 고정 문구 301개 영어), 103차(홈페이지 관리·템플릿, 한글 줄 76), 112차(편집기 블록·칸 이름, 번역 묶음 갱신 규칙), 116차(값이 든 DB 안내·가져오기 안내·/intro·로그인 콜백·연구소 본문, 한글 줄 33 = 일부러 둔 것) 완료. 홈페이지 관리 화면의 공용 값·템플릿·편집기 칸 이름은 `src/lib/site-labels.ts`로 그린다(공개 홈페이지는 학교 언어). 번역 묶음은 배포 때 빈 칸을 채우고 묶음이 넣은 번역은 새 글로 바꾸며, 사람이 고친 번역은 그대로 둔다. 서버 오류는 `new ValidationError('err.이름', { 값 })`로 던진다. 셸 밖 화면은 `providerValue(i18n)`로 공급자를 둔다. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db), school.locale)`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
+화면 문구는 `src/lib/i18n/catalog.ts` 이름표 + `t()`로 쓴다(한국어를 TSX에 박으면 `npm run lint:i18n`이 CI에서 막는다). 새 이름표는 `i18n/en.json`에도 영어를 넣는다. 언어 추가는 전체 관리 → 언어·번역(코드 변경 없음). 기존 화면 옮기기는 다국어 전환 전담 세션(`session_013RZyUnMgGiq22d4cMX1rCX`): 94차 1묶음(용어집 `docs/i18n/GLOSSARY.md` + 공통 부품), 95차 2묶음(홈·자료 첨부·관리자 확인), 97차 3묶음(학사 화면 9개), 98차 4묶음(설정·/my·/locked), 100차 5묶음(전체 관리) 완료. 101차 6묶음(서버 오류 이름표, ADR 0039: 앱 오류 전부 + 자주 나오는 DB 안내 29개) 완료, 102차 6c(DB 고정 문구 301개 영어), 103차(홈페이지 관리·템플릿, 한글 줄 76), 112차(편집기 블록·칸 이름, 번역 묶음 갱신 규칙), 116차(값이 든 DB 안내·가져오기 안내·/intro·로그인 콜백·연구소 본문, 한글 줄 33 = 일부러 둔 것) 완료. 121차 태국어 묶음 `i18n/th.json`(3,036개 전부, 용어집 `docs/i18n/GLOSSARY-th.md`, 원어민 검토 전 초안) 완료. 홈페이지 관리 화면의 공용 값·템플릿·편집기 칸 이름은 `src/lib/site-labels.ts`로 그린다(공개 홈페이지는 학교 언어). 번역 묶음은 배포 때 빈 칸을 채우고 묶음이 넣은 번역은 새 글로 바꾸며, 사람이 고친 번역은 그대로 둔다. 서버 오류는 `new ValidationError('err.이름', { 값 })`로 던진다. 셸 밖 화면은 `providerValue(i18n)`로 공급자를 둔다. 번역문 속 링크는 `withLink`(`ui.tsx`), 날짜 형식은 `locale`. 서버 화면은 `getI18n(await userLang(db), school.locale)`. 이름표 더하기 `node scripts/i18n-add.mjs`, 영어 화면 점검 `npm run ui:review -- <페이지> --lang en`.
 
 ## 성적 계산 (104·105차, ADR 0040·0041)
 - 계산식 판(`calc_rules`, `src/lib/calc/expr.ts`): 학교마다 이수 기준·성적 산출을 선언형 식으로 쓴다. 자료 없음은 3값이다(합·평균도 null).
@@ -37,8 +37,9 @@
 - 113차: 학사 관리 템플릿 5종(`/academics/templates`): 관제 표 `academic_templates`(판), 고르면 학교급·학년·학기 구조·척도를 학교 사본으로(있는 것은 그대로), 관할 판에 템플릿 키·판, 남은 설정 점검표, 나란히 비교. 시연 학교는 '한국 일반' 템플릿으로 시작.
 - 118차: 숨길 구획(석차·평점·석차등급·교시 출결)은 학교 관할 판 `hidden_sections`(처음 템플릿에서 복사, 학교가 템플릿 화면에서 고침). 읽는 길은 `src/lib/sections.ts` `hiddenSections()` 하나. 평점을 숨기면 발행본에서 GPA를 뺀다. 석차·교시 출결은 아직 보이는 화면이 없어 값만 있음.
 - 119차: 학교 구조는 탭 네 개(`/academics?tab=levels|terms|years`, `/academics/templates`). 탭 줄은 `AcademicsTabs`.
-- 121차: 템플릿 새 판 → 학교 제안. 열린 제안은 계산(최신 판 > 학교 판), 결정만 `academic_template_decisions`에 기록(`src/lib/template-offers.ts`). 관제 새 판 내기는 `POST /api/admin/academic-templates`. 같은 템플릿 판 옮기기는 제안 수락 하나.
-- 조사 `docs/research/sis-ux-2026-11.md`. 다음: 학교 AI 맞춤 안내 연결, 무학년·학년 넘기기. 관제 확인 대기: 마감한 수업의 수강 상태 쓰기를 막을지.
+- 124차: 템플릿 화면 '학교 AI로 우리 학교에 맞추기' — 학교 사본 + grade-intake 절차를 담은 AI 지시문 복사(`src/lib/template-ai-guide.ts`).
+- 123차: 템플릿 새 판 → 학교 제안. 열린 제안은 계산(최신 판 > 학교 판), 결정만 `academic_template_decisions`에 기록(`src/lib/template-offers.ts`). 관제 새 판 내기는 `POST /api/admin/academic-templates`. 같은 템플릿 판 옮기기는 제안 수락 하나.
+- 조사 `docs/research/sis-ux-2026-11.md`. 다음: 무학년·학년 넘기기. 관제 확인 대기: 마감한 수업의 수강 상태 쓰기를 막을지.
 
 ## 공개 저장소 (2026-11-27)
 저장소를 공개로 바꿨다(Actions 무료 시간). 비밀값·실제 연락처·학생 정보를 하드코딩하지 않는다. `npm run check:repo`(CI)가 비밀값 모양·개인 메일·커밋된 `.env`를 막는다. 전환 때 전체 기록 180개 커밋을 검사해 실제 비밀값은 없었다. 이슈 #143에서 `@codex`로 Codex 클라우드에 일을 맡기는 길이 작동한다(👀 반응 = 착수).
