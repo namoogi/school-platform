@@ -2264,6 +2264,15 @@ try {
     await btn.click();
     await p.evaluate(() => window.scrollTo(0, 0));
     await p.waitForFunction(() => !document.querySelector('.site-header')?.hasAttribute('data-away'));
+    // 교직원 막대(위에 붙어 따라옴)가 있으면 단추는 막대 아래에 뜬다 — 미리보기에는 막대가 없어 같은 모양의 막대를 넣어 본다
+    await p.evaluate(() => {
+      const bar = document.createElement('nav'); bar.className = 'site-admin-bar'; bar.textContent = '학교 관리자 · 이 화면 편집 · 소식 쓰기 · 홈페이지 관리 · 개선 요청';
+      document.querySelector('.site').prepend(bar);
+    });
+    await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await p.locator('.site-header[data-away]').waitFor({ state: 'attached' });
+    const [barBottom, btnTop] = await p.evaluate(() => [document.querySelector('.site-admin-bar').getBoundingClientRect().bottom, document.querySelector('.site-header > .site-menu > summary').getBoundingClientRect().top]);
+    assert.ok(btnTop >= barBottom, `메뉴 단추(${btnTop})가 교직원 막대(${barBottom}) 아래에 있어야 함`);
     await ctx.close();
   });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
