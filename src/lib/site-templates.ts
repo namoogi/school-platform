@@ -356,7 +356,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     // 90차: 대표 3종의 유치원(골격 D 그래픽 마스크형) — 둥글게 오린 놀이 사진, 연령별 반, 하루 일과 시간 띠, 학부모 질문
-    key: 'kinder', version: 5, name: '유치원형', theme: 'play', langs: ['ko'],
+    key: 'kinder', version: 6, name: '유치원형', theme: 'play', langs: ['ko'],
     summary: '아이들의 하루와 반, 학부모가 궁금한 것을 사진과 함께 따뜻하게 보여 줍니다.',
     fits: ['유치원·어린이집', '초등 저학년 중심 학교'], firstScreen: '둥근 놀이 사진 · 우리 반 · 하루 일과',
     mustHave: ['연령별 반 안내', '하루 일과', '급식·건강 안내', '입학(입소) 상담 방법'],
@@ -374,22 +374,28 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ template: 'facts', variant: 'faq', title: ko('학부모가 자주 묻는 질문'), items: [{ title: ko('[질문 1]'), body: ko('[답 1]') }, { title: ko('[질문 2]'), body: ko('[답 2]') }] }),
         section({ template: 'cta', title: ko('직접 와서 보세요'), body: ko('[방문 상담 요일·연락처]'), button: { label: ko('상담 안내'), href: '/p/admission' } }),
       ], { site: contact({ label: '입학 상담', href: '/p/admission' }) }),
+      // 126차(ADR 0046): 원 소개 상위 메뉴(원장 인사·교육 철학·시설)
+      page('about', 1, ko('원 소개'), [
+        section({ anchor: 'greeting', template: 'media-left', title: ko('원장 인사'), body: ko('[유치원 원장 인사]') }),
+        section({ anchor: 'philosophy', template: 'cards', title: ko('교육 철학'), items: [1, 2, 3].map((i) => ({ title: ko(`[유치원 철학 ${i}]`), body: ko(`[유치원 철학 ${i} 설명]`) })) }),
+        section({ anchor: 'facilities', template: 'facts', title: ko('시설 둘러보기'), items: [1, 2, 3].map((i) => ({ title: ko(`[유치원 시설 ${i}]`), body: ko(`[유치원 시설 ${i} 설명]`) })) }),
+      ]),
       page('classes', 1, ko('우리 반'), [
-        section({ template: 'cards', variant: 'rows', eyebrow: ko('아이의 속도에 맞추어'), title: ko('연령별 반'), items: [
+        section({ anchor: 'ages', template: 'cards', variant: 'rows', eyebrow: ko('아이의 속도에 맞추어'), title: ko('연령별 반'), items: [
           { title: ko('[반 이름 · 나이 1]'), body: ko('[하루 모습·담임·정원]') }, { title: ko('[반 이름 · 나이 2]'), body: ko('[하루 모습·담임·정원]') }, { title: ko('[반 이름 · 나이 3]'), body: ko('[하루 모습·담임·정원]') }] }),
-        section({ template: 'media-left', variant: 'mask', title: ko('[놀이로 배워요]'), body: ko('[놀이 중심 배움의 방식]') }),
+        section({ anchor: 'play', template: 'media-left', variant: 'mask', title: ko('[놀이로 배워요]'), body: ko('[놀이 중심 배움의 방식]') }),
       ]),
       page('daily', 2, ko('하루와 건강'), [
-        section({ template: 'steps', variant: 'daybook', eyebrow: ko('놀이와 쉼이 나란히'), title: ko('하루 일과'), items: [
+        section({ anchor: 'day', template: 'steps', variant: 'daybook', eyebrow: ko('놀이와 쉼이 나란히'), title: ko('하루 일과'), items: [
           { title: ko('[시간 1]'), body: ko('[활동 1]') }, { title: ko('[시간 2]'), body: ko('[활동 2]') }, { title: ko('[시간 3]'), body: ko('[활동 3]') },
           { title: ko('[시간 4]'), body: ko('[활동 4]') }, { title: ko('[시간 5]'), body: ko('[활동 5]') }] }),
-        section({ template: 'media-right', variant: 'half', eyebrow: ko('건강하게 자라는 습관'), title: ko('급식과 건강'), body: ko('[급식·간식·알레르기·투약 안내]') }),
+        section({ anchor: 'meals', template: 'media-right', variant: 'half', eyebrow: ko('건강하게 자라는 습관'), title: ko('급식과 건강'), body: ko('[급식·간식·알레르기·투약 안내]') }),
       ]),
       page('admission', 3, ko('입학 안내'), [
-        section({ template: 'steps', variant: 'index', eyebrow: ko('처음 만나는 햇살숲'), title: ko('입학(입소) 절차'), items: [{ title: ko('상담'), body: ko('[상담 방법]') }, { title: ko('방문'), body: ko('[둘러보기 일정]') }, { title: ko('신청'), body: ko('[서류]') }, { title: ko('적응'), body: ko('[첫 주 적응 안내]') }] }),
-        section({ template: 'facts', variant: 'curriculum', title: ko('비용'), items: [{ title: ko('[교육비]'), body: ko('[금액·지원]') }, { title: ko('[기타 비용]'), body: ko('[급식·차량·특별활동]') }] }),
+        section({ anchor: 'process', template: 'steps', variant: 'index', eyebrow: ko('처음 만나는 햇살숲'), title: ko('입학(입소) 절차'), items: [{ title: ko('상담'), body: ko('[상담 방법]') }, { title: ko('방문'), body: ko('[둘러보기 일정]') }, { title: ko('신청'), body: ko('[서류]') }, { title: ko('적응'), body: ko('[첫 주 적응 안내]') }] }),
+        section({ anchor: 'fees', template: 'facts', variant: 'curriculum', title: ko('비용'), items: [{ title: ko('[교육비]'), body: ko('[금액·지원]') }, { title: ko('[기타 비용]'), body: ko('[급식·차량·특별활동]') }] }),
         // 91차: 방문·상담 신청 칸(학교가 설정에서 '신청 받기'를 켜야 보임)
-        { type: 'inquiry', title: ko('방문·상담 신청'), body: ko('[신청 안내 한 줄]') },
+        { type: 'inquiry', title: ko('방문·상담 신청'), body: ko('[신청 안내 한 줄]'), anchor: 'apply' },
         section({ template: 'cta', title: ko('방문 상담'), body: ko('[연락처·상담 가능 시간]') }),
         section({ template: 'media-left', title: ko('우리 아이의 첫 학교'), body: ko('[입학 적응 이야기]') }),
       ]),
