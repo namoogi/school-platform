@@ -3024,5 +3024,10 @@
   "db.val.stillEnrolled": "Enrollment hasn't ended.",
   "db.val.noEnrollment": "There's no enrollment record.",
   "db.val.openRequests": "There are open view or amendment requests, so this can't be destroyed.",
-  "db.v.retentionNotPassed": "The retention period ({v1} years) hasn't passed yet (can be destroyed from {v2})."
+  "db.v.retentionNotPassed": "The retention period ({v1} years) hasn't passed yet (can be destroyed from {v2}).",
+  "atpl.ourHidden": "Sections our school hides",
+  "atpl.ourHiddenLead": "The template's choice is copied when you first pick a template. After that, what you set here is used on school screens and published records. Today, GPA is what gets hidden in published records.",
+  "atpl.saveHidden": "Save hidden sections",
+  "atpl.hiddenSaved": "Hidden sections saved.",
+  "err.sections.unknown": "Hidden sections must be class rank, GPA, rank grade or period attendance."
 }

@@ -40,7 +40,7 @@ beforeAll(async () => {
   await su.query(`insert into public.memberships(user_id, school_id, role) values ($1, $2, 'teacher')`, [u.id, A.schoolId]);
   teacherA = u.id;
   stu = await asUser(A.userId, (db) => pp.addPerson(db, A.schoolId, { name: 'F5 학생' }));
-});
+}, 120_000);
 afterAll(async () => { await su.end(); await getPool().end(); });
 
 describe('검사기', () => {

@@ -3074,6 +3074,12 @@ export const CATALOG = {
   'db.val.noEnrollment': '재적 기록이 없습니다.',
   'db.val.openRequests': '끝나지 않은 열람·수정 요청이 있어 파기할 수 없습니다.',
   'db.v.retentionNotPassed': '보존 기간({v1}년)이 아직 지나지 않았습니다({v2}부터 파기 가능).',
+  // 118차 숨길 구획 (ADR 0043)
+  'atpl.ourHidden': '우리 학교가 숨기는 구획',
+  'atpl.ourHiddenLead': '템플릿을 처음 고를 때 템플릿 값이 복사됩니다. 그 뒤로는 여기서 고친 값이 학교 화면·발행본에 쓰입니다. 지금 발행본에서 숨겨지는 것은 평점(GPA)입니다.',
+  'atpl.saveHidden': '숨김 저장',
+  'atpl.hiddenSaved': '숨길 구획을 저장했습니다.',
+  'err.sections.unknown': '숨길 구획은 석차·평점·석차등급·교시 출결 중에서 고릅니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

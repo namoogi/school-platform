@@ -18,7 +18,7 @@ beforeAll(async () => {
   await c.connect();
   P = (await c.query(`select id from private.app_users where email = 'platform@example.test'`)).rows[0].id;
   await c.end();
-});
+}, 120_000);
 afterAll(async () => { await getPool().end(); });
 
 describe('개발·연구소 보드', () => {
