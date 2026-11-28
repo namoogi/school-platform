@@ -2925,6 +2925,7 @@ export const CATALOG = {
   // 홈페이지 편집기 칸 이름 (104차, 공개 렌더러가 편집 모드에서 넘기는 한국어 이름 → 관리 화면 언어)
   'site.field.sectionBody': '구역 글',
   'site.field.sectionPhoto': '구역 사진',
+  'site.field.decorImage': '장식 그림(사진 아님)',
   'site.field.sectionTitle': '구역 제목',
   'site.field.imageCaption': '그림 설명',
   'site.field.downloadDesc': '내려받기 설명',
