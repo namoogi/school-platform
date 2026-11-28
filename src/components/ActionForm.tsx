@@ -11,7 +11,7 @@ import type { MsgKey } from '@/lib/i18n/catalog';
  */
 export type FieldSize = 'xs' | 'sm' | 'md' | 'lg' | 'full';
 export type FieldSpec = {
-  /** json: 여러 줄 글상자에 JSON을 쓰고, 보낼 때 값으로 바꿔 보낸다(AI 초안 붙여 넣기, 130차) */
+  /** json: 여러 줄 글상자에 JSON을 쓰고, 보낼 때 값으로 바꿔 보낸다(AI 초안 붙여 넣기, 131차) */
   name: string; label: string; type?: 'text' | 'date' | 'number' | 'select' | 'textarea' | 'email' | 'json';
   options?: { value: string; label: string }[]; required?: boolean; placeholder?: string; defaultValue?: string;
   /** 칸 너비(ADR 0045 양식 배치 규약). 안 적으면 종류·내용 길이로 정한다. narrow·wide 는 옛 이름(sm·full) */
@@ -39,7 +39,7 @@ export function fieldSize(f: FieldSpec): FieldSize {
   }
 }
 /**
- * 130차: 저장 전에 미리 계산해 보기. 같은 주소에 { action: preview.action, ...값 }을 보내고, 답 { issues, results }를 표로 보여 준다.
+ * 131차: 저장 전에 미리 계산해 보기. 같은 주소에 { action: preview.action, ...값 }을 보내고, 답 { issues, results }를 표로 보여 준다.
  * required 면 지금 넣은 값으로 미리 계산해 문제가 없을 때만 저장 단추가 열린다(값을 고치면 다시 닫힌다).
  */
 export type PreviewSpec = { action: string; label: string; columns: { key: string; label: string }[]; required?: boolean; issuesLabel: string };
@@ -68,7 +68,7 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   const [shown, setShown] = useState<{ key: string; r: PreviewResult } | null>(null);
-  // 130차(Codex #228): 보고 시작한 판. 화면이 새로 고쳐져 extra(base_version 등)·처음 값이 바뀌면, 손대지 않은 양식만 새 값을 받는다.
+  // 131차(Codex #228): 보고 시작한 판. 화면이 새로 고쳐져 extra(base_version 등)·처음 값이 바뀌면, 손대지 않은 양식만 새 값을 받는다.
   // 고치던 양식은 처음 본 판 번호를 그대로 보내 그 사이 생긴 새 판을 409로 알린다(옛 내용으로 새 판을 조용히 되돌리지 않게)
   const [base, setBase] = useState(extra);
   const [dirty, setDirty] = useState(false);

@@ -44,7 +44,7 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
   const closedByYear = Object.fromEntries(closures.map((c) => [c.academic_year_id, c]));
   const reportBases = Object.fromEntries(reports.map((r) => [r.code, Math.max(...reports.filter((x) => x.code === r.code).map((x) => x.version))]));
   const latestReports = reports.filter((r) => r.version === reportBases[r.code]);
-  // 130차: 발행 때 고를 출력 프로필(서버가 서식이 맞는지 다시 본다). 없으면 기본 표기
+  // 131차: 발행 때 고를 출력 프로필(서버가 서식이 맞는지 다시 본다). 없으면 기본 표기
   const profileField = (formats: string[]) => (profiles.some((p) => formats.includes(p.format))
     ? [{ name: 'profileCode', label: t('rec.profileCode'), type: 'select' as const, options: [{ value: '', label: t('rec.profileDefault') },
         ...profiles.filter((p) => formats.includes(p.format)).map((p) => ({ value: p.code, label: `${p.code} (${FORMAT[p.format] ?? p.format}) ${t('common.version', { v: p.version })}` }))] }]

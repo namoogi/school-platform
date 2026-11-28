@@ -60,7 +60,7 @@ const MAX_NODES = 400;
 const MAX_DEPTH = 24;
 
 // ── 검사 ─────────────────────────────────────────────
-/** message 는 한국어 기준 문구(서버 오류·시험), key·vars 는 화면이 사용자 언어로 그릴 이름표(calc.issue.*, 130차) */
+/** message 는 한국어 기준 문구(서버 오류·시험), key·vars 는 화면이 사용자 언어로 그릴 이름표(calc.issue.*, 131차) */
 export type Issue = { path: string; message: string; key?: string; vars?: Record<string, string | number> };
 const I = (path: string, key: string, message: string, vars?: Record<string, string | number>): Issue => ({ path, message, key: `calc.issue.${key}`, ...(vars ? { vars } : {}) });
 

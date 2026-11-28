@@ -482,7 +482,7 @@ function sanitizeName(name: string) {
   return base.slice(0, 160) || '이름 없는 파일';
 }
 
-/** 130차: 판으로 쌓는 설정 저장(척도·성적 정책·계산식·출력 프로필)의 '왜' 칸. 화면·API 쓰기 길에서 비우지 못하게 한다(DB 칸은 500자) */
+/** 131차: 판으로 쌓는 설정 저장(척도·성적 정책·계산식·출력 프로필)의 '왜' 칸. 화면·API 쓰기 길에서 비우지 못하게 한다(DB 칸은 500자) */
 export function requireWhy(v: unknown): string {
   const s = typeof v === 'string' ? v.trim() : '';
   if (!s) throw new ValidationError('err.whyRequired');
@@ -490,7 +490,7 @@ export function requireWhy(v: unknown): string {
   return s;
 }
 
-/** 130차(Codex #228): 오류 문구에 넣는 사용자 입력(칸 이름·코드)은 허용 글자만 남기고 30자로 자른다. 붙여 넣은 비밀·개인정보가 응답·기록에 그대로 실리지 않게 */
+/** 131차(Codex #228): 오류 문구에 넣는 사용자 입력(칸 이름·코드)은 허용 글자만 남기고 30자로 자른다. 붙여 넣은 비밀·개인정보가 응답·기록에 그대로 실리지 않게 */
 export function safeId(v: unknown): string {
   const s = typeof v === 'string' ? v : String(v ?? '');
   const clean = s.replace(/[^A-Za-z0-9_.+\-[\]]/g, '').slice(0, 30);

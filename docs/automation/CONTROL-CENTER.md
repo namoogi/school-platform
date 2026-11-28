@@ -8,14 +8,17 @@ B=https://onschools.vercel.app/api/control
 ```
 
 ## 서브 세션: 결정이 필요할 때
-1. 요청을 올린다. 같은 세션·같은 제목의 열린 요청이 있으면 그 요청을 돌려준다.
+1. 요청을 **결정 카드**로 올린다(형식: `docs/automation/DECISION-CARDS.md`, ADR 0048). 같은 세션·같은 제목의 열린 요청이 있으면 그 요청을 돌려준다.
    ```bash
    curl -s -X POST "$B/requests" -H 'content-type: application/json' -d '{
-     "title": "한 줄 제목", "detail": "배경·영향·되돌릴 수 있는지",
-     "options": [{"key":"A","label":"추천안","detail":"…"},{"key":"B","label":"다른 안"}],
-     "recommended": "A", "reversible": true, "related": "PR·ADR·파일", "source_session": "<내 세션 id>"}'
+     "door": "default", "title": "한 줄 제목", "ask": "예/아니오로 답할 질문?",
+     "changes": "승인하면 바뀌는 것", "unchanged": "안 바뀌는 것", "undo": "되돌리는 길",
+     "options": [{"key":"A","label":"추천안","detail":"…"},{"key":"B","label":"다른 안"}], "recommended": "A",
+     "due_at": "2026-12-01T18:00:00+09:00", "default_action": "답이 없으면 할 일",
+     "detail": "배경·근거", "related": "PR·ADR·파일", "source_session": "<내 세션 id>"}'
    ```
-   `reversible: true`면 상태가 '추천안으로 진행 중', `false`면 '보류'가 된다.
+   - `door`: `one_way`(되돌리기 어려움 → '보류', 사람을 기다림) · `default`(기한까지 반대 없으면 진행 → '추천안으로 진행 중', `due_at`·`default_action` 필수) · `notice`(알림, `changes`만, 선택지 없음).
+   - 칸이 빠지면 400과 함께 무엇이 빠졌는지 알려 준다. `reversible`은 문 종류에서 정해진다.
 2. 되돌릴 수 있으면 추천안으로 진행하고, 아니면 보류하고 다른 일을 한다(`SCHOOL-SESSIONS.md` '승인·결정이 필요할 때').
 3. 지시는 관제가 `send_message`로 보낸다. 받으면 일하고 보고한다.
    ```bash
@@ -27,7 +30,7 @@ B=https://onschools.vercel.app/api/control
 
 ## 세션: 내 일 당겨 오기 (지시의 원본은 관제 센터)
 - 차례를 시작할 때, 긴 작업 사이사이, 끝내기 전에 확인한다:
-  `curl -s "$B/mine?session=<내 세션 id>"` → 내가 맡았거나 올린 요청 가운데 **사람이 답했는데 내 답이 아직 없는 것**.
+  `curl -s "$B/mine?session=<내 세션 id>"` → 내가 맡았거나 올린 요청 가운데 **사람이 답했는데 내 답이 아직 없는 것**. 기한이 지난 '기한 진행' 결정 카드(아직 '추천안으로 진행 중')도 `due: true`로 나온다. 받으면 `default_action`대로 진행하고 그 요청에 `status: "done"`(또는 확인이 필요하면 `"review"`)로 보고한다. 상태를 닫을 때까지 계속 나온다(ADR 0048).
 - 관제의 `send_message`는 깨우는 신호일 뿐이다. 그 메시지가 막혀도(Claude의 '신뢰 기기 확인' 보안 등) 지시는 여기서 그대로 가져갈 수 있다.
 - 가져간 일에 답을 남기면(`POST $B/requests/<id>/messages`, `author_session` 필수) 목록에서 빠진다.
 

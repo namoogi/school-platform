@@ -45,7 +45,7 @@ describe('학교 AI 맞춤 지시문', () => {
     expect(s).toMatch(/- pass_fail_project: \{"lets"|- pass_fail_project: \{"outputs"/);
   });
 
-  it('130차: 네 가지 모두 화면 경로로 저장하고, 관제를 거치는 묶음은 없다', () => {
+  it('131차: 네 가지 모두 화면 경로로 저장하고, 관제를 거치는 묶음은 없다', () => {
     const s = buildTemplateGuideText(base);
     expect(s).not.toContain('관제');
     expect(s).not.toMatch(/고치는 화면이 아직 없/);

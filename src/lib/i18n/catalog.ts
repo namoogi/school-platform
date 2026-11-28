@@ -1354,6 +1354,17 @@ export const CATALOG = {
   'cc.waiting': '전달 대기',
   'cc.statusLine': '상태: {status}',
   'cc.deliveryNote': '전달 메모: {note}',
+  'dc.door.one_way': '되돌리기 어려움 · 답을 기다림',
+  'dc.door.default': '기한까지 반대 없으면 진행',
+  'dc.door.notice': '알림',
+  'dc.changes': '승인하면 바뀌는 것',
+  'dc.changesNotice': '바뀐 것',
+  'dc.unchanged': '바뀌지 않는 것',
+  'dc.undo': '되돌리는 길',
+  'dc.due': '{when}까지 반대가 없으면 진행: {action}',
+  'dc.overdue': '기한이 지나 추천안으로 진행: {action}',
+  'dc.digest': '알림 {n}건',
+  'dc.digestHint': '답하지 않아도 되는 진행 알림',
   'cc.options': '선택지',
   'cc.recommended': '추천',
   'cc.extraHint': '선택지에 더할 조건이나 새로 시킬 일. 그대로 세션에 전달됩니다.',
@@ -3131,6 +3142,22 @@ export const CATALOG = {
   // 125차 템플릿 새 판 제안(Codex 검토)
   'err.template.useOffer': '같은 템플릿의 다른 판으로는 \'템플릿 새 판 제안\'에서 수락해 바꿉니다.',
   'db.tplOfferStale': '학교가 이미 그 판 이상을 써서 지난 제안입니다.',
+  'db.cardDoor': '결정 카드의 door 는 one_way(되돌리기 어려움)·default(기한까지 반대 없으면 진행)·notice(알림) 가운데 하나입니다. docs/automation/DECISION-CARDS.md',
+  'db.cardChanges': '결정 카드에는 changes(승인하면 바뀌는 것, 300자 이내)가 필요합니다.',
+  'db.cardAsk': '결정 카드의 ask 는 예/아니오로 답할 수 있는 한 줄 질문(120자 이내, 물음표로 끝남)입니다.',
+  'db.cardUnchangedUndo': '결정 카드에는 unchanged(안 바뀌는 것)와 undo(되돌리는 길)가 필요합니다(각 300자 이내).',
+  'db.cardDue': '기한까지 진행(default) 카드에는 앞으로 30일 안의 due_at(ISO 8601, 시간대 포함)이 필요합니다.',
+  'db.cardOneWayDefault': 'default_action 은 기한까지 진행(default) 카드에만 씁니다. 한쪽 문(one_way)은 사람의 답을 기다립니다.',
+  'db.cardDefaultSession': '기한까지 진행(default) 카드에는 맡을 세션(source_session)이 필요합니다.',
+  'db.cardOneLine': '결정 카드의 changes·unchanged·undo 는 각각 한 줄로 씁니다. 자세한 설명은 detail 에 둡니다.',
+  'db.cardImmutable': '결정 카드의 내용은 올린 뒤 고칠 수 없습니다. 새 카드로 올려 주세요.',
+  'db.cardInsertOnlyFn': '결정 카드는 control.file_request 로만 올립니다.',
+  'db.cardNoticeAsk': '알림(notice) 카드에는 ask·default_action·recommended 를 두지 않습니다. 물을 것이 있으면 default 나 one_way 로 올려 주세요.',
+  'db.cardDefaultAction': '기한까지 진행(default) 카드에는 default_action(답이 없으면 할 일, 500자 이내)이 필요합니다.',
+  'db.cardDueOnlyDefault': '기한(due_at)은 기한까지 진행(default) 카드에만 씁니다.',
+  'db.cardReversible': 'reversible 과 door 가 엇갈립니다. 되돌리기 어려우면 one_way, 되돌릴 수 있으면 default·notice 입니다.',
+  'db.cardOptions': '결정 카드의 선택지는 2~4개이고, 추천안(recommended)을 하나 고릅니다.',
+  'db.cardNoticeOptions': '알림(notice) 카드에는 선택지를 두지 않습니다. 고를 일이 있으면 default 로 올려 주세요.',
   // 125차 템플릿 새 판 제안 기록
   'tplOffer.history': '결정 기록 {n}건',
   'tplOffer.versionsShort': '{from}판 → {to}판',
@@ -3154,7 +3181,7 @@ export const CATALOG = {
   'tplAi.tokenNoHomepage': '학사 꾸러미 작업 토큰은 홈페이지 기능의 AI 작업 공간에서 발급합니다. 이 학교는 홈페이지 기능이 꺼져 있어, 대화창의 ‘새 대화’로 관제에 발급을 요청합니다.',
   // 126차: 두 단계 메뉴
   'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
-  // 130차 학사 설정 편집(척도·정책·계산식·출력 프로필)
+  // 131차 학사 설정 편집(척도·정책·계산식·출력 프로필)
   'form.jsonInvalid': '‘{field}’ 칸의 JSON을 읽지 못했습니다. 괄호·따옴표·쉼표를 확인해 주세요.',
   'gset.whyPlaceholder': '예: 학업성적관리규정 제12조 — 성취도 구간 변경',
   'gset.kind': '종류',
@@ -3208,18 +3235,18 @@ export const CATALOG = {
   'err.grade.policyUnknown': '성적 정책에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.rec.profileFormat': '출력 프로필 {code}는 이 서식용이 아닙니다.',
   'err.rec.profileSettings': '출력 프로필 설정은 JSON 객체({ … })여야 합니다.',
-  // 130차 Codex 검토
+  // 131차 Codex 검토
   'err.grade.bandFloor': '척도에 0점까지 덮는 바닥 구간(min 0)이 있어야 합니다. 없으면 그 아래 점수는 등급 없이 이수로 마감됩니다.',
   'err.rec.profileUnknown': '이 서식의 출력 프로필에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.rec.profileField': '출력 프로필의 {key} 칸 값이 올바르지 않습니다.',
-  // 130차 Codex 검토 2
+  // 131차 Codex 검토 2
   'err.rec.profileScale': '학교에 {code} 척도가 없습니다. 성적 화면의 척도 코드를 적어 주세요.',
-  // 130차 Codex 검토 4
+  // 131차 Codex 검토 4
   'err.grade.bandCredit': '척도 띠 {code}의 earns_credit은 true 또는 false(따옴표 없이)여야 합니다.',
-  // 130차 Codex 검토 5
+  // 131차 Codex 검토 5
   'err.grade.bandField': '척도 띠 {code}에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.grade.bandDupMin': '하한 {min}인 띠가 둘 이상입니다. 띠마다 하한을 다르게 적어 주세요.',
-  // 130차 Codex 검토 6
+  // 131차 Codex 검토 6
   'err.grade.scaleKindChange': '척도 {code}의 종류({kind})는 바꿀 수 없습니다. 다른 종류는 새 코드로 만들어 주세요.',
   // R2 DB 사본 비우기 (128차)
   'usage.clearDb': 'DB 사본 비우기 (25개씩, 남은 {n}개)',
@@ -3227,7 +3254,7 @@ export const CATALOG = {
   // R2 DB 사본 비우기 (128차)
   'usage.clearResult': 'DB 사본 {cleared}개 비움 · 내용이 달라 건너뜀 {skipped}개 · 남은 사본 {left}개',
   'usage.clearNoR2': 'R2 설정이 없어 DB 사본을 비울 수 없습니다.',
-  // 130차 계산식 검사·견본 설명(화면 언어)
+  // 131차 계산식 검사·견본 설명(화면 언어)
   'calc.issue.specShape': '계산식은 outputs 칸을 가진 객체여야 합니다.',
   'calc.issue.tooLong': '계산식이 너무 깁니다({max}자 이하).',
   'calc.issue.unknownTop': '알 수 없는 칸입니다(lets·outputs만).',

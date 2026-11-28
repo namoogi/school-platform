@@ -35,6 +35,8 @@ describe('관제 센터', () => {
 
   it('세션이 결정 요청을 올리고 → 선생님이 선택지·추가 요청사항으로 답하면 → 전달 대기 → 관제가 전달됨 표시', async () => {
     const filed = await asAgent((db) => c.control.file(db, T, {
+      door: 'default', ask: '소식 목록을 카드로 할까요?', changes: '바뀌는 것', unchanged: '안 바뀌는 것', undo: '되돌리는 길',
+      due_at: new Date(Date.now() + 86400000).toISOString(), default_action: '추천안으로 진행',
       title: '소식 목록 카드 모양', detail: '카드와 목록 중 고릅니다.', source_session: RAS, reversible: true, recommended: 'cards',
       options: [{ key: 'cards', label: '카드' }, { key: 'list', label: '목록' }],
     })) as { id: string; status: string; no: number };

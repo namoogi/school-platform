@@ -13,7 +13,7 @@ type T = (key: MsgKey, vars?: Record<string, string | number>) => string;
 const samples = (t: T) => boundarySamples((score) => t('gset.sample', { score }));
 
 /**
- * 130차: 학교 관리자가 학사 설정을 화면에서 새 판으로 저장한다(AI 초안 붙여 넣기 포함).
+ * 131차: 학교 관리자가 학사 설정을 화면에서 새 판으로 저장한다(AI 초안 붙여 넣기 포함).
  * 맞춤 척도 · 성적 정책 전체 · 계산식 판. 모든 저장은 보고 고친 판(base_version)을 보내 그 사이 새 판이 있으면 409, '왜' 칸 필수.
  */
 export function GradeSettings({ t, lang, scales, policy, calcRules, calcFrom, offering }: {

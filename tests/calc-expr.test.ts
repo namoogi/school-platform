@@ -189,7 +189,7 @@ describe('106차: 중간값은 적힌 순서가 아니라 서로 가리키는 �
   });
 });
 
-describe('130차: 식 검사 문구·견본 설명은 화면 언어 이름표가 있다', async () => {
+describe('131차: 식 검사 문구·견본 설명은 화면 언어 이름표가 있다', async () => {
   const { CATALOG } = await import('@/lib/i18n/catalog');
   const en = (await import('../i18n/en.json')).default as Record<string, string>;
   it('검사 문제마다 calc.issue.* 이름표(한·영)', () => {

@@ -25,6 +25,10 @@ export const TOPIC = {
 export type Topic = keyof typeof TOPIC;
 export const SCHOOL_TOPICS: Topic[] = ['school_ai', 'site_ui', 'system'];
 
+/** 결정 카드 문 종류: 되돌리기 어려움(사람을 기다림) · 기한까지 반대 없으면 진행 · 알림만 (ADR 0048) */
+export type Door = 'one_way' | 'default' | 'notice';
+export const DOOR_ORDER: Door[] = ['one_way', 'default', 'notice'];
+
 export type Option = { key: string; label: string; detail?: string };
 export type Message = {
   id: number; author: 'user' | 'control' | 'session'; author_session: string | null; kind: string; choice: string | null; body: string;
@@ -35,9 +39,12 @@ export type Request = {
   id: string; no: number; kind: 'decision' | 'directive' | 'chat'; title: string; detail: string; options: Option[]; recommended: string | null;
   reversible: boolean | null; related: string; lab_item_id: string | null; source_session: string | null; assignee_session: string | null;
   status: Status; topic: Topic; school_id: string | null; school_name?: string | null;
+  /** 결정 카드(130차, ADR 0048). 옛 요청·지시·대화는 비어 있다 */
+  door?: Door | null; ask?: string | null; default_action?: string | null; due_at?: string | null;
+  changes?: string | null; unchanged?: string | null; undo?: string | null;
   author: string; created_at: string; updated_at: string; messages: Message[];
 };
 export type Session = { id: string; name: string; role: string; tags: string[]; active: boolean; school_id?: string | null };
-export type ThreadSummary = Pick<Request, 'id' | 'no' | 'kind' | 'title' | 'status' | 'topic' | 'school_id' | 'school_name' | 'assignee_session'> & {
+export type ThreadSummary = Pick<Request, 'id' | 'no' | 'kind' | 'title' | 'status' | 'topic' | 'school_id' | 'school_name' | 'assignee_session' | 'door'> & {
   activity_at: string; last: { author: string; body: string; kind: string } | null;
 };
