@@ -94,5 +94,38 @@ describe('69차 운영 시험 반영', () => {
     const th2 = proposeFills(t, [{ name: 'x.txt', text: 'ติดต่อเรา\nโทร 045-953270 มือถือ 062-0626837' }], { schoolName: 'R' });
     expect(th2.find((p) => p.slotId === 'footer')!.value).toBe('R · 045-953270');
   });
-});
 
+  it('115차: 두 언어 템플릿에서 한국어 자료로 채워도 영어 칸은 남는다', () => {
+    const t = templateByKey('admissions');
+    const home = structuredClone(t.pages[0].content);
+    const slot = t.slots.find((s) => s.id === 'address')!;
+    expect(putProposal(home, slot, '가상시 새솔구 미래로 30')).toBe(true);
+    expect(home.site?.address).toEqual({ ko: '가상시 새솔구 미래로 30', en: '[Address]' });
+  });
+
+  it('115차: 두 언어 템플릿의 목록 칸도 영어 안내 자리를 남긴다', () => {
+    const t = templateByKey('admissions');
+    const home = structuredClone(t.pages.find((p) => p.key === 'home')!.content);
+    const slot = t.slots.find((s) => s.id === 'differences')!;
+    expect(putProposal(home, slot, [{ title: '작은 학급', body: '한 반 15명 이하' }, { title: '두 언어 수업', body: '국어·영어 주제 수업' }])).toBe(true);
+    const items = (home.blocks[slot.path[1] as number] as { items: { title: Record<string, string>; body?: Record<string, string> }[] }).items;
+    expect(items[0].title).toEqual({ ko: '작은 학급', en: '[Difference 1]' });
+    expect(items[0].body).toEqual({ ko: '한 반 15명 이하', en: '[One fact that shows it]' });
+    expect(items).toHaveLength(2);
+  });
+
+  it('117차: 제목만 있는 목록 항목은 그 언어의 안내 자리를 지우고 다른 언어는 남긴다', () => {
+    const t = templateByKey('admissions');
+    const home = structuredClone(t.pages.find((p) => p.key === 'home')!.content);
+    const slot = t.slots.find((s) => s.id === 'differences')!;
+    expect(putProposal(home, slot, [{ title: '작은 학급', body: '' }])).toBe(true);
+    const item = (home.blocks[slot.path[1] as number] as { items: { title: Record<string, string>; body?: Record<string, string> }[] }).items[0];
+    expect(item.title).toEqual({ ko: '작은 학급', en: '[Difference 1]' });
+    expect(item.body).toEqual({ en: '[One fact that shows it]' });
+    const k = templateByKey('kinder');
+    const kh = structuredClone(k.pages[0].content);
+    const ks = k.slots.find((s) => s.id === 'classes')!;
+    expect(putProposal(kh, ks, [{ title: '새싹반', body: '' }])).toBe(true);
+    expect((kh.blocks[ks.path[1] as number] as { items: { body?: unknown }[] }).items[0].body).toBeUndefined();
+  });
+});

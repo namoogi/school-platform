@@ -28,7 +28,10 @@ const kb = (k: string, e: string): LText => ({ ko: k, en: e });
 const section = (b: Omit<Extract<Block, { type: 'section' }>, 'type'>): Block => ({ type: 'section', ...b });
 const news = (title: LText, count = 3, style: 'cards' | 'list' = 'cards'): Block => ({ type: 'news_list', title, count, style });
 const contact = (visit?: { label: string; href: string; en?: string }): Content['site'] => ({
-  tagline: ko('[학교를 한 줄로 소개하는 말]'), address: ko('[학교 주소]'), footer: ko('[학교 이름] · [대표 전화] · [이메일]'),
+  ...(visit?.en
+    // 두 언어 템플릿(ko·en): 바닥 연락처도 영어 안내 자리를 함께 둔다
+    ? { tagline: kb('[학교를 한 줄로 소개하는 말]', '[One line about the school]'), address: kb('[학교 주소]', '[Address]'), footer: kb('[학교 이름] · [대표 전화] · [이메일]', '[School name] · [Phone] · [Email]') }
+    : { tagline: ko('[학교를 한 줄로 소개하는 말]'), address: ko('[학교 주소]'), footer: ko('[학교 이름] · [대표 전화] · [이메일]') }),
   // 100차: 머리글 오른쪽·바닥글의 주요 행동 단추(학교가 이름과 가는 곳을 바꾼다)
   ...(visit ? { visit: { label: visit.en ? kb(visit.label, visit.en) : ko(visit.label), href: visit.href } } : {}),
 });
@@ -167,25 +170,25 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         section({ template: 'banner', title: kb('[우리 학교를 고르는 이유 한 문장]', '[Why families choose us]'), button: { label: kb('입학 안내', 'Admissions'), href: '/p/admissions' } }),
         quicklinks([['왜 우리 학교인가', '/p/why', 'Why us'], ['교육과정', '/p/curriculum', 'Curriculum'], ['입학 안내', '/p/admissions', 'Admissions'], ['소식', '/news', 'News']], '입학', 'Admissions'),
         section({ template: 'cards', title: kb('무엇이 다른가요', 'What makes us different'), items: [
-          { title: ko('[차별점 1]'), body: ko('[근거가 되는 사실 한 줄]') }, { title: ko('[차별점 2]'), body: ko('[근거]') }, { title: ko('[차별점 3]'), body: ko('[근거]') }] }),
+          { title: kb('[차별점 1]', '[Difference 1]'), body: kb('[근거가 되는 사실 한 줄]', '[One fact that shows it]') }, { title: kb('[차별점 2]', '[Difference 2]'), body: kb('[근거]', '[Evidence]') }, { title: kb('[차별점 3]', '[Difference 3]'), body: kb('[근거]', '[Evidence]') }] }),
         stats('입학', 4, 'Admissions'),
         voices('입학', '학부모·졸업생 이야기', 'Admissions', 'Parents and graduates'),
         events('입학', '입학 설명회 일정', 'Admissions', 'Open days'),
         news(kb('소식', 'News'), 3),
       ], { site: contact({ label: '입학 상담', href: '/p/admissions', en: 'Book a visit' }) }),
       page('why', 1, kb('왜 우리 학교인가', 'Why us'), [
-        section({ template: 'media-left', title: ko('[졸업생·학부모 이야기]'), body: ko('[실제 이야기 — 이름은 허락받은 경우만]') }),
-        section({ template: 'facts', variant: 'stats', title: ko('숫자로 보는 학교'), items: [{ title: ko('[학생 수]'), body: ko('[설명]') }, { title: ko('[교사 1인당 학생]'), body: ko('[설명]') }] }),
+        section({ template: 'media-left', title: kb('[졸업생·학부모 이야기]', '[A graduate or parent story]'), body: kb('[실제 이야기 — 이름은 허락받은 경우만]', '[A real story, names only with permission]') }),
+        section({ template: 'facts', variant: 'stats', title: kb('숫자로 보는 학교', 'At a glance'), items: [{ title: kb('[학생 수]', '[Number of students]'), body: kb('[설명]', '[Description]') }, { title: kb('[교사 1인당 학생]', '[Students per teacher]'), body: kb('[설명]', '[Description]') }] }),
       ]),
       page('curriculum', 2, kb('교육과정', 'Curriculum'), [
-        section({ template: 'steps', title: ko('학년별 과정'), items: [{ title: ko('[과정 1]'), body: ko('[설명]') }, { title: ko('[과정 2]'), body: ko('[설명]') }] }),
+        section({ template: 'steps', title: kb('학년별 과정', 'Courses by grade'), items: [{ title: kb('[과정 1]', '[Course 1]'), body: kb('[설명]', '[Description]') }, { title: kb('[과정 2]', '[Course 2]'), body: kb('[설명]', '[Description]') }] }),
       ]),
       page('admissions', 3, kb('입학 안내', 'Admissions'), [
-        section({ template: 'steps', title: kb('입학 절차', 'How to apply'), items: [{ title: ko('문의'), body: ko('[문의 방법]') }, { title: ko('견학·상담'), body: ko('[일정]') }, { title: ko('지원'), body: ko('[서류·전형]') }, { title: ko('결과'), body: ko('[발표·등록]') }] }),
-        section({ template: 'facts', title: kb('학비와 비용', 'Tuition & fees'), items: [{ title: ko('[수업료]'), body: ko('[금액·납부]') }, { title: ko('[기타 비용]'), body: ko('[기숙사·급식·체험 등]') }] }),
-        section({ template: 'facts', variant: 'faq', title: kb('자주 묻는 질문', 'FAQ'), items: [{ title: ko('[질문]'), body: ko('[답]') }] }),
-        { type: 'inquiry', title: kb('견학·상담 신청', 'Book a visit'), body: ko('[신청 안내 한 줄]') },
-        section({ template: 'cta', title: kb('견학 신청', 'Visit us'), body: ko('[연락처·견학 가능 요일]'), button: { label: kb('문의하기', 'Contact'), href: '/p/admissions' } }),
+        section({ template: 'steps', title: kb('입학 절차', 'How to apply'), items: [{ title: kb('문의', 'Enquire'), body: kb('[문의 방법]', '[How to enquire]') }, { title: kb('견학·상담', 'Visit'), body: kb('[일정]', '[Schedule]') }, { title: kb('지원', 'Apply'), body: kb('[서류·전형]', '[Documents · assessment]') }, { title: kb('결과', 'Result'), body: kb('[발표·등록]', '[Results · enrolment]') }] }),
+        section({ template: 'facts', title: kb('학비와 비용', 'Tuition & fees'), items: [{ title: kb('[수업료]', '[Tuition]'), body: kb('[금액·납부]', '[Amount · payment]') }, { title: kb('[기타 비용]', '[Other costs]'), body: kb('[기숙사·급식·체험 등]', '[Boarding, meals, trips]') }] }),
+        section({ template: 'facts', variant: 'faq', title: kb('자주 묻는 질문', 'FAQ'), items: [{ title: kb('[질문]', '[Question]'), body: kb('[답]', '[Answer]') }] }),
+        { type: 'inquiry', title: kb('견학·상담 신청', 'Book a visit'), body: kb('[신청 안내 한 줄]', '[One line about booking]') },
+        section({ template: 'cta', title: kb('견학 신청', 'Visit us'), body: kb('[연락처·견학 가능 요일]', '[Contact · visiting days]'), button: { label: kb('문의하기', 'Contact'), href: '/p/admissions' } }),
       ]),
     ],
     slots: [
@@ -249,20 +252,20 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       page('home', 0, kb('[학교 이름]', '[School name]'), [
         section({ template: 'banner', title: kb('[학교의 사명 한 문장]', '[Our mission]'), button: { label: kb('함께하기', 'Get involved'), href: '/p/partner' } }),
         quicklinks([['사명과 신앙', '/p/mission', 'Mission & faith'], ['함께하기', '/p/partner', 'Partner with us'], ['후원금 쓰임', '/p/partner', 'Use of funds'], ['소식·기도 제목', '/news', 'News & prayer']], '사명', 'Mission'),
-        section({ template: 'media-right', title: ko('[이 학교가 섬기는 아이들과 마을]'), body: ko('[누구를, 어디에서, 왜]') }),
+        section({ template: 'media-right', title: kb('[이 학교가 섬기는 아이들과 마을]', '[The children and village we serve]'), body: kb('[누구를, 어디에서, 왜]', '[Who, where and why]') }),
         stats('사명', 4, 'Mission'),
         events('사명', '기도·방문 일정', 'Mission', 'Prayer & visit dates'),
         voices('사명', '함께하는 분들의 이야기', 'Mission', 'Voices of our partners'),
         news(kb('소식·기도 제목', 'News & prayer'), 3),
       ], { site: contact({ label: '후원하기', href: '/p/partner', en: 'Give' }) }),
       page('mission', 1, kb('사명과 신앙', 'Mission & faith'), [
-        section({ template: 'quote', body: ko('[사명 선언문]') }),
-        section({ template: 'facts', title: ko('우리가 믿는 것'), items: [{ title: ko('[고백 1]'), body: ko('[설명]') }] }),
+        section({ template: 'quote', body: kb('[사명 선언문]', '[Mission statement]') }),
+        section({ template: 'facts', title: kb('우리가 믿는 것', 'What we believe'), items: [{ title: kb('[고백 1]', '[Belief 1]'), body: kb('[설명]', '[Description]') }] }),
       ]),
       page('partner', 2, kb('함께하기', 'Partner with us'), [
-        section({ template: 'cards', title: ko('함께하는 방법'), items: [{ title: ko('정기 후원'), body: ko('[계좌·방법]') }, { title: ko('봉사'), body: ko('[필요한 봉사]') }, { title: ko('기도'), body: ko('[기도 제목 받는 방법]') }] }),
-        section({ template: 'facts', title: ko('후원금은 이렇게 쓰입니다'), items: [{ title: ko('[쓰임 1]'), body: ko('[비율·설명]') }] }),
-        section({ template: 'cta', title: ko('후원 문의'), body: ko('[담당자 연락처]'), button: { label: ko('문의하기'), href: '/p/partner' } }),
+        section({ template: 'cards', title: kb('함께하는 방법', 'Ways to partner'), items: [{ title: kb('정기 후원', 'Monthly giving'), body: kb('[계좌·방법]', '[Account · how]') }, { title: kb('봉사', 'Volunteer'), body: kb('[필요한 봉사]', '[Volunteering needed]') }, { title: kb('기도', 'Prayer'), body: kb('[기도 제목 받는 방법]', '[How to receive prayer letters]') }] }),
+        section({ template: 'facts', title: kb('후원금은 이렇게 쓰입니다', 'How gifts are used'), items: [{ title: kb('[쓰임 1]', '[Use 1]'), body: kb('[비율·설명]', '[Share · note]') }] }),
+        section({ template: 'cta', title: kb('후원 문의', 'Partnership enquiries'), body: kb('[담당자 연락처]', '[Contact person]'), button: { label: kb('문의하기', 'Contact us'), href: '/p/partner' } }),
       ]),
     ],
     slots: [
