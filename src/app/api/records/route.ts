@@ -1,12 +1,12 @@
 import { handle } from '@/lib/api';
-import { ValidationError } from '@/lib/services';
-import { closeRecordYear, publishRecordDocument, recordDisclosure, type Format } from '@/lib/records';
+import { requireWhy, ValidationError } from '@/lib/services';
+import { closeRecordYear, publishRecordDocument, recordDisclosure, saveOutputProfile, type Format } from '@/lib/records';
 import { addExternalResult, awardQualification, closeCountReport } from '@/lib/qualifications';
 import { resolveLang, userLang } from '@/lib/i18n/server';
 
 /**
  * 75차: 기록(학년도 기록 마감 판·발행·공개 기록·외부 결과·자격·지정일 보고). 모두 학교 관리자 일이고, 판정은 DB 명령 함수가 한다.
- * 발행본은 마감 판 스냅샷만으로 그린다(지침 5). body.action: close-year | publish | disclose | external | qualification | count-report
+ * 발행본은 마감 판 스냅샷만으로 그린다(지침 5). body.action: close-year | publish(profileCode: 131차) | disclose | external | qualification | count-report | output-profile(131차)
  */
 const FORMATS: Format[] = ['kr_alt_record', 'us_transcript', 'us_school_profile', 'th_por_por_1', 'en_record'];
 const txt = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
@@ -20,9 +20,16 @@ export async function POST(req: Request) {
         return await closeRecordYear(db, school.id, b.personId, b.yearId, { base_version: base, reason: txt(b.reason), requestKey: b.requestKey });
       }
       case 'publish': {
+        // 학생 발행 양식은 '서식@프로필' 한 값으로 보낸다(서식에 맞는 프로필만 고르게)
+        if (typeof b.format === 'string' && b.format.includes('@')) [b.format, b.profileCode] = b.format.split('@', 2);
         if (!FORMATS.includes(b.format)) throw new ValidationError('err.rec.format');
-        const r = await publishRecordDocument(db, school.id, { format: b.format, personId: b.format === 'us_school_profile' ? undefined : b.personId, blind: b.blind === 'yes' });
+        const r = await publishRecordDocument(db, school.id, { format: b.format, personId: b.format === 'us_school_profile' ? undefined : b.personId, blind: b.blind === 'yes', profileCode: txt(b.profileCode) || undefined });
         return { id: r.id, issues: r.issues.length };
+      }
+      // 131차: 출력 프로필 새 판(서식 칸 순서·표기·글자 수 등). 판은 추가만, base_version 이 최신이 아니면 409
+      case 'output-profile': {
+        if (!FORMATS.includes(b.format)) throw new ValidationError('err.rec.format');
+        return await saveOutputProfile(db, school.id, { format: b.format, code: txt(b.code), settings: b.settings, why: requireWhy(b.why), base_version: Number(b.base_version ?? 0) });
       }
       case 'disclose': return { id: await recordDisclosure(db, school.id, { documentId: b.documentId, recipient: txt(b.recipient), purpose: txt(b.purpose), basis: txt(b.basis) || undefined }) };
       case 'external': {
