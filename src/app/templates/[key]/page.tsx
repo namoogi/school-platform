@@ -1,7 +1,7 @@
 import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireUser } from '@/lib/auth';
+import { currentUserId } from '@/lib/auth';
 import { asUser } from '@/lib/db';
 import { getI18n, userLang } from '@/lib/i18n/server';
 import { LANG_LABEL, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
@@ -14,13 +14,14 @@ export const dynamic = 'force-dynamic';
 
 /**
  * 89차(ADR 0034): 템플릿 전체 화면 미리보기 — 관리 화면 밖에서 방문자가 볼 모습 그대로(디자인·메뉴·바닥).
- * 내용은 가상 학교 예시(또는 안내 자리)이고 DB를 읽지 않는다. 로그인한 사람만 본다.
+ * 내용은 가상 학교 예시(또는 안내 자리)이고 DB를 읽지 않는다.
+ * 공개 쪽이다(2026-11-28 사용자 결정 — 홍보용 공개 미리보기). 로그인한 사람이면 그 사람의 화면 언어만 읽는다.
  */
 export default async function TemplateLive({ params, searchParams }: {
   params: Promise<{ key: string }>; searchParams: Promise<{ page?: string; lang?: string; view?: string; thumb?: string; news?: string }>;
 }) {
-  const userId = await requireUser();
-  const { t: tr } = await getI18n(await asUser(userId, userLang));
+  const userId = await currentUserId();
+  const { t: tr } = await getI18n(userId ? await asUser(userId, userLang) : null);
   const { key } = await params;
   const sp = await searchParams;
   const t = SITE_TEMPLATES.find((x) => x.key === key);
@@ -53,13 +54,13 @@ export default async function TemplateLive({ params, searchParams }: {
   return (
     <>
       {!sp.thumb && <nav className="template-live-bar" aria-label={tr('site.tpl.live.label')}>
-        <Link href="/site/templates">{tr('site.tpl.live.back')}</Link>
+        {userId && <Link href="/site/templates">{tr('site.tpl.live.back')}</Link>}
         <strong>{templateText(tr, t.key, 'name', t.name)}</strong><span className="muted">{tr('site.tpl.live.design', { name: siteLabel(tr, 'theme', t.theme, design?.name ?? t.theme) })}</span>
         {sample && <span className="segmented" role="group" aria-label={tr('site.tpl.view.label')}>
           <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined}>{tr('site.tpl.view.sample')}</Link>
           <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined}>{tr('site.tpl.view.guide')}</Link>
         </span>}
-        <Link className="btn btn-primary btn-sm" href={`/site/templates/${t.key}`} data-testid="template-live-start">{tr('site.tpl.live.start')}</Link>
+        <Link className="btn btn-primary btn-sm" href={userId ? `/site/templates/${t.key}` : `/login?next=${encodeURIComponent(`/site/templates/${t.key}`)}`} data-testid="template-live-start">{tr('site.tpl.live.start')}</Link>
       </nav>}
       {view === 'sample' && !sp.thumb && <p className="template-live-note">{tr('site.tpl.live.sampleNote', { school: sample.school })} {t.langs.length > 1 ? `${tr('site.tpl.detail.langs')} ${t.langs.map((l) => LANG_LABEL[l as Lang]).join('·')}` : ''}</p>}
       <SiteFrame site={site} lang={lang} current={pg.key === 'home' ? 'home' : `p:${pg.key}`} path={pg.key === 'home' ? '/' : `/p/${pg.key}`}
