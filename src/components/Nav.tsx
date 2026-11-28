@@ -42,7 +42,9 @@ export function Nav({ groups }: { groups: NavGroup[] }) {
               <Link key={i.href} href={i.href} className="nav-item" data-tip={i.title ?? i.label} aria-current={current?.href === i.href ? 'page' : undefined}>
                 {/* 접근 이름은 aria-label 대신 링크 안 글자로 만든다. 보이는 이름·건수가 그대로 들어가야
                     음성 명령·화면낭독기가 같은 이름으로 찾는다 (WCAG 2.5.3, axe label-content-name-mismatch) */}
-                <span className="nav-label">{Icon && <Icon size={22} aria-hidden="true" />}<span className="nav-text">{i.label}</span></span>
+                <span className="nav-label">{Icon && <Icon size={22} aria-hidden="true" />}<span className="nav-text">{i.label}</span>
+                  {/* 펼친 메뉴 막대(마우스를 올리거나 키보드로 들어오면)에 보이는 전체 이름. 접근 이름은 위 글자 + 아래 sr-only 로 이미 있으므로 숨긴다 */}
+                  <span className="nav-full" aria-hidden="true">{i.title ?? i.label}</span></span>
                 {!!i.count && <> <span className="count-badge">{i.count}<span className="sr-only">{t('nav.pendingSuffix')}</span></span></>}
                 {i.title && i.title !== i.label && <span className="sr-only"> ({i.title})</span>}
               </Link>
