@@ -2467,3 +2467,57 @@ label.check input { margin-top: 0.25em; }
   .academics-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
   .academics-tabs a { justify-content: center; }
 }
+
+/* ───────── 124차: 템플릿 모바일 정리 — 머리글 한 줄·메뉴 펼침판·첫 화면 글 가독성·바닥글 링크·소식 목록 (키트 테마만, campus·dawn 제외) ───────── */
+/* 홈 첫 구역이 큰 사진 띠면 쪽 제목(학교 이름)은 작은 이름표로 — 머리글 학교 이름과 같은 큰 글자가 두 번 나오지 않게 */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-head:has(+ .site-blocks > .sec[data-template="banner"]:first-child) { padding-block: 0 var(--space-4); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-head:has(+ .site-blocks > .sec[data-template="banner"]:first-child) .site-h1 { font: 700 var(--fs-body-sm) / 1.5 var(--font-sans); letter-spacing: .12em; color: var(--t-muted); }
+/* 바닥글 링크: 밑줄 대신 글자 굵기·간격으로 묶고, 가리키거나 초점이 갈 때만 밑줄 */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav a, .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-contact a { text-decoration: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav a { display: inline-flex; align-items: center; min-height: 40px; font-weight: 600; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer a:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 4px; }
+/* 구역 머리 '모두 보기' 링크: 밑줄 없이 강조색 + 화살표 */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy > .site-link { text-decoration: none; font-weight: 700; color: var(--t-link); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy > .site-link:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 4px; }
+/* 소식 목록(목록 모양): 날짜는 작게 위, 제목은 밑줄 없이 굵게 */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .lb-board li { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); align-items: baseline; gap: var(--space-1) var(--space-4); padding: var(--space-3) 0; border-top: 1px solid var(--t-line); }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .lb-board time { color: var(--t-muted); font-size: var(--fs-body-sm); font-variant-numeric: tabular-nums; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .lb-board a { color: var(--t-ink); font-weight: 600; text-decoration: none; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .lb-board a:is(:hover, :focus-visible) { color: var(--t-link); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 900px) {
+  /* 머리글: [학교 이름 | 주요 단추 | 메뉴] 한 줄. 메뉴를 펼치면 머리글 아래로 판이 내려온다(아래 내용을 밀지 않음) */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; column-gap: var(--space-2); padding-inline: var(--L-gutter); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-topbar { grid-column: 1 / -1; margin-inline: calc(-1 * var(--L-gutter)); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-header-row { display: contents; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-brand { grid-column: 1; min-width: 0; padding-block: var(--space-3); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-brand strong { overflow-wrap: anywhere; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-visit { grid-column: 2; margin-left: 0; min-height: 40px; padding-inline: var(--space-4); white-space: nowrap; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu { grid-column: 3; width: auto; margin: 0; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu > summary { min-height: 40px; padding: 0 var(--space-3); list-style: none; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu > summary::-webkit-details-marker { display: none; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu[open] > summary { margin-bottom: 0; background: var(--t-ink); color: var(--t-bg); border-color: var(--t-ink); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu nav { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; padding: var(--space-2) var(--L-gutter) var(--space-4); background: var(--t-bg); border-bottom: 1px solid var(--t-line); box-shadow: var(--shadow-2); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu nav a { min-height: 48px; font-size: var(--fs-body); }
+  /* 바닥글 메뉴는 두 줄 격자 대신 한 줄씩 */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav { display: flex; }
+}
+@media (max-width: 760px) {
+  /* 사진 위 큰 글: 아래쪽을 진하게 덮고 글자 그림자로 밝은 사진에서도 읽히게 */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"]:not([data-variant]) .sec-photo::after { background: linear-gradient(180deg, transparent 20%, color-mix(in srgb, var(--t-footer) 85%, transparent)); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"]:not([data-variant]):has(.sec-photo) h2 { text-shadow: 0 1px 14px color-mix(in srgb, var(--t-footer) 70%, transparent); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"] h2 { font-size: clamp(26px, 7.4vw, 34px); line-height: 1.25; text-wrap: balance; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"]:not([data-variant]) .sec-copy { align-self: end; justify-self: stretch; text-align: start; justify-items: start; }
+  /* 카드 본문 글: 작고 흐린 글을 한 단계 키운다 */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) :is(p, span:not(.card-more)) { font-size: var(--fs-body); line-height: 1.6; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .lb-board li { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-topbar-row { flex-wrap: nowrap; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-topbar p { min-width: 0; flex-wrap: nowrap; overflow: hidden; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-topbar p > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 480px) {
+  /* 좁은 화면: 머리글 한 줄 소개는 빼고(바닥글에 있음) 학교 이름만, 바로가기 카드는 안쪽 여백을 줄여 글 폭을 넓힌다, 바닥글 묶음 사이를 좁힌다 */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header .site-brand small { display: none; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-variant="quicklinks"] .sec-item-copy { padding: var(--space-4); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid { gap: var(--space-6); }
+}
