@@ -6,7 +6,7 @@ import { useEffect } from 'react';
  * CSS가 그때 '메뉴' 단추만 화면 위쪽에 띄운다(머리글 전체를 고정하지 않아 본문이 튀지 않는다). 그림은 CSS가 한다.
  * 위에 붙어 따라오는 막대(data-sticky-top: 교직원 막대·템플릿 미리보기 막대·화면 편집 도구 막대)가 있으면
  * 가장 높은 막대의 높이를 --site-float-offset으로 넘겨 단추를 그 아래에 둔다(막대는 모두 top: 0이라 겹친다).
- * 높이는 단추가 뜰 때와 화면 크기가 바뀔 때 잰다(휴대폰에서 막대 줄이 바뀌면 높이도 바뀐다).
+ * 높이는 단추가 뜰 때, 화면 크기가 바뀔 때, 막대 크기가 바뀔 때 잰다.
  */
 export function HeaderWatch() {
   useEffect(() => {
@@ -23,8 +23,11 @@ export function HeaderWatch() {
     });
     io.observe(header);
     window.addEventListener('resize', setOffset);
+    // 막대 높이는 창 크기가 그대로여도 바뀐다(예: 화면 편집 도구 막대에 저장 안내 줄이 붙을 때) — 크기 변화를 지켜본다
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(setOffset) : null;
+    document.querySelectorAll<HTMLElement>('[data-sticky-top]').forEach((b) => ro?.observe(b));
     return () => {
-      io.disconnect(); window.removeEventListener('resize', setOffset);
+      io.disconnect(); ro?.disconnect(); window.removeEventListener('resize', setOffset);
       header.removeAttribute('data-away'); header.style.removeProperty('--site-float-offset');
     };
   }, []);

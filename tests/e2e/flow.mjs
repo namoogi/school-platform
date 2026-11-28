@@ -2281,6 +2281,9 @@ try {
     await p.locator('.site-header[data-away]').waitFor({ state: 'attached' });
     const [liveBottom, btnTop2] = await p.evaluate(() => [document.querySelector('.template-live-bar').getBoundingClientRect().bottom, document.querySelector('.site-header > .site-menu > summary').getBoundingClientRect().top]);
     assert.ok(btnTop2 >= liveBottom, `미리보기: 메뉴 단추(${btnTop2})가 미리보기 막대(${liveBottom}) 아래에 있어야 함`);
+    // 막대가 창 크기 변화 없이 높아져도(안내 줄이 붙는 경우) 단추가 따라 내려간다
+    await p.evaluate(() => { const n = document.createElement('p'); n.textContent = '저장했습니다'; n.style.padding = '24px 0'; document.querySelector('.template-live-bar').append(n); });
+    await p.waitForFunction(() => document.querySelector('.site-header > .site-menu > summary').getBoundingClientRect().top >= document.querySelector('.template-live-bar').getBoundingClientRect().bottom);
     await ctx.close();
   });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
