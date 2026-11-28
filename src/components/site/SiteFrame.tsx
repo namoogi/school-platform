@@ -84,7 +84,8 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   const navList = nav.map((n) => <Link key={n.key} href={n.href} aria-current={n.key === current ? 'page' : undefined}>{n.label}</Link>);
   // 126차(ADR 0046): 키트 디자인은 두 단계 메뉴(상위 쪽 아래 하위 쪽·메뉴 주소 구역). campus·dawn은 지금처럼 한 줄
   const tree = kit && !hidden ? [
-    { key: 'home', href: link('/'), title: { [lang]: siteText('home', lang) }, children: [] },
+    { key: 'home', href: link('/'), title: { [lang]: siteText('home', lang) },
+      children: (site.home_sections ?? []).map((x) => ({ key: `home#${x.anchor}`, href: `${link('/')}#${x.anchor}`, title: x.title })) },
     ...buildNavTree(site.nav, (k, a) => `${link(`/p/${k}`)}${a ? `#${a}` : ''}`, site.has_news ? { href: link('/news'), title: { [lang]: siteText('news', lang) } } : undefined),
     ...(site.stories ? [{ key: 'stories', href: link('/stories'), title: { [lang]: siteText('stories', lang) }, children: [] }] : []),
   ] : [];

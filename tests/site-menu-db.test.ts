@@ -47,6 +47,7 @@ describe('126차 두 단계 메뉴', () => {
       { type: 'inquiry', title: { ko: '상담 신청' }, anchor: 'apply' },
       { type: 'news_list', title: { ko: '최근 소식' }, count: 3, style: 'list', anchor: 'latest' }] }, 1);
     await page(A, 'history', { title: { ko: '연혁' }, menu: { parent: 'about' }, blocks: [] }, 2);
+    await page(A, 'home', { title: { ko: '홈' }, blocks: [{ type: 'section', template: 'text', title: { ko: '우리 학교' }, anchor: 'intro' }, { type: 'heading', text: { ko: '숨김' }, anchor: 'hid', hidden: true }] }, 0);
     await page(B, 'b-only', { title: { ko: 'B 학교 쪽' }, blocks: [{ type: 'heading', text: { ko: 'B' }, anchor: 'b-sec' }] }, 1);
     const nav = (await site.publicSite('menu-a'))!.nav;
     expect(nav).toEqual([
@@ -54,6 +55,9 @@ describe('126차 두 단계 메뉴', () => {
       { key: 'history', title: { ko: '연혁' }, parent: 'about', sections: [] },
     ]);
     expect(JSON.stringify((await site.publicSite('menu-b'))!.nav)).not.toContain('greeting');
+    // 홈 쪽 메뉴 주소 구역은 nav가 아니라 home_sections로('홈' 아래 하위 메뉴)
+    expect((await site.publicSite('menu-a'))!.home_sections).toEqual([{ anchor: 'intro', title: { ko: '우리 학교' } }]);
+    expect((await site.publicSite('menu-b'))!.home_sections).toEqual([]);
   });
   it('신청을 받고 소식이 있으면 신청 칸·소식 목록 하위 메뉴가 생긴다', async () => {
     await asUser(A.userId, (db) => site.saveSettings(db, A.schoolId, { public_slug: 'menu-a', langs: ['ko'], default_lang: 'ko', theme: 'clear', site_title: { ko: 'menu-a' }, is_open: true, inquiry_open: true }));

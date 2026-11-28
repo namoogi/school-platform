@@ -20,7 +20,8 @@
 ## 결정
 A. 쪽 내용(`site_entry_versions.content`)의 `menu.parent`(다른 쪽 주소 이름 또는 `news`)와 블록의 `anchor`(메뉴 주소)로 메뉴 나무를 만든다.
 - 공개된 판만 메뉴에 실린다(`app.public_site`가 `parent`·`sections`를 더해 낸다). 판·공개·되돌리기가 쪽과 함께 움직인다.
-- 한 단계만. 없는 쪽이나 셋째 단계를 가리키면 상위로 올라온다.
+- 한 단계만. 없는 쪽이나 셋째 단계를 가리키면 상위로 올라온다. 상위 메뉴 값 `news`는 늘 소식 목록이다(주소 이름이 news인 쪽은 상위 메뉴가 되지 못한다).
+- 홈 쪽의 메뉴 주소 구역은 '홈' 아래 하위 메뉴가 된다(`home_sections`). 한 쪽 소개형도 이렇게 하위 메뉴를 쓴다.
 - 키트 디자인만 두 단계로 그린다. campus·dawn은 한 줄 메뉴 그대로다.
 - 분류와 템플릿 적용 계획: `docs/design/school-content-taxonomy.md`.
 
