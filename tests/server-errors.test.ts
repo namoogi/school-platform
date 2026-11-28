@@ -47,7 +47,7 @@ describe('서버 오류 이름표', () => {
   it("'db.' 이름표의 기준 문구는 마이그레이션의 raise 문구와 글자까지 같다(어긋나면 번역이 조용히 멈춘다)", () => {
     const dir = path.resolve(__dirname, '..', 'supabase', 'migrations');
     const sql = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
-    const keys = (Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('db.'));
+    const keys = (Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('db.') && !k.startsWith('db.v.'));
     for (const k of keys) {
       const ko = CATALOG[k] as string;
       expect(sql.includes(`'${ko.replace(/'/g, "''")}'`), `${k}: ${ko}`).toBe(true);
@@ -114,5 +114,40 @@ describe('편집기 칸 이름 (104차)', () => {
     expect(literal.length + numbered.length).toBeGreaterThan(30); // 찾는 식이 칸 이름을 실제로 잡는지
     const missing = [...literal, ...numbered].filter((l) => fieldLabel(tEn, l) === l);
     expect(missing).toEqual([]);
+  });
+});
+
+describe('값이 든 DB 문구 (113차)', () => {
+  it("'db.v.' 문구는 {vN}을 %로 바꾸면 마이그레이션의 raise 문구와 같다", () => {
+    const dir = path.resolve(__dirname, '..', 'supabase', 'migrations');
+    const sql = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
+    for (const k of (Object.keys(CATALOG) as MsgKey[]).filter((x) => x.startsWith('db.v.'))) {
+      const ko = (CATALOG[k] as string).replace(/'/g, "''");
+      // raise exception '…%…' 또는 format('…%s…') 둘 다 DB 자리
+      const found = [ko.replace(/\{v\d\}/g, '%'), ko.replace(/\{v\d\}/g, '%s')].some((raw) => sql.includes(`'${raw}'`));
+      expect(found, `${k}: ${ko}`).toBe(true);
+    }
+  });
+
+  it('DB가 채운 값을 그대로 옮겨 그 언어 문구로 낸다', () => {
+    expect(errorBody({ code: 'P0001', message: '좌석이 모두 찼습니다(12석). 좌석 수를 늘린 뒤 초대해 주세요.' }, 'en', enDict))
+      .toEqual({ status: 409, body: { error: 'All seats are taken (12). Add seats, then invite.', code: 'db.v.seatsFull' } });
+    expect(errorBody({ code: '22023', message: '흐름에 없는 전환입니다(draft → done).' }, 'en', enDict).body.error)
+      .toBe("This transition isn't in the flow (draft → done).");
+  });
+});
+
+describe('DB 값 속 고정 문구 (115차, Codex 지적)', () => {
+  it('권한 이름·파기 불가 이유처럼 DB가 끼워 넣은 고정 문구도 그 언어로', () => {
+    expect(errorBody({ code: '42501', message: '이 토큰에는 읽기 권한이 없습니다.' }, 'en', enDict).body.error)
+      .toBe("This token doesn't have the read permission.");
+    expect(errorBody({ code: '22023', message: '파기할 수 없습니다: 보존 기간(3년)이 아직 지나지 않았습니다(2029-03-01부터 파기 가능).' }, 'en', enDict).body.error)
+      .toBe("This can't be destroyed: The retention period (3 years) hasn't passed yet (can be destroyed from 2029-03-01).");
+  });
+
+  it('고유 제약(23505)이라도 아는 문구면 공통 중복 안내로 덮지 않는다', () => {
+    expect(errorBody({ code: '23505', message: '기록 유형 "attendance_note"을(를) 다른 꾸러미가 이미 켜 두었습니다.' }, 'en', enDict).body)
+      .toEqual({ error: 'Another package has already turned on the record type "attendance_note".', code: 'db.v.recordTypeTaken' });
+    expect(errorBody({ code: '23505', message: 'duplicate key value violates unique constraint' }, 'en', enDict).body.code).toBe('err.duplicate');
   });
 });
