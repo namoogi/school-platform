@@ -59,6 +59,13 @@ describe('126차 메뉴 나무', () => {
     expect(tree.map((n) => n.key)).toContain('p:letters');
     expect(tree.some((n) => n.key === 'news')).toBe(false);
   });
+  it("'news' 부모는 늘 소식이다 — 주소 이름이 news인 쪽이 있어도 하위가 두 군데 생기지 않는다", () => {
+    const withNewsPage: NavEntry[] = [{ key: 'news', title: { ko: '뉴스 쪽' } }, { key: 'letters', title: { ko: '가정통신문' }, parent: 'news' }];
+    const tree = buildNavTree(withNewsPage, href, { href: '/news', title: { ko: '소식' } });
+    expect(tree.find((n) => n.key === 'p:news')!.children).toEqual([]);
+    expect(tree.find((n) => n.key === 'news')!.children.map((c) => c.key)).toEqual(['p:letters']);
+    expect(buildNavTree(withNewsPage, href).map((n) => n.key)).toEqual(['p:news', 'p:letters']);
+  });
   it('상위·하위 정보가 없으면 지금과 같은 한 줄 메뉴다', () => {
     const flat = buildNavTree([{ key: 'a', title: { ko: 'A' } }, { key: 'b', title: { ko: 'B' } }], href);
     expect(flat.map((n) => [n.key, n.children.length])).toEqual([['p:a', 0], ['p:b', 0]]);

@@ -41,8 +41,9 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
     if (path === '/news') return `${href({})}&news=all`;
     const article = /^\/news\/([a-z0-9-]+)$/.exec(path);
     if (article && sampleNews().some((n) => n.key === article[1])) return `${href({})}&news=${article[1]}`;
-    const m = /^\/p\/([a-z0-9-]+)/.exec(path);
-    return m && t.pages.some((p) => p.key === m[1]) ? href({ page: m[1] }) : href({ page: 'home' });
+    // 126차(ADR 0046): '/p/쪽#메뉴 주소'는 미리보기 주소에서도 #주소를 지킨다
+    const m = /^\/p\/([a-z0-9-]+)(#[a-z][a-z0-9-]*)?/.exec(path);
+    return m && t.pages.some((p) => p.key === m[1]) ? `${href({ page: m[1] })}${m[2] ?? ''}` : href({ page: 'home' });
   };
   const news: NewsItem[] = view === 'sample' ? sampleNews() : [];
   const content: Content = sampleNewsPage(sp.news) ?? pages[pg.key];
