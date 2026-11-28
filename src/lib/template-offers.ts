@@ -104,8 +104,8 @@ export async function decideTemplateOffer(db: Db, schoolId: string, input: { to_
   if (offer.to !== to) throw conflict('그 사이 새 판이 생겼습니다. 최신 판을 다시 읽어 고쳐 주세요.');
   let applied: ApplyResult | null = null;
   if (decision === 'accepted') applied = await applyTemplate(db, schoolId, { key: offer.key, version: offer.to, base_version: input.base_version }, locale, { viaOffer: true });
-  const { rows: [r] } = await db.query('select app.record_template_decision($1, $2, $3, $4, $5) as v',
-    [schoolId, offer.key, offer.to, decision, note]);
+  const { rows: [r] } = await db.query('select app.record_template_decision($1, $2, $3, $4, $5, $6) as v',
+    [schoolId, offer.key, offer.to, decision, note, base]);
   return { id: r.v as string, decision, to_version: offer.to, applied };
 }
 

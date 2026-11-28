@@ -96,11 +96,14 @@ describe('템플릿 새 판 제안', () => {
 
   it('DB 함수를 직접 불러도 적용 없는 수락·지난 제안·다른 템플릿 결정은 거부', async () => {
     await publish(5, 'kr_pf_v5');
-    const rec = (s: S, to: number, d: string) => asUser(s.userId, (db) =>
-      db.query(`select app.record_template_decision($1, 'kr_general', $2, $3)`, [s.schoolId, to, d]));
+    const rec = (s: S, to: number, d: string) => asUser(s.userId, async (db) =>
+      db.query(`select app.record_template_decision($1, 'kr_general', $2, $3, null, $4)`, [s.schoolId, to, d, await ver(s)]));
     await expect(rec(B, 5, 'accepted')).rejects.toThrow('먼저 적용');
     await expect(rec(B, 4, 'held')).rejects.toMatchObject({ code: 'P0409' });
     await expect(rec(A, 5, 'held')).rejects.toThrow('다른 템플릿');
+    // DB 함수도 보류·거절은 본 판이 없거나 낡으면 거부한다
+    await expect(asUser(B.userId, (db) => db.query(`select app.record_template_decision($1, 'kr_general', 5, 'held')`, [B.schoolId]))).rejects.toMatchObject({ code: 'P0409' });
+    await expect(asUser(B.userId, (db) => db.query(`select app.record_template_decision($1, 'kr_general', 5, 'held', null, 0)`, [B.schoolId]))).rejects.toMatchObject({ code: 'P0409' });
     // '어느 판에서'는 DB가 학교 판에서 정한다(지금 4판)
     await rec(B, 5, 'held');
     expect((await asUser(B.userId, (db) => off.templateDecisions(db, B.schoolId)))[0]).toMatchObject({ from_version: 4, to_version: 5, decision: 'held' });
@@ -147,10 +150,11 @@ describe('템플릿 새 판 제안', () => {
     await a.query(`insert into public.school_profiles(school_id, version, grade_scheme, template_key, template_version, created_by)
       select school_id, version + 1, grade_scheme, 'homeschool', 1, created_by from public.school_profiles where school_id = $1 order by version desc limit 1`, [B.schoolId]);
     // 결과는 바로 붙잡아 둔다(커밋 뒤에 거부되므로 처리되지 않은 거부가 되지 않게)
-    const held = asUser(B.userId, (db) => db.query(`select app.record_template_decision($1, 'kr_general', 5, 'held')`, [B.schoolId])).then(() => null, (e: Error) => e);
+    const seen = await ver(B);
+    const held = asUser(B.userId, (db) => db.query(`select app.record_template_decision($1, 'kr_general', 5, 'held', null, $2)`, [B.schoolId, seen])).then(() => null, (e: Error) => e);
     await new Promise((r) => setTimeout(r, 300));
     await a.query('commit'); await a.end();
-    expect((await held)?.message).toContain('다른 템플릿');
+    expect((await held)?.message).toMatch(/다른 템플릿|새 판이 생겼/);
   });
 
   it('결정 기록은 고치거나 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {
