@@ -279,7 +279,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       page('mission', 1, kb('사명과 신앙', 'Mission & faith'), [
         section({ template: 'quote', body: kb('[사명 선언문]', '[Mission statement]') }),
         section({ anchor: 'beliefs', template: 'facts', title: kb('우리가 믿는 것', 'What we believe'), items: [{ title: kb('[고백 1]', '[Belief 1]'), body: kb('[설명]', '[Description]') },
-          // 127차: 고백·쓰임은 세 가지(실제 길이) — 한 칸짜리 목록이 늘어나지 않게
+          // 129차: 고백·쓰임은 세 가지(실제 길이) — 한 칸짜리 목록이 늘어나지 않게
           ...[2, 3].map((i) => ({ title: kb(`[고백 ${i}]`, `[Belief ${i}]`), body: kb(`[사명 고백 ${i} 설명]`, `[Mission belief ${i} note]`) }))] }),
         // 126차(ADR 0046): 사명과 신앙 아래 하위 메뉴 — 걸어온 길
         section({ anchor: 'story', template: 'steps', variant: 'timeline', title: kb('걸어온 길', 'Our story'), items: [1, 2, 3].map((i) => ({ title: kb(`[사명 연혁 ${i}]`, `[Mission year ${i}]`), body: kb(`[사명 연혁 ${i} 내용]`, `[Mission year ${i} note]`) })) }),

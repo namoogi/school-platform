@@ -318,7 +318,7 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
       '[필요한 봉사]': '방학 영어 캠프, 교재 만들기, 시설 보수',
       '[기도 제목 받는 방법]': '메일로 신청하시면 달마다 기도 편지를 보내 드립니다.',
       '[쓰임 1]': '교사 생활비',
-      // 127차(가상 예시)
+      // 129차(가상 예시)
       '[고백 2]': '배움은 함께 자라는 길입니다', '[사명 고백 2 설명]': '아이와 교사, 마을이 서로 배우는 공동체를 꿈꿉니다.',
       '[고백 3]': '섬김으로 가르칩니다', '[사명 고백 3 설명]': '말보다 삶으로 보여 주는 교사가 되려 합니다.',
       '[Belief 2]': 'Learning is a shared journey', '[Mission belief 2 note]': 'Children, teachers and the village learn from one another.',
