@@ -60,7 +60,7 @@ describe('알림 중심형 빈 칸 제안', () => {
     // 133차: 인사말·교육 목표는 '학교 소개' 아래 각각의 쪽이다(빈 칸도 그 쪽을 가리킨다)
     const greet = t.slots.find((s) => s.id === 'greeting')!;
     const goals = t.slots.find((s) => s.id === 'goals')!;
-    expect([greet.page, goals.page]).toEqual(['greeting', 'goals']);
+    expect([greet.page, goals.page]).toEqual(['about-greeting', 'about-goals']);
     const greeting = structuredClone(t.pages.find((p) => p.key === greet.page)!.content);
     expect(putProposal(greeting, greet, by.greeting.value)).toBe(true);
     expect((greeting.blocks[0] as { body: { ko: string } }).body.ko).toMatch(/^예시꿈학교를/);

@@ -33,7 +33,7 @@ describe('템플릿 적용', () => {
     // 133차: 하위 메뉴도 별도 쪽이다. 학교가 이미 쓴 'about'만 건너뛰고, 그 아래 하위 쪽(인사말 등)은 만든다
     const keys = (k: string) => tpl.SITE_TEMPLATES.find((t) => t.key === k)!.pages.map((p) => p.key);
     expect(r.created.map((c) => c.key)).toEqual(keys('notice').filter((k) => k !== 'about'));
-    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['greeting', 'way', 'calendar', 'lunch', 'letters']));
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['about-greeting', 'about-way', 'school-life-calendar', 'school-life-lunch', 'letters']));
     expect(r.skipped).toEqual(['about']);
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const about = entries.find((e) => e.key === 'about')!;
@@ -76,9 +76,9 @@ describe('66차 학교 자료로 빈 칸 채우기', () => {
     const by = Object.fromEntries(r.result.map((x) => [x.page, x]));
     expect(by.home).toMatchObject({ version: 2, filled: expect.arrayContaining(['address', 'footer']) });
     // 133차: 학사일정·급식·교육 목표는 각자의 하위 쪽이다
-    expect(by.calendar).toMatchObject({ version: 2, filled: ['calendar'] });
-    expect(by.lunch).toMatchObject({ version: 2, filled: ['meals'] });
-    expect(by.goals).toMatchObject({ version: 2, filled: ['goals'] });
+    expect(by['school-life-calendar']).toMatchObject({ version: 2, filled: ['calendar'] });
+    expect(by['school-life-lunch']).toMatchObject({ version: 2, filled: ['meals'] });
+    expect(by['about-goals']).toMatchObject({ version: 2, filled: ['goals'] });
     expect(by.about).toBeUndefined(); // 학교가 먼저 쓴 소개 쪽은 손대지 않는다
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const home = entries.find((e) => e.key === 'home')!;
@@ -143,7 +143,7 @@ describe('87차 주소만 넣고 새 디자인으로 옮기기', () => {
     const fills = pv.proposals.filter((p) => p.kind !== 'image').map((p) => ({ slotId: p.slotId, value: p.value }));
     const r = await asUser(B.userId, (db) => tpl.autofillApply(db, B.schoolId, 'mission', fills));
     // 133차: '후원금 쓰임'은 '함께하기' 아래 하위 쪽(funds)이다
-    expect(r.result.find((x) => x.page === 'funds')).toMatchObject({ version: 2, filled: ['use-of-funds'] });
+    expect(r.result.find((x) => x.page === 'partner-funds')).toMatchObject({ version: 2, filled: ['use-of-funds'] });
     const entries = await asUser(B.userId, (db) => site.listEntries(db, B.schoolId));
     expect(entries.filter((e) => e.kind === 'page').every((e) => !e.live_version)).toBe(true);
   });
@@ -187,6 +187,6 @@ describe('133차 예전 판 상위 쪽과 겹치지 않게', () => {
     expect(r.skipped).toEqual(expect.arrayContaining(['school-life', ...kidsOf('school-life')]));
     for (const k of kidsOf('school-life')) expect(r.created.map((c) => c.key)).not.toContain(k);
     // 새 구조인 상위 쪽(about: 국제형으로 만든 쪽, 메뉴 주소 없음) 아래는 만든다
-    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['greeting', 'way']));
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['about-greeting', 'about-way']));
   });
 });

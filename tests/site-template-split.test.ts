@@ -51,11 +51,11 @@ describe('하위 메뉴 = 별도 쪽', () => {
       }
     }
     const story = SITE_TEMPLATES.find((t) => t.key === 'story')!;
-    expect(hrefs(story.pages.find((p) => p.key === 'home')!.content)).toContain('/p/day');
+    expect(hrefs(story.pages.find((p) => p.key === 'home')!.content)).toContain('/p/community-day');
   });
   it('하위 쪽의 구역 제목은 남기고(표 설명·제목 구조), 화면에서 쪽 제목과 겹치는 제목만 감춘다', () => {
     const story = SITE_TEMPLATES.find((t) => t.key === 'story')!;
-    const grades = story.pages.find((p) => p.key === 'grades')!.content;
+    const grades = story.pages.find((p) => p.key === 'learning-grades')!.content;
     expect((grades.blocks[0] as { title?: { ko?: string } }).title?.ko).toBe('학년별 배움');
     const html = renderToStaticMarkup(createElement(SiteBlocks, { content: grades, lang: 'ko', fallback: 'ko', assetUrl: () => '' }));
     expect(html).toContain('<h2 class="site-h2 sr-only">학년별 배움</h2>');
@@ -63,7 +63,7 @@ describe('하위 메뉴 = 별도 쪽', () => {
     const other = renderToStaticMarkup(createElement(SiteBlocks, { content: { ...grades, title: { ko: '다른 제목' } }, lang: 'ko', fallback: 'ko', assetUrl: () => '' }));
     expect(other).toContain('<h2 class="site-h2">학년별 배움</h2>');
     // 신청 칸은 제목을 떼어 기본 제목을 쓴다
-    const apply = story.pages.find((p) => p.key === 'apply')!.content.blocks[0] as { type: string; title?: unknown };
+    const apply = story.pages.find((p) => p.key === 'admission-apply')!.content.blocks[0] as { type: string; title?: unknown };
     expect(apply.type).toBe('inquiry');
     expect(apply.title).toBeUndefined();
   });
@@ -78,14 +78,14 @@ describe('하위 메뉴 = 별도 쪽', () => {
     expect(single.source).toBeUndefined();
     expect(anchorsOf(single.pages[0].content.blocks).length).toBeGreaterThan(0);
   });
-  it('주소 이름이 겹치면 상위 쪽 이름을 앞에 붙이고, 홈·하위 쪽은 나누지 않는다', () => {
+  it('하위 쪽 주소는 늘 상위-메뉴주소이고(여러 템플릿을 써도 다른 묶음과 겹치지 않음), 홈·하위 쪽은 나누지 않는다', () => {
     const sec = (anchor: string): Block => ({ type: 'section', template: 'text', title: { ko: anchor }, anchor } as Block);
     const { pages } = splitSubmenuPages([
       { kind: 'page', key: 'home', sort: 0, content: { title: { ko: '홈' }, blocks: [sec('top')] } },
       { kind: 'page', key: 'about', sort: 1, content: { title: { ko: '소개' }, blocks: [sec('about'), sec('way')] } },
       { kind: 'page', key: 'note', sort: 2, content: { title: { ko: '알림' }, blocks: [sec('x')], menu: { parent: 'news' } } },
     ]);
-    expect(pages.map((p) => [p.key, p.content.menu?.parent ?? null])).toEqual([['home', null], ['about', null], ['about-about', 'about'], ['way', 'about'], ['note', 'news']]);
+    expect(pages.map((p) => [p.key, p.content.menu?.parent ?? null])).toEqual([['home', null], ['about', null], ['about-about', 'about'], ['about-way', 'about'], ['note', 'news']]);
     expect(pages.flatMap((p) => anchorsOf(p.content.blocks))).toEqual([]);
   });
 });

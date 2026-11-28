@@ -30,7 +30,7 @@ describe('템플릿 예시 내용', () => {
   });
   it('같은 안내 자리가 여러 번 나오면 차례대로 다른 값을 쓴다', () => {
     const t = SITE_TEMPLATES.find((x) => x.key === 'story')!;
-    const items = (samplePages(t).values.blocks[0] as { items: { body: { ko: string } }[] }).items.map((i) => i.body.ko);
+    const items = (samplePages(t)['philosophy-values'].blocks[0] as { items: { body: { ko: string } }[] }).items.map((i) => i.body.ko);
     expect(new Set(items).size).toBe(3);
   });
   it('예시는 가상 연락처만 쓴다(예약 도메인 example.org, 0으로 채운 전화)', () => {

@@ -30,7 +30,11 @@ export function splitSubmenuPages(pages: SplitPage[]): { pages: SplitPage[]; mov
     }
     const children = anchored.map(({ b, i }) => {
       const anchor = (b as { anchor: string }).anchor;
-      const key = taken.has(anchor) ? `${p.key}-${anchor}` : anchor;
+      // 하위 쪽 주소는 늘 '상위-메뉴주소'다. 여러 템플릿을 한 학교에 쓰면 메뉴 주소(history 등)가 겹치는데, 상위를 붙이면
+      // 다른 묶음의 쪽을 잘못 가리키지 않는다(같은 상위·같은 주소면 같은 자리라서 이미 있는 쪽을 그대로 쓴다)
+      const base = `${p.key}-${anchor}`.slice(0, 60);
+      let key = base;
+      for (let n = 2; taken.has(key); n++) key = `${base.slice(0, 57)}-${n}`;
       taken.add(key);
       hrefOf.set(`/p/${p.key}#${anchor}`, `/p/${key}`);
       moves.set(`${p.key}:${i}`, [key, 0]);

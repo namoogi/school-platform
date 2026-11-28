@@ -1777,7 +1777,7 @@ try {
     await h.getByRole('link', { name: '소식 목록', exact: true }).click();
     await h.waitForURL(/news=all/);
     assert.equal(await h.locator('.lb-board li').count(), 3);
-    await h.goto(`${BASE}/templates/kinder?page=apply`); // 133차: 방문·상담 신청은 '입학 안내' 아래 하위 쪽
+    await h.goto(`${BASE}/templates/kinder?page=admission-apply`); // 133차: 방문·상담 신청은 '입학 안내' 아래 하위 쪽
     await h.locator('[data-testid=site-inquiry] input[name=name]').fill('가상 방문자');
     await h.locator('[data-testid=site-inquiry] input[name=contact]').fill('visitor@example.org');
     await h.locator('[data-testid=site-inquiry] input[name=consent]').check();
@@ -1813,7 +1813,8 @@ try {
     await h.locator('[role=status]', { hasText: '시안 쪽' }).waitFor();
     for (const title of ['프로젝트', '학생 작품']) {
       await h.goto(`${BASE}/site?box=page`);
-      await h.locator('.triage-list a').filter({ hasText: new RegExp(title) }).first().click();
+      // 133차: '왜 프로젝트로 배우나요' 같은 하위 쪽 제목도 '프로젝트'를 포함하므로 제목 칸이 정확히 같은 항목을 고른다
+      await h.locator('.triage-list a').filter({ has: h.locator('.triage-item-title', { hasText: new RegExp(`^${title}$`) }) }).first().click();
       const category = h.getByLabel('1. 분류(거르기 단추) 한국어', { exact: true });
       await category.fill('학교 생태 탐구');
       await h.getByRole('button', { name: '새 판으로 저장', exact: true }).click();
