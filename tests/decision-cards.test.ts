@@ -77,6 +77,7 @@ describe('결정 카드', () => {
     await expect(file({ ...b, due_at: Date.now() + 86400000 })).rejects.toThrow('30일 안의 due_at');
     await expect(file({ ...b, default_action: '' })).rejects.toThrow('default_action');
     await expect(file({ ...b, options: [{ key: 'a', label: 'a' }] })).rejects.toThrow('2~4개');
+    await expect(file({ ...b, options: [{ key: 'cards', label: '카드' }, { key: 'cards', label: '목록' }] })).rejects.toThrow('선택지는 [{key, label, detail}]');
     await expect(file({ ...b, recommended: null })).rejects.toThrow('2~4개');
     await expect(file({ ...b, recommended: 'zzz' })).rejects.toThrow('선택지 key 가운데');
     await expect(file({ ...b, reversible: false })).rejects.toThrow('reversible 과 door 가 엇갈립니다');

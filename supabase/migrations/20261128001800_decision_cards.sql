@@ -116,7 +116,9 @@ begin
 
   opts := coalesce(p -> 'options', '[]'::jsonb);
   if jsonb_typeof(opts) <> 'array' or exists (select 1 from jsonb_array_elements(opts) o
-       where jsonb_typeof(o) <> 'object' or coalesce(o ->> 'key', '') !~ '^[A-Za-z0-9_-]{1,20}$' or length(trim(coalesce(o ->> 'label', ''))) not between 1 and 200) then
+       where jsonb_typeof(o) <> 'object' or coalesce(o ->> 'key', '') !~ '^[A-Za-z0-9_-]{1,20}$' or length(trim(coalesce(o ->> 'label', ''))) not between 1 and 200)
+     -- 같은 key 가 둘이면 어느 안을 골랐는지 알 수 없다
+     or (select count(distinct o ->> 'key') from jsonb_array_elements(opts) o) <> jsonb_array_length(opts) then
     raise exception '선택지는 [{key, label, detail}] 모양으로 보내 주세요(최대 8개).' using errcode = '22023';
   end if;
   if dr in ('one_way', 'default') and jsonb_array_length(opts) not between 2 and 4 then
