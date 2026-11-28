@@ -87,8 +87,10 @@ export default async function RecordsPage({ searchParams }: { searchParams: Prom
                 {closures.length === 0 ? <p className="muted">{t('rec.needClosure')}</p> : (
                   <ActionForm url="/api/records" action="publish" inline testId="publish-form" submitLabel={t('rec.issue')} successText={t('rec.issued')}
                     extra={{ personId: person.id }}
-                    fields={[{ name: 'format', label: t('rec.format'), type: 'select', options: PERSON_FORMATS.map((f) => ({ value: f, label: FORMAT[f] })) },
-                      { name: 'blind', label: t('rec.blind'), type: 'select', options: yesNo }, ...profileField(PERSON_FORMATS)]} />)}
+                    // 서식과 출력 프로필을 한 고르기로: 그 서식의 프로필만 짝지어 낸다(값 '서식@프로필', Codex #228)
+                    fields={[{ name: 'format', label: t('rec.format'), type: 'select', options: PERSON_FORMATS.flatMap((f) => [{ value: f, label: FORMAT[f] },
+                        ...profiles.filter((p) => p.format === f).map((p) => ({ value: `${f}@${p.code}`, label: `${FORMAT[f]} · ${p.code} ${t('common.version', { v: p.version })}` }))]) },
+                      { name: 'blind', label: t('rec.blind'), type: 'select', options: yesNo }]} />)}
                 {docs.length === 0 ? <p className="muted">{t('rec.noDocs')}</p> : (
                   <ul className="issue-list">{docs.map((d) => (
                     <li key={d.id}><span><Link href={`/records/doc/${d.id}`}>{d.title ?? FORMAT[d.format]}</Link> <small className="muted">{FORMAT[d.format] ?? d.format} · {new Date(d.published_at).toLocaleString(locale)}{d.blind ? t('rec.blindSuffix') : ''}{t('rec.docMeta', { q: d.issues.filter((i) => i.level === 'question').length, d: d.disclosures })}</small></span></li>))}</ul>)}

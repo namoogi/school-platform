@@ -3214,6 +3214,8 @@ export const CATALOG = {
   'err.rec.profileField': '출력 프로필의 {key} 칸 값이 올바르지 않습니다.',
   // 128차 Codex 검토 2
   'err.rec.profileScale': '학교에 {code} 척도가 없습니다. 성적 화면의 척도 코드를 적어 주세요.',
+  // 128차 Codex 검토 4
+  'err.grade.bandCredit': '척도 띠 {code}의 earns_credit은 true 또는 false(따옴표 없이)여야 합니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

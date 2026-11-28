@@ -3149,5 +3149,6 @@
   "err.grade.bandFloor": "The scale needs a bottom band that covers 0 (min 0). Otherwise lower scores would close as passed with no grade.",
   "err.rec.profileUnknown": "This format's output profile has an unknown field {key}. Accepted fields: {keys}",
   "err.rec.profileField": "The {key} field of the output profile is not valid.",
-  "err.rec.profileScale": "This school has no scale {code}. Use a scale code from the Grades screen."
+  "err.rec.profileScale": "This school has no scale {code}. Use a scale code from the Grades screen.",
+  "err.grade.bandCredit": "earns_credit of band {code} must be true or false (without quotes)."
 }

@@ -20,6 +20,8 @@ export async function POST(req: Request) {
         return await closeRecordYear(db, school.id, b.personId, b.yearId, { base_version: base, reason: txt(b.reason), requestKey: b.requestKey });
       }
       case 'publish': {
+        // 학생 발행 양식은 '서식@프로필' 한 값으로 보낸다(서식에 맞는 프로필만 고르게)
+        if (typeof b.format === 'string' && b.format.includes('@')) [b.format, b.profileCode] = b.format.split('@', 2);
         if (!FORMATS.includes(b.format)) throw new ValidationError('err.rec.format');
         const r = await publishRecordDocument(db, school.id, { format: b.format, personId: b.format === 'us_school_profile' ? undefined : b.personId, blind: b.blind === 'yes', profileCode: txt(b.profileCode) || undefined });
         return { id: r.id, issues: r.issues.length };

@@ -118,6 +118,8 @@ export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[]
     if (seen.has(code)) throw new ValidationError('err.grade.bandDup', { code });
     seen.add(code);
     const label = b?.label == null ? { ko: code, en: code } : ltext(b.label, '척도 띠');
+    // 이수 여부는 참·거짓만. 글자 "false" 를 참으로 바꿔 이수로 굳히지 않는다(Codex #228)
+    if (b?.earns_credit != null && typeof b.earns_credit !== 'boolean') throw new ValidationError('err.grade.bandCredit', { code });
     return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
   });
   // floor(화면·API 쓰기 길): 점수 구간이 있으면 0점까지 덮어야 한다. 템플릿 적용은 관제가 낸 판을 그대로 옮기므로 여기서 막지 않는다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
