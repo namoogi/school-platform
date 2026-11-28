@@ -17,7 +17,8 @@ export function DecisionFacts({ r }: { r: Pick<Request, 'door' | 'ask' | 'defaul
   const { t, locale } = useI18n();
   if (!r.door) return null;
   const due = r.due_at ? new Date(r.due_at) : null;
-  const dueText = due?.toLocaleString(locale, { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  // 서버·브라우저가 같은 글자를 그리도록 시간대는 서울로 고정하고(관제 센터 다른 날짜와 같음), 읽는 사람이 헷갈리지 않게 시간대 이름을 붙인다
+  const dueText = due?.toLocaleString(locale, { timeZone: 'Asia/Seoul', timeZoneName: 'short', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const rows: [string, string | null | undefined][] = [
     [t(r.door === 'notice' ? 'dc.changesNotice' : 'dc.changes'), r.changes], [t('dc.unchanged'), r.unchanged], [t('dc.undo'), r.undo],
   ];
