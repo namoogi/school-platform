@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { loadForPage } from '@/lib/page';
-import { gradePreview, listTemplates, schoolTemplate, setupChecklist, type AcademicTemplate } from '@/lib/academic-templates';
+import { gradePreview, listTemplates, schoolCopySummary, schoolTemplate, setupChecklist, type AcademicTemplate } from '@/lib/academic-templates';
 import { schoolProfile } from '@/lib/foundation';
 import { PageHeader, StatusBadge } from '@/components/ui';
 import { getI18n, userLang } from '@/lib/i18n/server';
@@ -12,10 +12,11 @@ import { hiddenSections } from '@/lib/sections';
 import { AcademicsTabs, academicsTabCounts } from '../AcademicsTabs';
 import { openTemplateOffer, templateDecisions } from '@/lib/template-offers';
 import { OfferActions } from './OfferActions';
+import { TemplateAiGuide } from './TemplateAiGuide';
 
 /** 113차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
 export default async function TemplatesPage() {
-  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts, offer, decisions } = await loadForPage(async ({ db, school }) => ({
+  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts, offer, decisions, copy } = await loadForPage(async ({ db, school }) => ({
     templates: await listTemplates(db),
     current: await schoolTemplate(db, school.id),
     steps: await setupChecklist(db, school.id),
@@ -25,6 +26,7 @@ export default async function TemplatesPage() {
     counts: await academicsTabCounts(db, school.id),
     offer: await openTemplateOffer(db, school.id),
     decisions: await templateDecisions(db, school.id),
+    copy: await schoolCopySummary(db, school.id, (await userLang(db)) ?? school.locale),
   }), { module: 'records' });
   const { t, lang } = await getI18n(uiLang, school.locale);
   const admin = school.isAdmin;
@@ -103,6 +105,21 @@ export default async function TemplatesPage() {
             </li>))}
         </ol>
       </section>
+
+      {/* 122차: 템플릿으로 만든 학교 사본을 학교 구독 AI가 학교 자료(성적표·규정)에 맞추도록 지시문을 건넨다(ADR 0043 5단계) */}
+      {admin && copy && (
+        <section className="card stack" data-testid="tpl-ai-guide">
+          <h2>{t('tplAi.title')}</h2>
+          <p className="fine">{t('tplAi.lead')}</p>
+          <ol className="guide-steps">
+            <li>{t('tplAi.step1')}</li>
+            <li>{t('tplAi.step2')}</li>
+            <li>{t('tplAi.step3')}</li>
+          </ol>
+          <TemplateAiGuide summary={copy} schoolName={school.name} />
+          <p className="fine"><Link href="/site#agent-tokens">{t('tplAi.tokenLink')}</Link></p>
+        </section>
+      )}
 
       <section className="card stack" data-testid="hidden-sections">
         <h2>{t('atpl.ourHidden')}</h2>

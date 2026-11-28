@@ -150,3 +150,24 @@ export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabC
                                 and d.to_version = l.v order by d.decided_at desc limit 1), 'offered') <> 'declined') as offers`, [schoolId]);
   return c;
 }
+
+/** 122차: 학교 AI 맞춤 지시문에 넣을 학교 사본 요약(템플릿이 아니라 지금 학교 값). 고른 템플릿이 없으면 null */
+export async function schoolCopySummary(db: Db, schoolId: string, lang = 'ko') {
+  const p = await schoolProfile(db, schoolId);
+  if (!p?.template_key || p.template_version == null) return null;
+  const t = (await db.query<AcademicTemplate>('select * from app.academic_template($1, $2)', [p.template_key, p.template_version])).rows[0];
+  if (!t) return null;
+  const { rows: levels } = await db.query<{ name: string }>('select name from public.school_levels where school_id = $1 order by sort_order, code', [schoolId]);
+  const { rows: scales } = await db.query<{ code: string }>('select code from public.scales where school_id = $1 order by code', [schoolId]);
+  const rule = await latestPeriodRule(db, schoolId);
+  return {
+    template: { key: t.key, version: t.version, title: t.title[lang] ?? t.title.ko ?? Object.values(t.title)[0] },
+    scheme: (p.grade_scheme as string | null) ?? null,
+    levels: levels.map((l) => l.name),
+    periods: rule ? rule.value.periods.map((x) => x.label) : [],
+    scales: scales.map((s) => s.code),
+    calcSamples: t.manifest.calc_samples,
+    outputs: t.manifest.outputs,
+    hidden: ((p.hidden_sections ?? []) as string[]),
+  };
+}

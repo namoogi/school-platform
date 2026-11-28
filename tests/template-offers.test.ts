@@ -136,6 +136,16 @@ describe('템플릿 새 판 제안', () => {
     expect(await count(A)).toBe(1);
   });
 
+  it('학교 AI 맞춤 지시문은 템플릿이 아니라 지금 학교 사본 값을 요약한다(122차)', async () => {
+    const c = await asUser(B.userId, (db) => at.schoolCopySummary(db, B.schoolId, 'ko'));
+    expect(c).toMatchObject({ template: { key: 'kr_general', version: 1 }, scheme: 'kr', periods: ['1학기', '2학기'] });
+    expect(c!.scales).toEqual(expect.arrayContaining(['kr_achievement', 'kr_elective', 'kr_pf_v5']));
+    expect(c!.levels.length).toBeGreaterThan(0);
+    // 다른 학교 값은 섞이지 않는다
+    const a = await asUser(A.userId, (db) => at.schoolCopySummary(db, A.schoolId, 'ko'));
+    expect(a!.scales).not.toContain('kr_pf_v5');
+  });
+
   it('결정 기록은 고치거나 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {
     const id = (await su.query(`select id from public.academic_template_decisions limit 1`)).rows[0].id;
     await expect(su.query(`delete from public.academic_template_decisions where id = $1`, [id])).rejects.toThrow();
