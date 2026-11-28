@@ -70,8 +70,8 @@ describe('템플릿 예시 내용', () => {
     const fits = recommendTemplates([{ name: '/', text: '햇님 유치원 · 만 3세 새싹반, 만 4세 꽃잎반 · 놀이 중심 · 등원 시간 9시' }], {});
     expect(fits[0].key).toBe('kinder');
   });
-  it('#143: 대표 3종의 모든 쪽이 등록된 JPG와 설명을 쓰며 사진은 실제 학교에 자동 적용되지 않는다', () => {
-    expect(SAMPLE_PHOTOS.size).toBe(22);
+  it('#143: 8종의 모든 예시 사진이 등록된 JPG와 설명을 쓰며 사진은 실제 학교에 자동 적용되지 않는다', () => {
+    expect(SAMPLE_PHOTOS.size).toBe(35);
     const assets = (value: unknown): { asset: string; alt?: { ko?: string } }[] => {
       if (!value || typeof value !== 'object') return [];
       const obj = value as Record<string, unknown>;

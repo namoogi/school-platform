@@ -450,7 +450,7 @@ const TOKEN = /\[[^\]]+\]/g;
  * 예시 그림 파일. 선생님 쪽 AI로 만든 사진풍 그림(.jpg)이 오기 전에는 같은 이름의 자리 그림(.svg)을 쓴다.
  * 사진풍 그림을 넣으면 그 이름을 이 목록에 더한다(docs/design/template-image-prompts.md).
  */
-export const SAMPLE_PHOTOS = new Set<string>(["story-hero", "story-day", "story-learning", "story-season-1", "story-season-2", "story-season-3", "story-season-4", "story-season-5", "project-hero", "project-river", "project-market", "project-work-1", "project-work-2", "project-work-3", "project-work-4", "project-work-5", "project-work-6", "kinder-hero", "kinder-class-1", "kinder-class-2", "kinder-class-3", "kinder-play"]);
+export const SAMPLE_PHOTOS = new Set<string>(["notice-hero", "story-hero", "story-day", "story-learning", "story-season-1", "story-season-2", "story-season-3", "story-season-4", "story-season-5", "project-hero", "project-river", "project-market", "project-work-1", "project-work-2", "project-work-3", "project-work-4", "project-work-5", "project-work-6", "admissions-hero", "admissions-class", "admissions-books", "admissions-mentor", "kinder-hero", "kinder-class-1", "kinder-class-2", "kinder-class-3", "kinder-play", "mission-hero", "mission-village", "international-hero", "international-early", "international-primary", "international-secondary", "single-study", "single-outing"]);
 const SAMPLE_PHOTO_ALT: Record<string, string> = {
   "story-hero": "아침 햇살이 비치는 숲길과 작은 학교 건물",
   "story-day": "숲길을 함께 걷는 아이들의 뒷모습",
