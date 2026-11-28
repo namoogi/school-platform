@@ -411,17 +411,18 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'single', version: 3, name: '한 쪽 소개형', theme: 'seed', langs: ['ko'],
+    key: 'single', version: 4, name: '한 쪽 소개형', theme: 'seed', langs: ['ko'],
     summary: '막 시작한 작은 학교·모임이 한 쪽에 소개·연락·소식을 담습니다.',
     fits: ['막 시작한 작은 학교', '홈스쿨 연합·배움 모임'], firstScreen: '소개 · 하는 일 · 연락',
     mustHave: ['누구를 위한 모임인지', '연락 방법'],
     pages: [
       page('home', 0, ko('[학교·모임 이름]'), [
-        section({ template: 'text', title: ko('[우리는 누구인가요]'), body: ko('[두세 문장 소개]') }),
-        section({ template: 'cards', title: ko('하는 일'), items: [{ title: ko('[활동 1]'), body: ko('[설명]') }, { title: ko('[활동 2]'), body: ko('[설명]') }] }),
-        events('모임', '다가오는 모임'),
-        news(ko('소식'), 3, 'list'),
-        section({ template: 'cta', title: ko('함께하고 싶으신가요?'), body: ko('[연락 방법]'), button: { label: ko('연락하기'), href: '/' } }),
+        // 126차(ADR 0046): 한 쪽 안 구역 차례 = '홈' 아래 하위 메뉴
+        section({ anchor: 'about', template: 'text', title: ko('[우리는 누구인가요]'), body: ko('[두세 문장 소개]') }),
+        section({ anchor: 'activities', template: 'cards', title: ko('하는 일'), items: [{ title: ko('[활동 1]'), body: ko('[설명]') }, { title: ko('[활동 2]'), body: ko('[설명]') }] }),
+        { ...events('모임', '다가오는 모임'), anchor: 'gatherings' },
+        { ...news(ko('소식'), 3, 'list'), anchor: 'news' },
+        section({ anchor: 'contact', template: 'cta', title: ko('함께하고 싶으신가요?'), body: ko('[연락 방법]'), button: { label: ko('연락하기'), href: '/#contact' } }),
       ], { site: contact() }),
     ],
     slots: [
