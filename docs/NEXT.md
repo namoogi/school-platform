@@ -1,4 +1,4 @@
-# 다음 세션 인계 (2026-11-28, 123차 끝)
+# 다음 세션 인계 (2026-11-28, 125차 끝)
 
 새 Claude 세션은 이 파일 → `AGENTS.md` → 직전 차시 `docs/rounds/round-91.md`(86~91차: `round-86.md`~`round-90.md`도) → ADR 0025·0027·0028~0030 순서로 읽고 시작한다.
 (사람이 연 세션의 시작 절차: `.claude/skills/session-start`)
@@ -37,7 +37,7 @@
 - 113차: 학사 관리 템플릿 5종(`/academics/templates`): 관제 표 `academic_templates`(판), 고르면 학교급·학년·학기 구조·척도를 학교 사본으로(있는 것은 그대로), 관할 판에 템플릿 키·판, 남은 설정 점검표, 나란히 비교. 시연 학교는 '한국 일반' 템플릿으로 시작.
 - 118차: 숨길 구획(석차·평점·석차등급·교시 출결)은 학교 관할 판 `hidden_sections`(처음 템플릿에서 복사, 학교가 템플릿 화면에서 고침). 읽는 길은 `src/lib/sections.ts` `hiddenSections()` 하나. 평점을 숨기면 발행본에서 GPA를 뺀다. 석차·교시 출결은 아직 보이는 화면이 없어 값만 있음.
 - 119차: 학교 구조는 탭 네 개(`/academics?tab=levels|terms|years`, `/academics/templates`). 탭 줄은 `AcademicsTabs`.
-- 123차: 템플릿 새 판 → 학교 제안. 열린 제안은 계산(최신 판 > 학교 판), 결정만 `academic_template_decisions`에 기록(`src/lib/template-offers.ts`). 관제 새 판 내기는 `POST /api/admin/academic-templates`. 같은 템플릿 판 옮기기는 제안 수락 하나.
+- 125차: 템플릿 새 판 → 학교 제안. 열린 제안은 계산(최신 판 > 학교 판), 결정만 `academic_template_decisions`에 기록(`src/lib/template-offers.ts`). 관제 새 판 내기는 `POST /api/admin/academic-templates`. 같은 템플릿 판 옮기기는 제안 수락 하나.
 - 조사 `docs/research/sis-ux-2026-11.md`. 다음: 학교 AI 맞춤 안내 연결, 무학년·학년 넘기기. 관제 확인 대기: 마감한 수업의 수강 상태 쓰기를 막을지.
 
 ## 공개 저장소 (2026-11-27)

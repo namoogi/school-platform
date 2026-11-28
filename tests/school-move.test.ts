@@ -197,7 +197,7 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     await expect(importSchool(dst, clash)).rejects.toThrow(/같은 메일/);
   });
 
-  it('학교가 쓰는 학사 관리 템플릿 판(운영 중에 낸 판 포함)을 함께 옮기고, 같은 판의 다른 내용이면 넣지 않는다(123차)', async () => {
+  it('학교가 쓰는 학사 관리 템플릿 판(운영 중에 낸 판 포함)을 함께 옮기고, 같은 판의 다른 내용이면 넣지 않는다(125차)', async () => {
     const ver = async () => (await su.query(`select coalesce(max(version), 0)::int as v from public.school_profiles where school_id = $1`, [A.schoolId])).rows[0].v;
     const at = await import('@/lib/academic-templates');
     const off = await import('@/lib/template-offers');
