@@ -152,6 +152,7 @@ function blockOf(x: Record<string, unknown>, at: string): Block {
       }
       return { type: 'video', url };
     }
+    case 'subpages': return { type: 'subpages' };
     case 'inquiry': return { type: 'inquiry', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, `${at} 안내`, 1000), noText) };
     case 'download': return {
       type: 'download', asset: asset(x.asset, at), label: opt(text(x.label, `${at} 이름`, 120), noText), note: opt(text(x.note, `${at} 설명`, 300), noText),

@@ -3226,5 +3226,6 @@
   "db.cardDefaultSession": "การ์ด default ต้องมีเซสชันที่รับผิดชอบ (source_session)",
   "db.cardOneLine": "การ์ดตัดสินใจเขียน changes, unchanged และ undo อย่างละบรรทัดเดียว รายละเอียดให้ใส่ใน detail",
   "db.cardImmutable": "แก้ไขการ์ดตัดสินใจหลังส่งแล้วไม่ได้ ให้ส่งการ์ดใหม่แทน",
-  "db.cardInsertOnlyFn": "ส่งการ์ดตัดสินใจได้ผ่าน control.file_request เท่านั้น"
+  "db.cardInsertOnlyFn": "ส่งการ์ดตัดสินใจได้ผ่าน control.file_request เท่านั้น",
+  "site.block.subpages": "ทางลัดหน้าย่อย"
 }

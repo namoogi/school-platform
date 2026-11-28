@@ -46,9 +46,8 @@ export function splitSubmenuPages(pages: SplitPage[]): { pages: SplitPage[]; mov
     });
     // 상위 쪽: 메뉴 주소 없는 구역은 그대로 두고, 맨 앞에 하위 쪽 바로 가기를 둔다(상위 메뉴를 누른 사람이 길을 잃지 않게)
     const rest = blocks.map((b, i) => ({ b, i })).filter(({ b }) => !(b as { anchor?: string }).anchor);
-    const links: Block = { type: 'section', template: 'cards', variant: 'quicklinks',
-      items: [...children, ...existingKids] // 원래부터 하위였던 쪽도 함께
-        .map((c) => ({ title: c.content.title, href: `/p/${c.key}` })) };
+    // 바로 가기는 링크를 박지 않고 그릴 때 공개된 하위 쪽을 찾는다(공개 안 된 하위 쪽·같은 주소의 다른 쪽을 가리키지 않게)
+    const links: Block = { type: 'subpages' };
     rest.forEach(({ i }, k) => moves.set(`${p.key}:${i}`, [p.key, k + 1]));
     out.push({ ...p, sort: (sort += 10), content: { ...p.content, blocks: [links, ...rest.map(({ b }) => b)] } });
     for (const c of children) out.push({ ...c, sort: (sort += 10) });

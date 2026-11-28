@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages } from '@/lib/site-template-samples';
 import { splitSubmenuPages } from '@/lib/site-template-split';
+import { subpagesOf } from '@/lib/site-shared';
 import { validateContent, type Block } from '@/lib/site';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -41,10 +42,8 @@ describe('하위 메뉴 = 별도 쪽', () => {
         && (anchorsOf(x.content.blocks).length || src.some((c) => c.content.menu?.parent === x.key))).map((x) => x.key));
       expect(split.size, t.key).toBeGreaterThan(0);
       for (const p of t.pages.filter((x) => split.has(x.key))) {
-        const kids = t.pages.filter((c) => c.content.menu?.parent === p.key).map((c) => `/p/${c.key}`);
-        const first = p.content.blocks[0] as { variant?: string; items?: { href?: string }[] };
-        expect(first.variant, `${t.key}/${p.key}`).toBe('quicklinks');
-        expect(first.items?.map((i) => i.href)).toEqual(kids);
+        // 링크를 박지 않은 '하위 쪽 바로 가기' 블록 — 그릴 때 공개된 하위 쪽을 찾는다
+        expect(p.content.blocks[0], `${t.key}/${p.key}`).toEqual({ type: 'subpages' });
       }
       for (const pages of [t.pages.map((p) => p.content), Object.values(samplePages(t))]) {
         expect(hrefs(pages).filter((h) => /^\/p\/[a-z0-9-]+#/.test(h)), t.key).toEqual([]);
@@ -72,9 +71,20 @@ describe('하위 메뉴 = 별도 쪽', () => {
   });
   it('프로젝트형: 원래 하위 쪽(학생 작품)만 있는 상위 쪽에도 바로 가기가 붙는다', () => {
     const project = SITE_TEMPLATES.find((t) => t.key === 'project')!;
-    const first = project.pages.find((p) => p.key === 'projects')!.content.blocks[0] as { variant?: string; items?: { href?: string }[] };
-    expect(first.variant).toBe('quicklinks');
-    expect(first.items?.map((i) => i.href)).toEqual(['/p/works']);
+    expect(project.pages.find((p) => p.key === 'projects')!.content.blocks[0]).toEqual({ type: 'subpages' });
+  });
+  it('하위 쪽 바로 가기는 공개된 하위 쪽(메뉴 재료)만 그리고, 없으면 그리지 않는다. 이미 하위인 쪽은 하위 쪽이 없다', () => {
+    const nav = [{ key: 'about', title: { ko: '학교 소개' } }, { key: 'about-way', title: { ko: '오시는 길' }, parent: 'about' },
+      { key: 'other', title: { ko: '다른 쪽' } }, { key: 'kid', title: { ko: '손주' }, parent: 'about-way' }];
+    expect(subpagesOf(nav, 'about')).toEqual([{ href: '/p/about-way', title: { ko: '오시는 길' } }]);
+    expect(subpagesOf(nav, 'about-way')).toEqual([]);
+    const content = { title: { ko: '학교 소개' }, blocks: [{ type: 'subpages' } as Block] };
+    const html = renderToStaticMarkup(createElement(SiteBlocks, { content, lang: 'ko', fallback: 'ko', assetUrl: () => '', subpages: subpagesOf(nav, 'about') }));
+    expect(html).toContain('data-variant="quicklinks"');
+    expect(html).toContain('href="/p/about-way"');
+    expect(html).not.toContain('/p/other');
+    expect(renderToStaticMarkup(createElement(SiteBlocks, { content, lang: 'ko', fallback: 'ko', assetUrl: () => '' }))).not.toContain('<section');
+    expect(validateContent(content as never).blocks[0]).toEqual({ type: 'subpages' });
   });
   it('한 쪽 구조(single)는 구역 차례를 그대로 쓴다', () => {
     const single = SITE_TEMPLATES.find((t) => t.key === 'single')!;

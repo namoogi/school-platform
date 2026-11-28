@@ -197,9 +197,12 @@ describe('133차 예전 판 상위 쪽과 겹치지 않게', () => {
     await asUser(B.userId, (db) => site.saveVersion(db, B.schoolId, learning!.id, { content: { title: { ko: '배움' }, blocks: [] }, base_version: 1 } as never));
     // 이야기형 상위 쪽 'community': 소식 아래 하위 쪽
     await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'community', content: { title: { ko: '공동체' }, blocks: [], menu: { parent: 'news' } } }));
+    // 이야기형 상위 쪽 'admission': 앞 시험(알림형)으로 B에 생긴 쪽을 보관한다 — 보관된 상위 쪽 아래도 만들지 않는다
+    const adm = (await asUser(B.userId, (db) => site.listEntries(db, B.schoolId))).find((e) => e.kind === 'page' && e.key === 'admission')!;
+    await asUser(B.userId, (db) => site.setArchived(db, B.schoolId, adm.id, true, B.userId));
     const r = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'story'));
     const kidsOf = (parent: string) => tpl.SITE_TEMPLATES.find((t) => t.key === 'story')!.pages.filter((p) => p.content.menu?.parent === parent).map((p) => p.key);
-    for (const k of [...kidsOf('learning'), ...kidsOf('community')]) expect(r.created.map((c) => c.key), k).not.toContain(k);
+    for (const k of [...kidsOf('learning'), ...kidsOf('community'), ...kidsOf('admission')]) expect(r.created.map((c) => c.key), k).not.toContain(k);
     expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(kidsOf('philosophy'))); // 새로 만든 상위 쪽 아래는 만든다
   });
 });
