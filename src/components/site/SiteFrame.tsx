@@ -9,6 +9,7 @@ import { buildNavTree, LANG_LABEL, pick, type Lang, type SiteProfile } from '@/l
 import type { PublicSite } from '@/lib/site';
 import { hostForSlug, hostLink, PLATFORM_ORIGIN } from '@/lib/site-hosts';
 import { Suspense } from 'react';
+import { HeaderWatch } from './HeaderWatch';
 import { AutoCloseDetails } from './AutoCloseDetails';
 import { SiteToc } from './SiteToc';
 
@@ -168,6 +169,8 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
           )}
         </>}
       </header>
+      {/* 138차 후속: 휴대폰에서 머리글이 지나가면 메뉴 단추를 위에 띄운다(템플릿 키트 디자인만) */}
+      {kit && nav.length > 0 && <HeaderWatch />}
       {group ? (
         <div className="site-wrap site-sidenav-layout" data-testid="site-side">
           <nav className="site-localnav" aria-label={t(group.title)}>

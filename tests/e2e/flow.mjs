@@ -2229,6 +2229,26 @@ try {
     await ctxA.close();
   });
 
+  await step('138차 후속: 휴대폰 공개 홈페이지 — 아래로 내리면 메뉴 단추가 위에 떠서 열 수 있고, 맨 위로 오면 제자리', async () => {
+    const { devices } = require('playwright');
+    const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/demo/story?page=philosophy`, { waitUntil: 'networkidle' });
+    const btn = p.locator('.site-header > .site-menu > summary');
+    const top = () => btn.evaluate((el) => Math.round(el.getBoundingClientRect().top));
+    assert.equal(await p.locator('.site-header[data-away]').count(), 0);
+    await p.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await p.locator('.site-header[data-away]').waitFor({ state: 'attached' });
+    const t = await top();
+    assert.ok(t >= 0 && t < 40, `떠 있는 메뉴 단추가 화면 위에 보여야 함(${t})`);
+    await btn.click();
+    await p.locator('.site-header > .site-menu nav').waitFor();
+    assert.ok(await p.locator('.site-header > .site-menu nav').isVisible());
+    await btn.click();
+    await p.evaluate(() => window.scrollTo(0, 0));
+    await p.waitForFunction(() => !document.querySelector('.site-header')?.hasAttribute('data-away'));
+    await ctx.close();
+  });
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

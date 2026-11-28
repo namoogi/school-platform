@@ -2581,8 +2581,16 @@ label.check input { margin-top: 0.25em; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu[open] > summary { margin-bottom: 0; background: var(--t-ink); color: var(--t-bg); border-color: var(--t-ink); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu nav { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; padding: var(--ds-space-2) var(--L-gutter) var(--ds-space-4); background: var(--t-bg); border-bottom: 1px solid var(--t-line); box-shadow: var(--ds-shadow-2); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu nav a { min-height: 48px; font-size: var(--fs-body); }
+  /* 138차 후속: 머리글이 화면 밖으로 나가면(HeaderWatch → data-away) 메뉴 단추만 위에 띄우고, 펼친 판도 그 아래에 고정한다 */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header[data-away] > .site-menu > summary { position: fixed; top: var(--ds-space-3); right: var(--L-gutter); z-index: 40; background: var(--t-surface); color: var(--t-ink); box-shadow: var(--ds-shadow-2); animation: site-float-in 160ms ease-out; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header[data-away] > .site-menu[open] > summary { background: var(--t-ink); color: var(--t-bg); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header[data-away] > .site-menu nav { position: fixed; top: calc(var(--ds-space-3) + 52px); max-height: calc(100vh - var(--ds-space-3) - 64px); }
   /* 바닥글 메뉴는 두 줄 격자 대신 한 줄씩 */
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav { display: flex; }
+}
+@keyframes site-float-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .site .site-header[data-away] > .site-menu > summary { animation: none; }
 }
 @media (max-width: 760px) {
   /* 사진 위 큰 글: 아래쪽을 진하게 덮고 글자 그림자로 밝은 사진에서도 읽히게 */
