@@ -10,6 +10,7 @@ import type { PublicSite } from '@/lib/site';
 import { hostForSlug, hostLink, PLATFORM_ORIGIN } from '@/lib/site-hosts';
 import { Suspense } from 'react';
 import { AutoCloseDetails } from './AutoCloseDetails';
+import { SiteToc } from './SiteToc';
 
 const T = {
   home: { ko: '홈', en: 'Home', th: 'หน้าแรก' }, news: { ko: '소식', en: 'News', th: 'ข่าวสาร' },
@@ -17,6 +18,7 @@ const T = {
   menu: { ko: '메뉴', en: 'Menu', th: 'เมนู' }, skip: { ko: '본문으로 건너뛰기', en: 'Skip to content', th: 'ข้ามไปยังเนื้อหา' },
   call: { ko: '전화', en: 'Phone', th: 'โทร' }, pages: { ko: '페이지', en: 'Pages', th: 'หน้า' },
   staff: { ko: '교직원 로그인', en: 'Staff sign-in', th: 'เข้าสู่ระบบบุคลากร' },
+  toc: { ko: '이 쪽 차례', en: 'On this page', th: 'ในหน้านี้' },
 } as const;
 export const siteText = (k: keyof typeof T, lang: Lang) => T[k][lang];
 
@@ -90,6 +92,10 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
     ...(site.stories ? [{ key: 'stories', href: link('/stories'), title: { [lang]: siteText('stories', lang) }, children: [] }] : []),
   ] : [];
   const here = (n: (typeof tree)[number]) => n.key === current || n.children.some((c) => c.key === current);
+  // 134차(ADR 0050): 메뉴 구조. side = 하위 쪽이 있는 묶음 안에서는 옆에 형제 쪽 메뉴, onepage = 홈 구역 차례가 오른쪽에 따라온다
+  const layout = kit && !hidden ? profile?.layout : undefined;
+  const group = layout === 'side' ? tree.find((n) => n.key !== 'home' && n.children.length > 0 && here(n)) : undefined;
+  const toc = layout === 'onepage' && current === 'home' ? (tree[0]?.children ?? []) : [];
   const subList = (n: (typeof tree)[number]) => n.children.length > 0 && (
     <ul className="site-subnav">{n.children.map((c) => <li key={c.key}><Link href={c.href} aria-current={c.key === current ? 'page' : undefined}>{t(c.title)}</Link></li>)}</ul>);
   const treeInline = (
@@ -162,7 +168,16 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
           )}
         </>}
       </header>
-      <main id="site-main" className="site-wrap site-main">{children}</main>
+      {group ? (
+        <div className="site-wrap site-side" data-testid="site-side">
+          <nav className="site-localnav" aria-label={t(group.title)}>
+            <Link className="site-localnav-title" href={group.href} aria-current={group.key === current ? 'page' : undefined}>{t(group.title)}</Link>
+            <ul>{group.children.map((c) => <li key={c.key}><Link href={c.href} aria-current={c.key === current ? 'page' : undefined}>{t(c.title)}</Link></li>)}</ul>
+          </nav>
+          <main id="site-main" className="site-main">{children}</main>
+        </div>
+      ) : <main id="site-main" className="site-wrap site-main">{children}</main>}
+      {toc.length > 0 && <SiteToc label={siteText('toc', lang)} items={toc.map((c) => ({ id: c.href.split('#')[1] ?? '', href: c.href, label: t(c.title) }))} />}
       <footer className="site-footer">
         {richFooter && !hidden ? (
           <div className="site-wrap site-footer-grid">

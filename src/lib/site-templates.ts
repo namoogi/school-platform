@@ -5,6 +5,7 @@ import { proposeFills, putProposal, type Proposal } from './site-autofill';
 import { readPlainText } from './readers';
 import { crawlSite, fetchImage } from './site-crawl';
 import { movePath, splitSubmenuPages } from './site-template-split';
+import type { TemplateFacets } from './site-template-facets';
 
 /**
  * 65차 ADR 0031 — 학교 홈페이지 템플릿 7종.
@@ -18,7 +19,7 @@ export type Slot = {
   clues: string[];
 };
 export type TemplatePage = { kind: 'page'; key: string; sort: number; content: Content };
-export type SiteTemplate = {
+export type SiteTemplate = TemplateFacets & {
   key: string; version: number; name: string; summary: string; fits: string[]; firstScreen: string;
   theme: SiteTheme; langs: ('ko' | 'en' | 'th')[]; pages: TemplatePage[]; slots: Slot[]; mustHave: string[];
   /** 133차: 하위 메뉴를 쪽으로 나누기 전 원본(예시 글은 원본 순서대로 채운 뒤 같은 방식으로 나눈다). 한 쪽 구조는 없음 */
@@ -72,6 +73,7 @@ const commonSlots = (): Slot[] => [
 const RAW_TEMPLATES: SiteTemplate[] = [
   {
     key: 'notice', version: 6, name: '알림 중심형', theme: 'clear', langs: ['ko'],
+    nav: 'side', first: 'board', contents: ['notice'],
     summary: '재학생 가정이 매일 찾는 알림·소식·학사일정·급식을 첫 화면에 둡니다.',
     fits: ['공립·지역 학교', '재학생 가정이 주 방문자', '공지가 많은 학교'], firstScreen: '알림 · 최근 소식 · 학사일정 · 급식',
     mustHave: ['학교 소개(인사말·연혁·교육목표)', '학사일정', '오시는 길', '입학·전학 안내'],
@@ -128,6 +130,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
   {
     key: 'story', version: 7, name: '이야기형', theme: 'ivory', langs: ['ko'],
+    nav: 'top', first: 'magazine', contents: ['story'],
     summary: '교육철학과 학교의 하루를 사진과 이야기로 보여 줍니다.',
     fits: ['사립·대안학교', '교육철학으로 알려지는 학교'], firstScreen: '큰 사진 · 교육철학 · 하루 이야기',
     mustHave: ['교육철학', '배움(교육과정)', '입학 문의 방법'],
@@ -179,6 +182,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
   {
     key: 'admissions', version: 6, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
+    nav: 'top', first: 'landing', contents: ['admission'],
     summary: '예비 학부모가 차별점을 보고 문의·견학·지원으로 이어지게 합니다.',
     fits: ['신입생을 모집하는 사립·국제학교'], firstScreen: '차별점 3가지 · 입학 단추',
     mustHave: ['입학 절차', '학비·추가 비용', '자주 묻는 질문', '문의처'],
@@ -223,6 +227,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
   {
     key: 'project', version: 8, name: '프로젝트형', theme: 'studio', langs: ['ko'],
+    nav: 'top', first: 'gallery', contents: ['project'],
     summary: '학생 프로젝트와 작품을 사진 묶음으로 보여 주는 PBL 학교용입니다.',
     fits: ['PBL·프로젝트 중심 대안학교', '발표회·전시가 많은 학교'], firstScreen: '프로젝트 소개 · 발표회 소식',
     mustHave: ['배움의 방식(PBL 흐름)', '프로젝트 목록', '학생 작품 공개 허가'],
@@ -267,6 +272,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
   {
     key: 'mission', version: 6, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
+    nav: 'top', first: 'hero', contents: ['mission'],
     summary: '학교의 사명과 함께하는 방법(후원·봉사·기도)을 분명히 알립니다.',
     fits: ['기독교·선교 학교', '후원으로 운영되는 비영리 학교'], firstScreen: '사명 · 후원 단추 · 소식',
     mustHave: ['사명·신앙 고백', '후원 방법과 쓰임', '재정 보고(있으면)'],
@@ -310,6 +316,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
   {
     key: 'international', version: 6, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
+    nav: 'top', first: 'landing', contents: ['international', 'admission'],
     summary: '여러 언어로 교육과정 경로와 입학 여정을 안내합니다.',
     fits: ['국제학교', '외국 가정·현지 가정을 함께 받는 학교'], firstScreen: '다국어 소개 · 문의 단추',
     mustHave: ['교육과정 경로(학년·인가)', '입학 여정', '학생 생활(기숙·통학)', '언어별 연락처'],
@@ -365,6 +372,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   {
     // 90차: 대표 3종의 유치원(골격 D 그래픽 마스크형) — 둥글게 오린 놀이 사진, 연령별 반, 하루 일과 시간 띠, 학부모 질문
     key: 'kinder', version: 7, name: '유치원형', theme: 'play', langs: ['ko'],
+    nav: 'top', first: 'hero', contents: ['kinder'],
     summary: '아이들의 하루와 반, 학부모가 궁금한 것을 사진과 함께 따뜻하게 보여 줍니다.',
     fits: ['유치원·어린이집', '초등 저학년 중심 학교'], firstScreen: '둥근 놀이 사진 · 우리 반 · 하루 일과',
     mustHave: ['연령별 반 안내', '하루 일과', '급식·건강 안내', '입학(입소) 상담 방법'],
@@ -420,6 +428,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
   {
     key: 'single', version: 4, name: '한 쪽 소개형', theme: 'seed', langs: ['ko'],
+    nav: 'onepage', first: 'landing', contents: ['small'],
     summary: '막 시작한 작은 학교·모임이 한 쪽에 소개·연락·소식을 담습니다.',
     fits: ['막 시작한 작은 학교', '홈스쿨 연합·배움 모임'], firstScreen: '소개 · 하는 일 · 연락',
     mustHave: ['누구를 위한 모임인지', '연락 방법'],
@@ -443,7 +452,10 @@ const RAW_TEMPLATES: SiteTemplate[] = [
 
 // 133차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(single)는 구역 차례를 그대로 쓴다
 const ONE_PAGE = new Set(['single']);
-export const SITE_TEMPLATES: SiteTemplate[] = RAW_TEMPLATES.map((t) => {
+// 134차(ADR 0050): 메뉴 구조가 위 메뉴(top)가 아니면 홈의 사이트 정보에 적어 둔다(학교가 설정에서 바꿀 수 있다)
+const withLayout = (t: SiteTemplate): SiteTemplate => (t.nav === 'top' ? t : {
+  ...t, pages: t.pages.map((p) => (p.key === 'home' ? { ...p, content: { ...p.content, site: { ...p.content.site, layout: t.nav as 'side' | 'onepage' } } } : p)) });
+export const SITE_TEMPLATES: SiteTemplate[] = RAW_TEMPLATES.map(withLayout).map((t) => {
   if (ONE_PAGE.has(t.key)) return t;
   const { pages, moves } = splitSubmenuPages(t.pages);
   const slots = t.slots.map((sl) => { const [page, path] = movePath(moves, sl.page, sl.path); return { ...sl, page, path }; });

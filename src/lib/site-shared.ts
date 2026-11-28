@@ -64,6 +64,8 @@ export type Block = (
 /** 사이트 머리·바닥 정보. 'home' 쪽 내용에 두어 판·공개 흐름을 그대로 따른다(로고 그림도 공개된 판이 가리킬 때만 보임). */
 export type SiteProfile = {
   logo?: string; tagline?: LText; address?: LText; phone?: string[]; facebook?: string; footer?: LText; visit?: Button;
+  /** 134차(ADR 0050): 메뉴 구조 — side(하위 쪽에 옆 메뉴) · onepage(홈 구역 차례가 오른쪽에 따라옴). 비우면 위 메뉴 */
+  layout?: 'side' | 'onepage';
 };
 /** 쪽 머리 꾸밈(dawn): 작은 머리말과 화면 모양. 42차: 여는 머리의 링크(link)와 표지 사진 날짜표(note) */
 export type PageHead = { eyebrow?: LText; layout?: 'editorial' | 'opening'; link?: Button; note?: LText };
