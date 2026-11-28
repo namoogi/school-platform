@@ -1927,6 +1927,12 @@ try {
     await shot(p, '68-intro-en.png');
     await p.click('[data-testid=intro-start]');
     await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates|\/login\?next=\/site\/templates/);
+    // 템플릿 미리보기는 로그인 없이 열린다(홍보용 공개 쪽). 관리 화면으로 돌아가는 링크는 없다
+    await p.goto(`${BASE}/templates/kinder?page=home&lang=ko`);
+    await p.waitForSelector('[data-testid=template-live]');
+    assert.equal(await p.locator('.template-live-bar a[href="/site/templates"]').count(), 0);
+    await p.click('[data-testid=template-live-start]');
+    await p.waitForURL(/\/login/);
     await ctx.close();
   });
   await step('71차: 학교 구조(학교급·학기 구조·학년도·학기 날짜) → 사람 추가·학적 등록·이름 새 판', async () => {
