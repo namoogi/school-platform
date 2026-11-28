@@ -414,6 +414,7 @@ try {
     assert.equal(await a.getAttribute('aside a[href="/home"]', 'aria-current'), 'page');
     await shot(a, '25-home.png');
     await a.click('aside a[href="/review"]');
+    await a.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await a.waitForURL(/\/review$/);
     await a.waitForSelector('[data-testid=rule-v2]');
     assert.equal(await a.getAttribute('.triage-box[aria-current=page]', 'href'), '/review?box=rules');
@@ -518,6 +519,7 @@ try {
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
     await p.click('aside a[href="/admin/lab"]');
+    await p.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await p.waitForURL(/\/admin\/lab$/);
     assert.match(await p.textContent('[data-testid=lab-items]'), /AI 분석 프롬프트 설계/);
     await p.fill('[data-testid=quick-add] input[aria-label="새 항목 제목"]', 'E2E 할 일 확인');
@@ -542,6 +544,7 @@ try {
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
     await p.click('aside a[href="/admin/control"]');
+    await p.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await p.waitForURL(/\/admin\/control$/);
     const card = p.locator('[data-testid=control-1]');
     assert.match(await card.textContent(), /GitHub 이슈/);
@@ -556,6 +559,7 @@ try {
     await shot(p, '39-control-center.png');
     // 개발·연구소 항목 → 세션에 지시 (세부 내용이 채워진 새 지시)
     await p.click('aside a[href="/admin/lab"]');
+    await p.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await p.waitForURL(/\/admin\/lab$/);
     // 81차: 카드 → 상세 → 맨 아래 지침(관제 센터 '지시'와 같은 길, 연구소 항목 연결)
     await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a.item-title').click();
@@ -619,6 +623,7 @@ try {
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
     await p.click('aside a[href="/admin/usage"]');
+    await p.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await p.waitForURL(/\/admin\/usage$/);
     assert.match(await p.textContent('[data-testid=usage-table]'), /드리미 예시학교/);
     assert.match(await p.textContent('[data-testid=storage-card]'), /설정 전/);
@@ -635,7 +640,10 @@ try {
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
     await p.click('aside a[href="/admin/integrations"]');
+    await p.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await p.waitForURL(/\/admin\/integrations/);
+    // 사이드바 링크를 누른 마우스가 메뉴 위에 남으면 펼쳐진 메뉴가 본문 단추를 가린다(CI 흔들림 두 번) — 본문으로 옮긴다
+    await p.mouse.move(1000, 600);
     await p.fill('[data-testid=add-link] input >> nth=0', 'E2E 전용 저장소');
     await p.fill('[data-testid=add-link] input[aria-label="연동 주소"]', 'https://github.com/example-org/e2e-school');
     await p.click('[data-testid=add-link] button:text-is("연동 추가")');
@@ -660,6 +668,7 @@ try {
     await p.click('button[type=submit]');
     await p.waitForURL(/\/admin$/);
     await p.click('aside a[href="/admin/design"]');
+    await p.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await p.waitForURL(/\/admin\/design/);
     assert.equal(await p.locator('[data-testid^=archetype-]').count(), 8);
     assert.equal(await p.locator('table.ar-axes tbody tr').count(), 8);
@@ -798,6 +807,7 @@ try {
     await h.waitForSelector('[data-testid=license] .tag:has-text("3판")');
     await h.goto(`${BASE}/home`);
     await h.click('aside a[href="/site"]');
+    await h.mouse.move(1000, 450); // 120차 펼침 메뉴: 마우스가 메뉴 위에 남으면 메뉴가 펼쳐져 본문 왼쪽을 덮는다(사람처럼 본문으로 옮김)
     await h.waitForURL(/\/site$/);
     // 설정: 주소·언어·열기
     await h.fill('[data-testid=site-settings] input >> nth=0', 'dreamy-a');

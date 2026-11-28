@@ -961,6 +961,8 @@ export const CATALOG = {
   'req.metaOverdue': '기한 지남 {n}건',
   'req.list': '요청',
   'req.empty': '아직 요청이 없습니다.',
+  'req.emptyBody': '학생·보호자가 열람 계정(/my)에서 기록 열람이나 수정을 요청하면 여기에 기한과 함께 쌓입니다. 요청하려면 먼저 그 사람의 열람 계정이 있어야 합니다.',
+  'req.emptyAction': '열람 계정 만들기',
   'req.byGuardian': '보호자 요청',
   'req.bySelf': '본인 요청',
   'req.kind.amend': '수정',
@@ -3098,6 +3100,44 @@ export const CATALOG = {
   'academics.tab.terms': '학기 구조',
   'academics.tab.years': '학년도·학기',
   'academics.tab.templates': '템플릿',
+  // 126차: 두 단계 메뉴
+  'site.menu.parent': '상위 메뉴',
+  'site.menu.parentNone': '없음 — 이 쪽이 상위 메뉴',
+  'site.menu.parentNews': '소식',
+  'site.menu.anchor': '메뉴 주소 (비우면 메뉴에 안 보임)',
+  'site.menu.anchorHint': '영문 소문자·숫자·하이픈. 이 쪽 상위 메뉴 아래 하위 메뉴로 보이고, 누르면 이 구역으로 바로 옵니다.',
+  'err.site.anchorFormat': '{n}번째 블록: 메뉴 주소는 영문 소문자로 시작하고 영문 소문자·숫자·하이픈 40자 이하로 씁니다.',
+  'err.site.anchorDuplicate': '메뉴 주소 \'{anchor}\'가 이 쪽에 두 번 있습니다.',
+  'err.site.menuParent': '상위 메뉴는 다른 쪽의 주소 이름이나 news(소식)여야 합니다.',
+  // 125차 템플릿 새 판 제안
+  'tplOffer.title': '템플릿 새 판 제안',
+  'tplOffer.lead': '관제가 우리 학교 템플릿의 새 판을 냈습니다. 수락하면 빠진 것만 더하고, 학교가 정한 값은 그대로 둡니다. 보류·거절해도 학교 사본은 바뀌지 않습니다.',
+  'tplOffer.versions': '{name} {from}판 → {to}판',
+  'tplOffer.why': '바뀐 이유: {why}',
+  'tplOffer.add': '수락하면 더해지는 것',
+  'tplOffer.keep': '학교 값 유지',
+  'tplOffer.nothingToAdd': '더할 것 없음(이미 다 있음)',
+  'tplOffer.grades': '학년 {n}개',
+  'tplOffer.periods': '학기 구조({list})',
+  'tplOffer.scale': '척도 {code}',
+  'tplOffer.keepScheme': '학년 체계({scheme})',
+  'tplOffer.keepPeriods': '학기 구조',
+  'tplOffer.keepHidden': '숨길 구획',
+  'tplOffer.see': '새 판 제안 보기',
+  'tplOffer.tab': '새 판',
+  // 125차 DB 안내 — 템플릿 새 판 제안
+  'db.tplOfferOtherTemplate': '학교가 다른 템플릿으로 바꿔 이 제안은 쓸 수 없습니다.',
+  'db.tplOfferApplyFirst': '템플릿 새 판을 먼저 적용해야 수락할 수 있습니다.',
+  // 125차 템플릿 새 판 제안(Codex 검토)
+  'err.template.useOffer': '같은 템플릿의 다른 판으로는 \'템플릿 새 판 제안\'에서 수락해 바꿉니다.',
+  'db.tplOfferStale': '학교가 이미 그 판 이상을 써서 지난 제안입니다.',
+  // 125차 템플릿 새 판 제안 기록
+  'tplOffer.history': '결정 기록 {n}건',
+  'tplOffer.versionsShort': '{from}판 → {to}판',
+  // 125차 템플릿 새 판 제안 결정 확인
+  'tplOffer.confirm': '결정을 남길까요? \'수락\'이면 {name} {to}판을 지금 적용해 위의 \'수락하면 더해지는 것\'을 학교 사본에 더합니다(학교 값은 그대로).',
+  // 126차: 두 단계 메뉴
+  'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

@@ -5,7 +5,7 @@ import '@fontsource/noto-serif-thai/400.css';
 import '@fontsource/noto-serif-kr/400.css';
 import Link from 'next/link';
 import { ArrowRight, ChevronDown } from 'lucide-react';
-import { LANG_LABEL, pick, type Lang, type SiteProfile } from '@/lib/site-shared';
+import { buildNavTree, LANG_LABEL, pick, type Lang, type SiteProfile } from '@/lib/site-shared';
 import type { PublicSite } from '@/lib/site';
 import { hostForSlug, hostLink, PLATFORM_ORIGIN } from '@/lib/site-hosts';
 import { Suspense } from 'react';
@@ -82,6 +82,27 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
   ];
   const visit = !hidden && profile?.visit && t(profile.visit.label) ? profile.visit : null;
   const navList = nav.map((n) => <Link key={n.key} href={n.href} aria-current={n.key === current ? 'page' : undefined}>{n.label}</Link>);
+  // 126차(ADR 0046): 키트 디자인은 두 단계 메뉴(상위 쪽 아래 하위 쪽·메뉴 주소 구역). campus·dawn은 지금처럼 한 줄
+  const tree = kit && !hidden ? [
+    { key: 'home', href: link('/'), title: { [lang]: siteText('home', lang) },
+      children: (site.home_sections ?? []).map((x) => ({ key: `home#${x.anchor}`, href: `${link('/')}#${x.anchor}`, title: x.title })) },
+    ...buildNavTree(site.nav, (k, a) => `${link(`/p/${k}`)}${a ? `#${a}` : ''}`, site.has_news ? { href: link('/news'), title: { [lang]: siteText('news', lang) } } : undefined),
+    ...(site.stories ? [{ key: 'stories', href: link('/stories'), title: { [lang]: siteText('stories', lang) }, children: [] }] : []),
+  ] : [];
+  const here = (n: (typeof tree)[number]) => n.key === current || n.children.some((c) => c.key === current);
+  const subList = (n: (typeof tree)[number]) => n.children.length > 0 && (
+    <ul className="site-subnav">{n.children.map((c) => <li key={c.key}><Link href={c.href} aria-current={c.key === current ? 'page' : undefined}>{t(c.title)}</Link></li>)}</ul>);
+  const treeInline = (
+    <ul className="site-nav-tree">{tree.map((n) => (
+      <li key={n.key} data-sub={n.children.length > 0 || undefined}>
+        <Link href={n.href} aria-current={n.key === current ? 'page' : here(n) ? 'true' : undefined}>{t(n.title)}</Link>{subList(n)}
+      </li>))}</ul>);
+  const treeMenu = (
+    <ul className="site-menu-tree">{tree.map((n) => (
+      <li key={n.key}>{n.children.length > 0
+        ? <details open={here(n) || undefined}><summary aria-current={here(n) ? 'true' : undefined}>{t(n.title)}<ChevronDown size={18} aria-hidden="true" /></summary>
+            <ul className="site-subnav"><li><Link href={n.href} aria-current={n.key === current ? 'page' : undefined}>{t(n.title)}</Link></li>{n.children.map((c) => <li key={c.key}><Link href={c.href} aria-current={c.key === current ? 'page' : undefined}>{t(c.title)}</Link></li>)}</ul></details>
+        : <Link href={n.href} aria-current={n.key === current ? 'page' : undefined}>{t(n.title)}</Link>}</li>))}</ul>);
   const langList = langs ?? site.langs;
   const langLinks = langList.map((l) => <Link key={l} href={preview ? preview.langHref(l) : `${sitePath(site, path || '/')}${q(l)}`} aria-current={l === lang ? 'true' : undefined} hrefLang={l} lang={l}>{LANG_LABEL[l]}</Link>);
   return (
@@ -116,7 +137,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             <span><strong>{title}</strong>{t(profile?.tagline) && <small>{t(profile?.tagline)}</small>}</span>
           </Link>
           {/* 42차: 새벽빛은 옛 사이트처럼 메뉴를 머리 한 줄 안에 둔다 */}
-          {(dawn || kit) && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{navList}</nav>}
+          {(dawn || kit) && nav.length > 0 && <nav className="site-nav site-nav-inline" aria-label={title}>{kit ? treeInline : navList}</nav>}
           {langList.length > 1 && !kit && (dawn
             ? (
               <Suspense fallback={<details className="site-lang-menu"><summary><span lang={lang}>{LANG_LABEL[lang]}</span></summary></details>}>
@@ -135,7 +156,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
           {(dawn || kit) && (
             <Suspense fallback={<details className="site-wrap site-menu"><summary>{siteText('menu', lang)}</summary></details>}>
               <AutoCloseDetails className="site-wrap site-menu" summary={siteText('menu', lang)}>
-                <nav aria-label={`${title} ${siteText('menu', lang)}`}>{navList}</nav>
+                <nav aria-label={`${title} ${siteText('menu', lang)}`}>{kit ? treeMenu : navList}</nav>
               </AutoCloseDetails>
             </Suspense>
           )}
@@ -153,7 +174,9 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
             </div>
             <nav aria-label={siteText('pages', lang)}>
               <Link href={link('/')}>{siteText('home', lang)}</Link>
-              {nav.filter((n) => n.key !== 'home').map((n) => <Link key={n.key} href={n.href}>{n.label}</Link>)}
+              {kit
+                ? tree.filter((n) => n.key !== 'home').map((n) => <Link key={n.key} href={n.href}>{t(n.title)}</Link>)
+                : nav.filter((n) => n.key !== 'home').map((n) => <Link key={n.key} href={n.href}>{n.label}</Link>)}
             </nav>
             <div className="site-footer-contact">
               {t(profile?.address) && <p>{t(profile?.address)}</p>}
