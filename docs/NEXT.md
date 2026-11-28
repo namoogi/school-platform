@@ -60,7 +60,7 @@
   - 화면 편집기(LiveEditor) 미리보기 틀은 쪽 제목만 받아 메뉴가 한 줄이다.
   - 사진 13장(#197)은 Codex 'Create PR' 대기.
   - 관제 지시: 123차 배치 규약으로 템플릿 콘텐츠·레이아웃 정돈(한 템플릿 = PR 하나).
-- 작업 요령: 로컬 서버를 끌 때는 `pkill -f next-server`(부모 `next start`만 끄면 자식 서버가 포트를 쥐고 남아 묵은 빌드로 썸네일이 찍힌다).
+- 작업 요령: `next start`를 끄면 자식 `next-server`가 포트를 쥐고 남을 수 있다(묵은 빌드로 썸네일이 찍힘). 그 포트의 프로세스만 끈다: `fuser -k 3000/tcp`(또는 `lsof -ti :3000 | xargs kill`). 다른 앱 서버까지 끄는 `pkill -f next-server`는 쓰지 않는다.
 
 ## 학교 이전 (92차, ADR 0035)
 공용 DB 기본, 학교 맞춤은 설정값(사본·규칙 판·정의·계산식). 학교는 `scripts/school-move.mjs`로 전용·독립 DB로 옮긴다(`docs/SCHOOL-MOVE.md`). CI `tests/school-move.test.ts`가 연습 이전·구조 문(새 학교 표는 UUID·복합 외래키)을 지킨다.
