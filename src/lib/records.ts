@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Db } from './db';
+import { hiddenSections } from './sections';
 import { isUuid, NotFoundError, ValidationError } from './services';
 
 /**
@@ -236,6 +237,21 @@ export function blind(content: Record<string, unknown>, secrets: string[], issue
   return JSON.parse(text) as Record<string, unknown>;
 }
 
+/** 학교가 숨긴 구획을 발행본 내용에서 뺀다. 지금 발행본에 실리는 것은 평점(GPA·GPAX)뿐이다 */
+export function hideInDocument(format: Format, out: { content: Record<string, unknown>; issues: Issue[] }, hidden: Set<string>) {
+  if (!hidden.has('gpa')) return out;
+  const c = structuredClone(out.content) as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  if (Array.isArray(c.years)) for (const y of c.years) if (y && typeof y === 'object') delete y.gpa;
+  if (c.cumulative && typeof c.cumulative === 'object') { delete c.cumulative.gpa; delete c.cumulative.gpa_scale; }
+  if (Array.isArray(c.key)) for (const k of c.key) if (k && typeof k === 'object') delete k.points;
+  if ('gpax' in c) delete c.gpax;
+  if (format === 'us_school_profile') c.gpa_policy = 'GPA is not reported by this school.';
+  // GPA 점수가 없는 등급 질문은 GPA를 싣지 않으면 뜻이 없다
+  const issues = out.issues.filter((i) => !/GPA points/.test(i.message));
+  issues.push({ level: 'info', where: format, message: 'GPA is hidden by school setting (hidden sections).' });
+  return { content: c, issues };
+}
+
 // ── 발행 ─────────────────────────────────────────────────
 export async function publishRecordDocument(db: Db, schoolId: string, input: { format: Format; personId?: string; lang?: string; blind?: boolean; profileCode?: string }) {
   const prof = await profileSettings(db, schoolId, input.profileCode);
@@ -271,6 +287,8 @@ export async function publishRecordDocument(db: Db, schoolId: string, input: { f
     const st = snaps[0].student;
     secrets = [st?.name ?? '', st?.name_latin ?? '', snaps[0].school.name, ...Object.values(snaps[0].school.codes ?? {})];
   }
+  // 115차: 학교가 평점(GPA)을 숨기면 발행본에 GPA 칸을 싣지 않는다(스냅샷은 그대로, 그리는 쪽에서만 뺌)
+  out = hideInDocument(input.format, out, await hiddenSections(db, schoolId));
   if (input.blind) out.content = blind(out.content, secrets, out.issues);
   const { rows: [r] } = await db.query('select app.publish_record_document($1, $2) as v', [schoolId, JSON.stringify({
     format: input.format, person_id: input.personId ?? null, closure_ids: closureIds, lang: input.lang ?? (input.format === 'kr_alt_record' ? 'ko' : input.format === 'th_por_por_1' ? 'th' : 'en'),

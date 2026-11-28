@@ -78,7 +78,8 @@ export async function schemeView(db: Db, schoolId: string, lang: string): Promis
 }
 
 export type ApplyInput = { scheme?: unknown; levels?: unknown; labels?: unknown; why?: unknown; base_version?: unknown;
-  /** 113차: 템플릿 적용이 같은 관할 판에 템플릿 키·판을 함께 남길 때 */ template?: { key: string; version: number } };
+  /** 113차: 템플릿 적용이 같은 관할 판에 템플릿 키·판을 함께 남길 때. 115차: 처음 고를 때는 숨길 구획도 복사 */
+  template?: { key: string; version: number; hidden?: string[] } };
 
 /**
  * 학교급·학년을 체계대로 만든다. 이미 있는 학교급(같은 코드)과 학년(같은 **서수**)은 그대로 두고 빠진 것만 더한다.
@@ -123,6 +124,7 @@ export async function applyGradeScheme(db: Db, schoolId: string, input: ApplyInp
     country: prev?.country ?? '', sector: prev?.sector ?? '', accreditation: prev?.accreditation ?? '', external_codes: prev?.external_codes ?? {},
     why: typeof input.why === 'string' && input.why.trim() ? input.why : `학년 체계: ${scheme}`, grade_scheme: scheme, grade_labels: customByOrdinal,
     ...(input.template ? { template_key: input.template.key, template_version: input.template.version } : {}),
+    ...(input.template?.hidden ? { hidden_sections: input.template.hidden } : {}),
     base_version: base,
   });
   return { scheme, version, ...made };

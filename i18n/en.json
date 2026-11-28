@@ -2923,5 +2923,10 @@
   "site.field.n.cardBody": "Card {n} text",
   "site.field.n.cardTitle": "Card {n} title",
   "site.field.n.item": "Item {n}",
-  "site.field.coverPhoto": "Cover photo"
+  "site.field.coverPhoto": "Cover photo",
+  "atpl.ourHidden": "Sections our school hides",
+  "atpl.ourHiddenLead": "The template's choice is copied when you first pick a template. After that, what you set here is used on school screens and published records. Today, GPA is what gets hidden in published records.",
+  "atpl.saveHidden": "Save hidden sections",
+  "atpl.hiddenSaved": "Hidden sections saved.",
+  "err.sections.unknown": "Hidden sections must be class rank, GPA, rank grade or period attendance."
 }

@@ -2967,6 +2967,12 @@ export const CATALOG = {
   'site.field.n.item': '{n}번 항목',
   // 홈페이지 편집기 칸 이름 (104차, 공개 렌더러가 편집 모드에서 넘기는 한국어 이름 → 관리 화면 언어)
   'site.field.coverPhoto': '표지 사진',
+  // 115차 숨길 구획 (ADR 0043)
+  'atpl.ourHidden': '우리 학교가 숨기는 구획',
+  'atpl.ourHiddenLead': '템플릿을 처음 고를 때 템플릿 값이 복사됩니다. 그 뒤로는 여기서 고친 값이 학교 화면·발행본에 쓰입니다. 지금 발행본에서 숨겨지는 것은 평점(GPA)입니다.',
+  'atpl.saveHidden': '숨김 저장',
+  'atpl.hiddenSaved': '숨길 구획을 저장했습니다.',
+  'err.sections.unknown': '숨길 구획은 석차·평점·석차등급·교시 출결 중에서 고릅니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

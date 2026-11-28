@@ -57,8 +57,11 @@ export async function applyTemplate(db: Db, schoolId: string, input: { key?: unk
   //    학교가 이미 학년 체계를 정했으면 그 체계를 지킨다(학교 값 유지, Codex #180). 처음일 때만 템플릿 체계를 쓴다
   const cur = await schoolProfile(db, schoolId);
   const keepScheme = (cur?.grade_scheme ?? null) as GradeScheme | null;
+  // 115차: 숨길 구획은 학교가 처음 템플릿을 고를 때만 복사한다. 그 뒤(다시 채우기·새 판·다른 템플릿)에는 학교 값을 지킨다
+  const firstTemplate = !cur?.template_key;
   const scheme = await applyGradeScheme(db, schoolId, {
-    scheme: keepScheme ?? m.grade_scheme, levels: m.levels, base_version: base, why: `템플릿: ${key} ${t.version}판`, template: { key, version: t.version },
+    scheme: keepScheme ?? m.grade_scheme, levels: m.levels, base_version: base, why: `템플릿: ${key} ${t.version}판`,
+    template: { key, version: t.version, ...(firstTemplate ? { hidden: m.hide } : {}) },
   }, locale);
 
   // 2) 학기 구조: 학교에 규칙 판이 없을 때만 템플릿 학기로 1판을 만든다
