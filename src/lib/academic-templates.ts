@@ -1,4 +1,6 @@
 import type { Db } from './db';
+import { latestPolicy, listScales } from './gradebook';
+import { listCalcRules } from './calc-rules';
 import { definePeriodRule, latestPeriodRule } from './academics';
 import { schoolProfile } from './foundation';
 import { applyGradeScheme, gradeLabel, presetLevels, type GradeScheme, type LevelKey } from './grade-schemes';
@@ -149,4 +151,37 @@ export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabC
                 and coalesce((select d.decision from public.academic_template_decisions d where d.school_id = $1 and d.template_key = cur.template_key
                                 and d.to_version = l.v order by d.decided_at desc limit 1), 'offered') <> 'declined') as offers`, [schoolId]);
   return c;
+}
+
+/** 127차: 학교 AI 맞춤 지시문에 넣을 학교 사본 요약(템플릿이 아니라 지금 학교 값). 고른 템플릿이 없으면 null */
+export async function schoolCopySummary(db: Db, schoolId: string, lang = 'ko') {
+  const p = await schoolProfile(db, schoolId);
+  if (!p?.template_key || p.template_version == null) return null;
+  const t = (await db.query<AcademicTemplate>('select * from app.academic_template($1, $2)', [p.template_key, p.template_version])).rows[0];
+  if (!t) return null;
+  const { rows: levels } = await db.query<{ name: string }>('select name from public.school_levels where school_id = $1 order by sort_order, code', [schoolId]);
+  // 척도·성적 정책은 코드만이 아니라 지금 판의 내용까지 준다. AI가 '지금 값 → 바꿀 값'을 쓰고 학교가 고친 값을 되돌리지 않게(Codex 220번 PR 검토)
+  const scaleRows = await listScales(db, schoolId);
+  const policy = await latestPolicy(db, schoolId);
+  const rule = await latestPeriodRule(db, schoolId);
+  // 학교가 저장한 계산식 판·출력 프로필의 최신 판(템플릿 견본이 아니라 학교 것, Codex 220번 PR 검토)
+  const calcRules = (await listCalcRules(db, schoolId)).map((r) => ({ code: r.code, version: r.version, spec: r.spec }));
+  const { rows: outputProfiles } = await db.query<{ code: string; format: string; version: number; settings: Record<string, unknown> }>(
+    `select distinct on (p.code) p.code, p.format, v.version, v.settings from public.output_profiles p
+       join public.output_profile_versions v on v.profile_id = p.id
+      where p.school_id = $1 order by p.code, v.version desc`, [schoolId]);
+  return {
+    template: { key: t.key, version: t.version, title: t.title[lang] ?? t.title.ko ?? Object.values(t.title)[0] },
+    scheme: (p.grade_scheme as string | null) ?? null,
+    levels: levels.map((l) => l.name),
+    periods: rule ? rule.value.periods.map((x) => x.label) : [],
+    scales: scaleRows.map((r) => ({ code: r.code, kind: r.kind, version: r.version,
+      bands: r.bands.map((b) => ({ code: b.code, min: b.min, ...(b.points != null ? { points: b.points } : {}), ...(b.earns_credit != null ? { earns_credit: b.earns_credit } : {}) })) })),
+    policy: policy ? { version: policy.version, policy: policy.policy } : null,
+    calcSamples: t.manifest.calc_samples,
+    outputs: t.manifest.outputs,
+    calcRules,
+    outputProfiles,
+    hidden: ((p.hidden_sections ?? []) as string[]),
+  };
 }
