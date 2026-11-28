@@ -50,6 +50,9 @@ language plpgsql security definer set search_path = pg_catalog, public, pg_temp 
 declare v integer;
 begin
   if new.template_key is null or new.template_version is null then return null; end if;
+  -- 새 판 내기(app.publish_academic_template)와 같은 잠금: 둘이 동시에 돌면 한쪽이 끝날 때까지 기다린 뒤
+  -- 새 문장으로 다시 읽으므로 서로를 놓치지 않는다(Codex 199번 PR 검토)
+  perform pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext(new.template_key));
   select max(version) into v from public.academic_templates where key = new.template_key;
   if v > new.template_version then
     insert into public.academic_template_offers(school_id, template_key, from_version, to_version)

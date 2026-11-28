@@ -125,6 +125,35 @@ describe('템플릿 새 판 제안', () => {
     expect(offers[0]).toMatchObject({ from_version: 1, to_version: 6, status: 'offered' });
   });
 
+  it('학교가 템플릿을 고르는 것과 새 판 내기가 동시에 돌아도 제안이 빠지지 않는다(두 순서 모두)', async () => {
+    const one = async (order: 'profile-first' | 'publish-first') => {
+      const a = new pg.Client({ connectionString: TEST_URL }); const b = new pg.Client({ connectionString: TEST_URL });
+      await a.connect(); await b.connect();
+      const v = (await a.query(`select max(version)::int as v from public.academic_templates where key = 'us_k12'`)).rows[0].v as number;
+      const profile = async () => {
+        await a.query('begin');
+        await a.query(`insert into public.school_profiles(school_id, version, template_key, template_version, created_by)
+          values ($1, (select max(version) from public.school_profiles where school_id = $1) + 1, 'us_k12', $2, $3)`, [A.schoolId, v, A.userId]);
+      };
+      const publish = async () => {
+        await b.query('begin');
+        // app.publish_academic_template 과 같은 잠금 → 같은 순서로 판을 넣고 제안을 만든다
+        await b.query(`select pg_advisory_xact_lock(hashtext('school-platform:academic_templates'), hashtext('us_k12'))`);
+        await b.query(`insert into public.academic_templates(key, version, sort_order, title, summary, manifest, why)
+          select key, version + 1, sort_order, title, summary, manifest, '경쟁 시험' from public.academic_templates where key = 'us_k12' and version = $1`, [v]);
+        await b.query(`select private.offer_academic_template('us_k12', $1)`, [v + 1]);
+      };
+      const wait = () => new Promise((r) => setTimeout(r, 300));
+      if (order === 'profile-first') { await profile(); const p = publish().then(() => b.query('commit')); await wait(); await a.query('commit'); await p; }
+      else { await publish(); const p = profile().then(() => a.query('commit')); await wait(); await b.query('commit'); await p; }
+      const n = (await a.query(`select count(*)::int as n from public.academic_template_offers where school_id = $1 and template_key = 'us_k12' and to_version = $2`, [A.schoolId, v + 1])).rows[0].n;
+      await a.end(); await b.end();
+      return n;
+    };
+    expect(await one('profile-first')).toBe(1);
+    expect(await one('publish-first')).toBe(1);
+  });
+
   it('제안 행은 지울 수 없고, 학교 사람은 직접 쓸 수 없다', async () => {
     const id = (await su.query(`select id from public.academic_template_offers limit 1`)).rows[0].id;
     await expect(su.query(`delete from public.academic_template_offers where id = $1`, [id])).rejects.toThrow();
