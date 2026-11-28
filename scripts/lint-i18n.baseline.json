@@ -4,7 +4,7 @@
   "src/app/admin/integrations/InspectorPanel.tsx": 1,
   "src/app/admin/lab/[id]/ItemClient.tsx": 18,
   "src/app/layout.tsx": 1,
-  "src/app/templates/[key]/page.tsx": 1,
+  "src/app/templates/TemplateView.tsx": 1,
   "src/components/DocumentPaper.tsx": 3,
   "src/components/RecordDocumentView.tsx": 6
 }
