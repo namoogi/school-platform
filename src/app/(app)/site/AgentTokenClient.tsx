@@ -1,4 +1,5 @@
 'use client';
+import { copyText } from '@/lib/clipboard';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Archive, ArchiveRestore, Bot, ClipboardCopy, Copy, KeyRound } from 'lucide-react';
@@ -110,13 +111,6 @@ function day(s: string | null, locale: string) { return s ? new Date(s).toLocale
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
 /** 클립보드 복사. 막혀 있으면(권한·http) 숨은 글상자로 한 번 더 시도한다 */
-async function copyText(text: string) {
-  try { await navigator.clipboard.writeText(text); return true; } catch { /* 아래로 */ }
-  const t = document.createElement('textarea');
-  t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
-  document.body.appendChild(t); t.select();
-  try { return document.execCommand('copy'); } finally { t.remove(); }
-}
 
 type School = { name: string; slug: string | null };
 type Scope = { kinds: string[]; keys: string[] | null; perms: string[]; expiresAt: string | null };
@@ -240,7 +234,7 @@ export function AgentTokenPanel({ tokens, entries, stories, records = false, sch
     : t.expires_at && new Date(t.expires_at).getTime() - now <= 30 * DAY_MS ? { label: tr('site.token.endingSoon'), tone: 'warning' as const } : { label: tr('integ.usable'), tone: 'success' as const };
 
   return (
-    <section className="card site-form" data-testid="agent-tokens">
+    <section className="card site-form" id="agent-tokens" data-testid="agent-tokens">
       <h2><Bot size={20} aria-hidden="true" /> {tr('site.token.title')}</h2>
       <p className="fine">
         {withLink(tr('site.token.lead'), { b: <b>{tr('site.token.connectText')}</b> })}
