@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MessagesSquare, Maximize2, Minimize2, X, ArrowLeft } from 'lucide-react';
 import { StatusBadge } from './ui';
+import { DecisionFacts, DoorBadge } from './DecisionCard';
 import { useI18n } from './I18nProvider';
 import type { MsgKey } from '@/lib/i18n/catalog';
 import type { Translate } from '@/lib/i18n/base';
@@ -18,10 +19,13 @@ import {
  */
 type Scope = 'platform' | 'school';
 type Tab = 'need' | 'flow' | 'closed' | 'all';
-const TABS: { key: Tab; match: (s: Status) => boolean }[] = [
-  { key: 'need', match: (s) => BADGE.includes(s) },
-  { key: 'flow', match: (s) => !BADGE.includes(s) && !CLOSED.includes(s) },
-  { key: 'closed', match: (s) => CLOSED.includes(s) },
+// 기한 진행 결정 카드(ADR 0048)는 상태가 '추천안 진행 중'이어도 기한 전에 반대할 수 있게 '답 필요'에 둔다
+type Th = { status: Status; door?: string | null };
+const needs = (x: Th) => BADGE.includes(x.status) || (x.status === 'proceeding' && x.door === 'default');
+const TABS: { key: Tab; match: (x: Th) => boolean }[] = [
+  { key: 'need', match: needs },
+  { key: 'flow', match: (x) => !needs(x) && !CLOSED.includes(x.status) },
+  { key: 'closed', match: (x) => CLOSED.includes(x.status) },
   { key: 'all', match: () => true },
 ];
 // 글 종류 표시(보통 글 message 는 표시 없음)
@@ -109,7 +113,7 @@ export function ChatDock({ scope }: { scope: Scope }) {
   }
 
   const threads = data?.threads ?? [];
-  const shown = threads.filter((th) => TABS.find((x) => x.key === tab)!.match(th.status));
+  const shown = threads.filter((th) => TABS.find((x) => x.key === tab)!.match(th));
 
   return (
     <>
@@ -132,7 +136,7 @@ export function ChatDock({ scope }: { scope: Scope }) {
               <div className="chatdock-tabs" role="tablist">
                 {TABS.map((tb) => (
                   <button key={tb.key} role="tab" aria-selected={tab === tb.key} className={tab === tb.key ? 'active' : ''} onClick={() => setTab(tb.key)}>
-                    {t(`chat.tab.${tb.key}`)}<span className="count">{threads.filter((x) => tb.match(x.status)).length}</span>
+                    {t(`chat.tab.${tb.key}`)}<span className="count">{threads.filter((x) => tb.match(x)).length}</span>
                   </button>
                 ))}
               </div>
@@ -281,12 +285,14 @@ function Thread({ id, q, scope, onBack, onChange }: { id: string; q: string; sco
         <button type="button" className="btn-ghost chatdock-back" onClick={onBack}><ArrowLeft size={14} /> {t('common.backToList')}</button>
         <h3><span className="num muted">D-{r.no}</span> {r.title}</h3>
         <div className="item-meta">
-          <StatusBadge tone={st.tone} dot>{statusLabel(t, r.status)}</StatusBadge>
+          {r.door && <DoorBadge door={r.door} />}
+          {!(r.door && r.status === (r.door === 'one_way' ? 'parked' : 'proceeding')) && <StatusBadge tone={st.tone} dot>{statusLabel(t, r.status)}</StatusBadge>}
           <span className="tag">{topicLabel(t, r.topic)}</span>
           {r.school_name && <span className="tag">{r.school_name}</span>}
-          {r.reversible === false && <span className="tag">{t('chat.hardToUndo')}</span>}
+          {!r.door && r.reversible === false && <span className="tag">{t('chat.hardToUndo')}</span>}
           {r.related && <span className="tag">{r.related}</span>}
         </div>
+        <DecisionFacts r={r} />
       </header>
       <ol className="chatdock-feed" ref={feed} aria-live="polite">
         {r.detail && <li className="chatdock-msg" data-author={r.author}><div className="chatdock-msg-head"><b>{t(r.kind === 'decision' ? 'chat.decisionRequest' : 'chat.detail')}</b></div><p>{r.detail}</p></li>}
