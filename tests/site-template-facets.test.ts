@@ -23,10 +23,12 @@ describe('템플릿 세 축', () => {
   });
   it('거르기는 칸끼리 함께 적용하고, 모르는 값은 거르지 않는다', () => {
     expect(filterTemplates(SITE_TEMPLATES, {}).length).toBe(SITE_TEMPLATES.length);
-    expect(filterTemplates(SITE_TEMPLATES, { nav: 'onepage' }).map((t) => t.key)).toEqual(['single']);
+    expect(filterTemplates(SITE_TEMPLATES, { nav: 'onepage' }).map((t) => t.key)).toEqual(['single', 'kinder-one', 'mission-one']);
     expect(filterTemplates(SITE_TEMPLATES, { content: 'admission' }).map((t) => t.key)).toEqual(['admissions', 'international']);
     expect(filterTemplates(SITE_TEMPLATES, { content: 'admission', first: 'landing', nav: 'top' }).map((t) => t.key)).toEqual(['admissions', 'international']);
     expect(filterTemplates(SITE_TEMPLATES, { nav: 'side', content: 'kinder' })).toEqual([]);
+    expect(filterTemplates(SITE_TEMPLATES, { first: 'tiles' }).map((t) => t.key)).toEqual(['portal']);
+    expect(filterTemplates(SITE_TEMPLATES, { content: 'kinder' }).map((t) => t.key)).toEqual(['kinder', 'kinder-one']);
     expect(filterTemplates(SITE_TEMPLATES, { nav: 'zzz' }).length).toBe(SITE_TEMPLATES.length);
     const c = facetCounts(SITE_TEMPLATES, { content: 'admission' });
     expect(c.nav).toMatchObject({ top: 2, side: 0, onepage: 0 });

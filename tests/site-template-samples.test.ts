@@ -41,9 +41,10 @@ describe('템플릿 예시 내용', () => {
   it('모든 템플릿에 썸네일이 있다(npm run templates:thumbs)', () => {
     for (const t of SITE_TEMPLATES) expect(existsSync(`public/site-templates/${t.key}.jpg`), t.key).toBe(true);
   });
-  it('89·90차: 모든 템플릿 디자인이 화면 모양 목록에 있고 서로 다르다(새벽빛은 룽아룬숙사 등 기존 학교용으로 남김)', () => {
+  // 138차: 같은 디자인을 다른 구조(메뉴 구조·첫 화면)에 다시 쓸 수 있다 — 디자인 + 메뉴 구조 + 첫 화면 조합이 서로 다르면 된다
+  it('89·90·138차: 모든 템플릿 디자인이 화면 모양 목록에 있고, 디자인·구조 조합이 서로 다르다(새벽빛은 룽아룬숙사 등 기존 학교용으로 남김)', () => {
     for (const t of SITE_TEMPLATES) expect(isSiteTheme(t.theme), t.key).toBe(true);
-    expect(new Set(SITE_TEMPLATES.map((t) => t.theme)).size).toBe(SITE_TEMPLATES.length);
+    expect(new Set(SITE_TEMPLATES.map((t) => `${t.theme}/${t.nav}/${t.first}`)).size).toBe(SITE_TEMPLATES.length);
     expect(SITE_TEMPLATES.filter((t) => t.theme === 'dawn' || t.theme === 'campus')).toEqual([]);
   });
   it('89차: 예시 그림이 실제 칸에 놓이고 그림 파일이 있다', () => {
