@@ -18,7 +18,7 @@ const hrefs = (v: unknown, out: string[] = []): string[] => {
 
 describe('하위 메뉴 = 별도 쪽', () => {
   it('여러 쪽 템플릿에는 메뉴 주소(구역 하위 메뉴)가 남지 않고, 하위 쪽마다 상위 쪽이 있다', () => {
-    for (const t of SITE_TEMPLATES.filter((x) => x.key !== 'single')) {
+    for (const t of SITE_TEMPLATES.filter((x) => x.nav !== 'onepage')) {
       const keys = new Set(t.pages.map((p) => p.key));
       expect(keys.size, t.key).toBe(t.pages.length);
       for (const p of t.pages) {
@@ -35,7 +35,7 @@ describe('하위 메뉴 = 별도 쪽', () => {
     }
   });
   it('상위 쪽 맨 앞에 하위 쪽 바로 가기가 있고, 옛 "쪽#구역" 링크는 새 쪽 주소로 바뀐다', () => {
-    for (const t of SITE_TEMPLATES.filter((x) => x.key !== 'single')) {
+    for (const t of SITE_TEMPLATES.filter((x) => x.nav !== 'onepage')) {
       // 원본에서 메뉴 주소 구역이 있던 상위 쪽(나눈 쪽)
       const src = t.source ?? [];
       const split = new Set(src.filter((x) => x.key !== 'home' && !x.content.menu?.parent
@@ -86,10 +86,14 @@ describe('하위 메뉴 = 별도 쪽', () => {
     expect(renderToStaticMarkup(createElement(SiteBlocks, { content, lang: 'ko', fallback: 'ko', assetUrl: () => '' }))).not.toContain('<section');
     expect(validateContent(content as never).blocks[0]).toEqual({ type: 'subpages' });
   });
-  it('한 쪽 구조(single)는 구역 차례를 그대로 쓴다', () => {
-    const single = SITE_TEMPLATES.find((t) => t.key === 'single')!;
-    expect(single.source).toBeUndefined();
-    expect(anchorsOf(single.pages[0].content.blocks).length).toBeGreaterThan(0);
+  it('한 쪽 구조(single·138차 kinder-one·mission-one)는 구역 차례를 그대로 쓴다', () => {
+    const ones = SITE_TEMPLATES.filter((t) => t.nav === 'onepage');
+    expect(ones.map((t) => t.key)).toEqual(['single', 'kinder-one', 'mission-one']);
+    for (const t of ones) {
+      expect(t.source, t.key).toBeUndefined();
+      expect(t.pages.map((p) => p.key), t.key).toEqual(['home']);
+      expect(anchorsOf(t.pages[0].content.blocks).length, t.key).toBeGreaterThan(0);
+    }
   });
   it('하위 쪽 주소는 늘 상위-메뉴주소이고(여러 템플릿을 써도 다른 묶음과 겹치지 않음), 홈·하위 쪽은 나누지 않는다', () => {
     const sec = (anchor: string): Block => ({ type: 'section', template: 'text', title: { ko: anchor }, anchor } as Block);

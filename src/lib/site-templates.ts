@@ -8,7 +8,7 @@ import { movePath, splitSubmenuPages } from './site-template-split';
 import type { TemplateFacets } from './site-template-facets';
 
 /**
- * 65차 ADR 0031 — 학교 홈페이지 템플릿 7종.
+ * 65차 ADR 0031 — 학교 홈페이지 템플릿(65차 7종 → 138차 12종).
  * 템플릿 = 추천 테마 + 쪽 목록(기존 블록 형식) + 빈 칸 목록(slots) + 공개 의무 안내. 고르면 그 학교에 시안 쪽(1판)을 만든다(공개는 사람).
  * 빈 칸 목록은 66차 자동 배치·67차 기존 사이트 이전이 채운다. 조사: docs/research/homepage-templates-2026-11.md
  */
@@ -448,15 +448,149 @@ const RAW_TEMPLATES: SiteTemplate[] = [
       slot('activities', 'home', ['blocks', 1, 'items'], 'list', '하는 일', '활동 2~4개', ['활동', '프로그램', 'activities', 'programs']),
     ],
   },
+  // ── 138차: 새 구조 템플릿(세 축 중 비어 있던 조합을 채운다, docs/research/site-structures-2026-11.md) ──
+  {
+    key: 'portal', version: 1, name: '바로가기 포털형', theme: 'clear', langs: ['ko'],
+    nav: 'side', first: 'tiles', contents: ['notice'],
+    summary: '첫 화면을 바로가기 타일로 채워 학부모가 자주 찾는 곳(일정·급식·통신문·상담)에 한 번에 갑니다.',
+    fits: ['학부모 문의가 많은 공립·대규모 학교', '찾는 메뉴가 늘 정해진 학교'], firstScreen: '바로가기 타일 · 알림 목록 · 이번 달 일정',
+    mustHave: ['학사일정', '급식 안내', '가정통신문', '상담 신청 방법', '오시는 길'],
+    pages: [
+      page('home', 0, ko('[학교 이름]'), [
+        section({ template: 'cards', variant: 'tiles', eyebrow: ko('자주 찾는 곳'), title: ko('[포털 첫 화면 인사]'), items: [
+          { title: ko('이번 주 알림'), body: ko('[포털 바로가기 1]'), href: '/news' },
+          { title: ko('학사일정'), body: ko('[포털 바로가기 2]'), href: '/p/school-life#calendar' },
+          { title: ko('오늘의 급식'), body: ko('[포털 바로가기 3]'), href: '/p/school-life#meals' },
+          { title: ko('가정통신문'), body: ko('[포털 바로가기 4]'), href: '/p/parents#letters' },
+          // 타일 아홉 개: 큰 첫 타일(2×2) + 작은 타일 여덟이 넓은 화면 네 칸 세 줄·휴대폰 두 칸 여섯 줄을 빈칸 없이 채운다
+          { title: ko('방과후·돌봄'), body: ko('[포털 바로가기 5]'), href: '/p/school-life#after' },
+          { title: ko('상담 신청'), body: ko('[포털 바로가기 6]'), href: '/p/parents#counsel' },
+          { title: ko('자주 찾는 서류'), body: ko('[포털 바로가기 7]'), href: '/p/parents#forms' },
+          { title: ko('인사말'), body: ko('[포털 바로가기 8]'), href: '/p/about#greeting' },
+          { title: ko('오시는 길'), body: ko('[포털 바로가기 9]'), href: '/p/about#way' }] }),
+        news(ko('알림'), 5, 'list'),
+        events('포털', '이번 달 일정'),
+        section({ template: 'cta', title: ko('전화보다 빠른 길'), body: ko('[포털 문의 안내]'), button: { label: ko('상담 신청'), href: '/p/parents#counsel' } }),
+      ], { site: contact({ label: '상담 신청', href: '/p/parents#counsel' }) }),
+      page('school-life', 1, ko('학교생활'), [
+        section({ template: 'text', title: ko('학교생활 한눈에'), body: ko('[포털 학교생활 소개]') }),
+        section({ anchor: 'calendar', template: 'facts', title: ko('학사일정'), items: [1, 2, 3, 4].map((i) => ({ title: ko(`[포털 일정 ${i} 날짜]`), body: ko(`[포털 일정 ${i}]`) })) }),
+        section({ anchor: 'meals', template: 'media-right', variant: 'half', title: ko('급식'), body: ko('[포털 급식 안내]') }),
+        section({ anchor: 'after', template: 'cards', title: ko('방과후·돌봄'), items: [1, 2, 3].map((i) => ({ title: ko(`[포털 방과후 ${i}]`), body: ko(`[포털 방과후 ${i} 안내]`) })) }),
+      ]),
+      page('parents', 2, ko('학부모'), [
+        section({ anchor: 'letters', template: 'facts', title: ko('가정통신문'), body: ko('[포털 가정통신문 안내]'), items: [1, 2, 3].map((i) => ({ title: ko(`[포털 통신문 ${i}]`), body: ko(`[포털 통신문 ${i} 요약]`) })) }),
+        { type: 'inquiry', title: ko('상담 신청'), body: ko('[포털 상담 안내]'), anchor: 'counsel' },
+        section({ anchor: 'forms', template: 'facts', variant: 'faq', title: ko('자주 찾는 서류'), items: [1, 2, 3].map((i) => ({ title: ko(`[포털 서류 ${i}]`), body: ko(`[포털 서류 ${i} 안내]`) })) }),
+      ]),
+      page('about', 3, ko('학교 안내'), [
+        section({ anchor: 'greeting', template: 'media-left', title: ko('인사말'), body: ko('[포털 교장 인사]') }),
+        section({ anchor: 'way', template: 'text', title: ko('오시는 길'), body: ko('[포털 오시는 길]') }),
+      ]),
+    ],
+    slots: [
+      ...commonSlots(),
+      slot('calendar', 'school-life', ['blocks', 1, 'items'], 'list', '학사일정', '날짜와 행사', ['학사일정', '일정', '행사', 'calendar', 'schedule']),
+      slot('meals', 'school-life', ['blocks', 2, 'body'], 'text', '급식', '식단 보는 곳·알레르기 안내', ['급식', '식단', '알레르기', 'lunch', 'meal']),
+      slot('letters', 'parents', ['blocks', 0, 'items'], 'list', '가정통신문', '제목과 한 줄 요약', ['가정통신문', '안내문', '통신문', 'newsletter']),
+      slot('greeting', 'about', ['blocks', 0, 'body'], 'text', '인사말', '교장 인사', ['인사말', '교장', 'principal', 'welcome']),
+    ],
+  },
+  {
+    key: 'kinder-one', version: 1, name: '유치원 한 쪽형', theme: 'play', langs: ['ko'],
+    nav: 'onepage', first: 'hero', contents: ['kinder', 'small'],
+    summary: '작은 유치원·어린이집이 반·하루·급식·상담을 한 쪽에 담고, 오른쪽 차례로 바로 내려갑니다.',
+    fits: ['반이 서너 개인 작은 유치원', '가정형·공동육아 어린이집'], firstScreen: '둥근 놀이 사진 · 우리 반 · 하루 일과',
+    mustHave: ['연령별 반 안내', '하루 일과', '급식·건강 안내', '상담 연락 방법'],
+    pages: [
+      page('home', 0, ko('[유치원 이름]'), [
+        section({ template: 'banner', variant: 'mask', title: ko('[한 쪽 유치원 인사]'), body: ko('[한 쪽 유치원 소개]'), button: { label: ko('방문 상담'), href: '/#visit' } }),
+        section({ anchor: 'classes', template: 'cards', variant: 'stages', eyebrow: ko('우리 반'), title: ko('나이에 맞춘 반'), items: [1, 2, 3].map((i) => ({ title: ko(`[한 쪽 반 ${i}]`), body: ko(`[한 쪽 반 ${i} 소개]`) })) }),
+        section({ anchor: 'day', template: 'steps', variant: 'timeline', eyebrow: ko('하루 일과'), title: ko('아이들의 하루'), items: [1, 2, 3, 4].map((i) => ({ title: ko(`[한 쪽 시간 ${i}]`), body: ko(`[한 쪽 활동 ${i}]`) })) }),
+        section({ anchor: 'meals', template: 'media-right', variant: 'half', eyebrow: ko('건강하게 자라는 습관'), title: ko('급식과 건강'), body: ko('[한 쪽 급식 안내]') }),
+        section({ anchor: 'faq', template: 'facts', variant: 'faq', title: ko('학부모가 자주 묻는 질문'), items: [1, 2].map((i) => ({ title: ko(`[한 쪽 질문 ${i}]`), body: ko(`[한 쪽 답 ${i}]`) })) }),
+        section({ anchor: 'visit', template: 'cta', title: ko('직접 와서 보세요'), body: ko('[한 쪽 상담 연락]') }),
+      ], { site: contact({ label: '방문 상담', href: '/#visit' }) }),
+    ],
+    slots: [
+      ...commonSlots(),
+      slot('hero-photo', 'home', ['blocks', 0, 'asset'], 'image', '첫 화면 놀이 사진', '아이들이 노는 장면(얼굴은 보호자 허락이 있을 때만)', ['놀이', '교실', 'playground']),
+      slot('classes', 'home', ['blocks', 1, 'items'], 'list', '우리 반', '반 이름·나이·한 줄 소개', ['반', '연령', '만 3세', '만 4세', '만 5세', 'class']),
+      slot('day', 'home', ['blocks', 2, 'items'], 'list', '하루 일과', '시간과 활동', ['일과', '하루', '시간표', 'daily', 'schedule']),
+      slot('meals', 'home', ['blocks', 3, 'body'], 'text', '급식과 건강', '급식·간식·건강 안내', ['급식', '간식', '식단', '건강', 'meal']),
+    ],
+  },
+  {
+    key: 'mission-one', version: 1, name: '후원 한 쪽형', theme: 'lamp', langs: ['ko'],
+    nav: 'onepage', first: 'hero', contents: ['mission', 'small'],
+    summary: '사명·섬기는 곳·후원 방법·쓰임을 한 쪽 이야기로 이어 보여 주고, 후원 단추로 바로 내려갑니다.',
+    fits: ['후원으로 세운 작은 학교·배움터', '선교지 학교의 소개 쪽'], firstScreen: '사명 한 문장 · 섬기는 마을 · 후원 방법',
+    mustHave: ['사명', '후원 방법과 쓰임', '후원 문의'],
+    pages: [
+      page('home', 0, ko('[학교 이름]'), [
+        section({ template: 'banner', title: ko('[한 쪽 사명 한 문장]'), body: ko('[한 쪽 사명 소개]'), button: { label: ko('후원하기'), href: '/#give' } }),
+        section({ anchor: 'serve', template: 'media-right', eyebrow: ko('우리가 섬기는 곳'), title: ko('[한 쪽 섬기는 곳]'), body: ko('[한 쪽 섬기는 이야기]') }),
+        { ...stats('한 쪽 사명', 3), anchor: 'impact' },
+        section({ anchor: 'give', template: 'cards', title: ko('함께하는 방법'), items: [
+          { title: ko('정기 후원'), body: ko('[한 쪽 후원 방법]') }, { title: ko('봉사'), body: ko('[한 쪽 봉사]') }, { title: ko('기도'), body: ko('[한 쪽 기도]') }] }),
+        section({ anchor: 'funds', template: 'facts', title: ko('후원금은 이렇게 쓰입니다'), items: [1, 2, 3].map((i) => ({ title: ko(`[한 쪽 쓰임 ${i}]`), body: ko(`[한 쪽 쓰임 ${i} 설명]`) })) }),
+        { ...news(ko('소식·기도 제목'), 3, 'list'), anchor: 'news' },
+        section({ anchor: 'contact', template: 'cta', title: ko('후원 문의'), body: ko('[한 쪽 후원 문의]') }),
+      ], { site: contact({ label: '후원하기', href: '/#give' }) }),
+    ],
+    slots: [
+      ...commonSlots(),
+      slot('mission', 'home', ['blocks', 0, 'title'], 'text', '사명 한 문장', '사명 선언', ['사명', '비전', 'mission', 'vision']),
+      slot('ways', 'home', ['blocks', 3, 'items'], 'list', '함께하는 방법', '후원·봉사·기도', ['후원', '기부', '봉사', 'donate', 'give', 'volunteer']),
+      slot('use-of-funds', 'home', ['blocks', 4, 'items'], 'list', '후원금 쓰임', '항목과 비율', ['재정', '예산', '사용', 'funds', 'budget']),
+    ],
+  },
+  {
+    key: 'guide', version: 1, name: '배움 안내형', theme: 'ivory', langs: ['ko'],
+    nav: 'side', first: 'magazine', contents: ['story', 'project'],
+    summary: '교육과정·학년 단계·수업·학교생활을 옆 메뉴로 깊이 안내하는 책자 같은 홈페이지입니다.',
+    fits: ['과정이 여러 갈래인 중·고등 대안학교', '수업을 자세히 알리고 싶은 학교'], firstScreen: '글 | 사진 반반 · 과정 카드 · 소식',
+    mustHave: ['교육과정 개요', '학년(단계)별 과정', '평가·기록 방식', '오시는 길'],
+    pages: [
+      page('home', 0, ko('[학교 이름]'), [
+        section({ template: 'banner', variant: 'editorial', title: ko('[배움 안내 첫 문장]'), body: ko('[배움 안내 소개]'), button: { label: ko('교육과정 보기'), href: '/p/curriculum' } }),
+        section({ template: 'cards', eyebrow: ko('배움의 길'), title: ko('[배움 안내 과정 제목]'), items: [
+          { title: ko('교육과정'), body: ko('[배움 바로가기 1]'), href: '/p/curriculum' },
+          { title: ko('학교생활'), body: ko('[배움 바로가기 2]'), href: '/p/life' },
+          { title: ko('학교 소개'), body: ko('[배움 바로가기 3]'), href: '/p/about' }] }),
+        news(ko('소식'), 3),
+      ], { site: contact({ label: '입학 문의', href: '/p/about#way' }) }),
+      page('curriculum', 1, ko('교육과정'), [
+        section({ template: 'text', title: ko('[배움 과정 개요 제목]'), body: ko('[배움 과정 개요]') }),
+        section({ anchor: 'stages', template: 'cards', variant: 'stages', title: ko('학년 단계'), items: [1, 2, 3].map((i) => ({ title: ko(`[배움 단계 ${i}]`), body: ko(`[배움 단계 ${i} 설명]`) })) }),
+        section({ anchor: 'subjects', template: 'cards', variant: 'rows', title: ko('수업 묶음'), items: [1, 2, 3, 4].map((i) => ({ title: ko(`[배움 수업 ${i}]`), body: ko(`[배움 수업 ${i} 설명]`) })) }),
+        section({ anchor: 'assessment', template: 'text', title: ko('평가와 기록'), body: ko('[배움 평가 안내]') }),
+      ]),
+      page('life', 2, ko('학교생활'), [
+        section({ anchor: 'day', template: 'steps', variant: 'daybook', title: ko('하루 일과'), items: [1, 2, 3, 4].map((i) => ({ title: ko(`[배움 시간 ${i}]`), body: ko(`[배움 활동 ${i}]`) })) }),
+        section({ anchor: 'clubs', template: 'cards', title: ko('동아리와 모임'), items: [1, 2, 3].map((i) => ({ title: ko(`[배움 동아리 ${i}]`), body: ko(`[배움 동아리 ${i} 설명]`) })) }),
+      ]),
+      page('about', 3, ko('학교 소개'), [
+        section({ anchor: 'philosophy', template: 'facts', title: ko('교육철학'), items: [1, 2, 3].map((i) => ({ title: ko(`[배움 철학 ${i}]`), body: ko(`[배움 철학 ${i} 설명]`) })) }),
+        section({ anchor: 'way', template: 'text', title: ko('오시는 길'), body: ko('[배움 오시는 길]') }),
+      ]),
+    ],
+    slots: [
+      ...commonSlots(),
+      slot('overview', 'curriculum', ['blocks', 0, 'body'], 'text', '교육과정 개요', '과정 전체를 두세 문장으로', ['교육과정', '커리큘럼', 'curriculum']),
+      slot('stages', 'curriculum', ['blocks', 1, 'items'], 'list', '학년 단계', '단계 이름과 설명', ['학년', '과정', '단계', 'grade', 'stage']),
+      slot('subjects', 'curriculum', ['blocks', 2, 'items'], 'list', '수업 묶음', '수업·과목 묶음', ['수업', '과목', '교과', 'subjects', 'courses']),
+      slot('day', 'life', ['blocks', 0, 'items'], 'list', '하루 일과', '시간과 활동', ['일과', '하루', '시간표', 'daily', 'schedule']),
+    ],
+  },
 ];
 
-// 135차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(single)는 구역 차례를 그대로 쓴다
-const ONE_PAGE = new Set(['single']);
+// 135차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(nav 'onepage')는 구역 차례를 그대로 쓴다(138차)
 // 136차(ADR 0052): 메뉴 구조가 위 메뉴(top)가 아니면 홈의 사이트 정보에 적어 둔다(학교가 설정에서 바꿀 수 있다)
 const withLayout = (t: SiteTemplate): SiteTemplate => (t.nav === 'top' ? t : {
   ...t, pages: t.pages.map((p) => (p.key === 'home' ? { ...p, content: { ...p.content, site: { ...p.content.site, layout: t.nav as 'side' | 'onepage' } } } : p)) });
 export const SITE_TEMPLATES: SiteTemplate[] = RAW_TEMPLATES.map(withLayout).map((t) => {
-  if (ONE_PAGE.has(t.key)) return t;
+  if (t.nav === 'onepage') return t;
   const { pages, moves } = splitSubmenuPages(t.pages);
   const slots = t.slots.map((sl) => { const [page, path] = movePath(moves, sl.page, sl.path); return { ...sl, page, path }; });
   return { ...t, pages, slots, source: t.pages };
@@ -630,6 +764,11 @@ const SIGNALS: Record<string, string[]> = {
   international: ['international', 'ib ', 'curriculum', 'boarding', '국제', 'โรงเรียน', 'นานาชาติ'],
   kinder: ['유치원', '어린이집', '원아', '만 3세', '만 4세', '만 5세', '놀이', '등원', 'kindergarten', 'preschool', 'nursery'],
   single: [],
+  // 138차: 새 구조 템플릿은 구조(바로가기·한 쪽) 낱말로 알아본다. 내용이 같은 기존 템플릿보다 앞서지 않게 낱말을 적게 둔다
+  portal: ['바로가기', '자주 찾는', 'quick links'],
+  'kinder-one': [],
+  'mission-one': [],
+  guide: ['교육과정', '커리큘럼', '수업 안내'],
 };
 export type TemplateFit = { key: string; name: string; score: number; filled: number; reasons: string[] };
 export function recommendTemplates(docs: { name: string; text: string }[], filledByKey: Record<string, number>): TemplateFit[] {

@@ -4,8 +4,8 @@ import { SITE_TEMPLATES, slotMatchesContent, slotTarget, templateByKey } from '@
 import { validateContent } from '@/lib/site';
 
 describe('템플릿 목록', () => {
-  it('8종, 키가 겹치지 않고 모두 홈 쪽이 있다', () => {
-    expect(SITE_TEMPLATES.map((t) => t.key)).toEqual(['notice', 'story', 'admissions', 'project', 'mission', 'international', 'kinder', 'single']);
+  it('12종(138차 구조 템플릿 4종 추가), 키가 겹치지 않고 모두 홈 쪽이 있다', () => {
+    expect(SITE_TEMPLATES.map((t) => t.key)).toEqual(['notice', 'story', 'admissions', 'project', 'mission', 'international', 'kinder', 'single', 'portal', 'kinder-one', 'mission-one', 'guide']);
     for (const t of SITE_TEMPLATES) {
       expect(t.pages[0].key).toBe('home');
       expect(new Set(t.pages.map((p) => p.key)).size).toBe(t.pages.length);

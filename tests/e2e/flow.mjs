@@ -1736,8 +1736,8 @@ try {
     await h.goto(`${BASE}/site`);
     await h.click('[data-testid=site-templates-link]');
     await h.waitForURL(/\/site\/templates$/);
-    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 8);
-    assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 8);
+    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 12);
+    assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 12);
     assert.equal((await h.request.get(`${BASE}/site-templates/story.jpg`)).status(), 200);
     // 89차(ADR 0034): 미리보기는 관리 화면 밖 전체 화면 — 디자인(테마)·메뉴 그대로, 쪽을 넘겨 본다
     await h.click('[data-testid=template-live-project]');
