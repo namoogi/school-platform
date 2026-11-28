@@ -46,12 +46,13 @@ const events = (p: string, title: string, e?: string, titleEn?: string): Block =
   items: [1, 2, 3].map((i) => ({ tag: L(`[${p} 행사 ${i} 날짜]`, e && `[${e} event ${i} date]`), title: L(`[${p} 행사 ${i}]`, e && `[${e} event ${i}]`), body: L(`[${p} 행사 ${i} 안내]`, e && `[${e} event ${i} note]`) })) });
 const voices = (p: string, title: string, e?: string, titleEn?: string): Block => section({ template: 'cards', variant: 'voices', eyebrow: L('함께하는 사람들의 목소리', e && 'Voices'), title: L(title, e && titleEn),
   body: L('[공개에 동의한 분의 말만 싣습니다]', e && '[Only words shared with consent]'), items: [1, 2, 3].map((i) => ({ title: L(`[${p} 말한 사람 ${i}]`, e && `[${e} speaker ${i}]`), body: L(`[${p} 목소리 ${i}]`, e && `[${e} voice ${i}]`) })) });
-const admissionPage = (p: string, sort: number): TemplatePage => page('admission', sort, ko('입학 안내'), [
-  section({ template: 'steps', eyebrow: ko('처음 만나는 길'), title: ko('입학 절차'), items: [
+// 126차(ADR 0046): menu=true면 입학 하위 메뉴(절차·학비·질문·신청)에 메뉴 주소를 단다
+const admissionPage = (p: string, sort: number, menu = false): TemplatePage => page('admission', sort, ko('입학 안내'), [
+  section({ ...(menu ? { anchor: 'process' } : {}), template: 'steps', eyebrow: ko('처음 만나는 길'), title: ko('입학 절차'), items: [
     { title: ko('문의'), body: ko(`[${p} 문의 방법]`) }, { title: ko('견학·상담'), body: ko(`[${p} 견학 일정]`) }, { title: ko('지원'), body: ko(`[${p} 지원 서류·면담]`) }, { title: ko('입학'), body: ko(`[${p} 결과·등록]`) }] }),
-  section({ template: 'facts', variant: 'curriculum', title: ko('학비와 비용'), items: [{ title: ko(`[${p} 수업료]`), body: ko(`[${p} 수업료 안내]`) }, { title: ko(`[${p} 기타 비용]`), body: ko(`[${p} 기타 비용 안내]`) }] }),
-  section({ template: 'facts', variant: 'faq', title: ko('자주 묻는 질문'), items: [1, 2, 3].map((i) => ({ title: ko(`[${p} 질문 ${i}]`), body: ko(`[${p} 답 ${i}]`) })) }),
-  { type: 'inquiry', title: ko('견학·상담 신청'), body: ko(`[${p} 신청 안내]`) },
+  section({ ...(menu ? { anchor: 'fees' } : {}), template: 'facts', variant: 'curriculum', title: ko('학비와 비용'), items: [{ title: ko(`[${p} 수업료]`), body: ko(`[${p} 수업료 안내]`) }, { title: ko(`[${p} 기타 비용]`), body: ko(`[${p} 기타 비용 안내]`) }] }),
+  section({ ...(menu ? { anchor: 'faq' } : {}), template: 'facts', variant: 'faq', title: ko('자주 묻는 질문'), items: [1, 2, 3].map((i) => ({ title: ko(`[${p} 질문 ${i}]`), body: ko(`[${p} 답 ${i}]`) })) }),
+  { type: 'inquiry', title: ko('견학·상담 신청'), body: ko(`[${p} 신청 안내]`), ...(menu ? { anchor: 'apply' } : {}) },
   section({ template: 'media-left', eyebrow: ko('첫걸음'), title: ko('새로 온 학생의 첫 달'), body: ko(`[${p} 첫걸음 이야기]`) }),
 ]);
 const page = (key: string, sort: number, title: LText, blocks: Block[], extra: Partial<Content> = {}): TemplatePage =>
@@ -122,7 +123,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'story', version: 5, name: '이야기형', theme: 'ivory', langs: ['ko'],
+    key: 'story', version: 6, name: '이야기형', theme: 'ivory', langs: ['ko'],
     summary: '교육철학과 학교의 하루를 사진과 이야기로 보여 줍니다.',
     fits: ['사립·대안학교', '교육철학으로 알려지는 학교'], firstScreen: '큰 사진 · 교육철학 · 하루 이야기',
     mustHave: ['교육철학', '배움(교육과정)', '입학 문의 방법'],
@@ -131,7 +132,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         // 90차 골격 A(편집형 반반): 글 | 사진, 사진 위에 겹친 '다가오는 행사' 카드
         section({ template: 'banner', variant: 'editorial', title: ko('[학교가 믿는 것을 한 문장으로]'), body: ko('[학교를 처음 만나는 분께 드리는 두 문장]'), button: { label: ko('교육철학 보기'), href: '/p/philosophy' },
           items: [{ title: ko('[다가오는 행사 — 예: 5월 12일 학교 여는 날]'), body: ko('[행사 한 줄 안내]'), href: '/p/community' }] }),
-        quicklinks([['교육철학', '/p/philosophy'], ['학교의 하루', '/p/community'], ['입학 안내', '/p/admission'], ['소식', '/news']], '이야기'),
+        quicklinks([['교육철학', '/p/philosophy'], ['학교의 하루', '/p/community#day'], ['입학 안내', '/p/admission'], ['소식', '/news']], '이야기'),
         section({ template: 'media-right', eyebrow: ko('학교의 하루'), title: ko('[아침부터 저녁까지, 우리 학교의 하루]'), body: ko('[하루 흐름을 이야기처럼]') }),
         section({ template: 'photos', variant: 'mosaic', eyebrow: ko('학교의 사계절'), title: ko('[사진으로 보는 우리 학교]'), items: [
           { title: ko('[사진 이름 1]') }, { title: ko('[사진 이름 2]') }, { title: ko('[사진 이름 3]') }, { title: ko('[사진 이름 4]') }, { title: ko('[사진 이름 5]') }] }),
@@ -142,20 +143,23 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       ], { site: contact({ label: '입학 상담', href: '/p/admission' }) }),
       page('philosophy', 1, ko('교육철학'), [
         section({ template: 'quote', variant: 'editorial', title: ko('숲과 마을을 교실로 삼는 우리의 약속'), body: ko('[학교를 세운 마음을 담은 한마디]') }),
-        section({ template: 'cards', variant: 'index', title: ko('우리가 소중히 여기는 것'), items: [{ title: ko('[가치 1]'), body: ko('[설명]') }, { title: ko('[가치 2]'), body: ko('[설명]') }, { title: ko('[가치 3]'), body: ko('[설명]') }] }),
+        section({ anchor: 'values', template: 'cards', variant: 'index', title: ko('우리가 소중히 여기는 것'), items: [{ title: ko('[가치 1]'), body: ko('[설명]') }, { title: ko('[가치 2]'), body: ko('[설명]') }, { title: ko('[가치 3]'), body: ko('[설명]') }] }),
         section({ template: 'media-left', eyebrow: ko('배움의 터전'), title: ko('[철학 사진 제목]'), body: ko('[철학 사진 설명]'), button: { label: ko('배움의 과정'), href: '/p/learning' } }),
+        // 126차(ADR 0046): 교육철학 아래 하위 메뉴 — 걸어온 길(연혁)
+        section({ anchor: 'history', template: 'steps', variant: 'timeline', title: ko('걸어온 길'), items: [1, 2, 3].map((i) => ({ title: ko(`[이야기 연혁 ${i}]`), body: ko(`[이야기 연혁 ${i} 내용]`) })) }),
       ]),
       page('learning', 2, ko('배움'), [
-        section({ template: 'media-left', title: ko('[배움의 방식]'), body: ko('[수업이 어떻게 이루어지는지]') }),
+        section({ anchor: 'method', template: 'media-left', title: ko('[배움의 방식]'), body: ko('[수업이 어떻게 이루어지는지]') }),
         section({ template: 'media-right', eyebrow: ko('손으로 익히는 시간'), title: ko('[만들며 배우는 제목]'), body: ko('[만들며 배우는 설명]') }),
-        section({ template: 'facts', variant: 'curriculum', title: ko('학년별 배움'), items: [1, 2, 3].map(() => ({ title: ko('[학년·과정]'), body: ko('[주요 배움]') })) }),
+        section({ anchor: 'grades', template: 'facts', variant: 'curriculum', title: ko('학년별 배움'), items: [1, 2, 3].map(() => ({ title: ko('[학년·과정]'), body: ko('[주요 배움]') })) }),
       ]),
       page('community', 3, ko('공동체'), [
-        section({ template: 'media-right', eyebrow: ko('학교 밖으로 이어지는 배움'), title: ko('함께 만드는 학교'), body: ko('[학부모·교사·학생이 함께하는 방식]') }),
-        section({ template: 'steps', variant: 'timeline', title: ko('함께 만나는 날'), items: [1, 2, 3].map(() => ({ title: ko('[공동체 일정]'), body: ko('[공동체 활동]') })) }),
+        section({ anchor: 'together', template: 'media-right', eyebrow: ko('학교 밖으로 이어지는 배움'), title: ko('함께 만드는 학교'), body: ko('[학부모·교사·학생이 함께하는 방식]') }),
+        section({ anchor: 'day', template: 'steps', title: ko('학교의 하루'), items: [1, 2, 3, 4, 5].map((i) => ({ title: ko(`[이야기 하루 ${i}]`), body: ko(`[이야기 하루 ${i} 내용]`) })) }),
+        section({ anchor: 'days', template: 'steps', variant: 'timeline', title: ko('함께 만나는 날'), items: [1, 2, 3].map(() => ({ title: ko('[공동체 일정]'), body: ko('[공동체 활동]') })) }),
         section({ template: 'cta', title: ko('학교가 궁금하신가요?'), body: ko('[견학·상담 안내]'), button: { label: ko('입학 안내'), href: '/p/admission' } }),
       ]),
-      admissionPage('이야기', 4),
+      admissionPage('이야기', 4, true),
     ],
     slots: [
       ...commonSlots(),
