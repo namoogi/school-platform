@@ -2526,7 +2526,7 @@ label.check input { margin-top: 0.25em; }
 /* 바닥글 링크: 밑줄 대신 글자 굵기·간격으로 묶고, 가리키거나 초점이 갈 때만 밑줄 */
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav { display: flex; flex-direction: column; align-items: flex-start; gap: 0; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav a, .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-contact a { text-decoration: none; }
-.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav a { display: inline-flex; align-items: center; min-height: 40px; font-weight: 600; }
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer-grid > nav a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-footer a:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 4px; }
 /* 구역 머리 '모두 보기' 링크: 밑줄 없이 강조색 + 화살표 */
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec-copy > .site-link { text-decoration: none; font-weight: 700; color: var(--t-link); }
@@ -2560,7 +2560,7 @@ label.check input { margin-top: 0.25em; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"] h2 { font-size: clamp(26px, 7.4vw, 34px); line-height: 1.25; text-wrap: balance; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-template="banner"]:not([data-variant]) .sec-copy { align-self: end; justify-self: stretch; text-align: start; justify-items: start; }
   /* 카드 본문 글: 작고 흐린 글을 한 단계 키운다 */
-  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards, .site-cards) :is(p, span:not(.card-more)) { font-size: var(--fs-body); line-height: 1.6; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) :is(.sec-cards p, .site-cards a > span:not(.card-more, .sec-index)) { font-size: var(--fs-body); line-height: 1.6; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .lb-board li { grid-template-columns: minmax(0, 1fr); gap: var(--ds-space-1); }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-topbar-row { flex-wrap: nowrap; }
   .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-topbar p { min-width: 0; flex-wrap: nowrap; overflow: hidden; }
