@@ -60,7 +60,7 @@ export default async function TemplateLive({ params, searchParams }: {
           <Link href={href({ view: 'sample' })} aria-current={view === 'sample' ? 'true' : undefined}>{tr('site.tpl.view.sample')}</Link>
           <Link href={href({ view: 'guide' })} aria-current={view === 'guide' ? 'true' : undefined}>{tr('site.tpl.view.guide')}</Link>
         </span>}
-        <Link className="btn btn-primary btn-sm" href={`/site/templates/${t.key}`} data-testid="template-live-start">{tr('site.tpl.live.start')}</Link>
+        <Link className="btn btn-primary btn-sm" href={userId ? `/site/templates/${t.key}` : `/login?next=${encodeURIComponent(`/site/templates/${t.key}`)}`} data-testid="template-live-start">{tr('site.tpl.live.start')}</Link>
       </nav>}
       {view === 'sample' && !sp.thumb && <p className="template-live-note">{tr('site.tpl.live.sampleNote', { school: sample.school })} {t.langs.length > 1 ? `${tr('site.tpl.detail.langs')} ${t.langs.map((l) => LANG_LABEL[l as Lang]).join('·')}` : ''}</p>}
       <SiteFrame site={site} lang={lang} current={pg.key === 'home' ? 'home' : `p:${pg.key}`} path={pg.key === 'home' ? '/' : `/p/${pg.key}`}

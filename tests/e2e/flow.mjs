@@ -1931,8 +1931,13 @@ try {
     await p.goto(`${BASE}/templates/kinder?page=home&lang=ko`);
     await p.waitForSelector('[data-testid=template-live]');
     assert.equal(await p.locator('.template-live-bar a[href="/site/templates"]').count(), 0);
+    // 로그인하지 않은 사람의 시작 단추는 고른 템플릿을 next로 들고 로그인으로 가고, 로그인 뒤 그 템플릿으로 돌아온다
     await p.click('[data-testid=template-live-start]');
-    await p.waitForURL(/\/login/);
+    await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates%2Fkinder/);
+    await p.fill('input[name=email]', 'admin-a@school-a.test');
+    await p.fill('input[name=password]', 'demo-pass-a');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/site\/templates\/kinder$/);
     await ctx.close();
   });
   await step('71차: 학교 구조(학교급·학기 구조·학년도·학기 날짜) → 사람 추가·학적 등록·이름 새 판', async () => {
