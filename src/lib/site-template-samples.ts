@@ -263,6 +263,15 @@ export const TEMPLATE_SAMPLES: Record<string, TemplateSample> = {
     images: [{ at: ['home', 'blocks', 0, 'asset'], name: 'mission-hero' }, { at: ['home', 'blocks', 2, 'asset'], name: 'mission-village' }],
     text: {
       ...contact('등불학교', '000-000-0000', 'partner@example.org', '가상시 등불마을 언덕길 5', '배움으로 마을을 밝히는 학교'),
+      // 126차(가상 예시): 걸어온 길·재정 보고·기도 제목
+      '[사명 연혁 1]': '2009년', '[사명 연혁 1 내용]': '마을 교회 공부방에서 아이 여덟 명과 시작했습니다.', '[Mission year 1]': '2009', '[Mission year 1 note]': 'We began with eight children in a church study room.',
+      '[사명 연혁 2]': '2014년', '[사명 연혁 2 내용]': '후원자들과 함께 학교 건물을 세웠습니다.', '[Mission year 2]': '2014', '[Mission year 2 note]': 'Partners helped us build the school house.',
+      '[사명 연혁 3]': '2022년', '[사명 연혁 3 내용]': '산골 마을 세 곳으로 통학 차량을 넓혔습니다.', '[Mission year 3]': '2022', '[Mission year 3 note]': 'Our school bus now reaches three mountain villages.',
+      '[사명 재정 보고 안내]': '해마다 3월에 지난해 수입과 지출을 이 쪽에 PDF로 올립니다. 궁금한 점은 후원 담당에게 물어 주세요(예시 안내).',
+      '[Mission financial report note]': 'Every March we post last year’s income and spending here as a PDF. Ask our partnership team about anything (sample note).',
+      '[사명 기도 1]': '겨울 통학길', '[사명 기도 1 내용]': '눈길에 통학 차량이 안전하게 다니도록', '[Mission prayer 1]': 'Winter school runs', '[Mission prayer 1 note]': 'For safe roads for our school bus in the snow',
+      '[사명 기도 2]': '새 교사', '[사명 기도 2 내용]': '내년 봄에 함께할 수학 교사를 위해', '[Mission prayer 2]': 'A new teacher', '[Mission prayer 2 note]': 'For a maths teacher to join us next spring',
+      '[사명 기도 3]': '졸업생', '[사명 기도 3 내용]': '도시로 떠난 졸업생들의 새 생활을 위해', '[Mission prayer 3]': 'Our graduates', '[Mission prayer 3 note]': 'For graduates starting new lives in the city',
       // 107차(가상 예시)
       '[사명 바로가기 설명 1]': '우리가 믿고 고백하는 것', '[사명 바로가기 설명 2]': '후원·봉사·기도', '[사명 바로가기 설명 3]': '후원금이 쓰이는 곳', '[사명 바로가기 설명 4]': '마을 소식과 기도 편지',
       '[사명 숫자 띠 제목]': '함께 켜 온 등불',
