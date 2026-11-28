@@ -71,7 +71,11 @@ const PROFILE_FIELDS: Partial<Record<Format, Record<string, (v: unknown) => bool
   us_school_profile: { description: text, gpa_policy: text, scale_code: (v) => typeof v === 'string' && /^[a-z][a-z0-9_]{1,40}$/.test(v) },
   th_por_por_1: {
     bands: (v) => Array.isArray(v) && v.length > 0 && v.length <= 20
-      && v.every((b) => !!b && typeof b === 'object' && Number.isFinite((b as { min?: unknown }).min) && Number.isFinite((b as { grade?: unknown }).grade)),
+      && v.every((b) => {
+        // 태국 등급은 0~4(0.5 단위 8단계). 범위 밖이면 GPAX가 부풀려진다(Codex #228)
+        const { min, grade } = (b ?? {}) as { min?: unknown; grade?: unknown };
+        return typeof min === 'number' && Number.isFinite(min) && typeof grade === 'number' && grade >= 0 && grade <= 4 && Number.isInteger(grade * 2);
+      }),
     note: text,
   },
   en_record: { note: text },

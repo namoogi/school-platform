@@ -141,6 +141,7 @@ describe('출력 프로필', () => {
 
   it('서식별 설정 칸·모양만 받는다(Codex #228: 띠에 null 이면 발행 때 서버 오류)', async () => {
     expect(rec.checkProfileSettings('th_por_por_1', { bands: [{ min: 80, grade: 4 }, { min: 0, grade: 0 }], note: '학교 사본' })).toBeTruthy();
+    expect(() => rec.checkProfileSettings('th_por_por_1', { bands: [{ min: 0, grade: 40 }] })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
     expect(() => rec.checkProfileSettings('th_por_por_1', { bands: [null] })).toThrow(expect.objectContaining({ key: 'err.rec.profileField', vars: { key: 'bands' } }));
     expect(() => rec.checkProfileSettings('kr_alt_record', { char_limits: { subject_detail: '500' } })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
     expect(() => rec.checkProfileSettings('kr_alt_record', { char_limits: { subject_detial: 500 } })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
