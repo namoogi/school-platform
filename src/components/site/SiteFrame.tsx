@@ -116,7 +116,7 @@ export function SiteFrame({ site, lang, current, path, profile, assetUrl, hidden
     <div className="site" data-theme={site.theme} data-home={current === 'home' || undefined} data-hidden={hidden || undefined} lang={lang}>
       <a className="skip-link" href="#site-main">{siteText('skip', lang)}</a>
       {(site.viewer_admin || site.viewer_staff) && (
-        <nav className="site-admin-bar" aria-label={site.viewer_admin ? '학교 관리자' : '학교 교직원'} data-testid="site-admin-bar" data-role={site.viewer_admin ? 'admin' : 'staff'}>
+        <nav className="site-admin-bar" data-sticky-top="" aria-label={site.viewer_admin ? '학교 관리자' : '학교 교직원'} data-testid="site-admin-bar" data-role={site.viewer_admin ? 'admin' : 'staff'}>
           <span>{site.viewer_admin ? '관리자로 보는 중' : '교직원으로 보는 중 · 시안 저장까지, 공개는 관리자'}</span>
           <a href={staffEditHref(site, path)}>이 화면 편집</a>
           <a href={staffHref(site, 'news')}>소식 쓰기</a>

@@ -266,7 +266,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
   return (
     <div className="le" data-testid="live-editor">
       {consentDialog}
-      <div className="le-toolbar" role="region" aria-label={t('site.edit.toolbar')} data-testid="le-toolbar">
+      <div className="le-toolbar" data-sticky-top="" role="region" aria-label={t('site.edit.toolbar')} data-testid="le-toolbar">
         <div className="le-toolbar-row">
           <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`} data-testid="le-to-form"><ArrowLeft size={16} aria-hidden="true" />{t('site.edit.toForm')}</Link>
           {pages.length > 1 && (
