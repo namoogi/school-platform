@@ -37,7 +37,7 @@ export function HiddenSectionsForm({ current, baseVersion }: { current: string[]
   return (
     <form className="action-form" onSubmit={save} data-testid="hidden-sections-form">
       <fieldset>
-        <legend>{t('atpl.ourHidden')}</legend>
+        <legend className="sr-only">{t('atpl.ourHidden')}</legend>
         {ITEMS.map((k) => (
           <label key={k} className="check"><input type="checkbox" checked={picked.includes(k)} onChange={() => toggle(k)} data-testid={`hide-${k}`} />
             <span>{t(`atpl.hide.${k}` as MsgKey)}</span></label>
