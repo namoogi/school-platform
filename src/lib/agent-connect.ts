@@ -8,7 +8,7 @@ export type AiKind = 'codex' | 'claude-code' | 'other';
 export const AI_LABEL: Record<AiKind, string> = { codex: 'Codex', 'claude-code': 'Claude Code', other: '기타 AI' };
 export const GUIDE_URL = 'https://github.com/namoogi/school-platform/blob/main/docs/agents/README.md';
 
-const KIND_KO: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식' };
+const KIND_KO: Record<string, string> = { story: '성품 동화', page: '쪽', news: '소식', package: '학사 꾸러미' };
 /** 공개 주소에서 종류별 경로 (SiteRenderer 경로와 같은 모양) */
 const pathOf = (kind: string, key: string) =>
   kind === 'page' ? (key === 'home' ? '' : `/p/${key}`) : kind === 'news' ? `/news/${key}` : `/stories/${key}`;
@@ -28,6 +28,9 @@ const CANNOT: Record<string, string> = {
 
 export type ConnectInput = {
   ai: AiKind;
+  /** 83차: 작업하는 사람(이름이나 이메일)·세션 이름. 사용 기록에 남는다(자기 신고) */
+  operator?: string | null;
+  session?: string | null;
   schoolName: string;
   /** 예: https://onschools.vercel.app (끝 / 없이) */
   baseUrl: string;
@@ -54,7 +57,9 @@ export function buildConnectText(i: ConnectInput): string {
   const auto = i.perms.includes('autopublish');
   const L: string[] = [];
 
-  L.push(`너는 지금부터 "${i.schoolName}" 홈페이지 작업을 돕는다. 아래 규칙을 지켜라.`);
+  const site_ = i.kinds.some((k) => k !== 'package');
+  const job = site_ && i.kinds.includes('package') ? '홈페이지·학사 꾸러미' : site_ ? '홈페이지' : '학사 꾸러미';
+  L.push(`너는 지금부터 "${i.schoolName}" ${job} 작업을 돕는다. 아래 규칙을 지켜라.`);
   L.push('');
   L.push('## 맡은 범위');
   L.push(`- 학교: ${i.schoolName}${site ? ` (공개 홈페이지 ${site})` : ''}`);
@@ -79,6 +84,23 @@ export function buildConnectText(i: ConnectInput): string {
     L.push('  - 잘못 올렸으면 이전 판으로 다시 공개(POST …/publish { version })하거나 공개를 내린다.');
   }
   L.push('');
+  if (i.kinds.includes('page')) {
+    L.push('## 템플릿 빈 칸 (쪽)');
+    L.push('- 템플릿으로 시작한 쪽은 meta.template 이 있다. GET /api/agent/templates 로 빈 칸 경로·안내를 읽고, 안내 자리 [ … ]가 남은 칸만 학교 자료로 채워 새 판(시안)으로 저장한다.');
+    L.push('- 내가 학교 자료(소개서·안내문)나 옛 홈페이지 주소를 주면 그것을 읽어 채운다. 옛 홈페이지는 공개된 쪽만 읽는다.');
+    L.push('- 자료에 없는 사실(연도·숫자·이름·연락처)은 지어내지 말고 안내 자리를 그대로 둔다.');
+    L.push('');
+  }
+  if (i.kinds.includes('package')) {
+    L.push('## 학사 꾸러미 (정의 만들기)');
+    L.push('- 학교가 원하는 기록(예: 봉사 시간·독서·상담)을 기록 유형·양식·목록·출력·흐름 정의로 쓴다. 정의마다 새 판을 저장하면 서버 검사기가 오류·확인 목록(issues)을 돌려준다.');
+    L.push('  - 정의 저장: POST /api/agent/definitions { kind: record_type|form|view|output|flow, code, spec, why, base_version }');
+    L.push('  - 꾸러미 저장: POST /api/agent/packages { code, title, members: [{ kind, code }], why, base_version }');
+    L.push('  - 읽기: GET /api/agent/packages · 미리보기(합성 자료): GET /api/agent/packages/<code>/preview');
+    L.push('- 칸에는 개인정보 등급(directory·internal·sensitive·restricted)을 꼭 적는다. 학생·수업은 정해진 열로만 잇고, 자료 칸에 이름·메일·식별자를 두지 않는다.');
+    L.push('- 꾸러미를 켜는 것은 학교 관리자다(/packages). 검사를 통과하고 미리보기를 확인한 뒤 나에게 켜 달라고 말한다. 실제 기록을 쓰지 않는다.');
+    L.push('');
+  }
   L.push('## 할 수 없는 일 (서버가 거부한다)');
   const missing = Object.keys(CANNOT).filter((p) => !i.perms.includes(p)).map((p) => CANNOT[p]);
   if (missing.length) L.push(`- 이 토큰에 없는 권한: ${missing.join(', ')}`);
@@ -96,7 +118,13 @@ export function buildConnectText(i: ConnectInput): string {
   } else {
     L.push('- 토큰은 환경 변수 SCHOOL_AGENT_TOKEN 에 있다(학교 관리자가 넣어 둔다). 없으면 나에게 넣어 달라고 한다.');
   }
-  L.push(`- 확인: curl -s -H "x-agent-token: $SCHOOL_AGENT_TOKEN" ${base}/api/agent/me`);
+  // 83차: 누가·어느 세션이 했는지 사용 기록에 남긴다
+  L.push('- 모든 요청에 머리 x-agent-session(이 작업 세션 이름)과 x-agent-operator(작업하는 사람 이름 또는 이메일)도 붙인다. 학교 관리자가 사용 기록에서 누가 무엇을 했는지 본다.');
+  L.push('  한글·공백이 있으면 URL 인코딩(encodeURIComponent)해서 보낸다. 세션을 새로 열면 세션 이름을 바꾼다.');
+  L.push(`  export SCHOOL_AGENT_SESSION='${(i.session ?? '').replace(/'/g, '') || '세션 이름(예: 동화-수정-1)'}'`);
+  L.push(`  export SCHOOL_AGENT_OPERATOR='${(i.operator ?? '').replace(/'/g, '') || '작업자 이름 또는 이메일'}'`);
+  L.push('- 같은 토큰을 여러 세션에서 함께 쓰지 않는다. 다른 세션이 필요하면 학교 관리자에게 토큰을 하나 더 받는다.');
+  L.push(`- 확인: curl -s -H "x-agent-token: $SCHOOL_AGENT_TOKEN" -H "x-agent-session: <인코딩한 세션 이름>" -H "x-agent-operator: <인코딩한 작업자>" ${base}/api/agent/me  (응답의 you 에 그대로 보이면 된다)`);
   if (i.ai === 'codex') L.push(`- Codex 클라우드라면 환경의 인터넷 허용 목록에 ${new URL(base).host} 를 넣어야 한다.`);
   if (i.ai === 'claude-code') L.push(`- Claude Code 클라우드 세션이라면 환경의 네트워크 허용 목록에 ${new URL(base).host} 가 있어야 한다.`);
   if (i.ai === 'other') L.push('- 인터넷 요청(curl 등)을 보낼 수 있는 AI여야 한다. 못 하면 그렇다고 나에게 말한다.');

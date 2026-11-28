@@ -5,6 +5,7 @@
 import { spawn, execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import pg from 'pg';
@@ -157,12 +158,23 @@ try {
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name), fullPage: true }); }
   };
 
+  let bLangChecked = false;
   async function login(page, email, password) {
     await page.goto(`${BASE}/login`);
     await page.fill('input[name=email]', email);
     await page.fill('input[name=password]', password);
     await page.click('button[type=submit]');
     await page.waitForURL(/\/home$/);
+    // 96차(ADR 0038 5항): 영어 학교 B는 화면 언어를 고르지 않으면 영어로 열린다. 처음 한 번 확인한 뒤,
+    // 이 시험의 한국어 기준 단계를 위해 B 관리자의 화면 언어를 한국어로 고른다(사용자 설정이 학교 기본보다 앞선다)
+    if (email.startsWith('admin-b@')) {
+      if (!bLangChecked) {
+        assert.equal(await page.locator('.app').getAttribute('lang'), 'en', '영어 학교 B는 영어 화면으로 열린다');
+        bLangChecked = true;
+      }
+      const r = await page.evaluate(() => fetch('/api/preferences/lang', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ lang: 'ko' }) }).then((x) => x.status));
+      assert.equal(r, 200);
+    }
     await page.goto(`${BASE}/intake`);
   }
   async function dropFile(page, name, text) {
@@ -531,13 +543,16 @@ try {
     // 개발·연구소 항목 → 세션에 지시 (세부 내용이 채워진 새 지시)
     await p.click('aside a[href="/admin/lab"]');
     await p.waitForURL(/\/admin\/lab$/);
-    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a:has-text("세션에 지시")').click();
-    await p.waitForURL(/\/admin\/control\?from=/);
-    const form = p.locator('[data-testid=control-compose]');
-    assert.equal(await form.locator('input').first().inputValue(), 'AI 분석 프롬프트 설계와 학교당 월 비용 추정');
-    await form.locator('textarea').nth(1).fill('E2E: 무료 범위에서 추정만');
+    // 81차: 카드 → 상세 → 맨 아래 지침(관제 센터 '지시'와 같은 길, 연구소 항목 연결)
+    await p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' }).locator('a.item-title').click();
+    await p.waitForURL(/\/admin\/lab\/[0-9a-f-]{36}$/);
+    const form = p.locator('[data-testid=directive-form]');
+    await form.locator('textarea').fill('E2E: 무료 범위에서 추정만');
     await form.locator('select').selectOption('new');
-    await form.locator('button:text-is("지시 보내기")').click();
+    await form.locator('button[type=submit]').click();
+    await p.locator('[data-testid=lab-directives] .lab-msg', { hasText: 'E2E: 무료 범위에서 추정만' }).waitFor();
+    await p.goto(`${BASE}/admin/control`);
+    await p.click('[role=tab]:has-text("전달·진행")');
     await p.locator('[data-testid=control-list] li', { hasText: 'AI 분석 프롬프트 설계' }).waitFor();
     await ctxC.close();
   });
@@ -776,6 +791,8 @@ try {
     await h.check('[data-testid=site-settings] label:has-text("홈페이지 열기") input');
     await h.click('text=설정 저장');
     await h.waitForSelector('[data-testid=site-settings] [role=status]:has-text("저장했습니다")');
+    // 88차: 표시를 넘겨받은 뒤 주소의 saved=1은 지워진다(새로 고침하면 표시가 다시 나오지 않음)
+    await h.waitForFunction(() => !location.search.includes('saved='));
     // 쪽 만들고 공개
     await h.click('.triage-box:has-text("쪽")');
     await h.click('[data-testid=new-entry]');
@@ -955,7 +972,7 @@ try {
     await v.click('.site-lang-menu summary');
     await v.keyboard.press('Escape');
     assert.equal(await langOpen(), false);
-    // 55차: 안내 띠의 그림은 장식(대체 글 없음·읽기 도구에서 숨김) — 사진 자리가 아니다
+    // 115차: 안내 띠의 그림은 장식(대체 글 없음·읽기 도구에서 숨김) — 사진 자리가 아니다
     await h.evaluate(async () => {
       const list = await (await fetch('/api/site/entries')).json();
       const home = (Array.isArray(list) ? list : list.entries).find((e) => e.kind === 'page' && e.key === 'home');
@@ -1001,6 +1018,16 @@ try {
     assert.match(connect, /after-rain → .*\/s\/dreamy-a\/stories\/after-rain/);
     assert.match(connect, /Claude Code 클라우드/);
     assert.match(connect, /base_version/);
+    // 83차: 세션마다 발급 안내가 보이고, 작업자·세션 이름을 넣으면 연결 글에 들어간다(사용 기록에 남김)
+    await h.locator('[data-testid=agent-token-session-guide]').waitFor();
+    assert.match(connect, /x-agent-session/);
+    await h.fill('[data-testid=agent-connect-operator]', '예시 교사');
+    await h.fill('[data-testid=agent-connect-session]', '동화-수정-1');
+    const connect2 = await h.inputValue('[data-testid=agent-connect-text]');
+    assert.match(connect2, /SCHOOL_AGENT_OPERATOR='예시 교사'/);
+    assert.match(connect2, /SCHOOL_AGENT_SESSION='동화-수정-1'/);
+    await h.fill('[data-testid=agent-connect-operator]', '');
+    await h.fill('[data-testid=agent-connect-session]', '');
     await ctxH.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
     await h.click('[data-testid=agent-connect-copy]');
     await h.waitForSelector('[data-testid=agent-connect] [role=status]:has-text("연결 글을 복사했습니다")');
@@ -1069,6 +1096,59 @@ try {
     assert.equal((await call('/api/agent/me')).status, 401);
     await ctxV.close();
     await ctxH.close();
+  });
+
+  await step('확인 대화상자: 처음 포커스는 취소, Esc로 닫으면 그대로, 확인하면 실행(자료 빼기·청구 확정)', async () => {
+    await b.goto(`${BASE}/intake`);
+    const before = await sourceItems(b).count();
+    const item = sourceItems(b).filter({ hasText: 'b-calendar-2027.pdf' });
+    await item.locator('button:text-is("목록에서 빼기")').click();
+    const dlg = b.locator('[role=alertdialog][data-testid=confirm-dialog]');
+    await dlg.waitFor();
+    assert.match(await dlg.textContent(), /자료를 목록에서 뺄까요\?.*b-calendar-2027\.pdf.*발행한 문서의 근거로 그대로 보관/s);
+    const focusedName = () => b.evaluate(() => { const e = document.activeElement; return e === document.body ? '(body)' : (e?.textContent ?? '').slice(0, 40); });
+    // 95차: 학교 기본 언어가 화면 언어가 된다(B = 영어 학교). 다국어로 옮긴 부품(취소)은 그 언어로 나온다
+    const cancelLabel = (await b.locator('.app').getAttribute('lang')) === 'en' ? 'Cancel' : '취소';
+    await b.waitForFunction((l) => document.activeElement?.textContent === l, cancelLabel, { timeout: 3000 }).catch(() => {});
+    assert.equal(await focusedName(), cancelLabel, '처음 포커스');
+    await shot(b, '31-confirm-dialog.png');
+    // 대화상자는 화면 형식·명암 토큰을 가진 .app 안에 그린다(#135, 어두운 화면에서도 같은 토큰)
+    assert.ok(await dlg.evaluate((el) => !!el.closest('.app[data-mode]')), '대화상자가 .app 안에 있다');
+    // Tab은 대화상자 안에서만 돈다(포커스 가둠)
+    await b.keyboard.press('Tab');
+    await b.keyboard.press('Tab');
+    assert.ok(await b.evaluate(() => !!document.activeElement?.closest('[role=alertdialog]')));
+    await b.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'detached' });
+    assert.equal(await sourceItems(b).count(), before);
+    await b.waitForFunction(() => document.activeElement?.textContent === '목록에서 빼기', null, { timeout: 3000 }).catch(() => {});
+    assert.equal(await focusedName(), '목록에서 빼기', '닫은 뒤 포커스');
+    await item.locator('button:text-is("목록에서 빼기")').click();
+    await dlg.locator('button:text-is("목록에서 빼기")').click();
+    await b.waitForFunction((n) => document.querySelectorAll('[data-testid=source-list] li').length === n - 1, before);
+
+    // 전체 관리자: 청구 확정은 확인 뒤에만 기록이 생긴다
+    const ctxC = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctxC.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    const row = p.locator('[data-testid=school-table] tr', { hasText: 'Rungarun Example School' });
+    const billsBefore = await p.locator('[data-testid=bill-table] tbody tr').count();
+    await row.locator('button:has-text("청구 확정")').click();
+    const pd = p.locator('[role=alertdialog]');
+    await pd.waitFor();
+    assert.match(await pd.textContent(), /고치거나 지울 수 없습니다/);
+    await pd.locator('button:text-is("취소")').click();
+    await pd.waitFor({ state: 'detached' });
+    assert.equal(await p.locator('[data-testid=bill-table] tbody tr').count(), billsBefore);
+    await row.locator('button:has-text("청구 확정")').click();
+    await pd.locator('button:text-is("청구 확정")').click();
+    await p.waitForFunction((n) => document.querySelectorAll('[data-testid=bill-table] tbody tr').length === n + 1, billsBefore);
+    assert.match(await p.textContent('[data-testid=bill-table]'), /Rungarun Example School/);
+    await ctxC.close();
   });
 
   await step('38차: 토큰 권한 확장 — 무기한·만들기·보관 발급 → 에이전트가 새 동화 만들고 구조 바꿈 → 관리자 공개 → 내림 → 에이전트 보관 → 관리자 되살리기', async () => {
@@ -1436,6 +1516,631 @@ try {
     assert.ok(await h.getByRole('combobox', { name: /ไทย 그림/ }).first().isVisible());
     await visitor.close(); await ctx.close();
   });
+  await step('61차 F5: 학사 꾸러미 — 관리자 발급(학사 꾸러미) → 학교 AI가 정의·꾸러미 저장 → 검사·미리보기 → 관리자가 /packages 에서 켜기', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: SHOTS ? 2 : 1 });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    for (const k of ['성품 동화', '쪽', '소식']) {
+      const box = h.locator(`[data-testid=agent-token-kinds] label:text-is("${k}") input`);
+      if (await box.count() && await box.isChecked()) await box.uncheck();
+    }
+    await h.check('[data-testid=agent-token-kinds] label:has-text("학사 꾸러미") input');
+    for (const perm of ['만들기', '고치기']) {
+      const box = h.locator(`[data-testid=agent-token-perms] label:has-text("${perm}") input`).first();
+      if (await box.count() && !(await box.isChecked())) await box.check();
+    }
+    await h.click('[data-testid=agent-token-issue]');
+    const token = (await h.textContent('[data-testid=agent-token-value]')).trim();
+    assert.match(await h.inputValue('[data-testid=agent-connect-text]'), /POST \/api\/agent\/definitions/);
+    const call = async (p, body) => {
+      const r = await fetch(`${BASE}${p}`, { method: body ? 'POST' : 'GET', headers: { 'x-agent-token': token, 'content-type': 'application/json' }, body: body && JSON.stringify(body) });
+      return { status: r.status, json: await r.json() };
+    };
+    const bad = await call('/api/agent/definitions', { kind: 'record_type', code: 'e2e_service', base_version: 0, spec: { title: { ko: '봉사' }, subject: 'person',
+      fields: [{ key: 'student_name', type: 'text', label: { ko: '이름' }, privacy: 'internal' }] } });
+    assert.equal(bad.status, 200);
+    assert.equal(bad.json.valid, false);
+    const ok = await call('/api/agent/definitions', { kind: 'record_type', code: 'e2e_service', base_version: 1, spec: { title: { ko: 'E2E 봉사 시간' }, subject: 'person',
+      fields: [{ key: 'activity', type: 'text', label: { ko: '활동' }, privacy: 'internal', required: true }, { key: 'hours', type: 'hours', label: { ko: '시간' }, privacy: 'internal' }] } });
+    assert.equal(ok.json.valid, true);
+    assert.equal((await call('/api/agent/definitions', { kind: 'view', code: 'e2e_list', base_version: 0, spec: { record_type: 'e2e_service', columns: ['person', 'activity', 'hours'] } })).json.valid, true);
+    const pack = await call('/api/agent/packages', { code: 'e2e_pack', title: { ko: 'E2E 봉사 꾸러미' }, base_version: 0, members: [{ kind: 'record_type', code: 'e2e_service' }, { kind: 'view', code: 'e2e_list' }] });
+    assert.equal(pack.json.valid, true);
+    assert.equal((await call('/api/agent/definitions', { kind: 'view', code: 'e2e_list', base_version: 0, spec: {} })).status, 409);
+    const pv = await call('/api/agent/packages/e2e_pack/preview');
+    assert.deepEqual(pv.json.preview[0].list.rows[0], ['예시 학생 1', '활동 예시 1', '2']);
+    assert.equal((await fetch(`${BASE}/api/agent/packages/e2e_pack/state`, { method: 'POST', headers: { 'x-agent-token': token } })).status, 404); // 켜기 경로는 토큰에 없다
+    await h.goto(`${BASE}/packages`);
+    await h.click('[data-testid=pkg-e2e_pack] details summary');
+    await shot(h, '61-packages.png');
+    await h.click('[data-testid=pkg-on-e2e_pack]');
+    await h.waitForSelector('[data-testid=pkg-off-e2e_pack]');
+    assert.match(await h.textContent('[data-testid=pkg-e2e_pack]'), /켜짐 · 1판/);
+    await ctx.close();
+  });
+  await step('62차 F6: 학생 열람 계정 — 관리자가 설정에서 만들기 → 학생 로그인은 /my(내 기록)로, 교직원 화면은 못 봄 → 관리자가 끝내기', async () => {
+    // 합성 학생 1명과 그 학생의 로그인 계정(비밀번호 로그인은 시험용 시드 방식과 같다)
+    const db = new pg.Client({ connectionString: DB_URL });
+    await db.connect();
+    const { rows: [sch] } = await db.query(`select id from public.schools where slug = 'school-a'`);
+    const { rows: [person] } = await db.query(`insert into public.people(school_id, created_by) select $1, id from private.app_users where email = 'admin-a@school-a.test' returning id`, [sch.id]);
+    await db.query(`insert into public.person_names(school_id, person_id, version, name, recorded_by) select $1, $2, 1, 'E2E 열람 학생', id from private.app_users where email = 'admin-a@school-a.test'`, [sch.id, person.id]);
+    const salt = crypto.randomBytes(16);
+    const hash = `scrypt$16384$${salt.toString('base64')}$${crypto.scryptSync('demo-pass-s', salt, 32, { N: 16384, r: 8, p: 1 }).toString('base64')}`;
+    await db.query(`insert into private.app_users(email, password_hash, display_name) values ('e2e-student@family.test', $1, 'E2E 학생')`, [hash]);
+    await db.end();
+
+    const ctxA = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const a = await ctxA.newPage();
+    await login(a, 'admin-a@school-a.test', 'demo-pass-a');
+    await a.goto(`${BASE}/settings`);
+    const form = a.locator('[data-testid=portal-account-form]');
+    await form.locator('.field select').first().selectOption({ label: 'E2E 열람 학생' });
+    await form.locator('input[type=email]').fill('e2e-student@family.test');
+    await form.locator('label:has-text("동의 연령 미만") input').check();
+    await form.locator('button[type=submit]').click();
+    await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 열람 학생' }).waitFor();
+    assert.match(await a.textContent('[data-testid=portal-account-list]'), /연결됨 · 동의 근거 보호자 동의/);
+
+    const ctxS = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const s = await ctxS.newPage();
+    await s.goto(`${BASE}/login`);
+    await s.fill('input[name=email]', 'e2e-student@family.test');
+    await s.fill('input[name=password]', 'demo-pass-s');
+    await s.click('button[type=submit]');
+    await s.waitForURL(/\/my$/);
+    assert.match(await s.textContent('h1'), /E2E 열람 학생/);
+    await s.locator('[data-testid=my-records]').waitFor();
+    await shot(s, '62-my-record.png');
+    await s.goto(`${BASE}/settings`);
+    await s.waitForURL(/\/my$/); // 교직원 화면은 열람 계정에게 열리지 않는다
+    const api = await ctxS.request.get(`${BASE}/api/settings/members`);
+    assert.ok(api.status() >= 400);
+
+    await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 열람 학생' }).locator('button:text-is("끝내기")').click();
+    await a.locator('[role=status]', { hasText: '열람 계정을 끝냈습니다' }).waitFor();
+    await s.goto(`${BASE}/my`);
+    await s.locator('h1:has-text("볼 수 있는 기록이 없습니다")').waitFor();
+    await ctxA.close(); await ctxS.close();
+  });
+  await step('63차 F6: 수정 요청 → 관리자 거부(이유) → 학생 이의 의견서 → 관리자 화면에 보임, 보존 규칙·파기 미리보기(재학 중이면 불가)', async () => {
+    const db = new pg.Client({ connectionString: DB_URL });
+    await db.connect();
+    const { rows: [sch] } = await db.query(`select id from public.schools where slug = 'school-a'`);
+    const { rows: [person] } = await db.query(`insert into public.people(school_id, created_by) select $1, id from private.app_users where email = 'admin-a@school-a.test' returning id`, [sch.id]);
+    await db.query(`insert into public.person_names(school_id, person_id, version, name, recorded_by) select $1, $2, 1, 'E2E 요청 학생', id from private.app_users where email = 'admin-a@school-a.test'`, [sch.id, person.id]);
+    const salt = crypto.randomBytes(16);
+    const hash = `scrypt$16384$${salt.toString('base64')}$${crypto.scryptSync('demo-pass-r', salt, 32, { N: 16384, r: 8, p: 1 }).toString('base64')}`;
+    await db.query(`insert into private.app_users(email, password_hash, display_name) values ('e2e-request@family.test', $1, 'E2E 요청')`, [hash]);
+    await db.end();
+
+    const ctxA = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const a = await ctxA.newPage();
+    await login(a, 'admin-a@school-a.test', 'demo-pass-a');
+    await a.goto(`${BASE}/settings`);
+    const form = a.locator('[data-testid=portal-account-form]');
+    await form.locator('.field select').first().selectOption({ label: 'E2E 요청 학생' });
+    await form.locator('input[type=email]').fill('e2e-request@family.test');
+    await form.locator('button[type=submit]').click();
+    await a.locator('[data-testid=portal-account-list] li', { hasText: 'E2E 요청 학생' }).waitFor();
+
+    const ctxS = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const s = await ctxS.newPage();
+    await s.goto(`${BASE}/login`);
+    await s.fill('input[name=email]', 'e2e-request@family.test');
+    await s.fill('input[name=password]', 'demo-pass-r');
+    await s.click('button[type=submit]');
+    await s.waitForURL(/\/my$/);
+    const rf = s.locator('[data-testid=my-request-form]');
+    await rf.locator('textarea').fill('E2E 행동 특성 서술이 사실과 다릅니다.');
+    await rf.locator('button[type=submit]').click();
+    await s.locator('[data-testid=my-requests] li', { hasText: 'E2E 행동 특성 서술' }).waitFor();
+    assert.match(await s.textContent('[data-testid=my-requests]'), /접수/);
+
+    await a.goto(`${BASE}/requests`);
+    const item = a.locator('[data-testid=request-list] li', { hasText: 'E2E 행동 특성 서술' });
+    await item.locator('select[aria-label="결정"]').selectOption('denied');
+    await item.locator('input[aria-label="이유"]').fill('E2E 담임 확인 결과 기록이 정확합니다.');
+    await item.locator('button:text-is("결정")').click();
+    await a.locator('[data-testid=request-list] li', { hasText: 'E2E 담임 확인 결과' }).waitFor();
+
+    await s.goto(`${BASE}/my`);
+    const mine = s.locator('[data-testid=my-requests] li', { hasText: 'E2E 행동 특성 서술' });
+    await mine.locator('textarea').fill('E2E 저는 그 기간 봉사 활동 중이었습니다.');
+    await mine.locator('button:text-is("의견서 붙이기")').click();
+    await s.locator('[data-testid=my-requests]', { hasText: '내 의견서: E2E 저는 그 기간' }).waitFor();
+    await shot(s, '63-my-requests.png');
+
+    await a.goto(`${BASE}/requests`);
+    assert.match(await a.textContent('[data-testid=request-list]'), /이의 의견서: E2E 저는 그 기간/);
+    await a.locator('[data-testid=retention-form] input[type=number]').fill('5');
+    await a.locator('[data-testid=retention-form] button[type=submit]').click();
+    await a.locator('p.fine', { hasText: '1판 · 재적이 끝난 뒤 5년' }).waitFor();
+    await a.locator('[data-testid=redact-panel] select').selectOption({ label: 'E2E 요청 학생' });
+    await a.locator('[data-testid=redact-panel] p', { hasText: '파기할 수 없습니다' }).waitFor();
+    await shot(a, '63-requests.png');
+    await ctxA.close(); await ctxS.close();
+  });
+  await step('65차: 홈페이지 템플릿 — 둘러보기 7종 → 이야기형 미리보기(쪽 이동) → 적용하면 없는 쪽만 시안 → 쪽 목록에 보임(공개 안 됨)', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site`);
+    await h.click('[data-testid=site-templates-link]');
+    await h.waitForURL(/\/site\/templates$/);
+    assert.equal(await h.locator('[data-testid=template-grid] article').count(), 8);
+    assert.equal(await h.locator('[data-testid=template-grid] article .template-thumb img').count(), 8);
+    assert.equal((await h.request.get(`${BASE}/site-templates/story.jpg`)).status(), 200);
+    // 89차(ADR 0034): 미리보기는 관리 화면 밖 전체 화면 — 디자인(테마)·메뉴 그대로, 쪽을 넘겨 본다
+    await h.click('[data-testid=template-live-project]');
+    await h.waitForURL(/\/templates\/project/);
+    await h.locator('[data-testid=template-live]').waitFor();
+    assert.equal(await h.getAttribute('.site', 'data-theme'), 'studio');
+    assert.match(await h.textContent('.site-brand'), /두레프로젝트학교/);
+    // 90차: 작품 갤러리형 — 분야로 거르기(과학을 누르면 과학 작품만)
+    const works = h.locator('.sec[data-variant="filter"] .sec-photos li');
+    assert.equal(await works.count(), 6);
+    await h.click('.sec-filter-bar button:has-text("과학")');
+    assert.equal(await h.locator('.sec[data-variant="filter"] .sec-photos li:visible').count(), 2);
+    await h.click('.sec-filter-bar button:has-text("전체")');
+    assert.equal(await h.locator('.sec[data-variant="filter"] .sec-photos li:visible').count(), 6);
+    await h.click('.site-nav a:has-text("프로젝트")');
+    await h.waitForURL(/page=projects/);
+    assert.match(await h.textContent('[data-testid=template-live]'), /마을 하천 지도/);
+    await shot(h, '89-template-live.png');
+    // #143: client-side page navigation must clear the previous page's filter and hidden DOM state.
+    await h.click('.site-nav a:has-text("학생 작품")');
+    await h.locator('.sec-filter-bar button', { hasText: '예술' }).press('Enter');
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 2);
+    await h.click('.site-nav a:has-text("프로젝트")');
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 3);
+    assert.equal(await h.getAttribute('.sec-filter-bar button:first-child', 'aria-pressed'), 'true');
+    await h.locator('.sec-filter-bar button', { hasText: '3~4학년' }).click();
+    await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
+    assert.match(await h.locator('.sec-filter li:visible').innerText(), /학교 텃밭 장터/);
+    await h.locator('.site-nav a', { hasText: /^홈$/ }).click();
+    await h.getByRole('link', { name: /새 학기 학부모 설명회 안내/ }).click();
+    await h.waitForURL(/news=open-day/);
+    assert.match(await h.locator('h1').innerText(), /새 학기 학부모 설명회 안내/);
+    await h.getByRole('link', { name: '소식 목록', exact: true }).click();
+    await h.waitForURL(/news=all/);
+    assert.equal(await h.locator('.lb-board li').count(), 3);
+    await h.goto(`${BASE}/templates/kinder?page=admission`);
+    await h.locator('[data-testid=site-inquiry] input[name=name]').fill('가상 방문자');
+    await h.locator('[data-testid=site-inquiry] input[name=contact]').fill('visitor@example.org');
+    await h.locator('[data-testid=site-inquiry] input[name=consent]').check();
+    const sent = [];
+    h.on('request', (request) => { if (request.url().endsWith('/api/site/inquiry')) sent.push(request.url()); });
+    await h.getByTestId('site-inquiry-send').click();
+    await h.getByRole('status').filter({ hasText: '실제로 보내지지 않습니다' }).waitFor();
+    assert.equal(sent.length, 0, '템플릿 미리보기는 개인정보를 서버로 보내지 않음');
+
+    await h.goto(`${BASE}/site/templates`);
+    await shot(h, '65-templates.png');
+    await h.click('[data-testid=template-open-story]');
+    await h.locator('[data-testid=template-preview]').waitFor();
+    assert.match(await h.textContent('[data-testid=template-preview]'), /학교의 하루/);
+    // 86차: 기본은 가상 학교 예시 내용 · '안내 자리'로 바꾸면 적용될 그대로
+    assert.match(await h.textContent('[data-testid=template-preview]'), /숲속이야기학교/);
+    await h.click('[data-testid=template-view-guide]');
+    await h.waitForURL(/view=guide/);
+    assert.match(await h.textContent('[data-testid=template-preview]'), /\[학교 이름\]/);
+    await h.click('nav[aria-label="템플릿 쪽"] a:has-text("교육철학")');
+    await h.waitForURL(/page=philosophy/);
+    assert.match(await h.textContent('[data-testid=template-preview]'), /우리가 소중히 여기는 것/);
+    await shot(h, '65-template-preview.png');
+    await h.click('[data-testid=template-apply]');
+    await h.locator('[role=status]', { hasText: '시안 쪽' }).waitFor();
+    await h.goto(`${BASE}/site?box=page`);
+    const list = await h.textContent('.triage-list');
+    assert.match(list, /교육철학/);
+    assert.match(list, /공동체/);
+    // #143: both new filter layouts must expose editable categories after template application.
+    await h.goto(`${BASE}/site/templates/project`);
+    await h.getByTestId('template-apply').click();
+    await h.locator('[role=status]', { hasText: '시안 쪽' }).waitFor();
+    for (const title of ['프로젝트', '학생 작품']) {
+      await h.goto(`${BASE}/site?box=page`);
+      await h.locator('.triage-list a').filter({ hasText: new RegExp(title) }).first().click();
+      const category = h.getByLabel('1. 분류(거르기 단추) 한국어', { exact: true });
+      await category.fill('학교 생태 탐구');
+      await h.getByRole('button', { name: '새 판으로 저장', exact: true }).click();
+      await h.getByRole('status').filter({ hasText: '새 판으로 저장했습니다' }).waitFor();
+      await h.reload();
+      assert.equal(await category.inputValue(), '학교 생태 탐구');
+      const previewHref = await h.getByRole('link', { name: '시안 미리보기', exact: true }).getAttribute('href');
+      await h.goto(`${BASE}${previewHref}`);
+      await h.locator('.sec-filter-bar button', { hasText: '학교 생태 탐구' }).click();
+      await h.waitForFunction(() => document.querySelectorAll('.sec-filter li:not([hidden])').length === 1);
+    }
+    // 112차(Codex 검토): 행사 구역은 날짜 배지(분류 칸)를 편집기에서 고칠 수 있다
+    const ev = await h.evaluate(async () => (await (await fetch('/api/site/entries', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kind: 'page', key: 'e2e-events', content: { title: { ko: 'E2E 행사 쪽' }, blocks: [{ type: 'section', template: 'cards', variant: 'events', items: [{ title: { ko: '학교 여는 날' }, tag: { ko: '[날짜]' } }] }] } }) })).json()));
+    assert.ok(ev.id, '행사 쪽 시안');
+    await h.goto(`${BASE}/site?box=page`);
+    await h.locator('.triage-list a').filter({ hasText: 'E2E 행사 쪽' }).first().click();
+    const date = h.getByLabel('1. 날짜(행사 배지) 한국어', { exact: true });
+    assert.equal(await date.inputValue(), '[날짜]');
+    await date.fill('5.12');
+    await h.getByRole('button', { name: '새 판으로 저장', exact: true }).click();
+    await h.getByRole('status').filter({ hasText: '새 판으로 저장했습니다' }).waitFor();
+    await h.reload();
+    assert.equal(await date.inputValue(), '5.12');
+    await ctx.close();
+  });
+  await step('66차: 학교 자료로 빈 칸 채우기 — 이야기형 미리보기에서 소개서 올리기 → 제안 확인 → 넣기 → 교육철학 쪽 새 시안 판', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site/templates/story?page=philosophy`);
+    const panel = h.locator('[data-testid=autofill-panel]');
+    await panel.waitFor();
+    const text = ['우리가 소중히 여기는 가치', '- 질문: 스스로 묻고 탐구한다', '- 공동체: 서로 돌본다', '- 나눔: 배운 것을 마을과 나눈다', '',
+      '하루 일과', '아침 산책으로 하루를 열고 오전에는 탐구 수업, 오후에는 프로젝트를 합니다.'].join('\n');
+    await panel.locator('[data-testid=autofill-files]').setInputFiles({ name: 'E2E-소개서.txt', mimeType: 'text/plain', buffer: Buffer.from(text) });
+    await panel.locator('[data-testid=autofill-proposals] li', { hasText: '소중히 여기는 것' }).waitFor();
+    await shot(h, '66-autofill.png');
+    await panel.locator('[data-testid=autofill-apply]').click();
+    await panel.locator('[role=status]', { hasText: '칸을 채워 새 시안 판' }).waitFor();
+    await h.goto(`${BASE}/site?box=page`);
+    await h.click('.triage-list a:has-text("교육철학")');
+    await h.locator('text=자료로 빈 칸 채움').first().waitFor();
+    await ctx.close();
+  });
+  await step('91차: 방문·상담 신청 — 관리자가 신청 받기를 켜고 유치원형 입학 쪽을 공개 → 방문자가 신청 → 관리자만 목록에서 보고 처리', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site?box=settings`);
+    await h.check('[data-testid=site-inquiry-open]');
+    await h.click('text=설정 저장');
+    await h.waitForSelector('[data-testid=site-settings] [role=status]:has-text("저장했습니다")');
+    // 유치원형 시작(없는 쪽만 시안) → 입학 쪽 공개(같은 출처 API, 사람 관리자 권한)
+    const applied = await h.evaluate(async () => (await fetch('/api/site/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'kinder' }) })).json());
+    // 107차: 앞 단계(65차)의 이야기형에도 입학 쪽(신청 칸 포함)이 있어 유치원형은 건너뛸 수 있다 → 이미 있는 입학 쪽을 쓴다
+    const adm = applied.created.find((c) => c.key === 'admission')
+      ?? (await h.evaluate(async () => (await (await fetch('/api/site/entries')).json()))).find((e) => e.kind === 'page' && e.key === 'admission');
+    assert.ok(adm, '입학 쪽 시안');
+    assert.equal(await h.evaluate(async (id) => (await fetch(`/api/site/entries/${id}/publish`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, adm.id), 200);
+    // 방문자(로그인 없음)
+    const vctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const v = await vctx.newPage();
+    await v.goto(`${BASE}/s/dreamy-a/p/admission`);
+    const form = v.locator('[data-testid=site-inquiry]');
+    await form.waitFor();
+    await form.locator('input[name=name]').fill('합성 보호자');
+    await form.locator('input[name=contact]').fill('e2e-parent@example.org');
+    await form.locator('textarea[name=message]').fill('견학 날짜를 알고 싶어요');
+    await form.locator('[data-testid=site-inquiry-send]').click(); // 동의 없이: 브라우저 필수 검사로 막힘
+    assert.equal(await form.locator('[role=status]').count(), 0);
+    await form.locator('input[name=consent]').check();
+    await form.locator('[data-testid=site-inquiry-send]').click();
+    await form.locator('[role=status]').waitFor();
+    assert.match(await form.locator('[role=status]').textContent(), /신청을 받았습니다|Thank you|ได้รับแล้ว/); // 학교 기본 언어로 답함
+    await shot(v, '91-inquiry-visitor.png');
+    await vctx.close();
+    // 관리자 목록
+    await h.goto(`${BASE}/site`);
+    assert.match(await h.textContent('[data-testid=site-inquiries-link]'), /새 1건/);
+    await h.click('[data-testid=site-inquiries-link]');
+    await h.locator('[data-testid=inquiries]').waitFor();
+    assert.match(await h.textContent('[data-testid=inquiries]'), /e2e-parent@example.org/);
+    await h.click('[data-testid=inquiry-toggle]');
+    await h.locator('[data-testid=inquiry-toggle][aria-pressed=true]').waitFor();
+    await shot(h, '91-inquiries-admin.png');
+    await ctx.close();
+  });
+  await step('87차: 주소만 넣고 새 디자인으로 옮기기 — 둘러보기 위 패널, 내부 주소는 서버가 거부해 화면에 알린다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site/templates`);
+    const panel = h.locator('[data-testid=migrate-start]');
+    await panel.waitFor();
+    await panel.locator('[data-testid=migrate-start-url]').fill(`${BASE}/`);
+    await panel.locator('[data-testid=migrate-start-read]').click();
+    await panel.locator('[role=status]', { hasText: /공개 인터넷|포트|내부/ }).waitFor();
+    await ctx.close();
+  });
+  await step('67차: 기존 홈페이지에서 옮기기 — 패널이 보이고, 내부·사설 주소는 서버가 거부해 화면에 알린다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/site/templates/story`);
+    const panel = h.locator('[data-testid=migrate-panel]');
+    await panel.waitFor();
+    await panel.locator('[data-testid=migrate-url]').fill(`${BASE}/`);
+    await panel.locator('[data-testid=migrate-read]').click();
+    await panel.locator('[role=status]', { hasText: /공개 인터넷|포트|내부/ }).waitFor();
+    await shot(h, '67-migrate.png');
+    await ctx.close();
+  });
+  await step('68차: 홍보 페이지 — 로그인 없이 열림, 한국어·English, 로그인 화면에서 들어오고 시작 단추는 템플릿으로', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.click('[data-testid=login-intro-link]');
+    await p.waitForURL(/\/intro$/);
+    assert.match(await p.textContent('h1'), /AI로 직접 만드는 우리학교 홈페이지, 우리학교 시스템/);
+    await shot(p, '68-intro.png');
+    await p.click('a[hreflang=en]');
+    await p.waitForURL(/lang=en/);
+    assert.match(await p.textContent('h1'), /with AI/);
+    await shot(p, '68-intro-en.png');
+    await p.click('[data-testid=intro-start]');
+    await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates|\/login\?next=\/site\/templates/);
+    await ctx.close();
+  });
+  await step('71차: 학교 구조(학교급·학기 구조·학년도·학기 날짜) → 사람 추가·학적 등록·이름 새 판', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/academics`);
+    // 109차: 학년 체계 고르기가 기본, 학교급 직접 더하기는 접혀 있다
+    await h.locator('[data-testid=levels] details summary').click();
+    const lv = h.locator('[data-testid=level-form]');
+    await lv.locator('label:has-text("이름") input').fill('E2E 중등');
+    await lv.locator('label:has-text("코드") input').fill('e2e_mid');
+    await lv.locator('button[type=submit]').click();
+    await h.locator('[data-testid=levels] li', { hasText: 'E2E 중등' }).waitFor();
+    const rf = h.locator('[data-testid=rule-form]');
+    await rf.locator('textarea').fill('t1 1텀\nt2 2텀\nt3 3텀');
+    await rf.locator('input').fill('E2E 학사 규정(3텀제)');
+    await rf.locator('button[type=submit]').click();
+    await h.locator('[data-testid=period-rule] p.fine', { hasText: '1텀 · 2텀 · 3텀' }).waitFor();
+    const yf = h.locator('[data-testid=year-form]');
+    await yf.locator('label:has-text("이름") input').fill('E2E2030');
+    await yf.locator('input[type=date]').nth(0).fill('2030-01-10');
+    await yf.locator('input[type=date]').nth(1).fill('2031-01-10');
+    await yf.locator('button[type=submit]').click();
+    await h.locator('[data-testid=terms-E2E2030] button').click();
+    await h.locator('[data-testid=years] dt', { hasText: '3텀' }).waitFor();
+    await shot(h, '71-academics.png');
+
+    await h.goto(`${BASE}/people`);
+    const add = h.locator('[data-testid=person-add]');
+    await add.locator('label:has-text("이름") input').first().fill('E2E 학생 하나');
+    await add.locator('button[type=submit]').click();
+    await h.locator('[data-testid=people-list] a', { hasText: 'E2E 학생 하나' }).click();
+    await h.waitForURL(/\/people\?id=/);
+    const ef = h.locator('[data-testid=enroll-form]');
+    await ef.locator('select').selectOption({ label: 'E2E 중등' });
+    await ef.locator('button[type=submit]').click();
+    await h.locator('[data-testid=person-detail] li', { hasText: '재학' }).waitFor();
+    await shot(h, '71-people.png');
+    await ctx.close();
+  });
+  await step('72차: 수업 — 과목·갈래·갈래 규칙 판 → 학기·학교급 개설 → 담당 지정', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/courses`);
+    const sf = h.locator('[data-testid=subject-form]');
+    await sf.locator('label:has-text("이름") input').fill('E2E 수학');
+    await sf.locator('label:has-text("코드") input').fill('E2EMATH');
+    await sf.locator('button[type=submit]').click();
+    await h.locator('[data-testid=subjects] li', { hasText: 'E2E 수학' }).waitFor();
+    const tf = h.locator('[data-testid=type-form]');
+    await tf.locator('label:has-text("이름") input').fill('E2E 필수');
+    await tf.locator('label:has-text("코드") input').fill('e2e_req');
+    await tf.locator('button[type=submit]').click();
+    const tli = h.locator('[data-testid=types] li', { hasText: 'E2E 필수' });
+    await tli.waitFor();
+    await tli.locator('summary').click();
+    await h.locator('[data-testid=type-rule-e2e_req] button[type=submit]').click();
+    await h.locator('[data-testid=types] li', { hasText: '1판' }).waitFor();
+    const pick = h.locator('[data-testid=offerings] form.row-wrap');
+    await pick.locator('select[name=term]').selectOption({ label: 'E2E2030 1텀' });
+    await pick.locator('select[name=level]').selectOption({ label: 'E2E 중등' });
+    await pick.locator('button[type=submit]').click();
+    await h.locator('[data-testid=offerings] h2', { hasText: 'E2E2030 1텀 · E2E 중등' }).waitFor();
+    await h.locator('[data-testid=offerings] summary', { hasText: '수업 개설' }).click();
+    const of = h.locator('[data-testid=offering-form]');
+    await of.locator('label:has-text("과목") select').selectOption({ label: 'E2E 수학' });
+    await of.locator('label:has-text("갈래") select').selectOption({ label: 'E2E 필수' });
+    await of.locator('button[type=submit]').click();
+    await h.locator('[data-testid=offerings] td a', { hasText: 'E2E 수학' }).click();
+    await h.waitForURL(/\/courses\?.*o=/);
+    const st = h.locator('[data-testid=staff-form]');
+    await st.locator('select').first().selectOption({ label: 'E2E 학생 하나' });
+    await st.locator('button[type=submit]').click();
+    await h.locator('[data-testid=offering-detail] li', { hasText: 'E2E 학생 하나' }).waitFor();
+    await shot(h, '72-courses.png');
+    await ctx.close();
+  });
+  await step('73차: 성적 — 학기 시작(자동 수강) → 평가 항목 → 점수 표 저장 → 과목 서술 → 수업 마감 판', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    h.on('dialog', (d) => d.accept());
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/courses`);
+    const pick = h.locator('[data-testid=offerings] form.row-wrap');
+    await pick.locator('select[name=term]').selectOption({ label: 'E2E2030 1텀' });
+    await pick.locator('select[name=level]').selectOption({ label: 'E2E 중등' });
+    await pick.locator('button[type=submit]').click();
+    await h.locator('[data-testid=start-term] button[type=submit]').click();
+    await h.locator('[data-testid=offerings] td', { hasText: '진행' }).first().waitFor();
+    await h.locator('[data-testid=offerings] td a', { hasText: 'E2E 수학' }).click();
+    await h.locator('[data-testid=roster] li', { hasText: 'E2E 학생 하나' }).waitFor();
+    await h.click('[data-testid=to-grades]');
+    await h.waitForURL(/\/grades\?o=/);
+    const af = h.locator('[data-testid=assessment-form]');
+    await af.locator('label:has-text("이름") input').fill('중간');
+    await af.locator('label:has-text("코드") input').fill('mid');
+    await af.locator('button[type=submit]').click();
+    await h.locator('[data-testid=assessments] li', { hasText: '중간' }).waitFor();
+    const cell = h.locator('[data-testid=result-grid] input[aria-label="E2E 학생 하나 중간"]');
+    await cell.fill('92');
+    await h.locator('[data-testid=result-grid] button[type=submit]').click();
+    await h.locator('[data-testid=result-grid] [role=status]', { hasText: '1칸' }).waitFor();
+    const nf = h.locator('[data-testid^=narrative-]').first();
+    await nf.locator('textarea').fill('E2E 과목 서술: 탐구 과정을 꾸준히 기록함.');
+    await nf.locator('button[type=submit]').click();
+    await nf.locator('[role=status]', { hasText: '새 사건' }).waitFor();
+    await h.locator('[data-testid=close-form] button[type=submit]').click();
+    await h.locator('[data-testid=closure-results] td', { hasText: '이수' }).waitFor();
+    assert.match(await h.textContent('[data-testid=closure-results]'), /92/);
+    await shot(h, '73-grades.png');
+    await ctx.close();
+  });
+  await step('74차: 출결 — 학교급 출결부에서 결석·사유 저장 → 다시 열면 남아 있고, 요약 표가 보인다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/attendance`);
+    const pick = h.locator('[data-testid=attendance-day] form.row-wrap');
+    await pick.locator('select[name=level]').selectOption({ label: 'E2E 중등' });
+    await pick.locator('button[type=submit]').click();
+    await h.locator('[data-testid=attendance-day] h2', { hasText: 'E2E 중등' }).waitFor();
+    const reg = h.locator('[data-testid=register]');
+    await reg.locator('select[aria-label="E2E 학생 하나 출결"]').selectOption('absent');
+    await reg.locator('select[aria-label="E2E 학생 하나 사유"]').selectOption('illness');
+    await reg.locator('input[aria-label="E2E 학생 하나 메모"]').fill('E2E 감기');
+    await reg.locator('button[type=submit]').click();
+    await reg.locator('[role=status]', { hasText: '1명' }).waitFor();
+    await h.reload();
+    assert.equal(await h.locator('[data-testid=register] select[aria-label="E2E 학생 하나 출결"]').inputValue(), 'absent');
+    await h.locator('[data-testid=attendance-summary]').waitFor();
+    await shot(h, '74-attendance.png');
+    await ctx.close();
+  });
+  await step('75차: 기록 — 학년도 기록 마감 판 → 학생부 발행 → 발행본(스냅샷·해시 확인) → 공개 기록, 지정일 보고', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    h.on('dialog', (d) => d.accept());
+    await login(h, 'admin-b@school-b.test', 'demo-pass-b');
+    await h.goto(`${BASE}/records`);
+    await h.locator('[data-testid=record-student] select[name=p]').selectOption({ label: 'E2E 학생 하나' });
+    await h.locator('[data-testid=record-student] button[type=submit]').click();
+    await h.waitForURL(/\/records\?p=/);
+    const cy = h.locator('[data-testid=close-year-form]');
+    await cy.locator('select').selectOption({ label: 'E2E2030' });
+    await cy.locator('button[type=submit]').click();
+    await h.locator('[data-testid=record-years] li', { hasText: '1판' }).waitFor();
+    const pf = h.locator('[data-testid=publish-form]');
+    await pf.locator('label:has-text("형식") select').selectOption('kr_alt_record');
+    await pf.locator('button[type=submit]').click();
+    await h.locator('[data-testid=record-docs] li a').first().click();
+    await h.waitForURL(/\/records\/doc\//);
+    await h.locator('[data-testid=record-doc]', { hasText: 'E2E 수학' }).waitFor();
+    assert.match(await h.textContent('[data-testid=record-doc]'), /92/);
+    await h.locator('.page-header', { hasText: '내용 확인됨' }).waitFor();
+    const df = h.locator('[data-testid=disclose-form]');
+    await df.locator('label:has-text("받는 곳") input').fill('E2E 입학처');
+    await df.locator('button[type=submit]').click();
+    await h.locator('[data-testid=disclosures] li', { hasText: 'E2E 입학처' }).waitFor();
+    await shot(h, '75-record-doc.png');
+    await h.goto(`${BASE}/records`);
+    await h.locator('[data-testid=count-report-form] button[type=submit]').click();
+    await h.locator('[data-testid=count-reports] li', { hasText: '1판' }).waitFor();
+    await ctx.close();
+  });
+  await step('76차: 기본판·보고 — 관제가 보고 모으기 → 새 기본판(코드 하나 더함) → 학교 설정에서 제안 수락 → 사본 판이 오름', async () => {
+    const ctxP = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctxP.newPage();
+    p.on('dialog', (d) => d.accept());
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.goto(`${BASE}/admin/baseline`);
+    await p.locator('[data-testid=collect-reports] button[type=submit]').click();
+    await p.locator('[data-testid=reports] tbody th', { hasText: '드리미 예시학교' }).waitFor();
+    await p.locator('[data-testid=baseline] summary').click();
+    const bf = p.locator('[data-testid=baseline-form]');
+    const m = JSON.parse(await bf.locator('textarea').inputValue());
+    m.code_lists = [...(m.code_lists ?? []), { list_key: 'attendance_reason', code: 'e2e_event', label: { ko: 'E2E 행사', en: 'E2E event' }, attrs: { excused: true }, why: 'e2e' }];
+    await bf.locator('textarea').fill(JSON.stringify(m));
+    await bf.locator('label:has-text("왜") input').fill('E2E: 행사 사유 추가');
+    await bf.locator('button[type=submit]').click();
+    await bf.locator('[role=status]', { hasText: '새 기본판' }).waitFor();
+    await shot(p, '76-baseline.png');
+    await ctxP.close();
+
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const h = await ctx.newPage();
+    await login(h, 'admin-a@school-a.test', 'demo-pass-a');
+    await h.goto(`${BASE}/settings`);
+    const box = h.locator('[data-testid=baseline-offers]');
+    await box.locator('li', { hasText: 'attendance_reason e2e_event' }).waitFor();
+    await box.locator('form button[type=submit]').first().click();
+    await box.locator('form').waitFor({ state: 'detached' });
+    assert.match(await box.textContent(), /지금 사본: 2판/);
+    await ctx.close();
+  });
+  await step('81차: 연구소 — 카드로 한눈에 → 상세에서 본문을 표·지표·흐름도로 고치고 미리 보기 → 저장하면 그대로 보인다', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    await p.goto(`${BASE}/admin/lab`);
+    await p.locator('[data-testid=lab-items] li.lab-card').first().waitFor();
+    await shot(p, '81-lab-cards.png');
+    // 제목 글자가 아니라 카드 빈 곳(아래쪽 꼬리)을 눌러도 상세로 간다
+    const card = p.locator('[data-testid=lab-items] li', { hasText: 'AI 분석 프롬프트 설계' });
+    const box = await card.boundingBox();
+    await card.click({ position: { x: box.width / 2, y: box.height - 8 } });
+    await p.waitForURL(/\/admin\/lab\/[0-9a-f-]{36}$/);
+    await p.locator('[data-testid=lab-controls] button:text-is("내용 고치기")').click();
+    const ed = p.locator('[data-testid=lab-editor]');
+    await ed.locator('textarea').fill('## 비용 요약\n\n```kpi\n월 원가 | $260 | 100곳\n```\n\n| 등급 | 원가 |\n|---|---|\n| 공용형 | $1 |\n\n```steps\n신청 | 승인\n생성\n```\n\n> **결정** 등급 이름');
+    await ed.locator('button[role=tab]:text-is("미리 보기")').click();
+    await ed.locator('.rd-kpi', { hasText: '$260' }).waitFor();
+    await ed.locator('button:text-is("저장")').click();
+    const body = p.locator('[data-testid=lab-body]');
+    await body.locator('.rd-kpi-value', { hasText: '$260' }).waitFor();
+    assert.equal(await body.locator('table tbody tr').count(), 1);
+    assert.equal(await body.locator('.rd-step').count(), 2);
+    await body.locator('.rd-decide').waitFor();
+    await p.locator('.lab-toc a', { hasText: '비용 요약' }).waitFor();
+    await shot(p, '81-lab-detail.png');
+    await ctx.close();
+  });
+  await step('37차 후속: 손가락 기기 — 전체 관리·연구소·자료 첨부·화면 편집의 입력과 단추가 모두 44px, 필수 칸은 * 표시', async () => {
+    const { devices } = require('playwright');
+    // 화면에 보이는 입력·단추 중 44px 미만(화면 편집 막대 포함, 공개 홈페이지 본문 .site 의 테마 요소는 제외)
+    const under44 = (page) => page.evaluate(() => [...document.querySelectorAll('main :is(button, .btn, select, textarea, input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=file]))')]
+      .filter((e) => (!e.closest('.site') || e.closest('.le-bar, .le-switch, .le-note, .le-picker, .le-guide')) && !e.closest('.pv-root'))
+      .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.height < 43.5; })
+      .map((e) => `${e.tagName}.${(e.className || '').toString().split(' ')[0]}「${(e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 10)}」:${Math.round(e.getBoundingClientRect().height)}`));
+    const ctx = await browser.newContext({ ...devices['iPhone 13'] });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/login`);
+    await p.fill('input[name=email]', 'platform@example.test');
+    await p.fill('input[name=password]', 'demo-pass-p');
+    await p.click('button[type=submit]');
+    await p.waitForURL(/\/admin$/);
+    for (const path of ['/admin', '/admin/lab']) {
+      await p.goto(`${BASE}${path}`);
+      await p.locator('main').waitFor();
+      const small = await under44(p);
+      assert.deepEqual(small, [], `${path} 44px 미만: ${small.join(' ')}`);
+      assert.equal(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `${path} 390px 가로 넘침`);
+    }
+    await p.goto(`${BASE}/admin/languages`);
+    await p.locator('[data-testid=language-form] .field-req').first().waitFor();
+    await ctx.close();
+    // 학교 관리자: 자료 첨부(FileDrop 단추)와 화면 편집(구역 막대)
+    const ctxA = await browser.newContext({ ...devices['iPhone 13'] });
+    const a2 = await ctxA.newPage();
+    await login(a2, 'admin-a@school-a.test', 'demo-pass-a');
+    await a2.goto(`${BASE}/intake`);
+    await a2.waitForSelector('[data-testid=dropzone][data-ready]');
+    assert.deepEqual(await under44(a2), [], '자료 첨부 44px 미만');
+    await a2.goto(`${BASE}/site?box=page`);
+    await a2.locator('[data-testid=row-live-edit]').first().click();
+    await a2.waitForURL(/\/site\/edit\/[0-9a-f-]{36}$/);
+    await a2.locator('[data-testid=live-editor] .le-bar').first().waitFor();
+    const smallEd = await under44(a2);
+    assert.deepEqual(smallEd, [], `화면 편집 44px 미만: ${smallEd.join(' ')}`);
+    await ctxA.close();
+  });
+
   await step('접근성(axe): 앱·시안(/preview/*) 화면 모두 심각도 serious 이상 위반 0건', async () => {
     const line = (f) => `  [${f.impact}] ${f.page} (${f.path}) ${f.id}: ${f.help} · ${f.count}곳 · ${f.targets.join(' | ')}`;
     if (axeFindings.length) console.error(axeFindings.map(line).join('\n'));

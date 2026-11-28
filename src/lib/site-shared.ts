@@ -23,13 +23,21 @@ export const SECTION_LABEL: Record<SectionTemplate, string> = {
  * 42차: 새벽빛(dawn) 구역 모양. 옛 룽아룬숙사 사이트의 고정 구역을 그대로 그리는 모양 이름이다(다른 테마는 무시하고 템플릿대로 그림).
  * 템플릿은 칸(제목·글·사진·항목)을, 모양은 그 칸의 배치를 정한다. 짝이 맞지 않으면 템플릿 기본 모양으로 그린다.
  */
-export const SECTION_VARIANTS = ['split', 'portrait', 'index', 'moments', 'overview', 'emblem', 'rows', 'questions', 'aside', 'faq', 'prep', 'half'] as const;
+export const SECTION_VARIANTS = ['split', 'portrait', 'index', 'moments', 'overview', 'emblem', 'rows', 'questions', 'aside', 'faq', 'prep', 'half',
+  // 90차: 템플릿 골격(docs/design/homepage-commercial-plan.md 3절)
+  'editorial', 'mosaic', 'mask', 'filter', 'timeline', 'tiles', 'curriculum', 'mentors', 'feature-filter', 'portfolio', 'daybook',
+  // 107차: 학교 홈페이지 공통 구역(docs/design/template-reference-board.md 3절)
+  'quicklinks', 'stages', 'stats', 'events', 'voices'] as const;
 export type SectionVariant = (typeof SECTION_VARIANTS)[number];
 export const VARIANT_LABEL: Record<SectionVariant, string> = {
   split: '두 단(제목 | 글)', portrait: '대표 사진(무지개 호)', index: '번호 상자', moments: '사진 셋(번호 이름표)', overview: '사진 + 정보 줄',
   emblem: '작은 로고 + 글', rows: '사진–글 줄', questions: '제목 | 질문 목록', aside: '제목 | 목록', faq: '제목 | 접는 질문', prep: '안내 상자 + 포스터', half: '반 폭',
+  curriculum: '과정 비교표', mentors: '멘토 소개', 'feature-filter': '대표 프로젝트 + 분류', portfolio: '작품 기록 목록 + 분류', daybook: '하루 수첩',
+  editorial: '글 | 사진 반반 + 겹친 카드', mosaic: '큰·작은 사진 콜라주', mask: '둥글게 오린 사진', filter: '분류로 거르기', timeline: '시간 띠(하루 일과)', tiles: '크기가 다른 색 타일',
+  quicklinks: '겹친 바로가기', stages: '학년 단계 카드', stats: '숫자 띠', events: '행사(날짜 배지)', voices: '목소리(인용 카드)',
 };
-export type SectionItem = { title?: LText; body?: LText; asset?: string; alt?: LText; href?: string };
+/** 90차: tag = 분류(분류로 거르기 모양에서 단추가 됨, 예: 과학·예술) */
+export type SectionItem = { title?: LText; body?: LText; asset?: string; alt?: LText; href?: string; tag?: LText };
 export type Button = { label: LText; href: string };
 export type GalleryItem = { asset: string; alt?: LText; category?: string; file_name?: string; size_bytes?: number };
 export type GalleryFilter = { key: string; label: LText };
@@ -47,6 +55,8 @@ export type Block = (
   | { type: 'news_list'; eyebrow?: LText; title?: LText; body?: LText; count: number; style: 'cards' | 'list' }
   /** 34차: 파일(PDF) 내려받기. 파일 이름·크기는 저장할 때 서버가 그 학교 자산에서 채운다(판 스냅샷에 남음) */
   | { type: 'download'; asset: string; label?: LText; note?: LText; file_name?: string; size_bytes?: number }
+  /** 91차(ADR 0036): 방문·상담 신청 칸. 학교가 설정에서 '신청 받기'를 켰을 때만 방문자에게 보인다 */
+  | { type: 'inquiry'; title?: LText; body?: LText }
 ) & { hidden?: boolean };
 
 /** 사이트 머리·바닥 정보. 'home' 쪽 내용에 두어 판·공개 흐름을 그대로 따른다(로고 그림도 공개된 판이 가리킬 때만 보임). */
@@ -60,12 +70,32 @@ export type EntryKind = 'page' | 'news' | 'story';
 export const KIND_LABEL: Record<EntryKind, string> = { page: '쪽', news: '소식', story: '성품 동화' };
 export const BLOCK_LABEL: Record<Block['type'], string> = {
   heading: '제목', text: '글', notice: '알림', image: '그림', gallery: '사진 묶음', video: '영상', story_page: '동화 한 쪽',
-  section: '잡지형 구역', news_list: '최근 소식', download: 'PDF 내려받기',
+  section: '잡지형 구역', news_list: '최근 소식', download: 'PDF 내려받기', inquiry: '방문·상담 신청',
 };
 
+/**
+ * 화면 모양(테마). campus·dawn은 처음부터 있던 것, 나머지는 89차(ADR 0034) 템플릿 완성 디자인.
+ * 색·글꼴·첫 화면 모양만 다르고 블록·쪽 구조는 같다 — 학교가 언제든 바꿀 수 있다.
+ */
+export const SITE_THEMES = [
+  { key: 'campus', name: '학사 기본', note: '차분한 기본 모양' },
+  { key: 'dawn', name: '새벽빛 매거진', note: '잡지처럼 넓은 여백과 명조 제목' },
+  { key: 'clear', name: '맑은 하늘', note: '파란 알림 띠와 카드, 공지가 많은 학교' },
+  { key: 'bold', name: '힘찬 시작', note: '사진 위 큰 제목과 붉은 단추, 모집 중심' },
+  { key: 'studio', name: '작업실', note: '노란 강조와 굵은 선, 프로젝트·작품 중심' },
+  { key: 'lamp', name: '등불', note: '따뜻한 갈색과 명조 제목, 사명·후원 중심' },
+  { key: 'horizon', name: '지평', note: '청록과 넓은 사진, 여러 언어 학교' },
+  { key: 'seed', name: '씨앗', note: '둥근 모서리와 연두, 작은 모임의 한 쪽 소개' },
+  { key: 'ivory', name: '아이보리 편집', note: '아이보리 바탕·명조 제목·글과 사진 반반, 일반 학교' },
+  { key: 'play', name: '놀이터', note: '복숭아색·노랑, 둥글게 오린 사진, 유치원·저학년' },
+] as const;
+export type SiteTheme = (typeof SITE_THEMES)[number]['key'];
+export const isSiteTheme = (v: unknown): v is SiteTheme => SITE_THEMES.some((t) => t.key === v);
+
 export type SiteSettings = {
-  school_id: string; public_slug: string; default_lang: Lang; langs: Lang[]; theme: 'campus' | 'dawn';
+  school_id: string; public_slug: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme;
   site_title: LText; is_open: boolean; updated_at: string;
+  /** 91차: 방문·상담 신청 받기 */ inquiry_open: boolean;
 };
 export type EntryStatus = 'draft' | 'live' | 'changed' | 'hidden';
 export type EntrySummary = {

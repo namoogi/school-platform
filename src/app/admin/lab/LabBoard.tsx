@@ -1,8 +1,12 @@
 'use client';
 import { Switch } from '@/components/Field';
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { shapes, summarize } from '@/lib/richdoc';
 import { useRouter } from 'next/navigation';
 import type { Item, Kind } from '@/lib/lab';
+import { useI18n } from '@/components/I18nProvider';
+import { baseT } from '@/lib/i18n/base';
 
 type Kinds = Record<Kind, { label: string; statuses: Record<string, string> }>;
 type Priorities = Record<string, string>;
@@ -12,27 +16,35 @@ const DONE = new Set(['done', 'dropped', 'rejected', 'concluded', 'adopted']);
 async function call(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error ?? '처리하지 못했습니다.');
+  if (!res.ok) throw new Error(data.error ?? baseT('common.failed'));
   return data;
 }
 
-export function LabBoard({ items, kinds, priorities }: { items: Item[]; kinds: Kinds; priorities: Priorities }) {
+type Counts = Record<string, { total: number; done: number; review: number }>;
+type Tab = Kind | 'all';
+
+/** 81차: 연구소 — 카드 격자로 한눈에. 카드는 요약·진행(할 일·지침)·도식 수를 보이고, 누르면 상세(표·도식·지침)로 간다 */
+export function LabBoard({ items, kinds, priorities, counts }: { items: Item[]; kinds: Kinds; priorities: Priorities; counts: Counts }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Kind>('todo');
+  const { t, locale } = useI18n();
+  const [tab, setTab] = useState<Tab>('all');
   const [query, setQuery] = useState('');
   const [showClosed, setShowClosed] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // 체크하면 서버 응답 전에 바로 표시한다
   const [pending, setPending] = useState<Record<string, string>>({});
-  const byId = useMemo(() => Object.fromEntries(items.map((i) => [i.id, i])), [items]);
   const parents = items.filter((i) => i.kind !== 'todo' && !i.archived_at);
+  const children = useMemo(() => {
+    const m: Record<string, { total: number; done: number }> = {};
+    for (const i of items) if (i.parent_id && !i.archived_at) { const c = (m[i.parent_id] ??= { total: 0, done: 0 }); c.total++; if (DONE.has(i.status)) c.done++; }
+    return m;
+  }, [items]);
 
-  const counts = Object.fromEntries(ORDER.map((k) => [k, items.filter((i) => i.kind === k && !i.archived_at && !DONE.has(i.status)).length]));
-  const visible = items.filter((i) => i.kind === tab
+  const open = (i: Item) => !i.archived_at && !DONE.has(i.status);
+  const tabCount = (k: Tab) => items.filter((i) => (k === 'all' || i.kind === k) && open(i)).length;
+  const visible = items.filter((i) => (tab === 'all' || i.kind === tab)
     && (showArchived ? true : !i.archived_at)
-    && (showClosed || !DONE.has(i.status) || tab === 'tool' || tab === 'method')
+    && (showClosed || !DONE.has(i.status) || i.kind === 'tool' || i.kind === 'method')
     && (!query || `${i.title} ${i.body} ${i.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())));
 
   async function run(fn: () => Promise<unknown>) {
@@ -43,67 +55,78 @@ export function LabBoard({ items, kinds, priorities }: { items: Item[]; kinds: K
   return (
     <div className="lab" data-testid="lab">
       <div className="tabs" role="tablist">
-        {ORDER.map((k) => (
-          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'active' : ''} onClick={() => { setTab(k); setEditing(null); }}>
-            {kinds[k].label}<span className="count">{counts[k]}</span>
+        {(['all', ...ORDER] as Tab[]).map((k) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'active' : ''} onClick={() => setTab(k)}>
+            {k === 'all' ? t('lab.all') : kinds[k].label}<span className="count">{tabCount(k)}</span>
           </button>
         ))}
       </div>
 
-      <QuickAdd kind={tab} kinds={kinds} parents={parents} onAdd={(v) => run(() => call('/api/admin/items', 'POST', { ...v, kind: tab }))} />
+      <QuickAdd kind={tab === 'all' ? 'todo' : tab} kinds={kinds} parents={parents} pickKind={tab === 'all'}
+        onAdd={(v) => run(() => call('/api/admin/items', 'POST', { kind: tab === 'all' ? 'todo' : tab, ...v }))} />
 
       <div className="toolbar">
-        <input type="search" placeholder="제목·내용·태그 검색" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="검색" />
-        {tab !== 'tool' && tab !== 'method' && <Switch label="끝난 항목 보기" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />}
-        <Switch label="보관한 항목 보기" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+        <input type="search" placeholder={t('lab.search')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('lab.searchAria')} />
+        <Switch label={t('lab.showClosed')} checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />
+        <Switch label={t('lab.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
       </div>
       {error && <p className="alert" role="alert">{error}</p>}
 
-      <ul className="items" data-testid="lab-items">
-        {visible.length === 0 && <li className="muted empty">항목이 없습니다.</li>}
-        {visible.map((i) => (
-          <li key={i.id} className={`item${i.archived_at ? ' archived' : ''}${DONE.has(i.status) ? ' closed' : ''}`}>
-            <div className="item-main">
-              {i.kind === 'todo' && (
-                <input type="checkbox" aria-label="끝남 표시" checked={(pending[i.id] ?? i.status) === 'done'}
-                  onChange={(e) => {
-                    const status = e.target.checked ? 'done' : 'todo';
-                    setPending({ ...pending, [i.id]: status });
-                    run(() => call(`/api/admin/items/${i.id}`, 'PATCH', { status }))
-                      .finally(() => setPending((p) => { const n = { ...p }; delete n[i.id]; return n; }));
-                  }} />
-              )}
-              <div className="item-text">
-                <button type="button" className="item-title" onClick={() => setEditing(editing === i.id ? null : i.id)}>{i.title}</button>
-                <div className="item-meta">
-                  <select aria-label="상태" value={i.status} onChange={(e) => run(() => call(`/api/admin/items/${i.id}`, 'PATCH', { status: e.target.value }))}>
-                    {Object.entries(kinds[i.kind].statuses).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                  <span className={`badge prio-${i.priority}`}>{priorities[i.priority]}</span>
-                  {i.due_date && <span className="tag">기한 {i.due_date}</span>}
-                  {i.parent_id && byId[i.parent_id] && <span className="badge" data-tone="info">↳ {byId[i.parent_id].title.slice(0, 24)}</span>}
-                  {i.tags.map((t) => <span key={t} className="tag">#{t}</span>)}
-                  {i.history_count > 0 && <span className="muted small-text">변경 {i.history_count}회</span>}
-                </div>
-                {i.body && editing !== i.id && <p className="item-body">{i.body}</p>}
-                {editing !== i.id && !i.archived_at && !DONE.has(i.status) && (
-                  <a className="btn-ghost item-direct" href={`/admin/control?from=${i.id}`}>세션에 지시 →</a>
-                )}
+      <ul className="lab-cards" data-testid="lab-items">
+        {visible.length === 0 && <li className="muted empty">{t('lab.empty')}</li>}
+        {visible.map((i) => {
+          const sum = summarize(i.body);
+          const sh = shapes(i.body);
+          const ch = children[i.id];
+          const dc = counts[i.id];
+          return (
+            <li key={i.id} className={`lab-card${i.archived_at ? ' archived' : ''}${DONE.has(i.status) ? ' closed' : ''}`} data-kind={i.kind}>
+              <div className="lab-card-top">
+                <span className="lab-kind">{kinds[i.kind].label}</span>
+                <span className="badge" data-tone={DONE.has(i.status) ? 'success' : i.status === 'running' || i.status === 'in_progress' || i.status === 'doing' || i.status === 'trial' ? 'info' : 'neutral'}>{(kinds[i.kind].statuses as Record<string, string>)[i.status]}</span>
+                {i.priority !== 'normal' && <span className={`badge prio-${i.priority}`}>{i.priority === 'high' ? '▲ ' : '▽ '}{priorities[i.priority]}</span>}
+                {dc?.review ? <span className="badge" data-tone="warning">{t('lab.needsReview', { n: dc.review })}</span> : null}
               </div>
-            </div>
-            {editing === i.id && (
-              <EditForm item={i} kinds={kinds} priorities={priorities} parents={parents.filter((p) => p.id !== i.id)}
-                onSave={(v) => run(async () => { await call(`/api/admin/items/${i.id}`, 'PATCH', v); setEditing(null); })}
-                onArchive={() => run(() => call(`/api/admin/items/${i.id}`, 'PATCH', { archived: !i.archived_at }))} />
-            )}
-          </li>
-        ))}
+              <div className="lab-card-title">
+                {i.kind === 'todo' && (
+                  <input type="checkbox" aria-label={t('lab.markDone')} checked={(pending[i.id] ?? i.status) === 'done'}
+                    onChange={(e) => {
+                      const status = e.target.checked ? 'done' : 'todo';
+                      setPending({ ...pending, [i.id]: status });
+                      run(() => call(`/api/admin/items/${i.id}`, 'PATCH', { status }))
+                        .finally(() => setPending((p) => { const n = { ...p }; delete n[i.id]; return n; }));
+                    }} />
+                )}
+                <Link href={`/admin/lab/${i.id}`} className="item-title">{i.title}</Link>
+              </div>
+              {sum && <p className="lab-card-sum">{sum}</p>}
+              {ch && ch.total > 0 && (
+                <div className="lab-progress" aria-label={t('lab.progressAria', { total: ch.total, done: ch.done })}>
+                  <span className="lab-progress-track"><span className="lab-progress-fill" style={{ width: `${(ch.done / ch.total) * 100}%` }} /></span>
+                  <small>{t('lab.todos', { done: ch.done, total: ch.total })}</small>
+                </div>
+              )}
+              <div className="lab-card-foot">
+                {sh.tables > 0 && <span>{t('lab.tables', { n: sh.tables })}</span>}
+                {sh.visuals > 0 && <span>{t('lab.visuals', { n: sh.visuals })}</span>}
+                {sh.terms > 0 && <span>{t('lab.terms', { n: sh.terms })}</span>}
+                {dc && <span>{t('lab.directives', { done: dc.done, total: dc.total })}</span>}
+                {i.due_date && <span>{t('lab.due', { date: i.due_date })}</span>}
+                {i.tags.slice(0, 3).map((tag) => <span key={tag} className="tag">#{tag}</span>)}
+                <span className="lab-card-date">{new Date(i.updated_at).toLocaleDateString(locale)}</span>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 }
 
-function QuickAdd({ kind, kinds, parents, onAdd }: { kind: Kind; kinds: Kinds; parents: Item[]; onAdd: (v: Record<string, unknown>) => Promise<void> }) {
+function QuickAdd({ kind: initialKind, kinds, parents, onAdd, pickKind }: { kind: Kind; kinds: Kinds; parents: Item[]; onAdd: (v: Record<string, unknown>) => Promise<void>; pickKind?: boolean }) {
+  const { t } = useI18n();
+  const [pick, setPick] = useState<Kind>(initialKind);
+  const kind = pickKind ? pick : initialKind;
   const [title, setTitle] = useState('');
   const [parent, setParent] = useState('');
   const [priority, setPriority] = useState('normal');
@@ -112,51 +135,22 @@ function QuickAdd({ kind, kinds, parents, onAdd }: { kind: Kind; kinds: Kinds; p
     <form className="quick-add" data-testid="quick-add" onSubmit={async (e) => {
       e.preventDefault();
       if (!title.trim()) return;
-      await onAdd({ title, priority, due_date: due || null, parent_id: kind === 'todo' && parent ? parent : null });
+      await onAdd({ ...(pickKind ? { kind } : {}), title, priority, due_date: due || null, parent_id: kind === 'todo' && parent ? parent : null });
       setTitle(''); setDue('');
     }}>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`새 ${kinds[kind].label} 제목`} aria-label="새 항목 제목" />
-      <select value={priority} onChange={(e) => setPriority(e.target.value)} aria-label="우선순위">
-        <option value="high">높음</option><option value="normal">보통</option><option value="low">낮음</option>
+      {pickKind && <select value={pick} onChange={(e) => setPick(e.target.value as Kind)} aria-label={t('lab.kindAria')}>{ORDER.map((k) => <option key={k} value={k}>{kinds[k].label}</option>)}</select>}
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('lab.newTitle', { kind: kinds[kind].label })} aria-label={t('lab.newTitleAria')} />
+      <select value={priority} onChange={(e) => setPriority(e.target.value)} aria-label={t('lab.priority')}>
+        {(['high', 'normal', 'low'] as const).map((p) => <option key={p} value={p}>{t(`lab.priority.${p}`)}</option>)}
       </select>
-      <input type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="기한" />
+      <input type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label={t('lab.dueAria')} />
       {kind === 'todo' && (
-        <select value={parent} onChange={(e) => setParent(e.target.value)} aria-label="연결할 기획·연구">
-          <option value="">연결 없음</option>
+        <select value={parent} onChange={(e) => setParent(e.target.value)} aria-label={t('lab.parentAria')}>
+          <option value="">{t('lab.noParent')}</option>
           {parents.map((p) => <option key={p.id} value={p.id}>[{kinds[p.kind].label}] {p.title.slice(0, 30)}</option>)}
         </select>
       )}
-      <button type="submit" className="btn btn-primary" disabled={!title.trim()}>추가</button>
+      <button type="submit" className="btn btn-primary" disabled={!title.trim()}>{t('lab.add')}</button>
     </form>
-  );
-}
-
-function EditForm({ item, kinds, priorities, parents, onSave, onArchive }: {
-  item: Item; kinds: Kinds; priorities: Priorities; parents: Item[];
-  onSave: (v: Record<string, unknown>) => Promise<void>; onArchive: () => Promise<void>;
-}) {
-  const [f, setF] = useState({ title: item.title, body: item.body, priority: item.priority, due_date: item.due_date ?? '',
-    tags: item.tags.join(', '), link: item.link ?? '', parent_id: item.parent_id ?? '' });
-  return (
-    <div className="edit-form">
-      <label>제목<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
-      <label>내용·메모<textarea rows={5} value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} /></label>
-      <div className="row">
-        <label>우선순위<select value={f.priority} onChange={(e) => setF({ ...f, priority: e.target.value as Item['priority'] })}>
-          {Object.entries(priorities).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-        <label>기한<input type="date" value={f.due_date} onChange={(e) => setF({ ...f, due_date: e.target.value })} /></label>
-        <label>태그 (쉼표)<input value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} /></label>
-      </div>
-      <label>참고 링크<input value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} placeholder="https://" /></label>
-      <label>연결 항목<select value={f.parent_id} onChange={(e) => setF({ ...f, parent_id: e.target.value })}>
-        <option value="">연결 없음</option>
-        {parents.map((p) => <option key={p.id} value={p.id}>[{kinds[p.kind].label}] {p.title.slice(0, 40)}</option>)}</select></label>
-      <div className="row">
-        <button type="button" className="primary" onClick={() => onSave({ ...f, due_date: f.due_date || null, link: f.link || null, parent_id: f.parent_id || null })}>저장</button>
-        <button type="button" className="secondary" onClick={onArchive}>{item.archived_at ? '보관 해제' : '보관'}</button>
-        {item.link && <a className="button secondary" href={item.link} target="_blank" rel="noopener noreferrer">링크 열기</a>}
-        <a className="button secondary" href={`/admin/control?from=${item.id}`}>세션에 지시</a>
-      </div>
-    </div>
   );
 }

@@ -161,21 +161,21 @@ export function canonical(v: PeriodValue): string {
 /** 관리자가 보낸 값 검증. 통과하면 정리된 값을 돌려준다. */
 export function validatePeriodValue(input: unknown): PeriodValue {
   const v = input as PeriodValue;
-  if (!v || !Array.isArray(v.periods) || !v.periods.length) throw new ValidationError('기간이 하나 이상 있어야 합니다.');
-  if (v.periods.length > 12) throw new ValidationError('기간은 12개까지 등록할 수 있습니다.');
+  if (!v || !Array.isArray(v.periods) || !v.periods.length) throw new ValidationError('err.period.none');
+  if (v.periods.length > 12) throw new ValidationError('err.period.max');
   const ids = new Set<string>();
   const assessments = new Set<string>();
   const periods = v.periods.map((p) => {
     const id = String(p?.id ?? '').trim();
     const label = String(p?.label ?? '').trim();
-    if (!id || !label) throw new ValidationError('기간 ID와 이름을 모두 입력해 주세요.');
-    if (id.length > 40 || label.length > 80) throw new ValidationError('기간 ID나 이름이 너무 깁니다.');
-    if (ids.has(id)) throw new ValidationError(`기간 ID ${id}가 중복됩니다.`);
+    if (!id || !label) throw new ValidationError('err.period.idName');
+    if (id.length > 40 || label.length > 80) throw new ValidationError('err.period.tooLong');
+    if (ids.has(id)) throw new ValidationError('err.period.dupId', { id });
     ids.add(id);
     const list = Array.isArray(p.assessments) ? p.assessments.map((a) => String(a).trim()).filter(Boolean) : [];
     for (const a of list) {
-      if (a.length > 80) throw new ValidationError('평가 기간 이름이 너무 깁니다.');
-      if (assessments.has(a)) throw new ValidationError(`평가 기간 ‘${a}’가 두 기간에 동시에 속해 있습니다.`);
+      if (a.length > 80) throw new ValidationError('err.period.assessTooLong');
+      if (assessments.has(a)) throw new ValidationError('err.period.assessTwice', { name: a });
       assessments.add(a);
     }
     return { id, label, assessments: list };
@@ -183,4 +183,5 @@ export function validatePeriodValue(input: unknown): PeriodValue {
   return { periods };
 }
 
-export class ValidationError extends Error {}
+import { ValidationError } from './errors';
+export { ValidationError };

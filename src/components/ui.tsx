@@ -1,4 +1,7 @@
-import Link from 'next/link';
+import { Fragment } from 'react';
+import { Breadcrumb, Steps, type Crumb, type StepItem } from './ui-client';
+
+export { Steps, type Crumb, type StepItem };
 
 /** 공통 컴포넌트. 규칙: docs/design/DESIGN-SYSTEM.md */
 
@@ -9,8 +12,6 @@ export function StatusBadge({ tone = 'neutral', children, dot = false }: { tone?
   return <span className={`badge${dot ? ' badge-dot' : ''}`} data-tone={tone}>{children}</span>;
 }
 
-export type Crumb = { href?: string; label: string };
-
 /** 화면마다 하나. 제목은 h1, 주 동작은 오른쪽에 최대 하나 */
 export function PageHeader({ title, description, crumbs, status, meta, actions, children }: {
   title: React.ReactNode; description?: React.ReactNode; crumbs?: Crumb[]; status?: React.ReactNode;
@@ -19,9 +20,7 @@ export function PageHeader({ title, description, crumbs, status, meta, actions, 
   return (
     <header className="page-header">
       {crumbs && crumbs.length > 0 && (
-        <nav aria-label="경로"><ol className="breadcrumb">
-          {crumbs.map((c, i) => <li key={i}>{c.href ? <Link href={c.href}>{c.label}</Link> : <span aria-current="page">{c.label}</span>}</li>)}
-        </ol></nav>
+        <Breadcrumb crumbs={crumbs} />
       )}
       <div className="page-header-row">
         <div className="stack" style={{ gap: 6 }}>
@@ -33,24 +32,6 @@ export function PageHeader({ title, description, crumbs, status, meta, actions, 
       </div>
       {children}
     </header>
-  );
-}
-
-/** 학사 흐름 단계: 자료 첨부 → 관리자 확인 → 문서 발행 */
-export function Steps({ current, done = [], items }: {
-  current: string; done?: string[]; items: { key: string; label: string; href?: string }[];
-}) {
-  return (
-    <ol className="steps" aria-label="진행 단계">
-      {items.map((s, i) => {
-        const inner = <><span className="dot" aria-hidden="true">{done.includes(s.key) ? '✓' : i + 1}</span>{s.label}{done.includes(s.key) && <span className="sr-only"> (완료)</span>}</>;
-        return (
-          <li key={s.key} className={done.includes(s.key) ? 'done' : ''} aria-current={s.key === current ? 'step' : undefined}>
-            {s.href && s.key !== current ? <Link href={s.href}>{inner}</Link> : inner}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
 
@@ -108,8 +89,20 @@ export function Card({ title, description, actions, children, testId }: {
   );
 }
 
-export const LEARNING_STEPS = [
-  { key: 'intake', label: '자료 첨부', href: '/intake' },
-  { key: 'review', label: '관리자 확인', href: '/review' },
-  { key: 'documents', label: '문서 발행', href: '/documents' },
+export const LEARNING_STEPS: StepItem[] = [
+  { key: 'intake', labelKey: 'steps.intake', href: '/intake' },
+  { key: 'review', labelKey: 'steps.review', href: '/review' },
+  { key: 'documents', labelKey: 'steps.documents', href: '/documents' },
 ];
+
+/**
+ * ADR 0037: 번역문 속 자리({link}, {people} 등)에 링크·강조 같은 요소를 끼운다.
+ * 언어마다 어순이 달라 문장을 앞·뒤로 쪼개 옮기지 않고, 한 문장을 옮긴 뒤 자리에서 나눈다.
+ * 예: withLink(t('people.needLevel'), <Link …/>) · withLink(t('rec.whereElse'), { people: <Link …/>, grades: <Link …/> })
+ */
+export function withLink(text: string, nodes: React.ReactNode | Record<string, React.ReactNode>, slot = 'link'): React.ReactNode {
+  const map: Record<string, React.ReactNode> = nodes && typeof nodes === 'object' && !('$$typeof' in (nodes as object)) && !Array.isArray(nodes)
+    ? nodes as Record<string, React.ReactNode> : { [slot]: nodes as React.ReactNode };
+  const parts = text.split(/\{(\w+)\}/);
+  return <>{parts.map((p, i) => (i % 2 ? <Fragment key={i}>{p in map ? map[p] : `{${p}}`}</Fragment> : p))}</>;
+}

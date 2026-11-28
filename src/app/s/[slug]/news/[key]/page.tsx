@@ -18,7 +18,8 @@ export default async function Item({ params, searchParams }: P) {
       <PageHead content={entry.content} lang={L.lang} fallback={L.site.default_lang} asset={L.asset} meta={meta} link={L.link}
         crumb={L.site.theme === 'dawn' ? { href: L.link('/'), label: siteText('home', L.lang) } : undefined} />
       <SiteBlocks content={entry.content} lang={L.lang} fallback={L.site.default_lang} assetUrl={L.asset} link={L.link}
-        news={await newsFor(L.site, entry.content)} textInImage={String(entry.meta.text_in_image) === 'true'} />
+        news={await newsFor(L.site, entry.content)} textInImage={String(entry.meta.text_in_image) === 'true'}
+        inquiry={{ slug: L.site.slug, open: !!L.site.inquiry_open, page: `/news/${entry.key}` }} />
     </SiteFrame>
   );
 }

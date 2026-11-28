@@ -11,7 +11,7 @@ import { checkPdf, sniffMime } from './pdf-check';
  */
 import {
   LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type SectionVariant, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
-  type GalleryItem, type Lang, type LanguageImages, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings,
+  type GalleryItem, type Lang, type LanguageImages, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, isSiteTheme,
 } from './site-shared';
 export * from './site-shared';
 
@@ -74,7 +74,7 @@ function sectionBlock(x: Record<string, unknown>, at: string): Block {
     return {
       title: opt(text(y.title, f, 200), noText), body: opt(text(y.body, f, 3000), noText),
       asset: y.asset ? asset(y.asset, f) : undefined, alt: opt(text(y.alt, `${f} 대체 글`, 300), noText),
-      href: y.href ? href(y.href, f) : undefined,
+      href: y.href ? href(y.href, f) : undefined, tag: opt(text(y.tag, `${f} 분류`, 40), noText),
     };
   });
   const variant = x.variant == null || x.variant === '' ? undefined : (x.variant as SectionVariant);
@@ -151,6 +151,7 @@ function blockOf(x: Record<string, unknown>, at: string): Block {
       }
       return { type: 'video', url };
     }
+    case 'inquiry': return { type: 'inquiry', title: opt(text(x.title, `${at} 제목`, 200), noText), body: opt(text(x.body, `${at} 안내`, 1000), noText) };
     case 'download': return {
       type: 'download', asset: asset(x.asset, at), label: opt(text(x.label, `${at} 이름`, 120), noText), note: opt(text(x.note, `${at} 설명`, 300), noText),
     };
@@ -254,16 +255,17 @@ export async function saveSettings(db: Db, schoolId: string, input: Record<strin
   if (!langs.length) throw new ValidationError('언어를 하나 이상 골라 주세요.');
   const def = input.default_lang as Lang;
   if (!langs.includes(def)) throw new ValidationError('기본 언어는 고른 언어 가운데 하나여야 합니다.');
-  const theme = input.theme === 'dawn' ? 'dawn' : 'campus';
+  const theme = isSiteTheme(input.theme) ? input.theme : 'campus';
   const title = text(input.site_title, '사이트 이름', 120);
   const open = input.is_open === true;
+  const inquiry = input.inquiry_open === true; // 91차: 방문·상담 신청 받기
   try {
     await db.query(
-      `insert into public.site_settings(school_id, public_slug, default_lang, langs, theme, site_title, is_open)
-       values ($1,$2,$3,$4,$5,$6,$7)
+      `insert into public.site_settings(school_id, public_slug, default_lang, langs, theme, site_title, is_open, inquiry_open)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)
        on conflict (school_id) do update set public_slug = excluded.public_slug, default_lang = excluded.default_lang, langs = excluded.langs,
-         theme = excluded.theme, site_title = excluded.site_title, is_open = excluded.is_open, updated_at = now()`,
-      [schoolId, slug, def, langs, theme, JSON.stringify(title), open]);
+         theme = excluded.theme, site_title = excluded.site_title, is_open = excluded.is_open, inquiry_open = excluded.inquiry_open, updated_at = now()`,
+      [schoolId, slug, def, langs, theme, JSON.stringify(title), open, inquiry]);
   } catch (e) { dbError(e); }
   return getSettings(db, schoolId);
 }
@@ -436,7 +438,8 @@ export async function memberAsset(db: Db, schoolId: string, id: string) {
 
 // ── 방문자 (공개된 판만) ─────────────────────────────────
 export type PublicSite = {
-  slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: 'campus' | 'dawn'; title: LText;
+  slug: string; school: string; default_lang: Lang; langs: Lang[]; theme: SiteTheme; title: LText;
+  /** 91차: 방문·상담 신청 받음 */ inquiry_open?: boolean;
   stories: boolean; has_news: boolean; nav: { key: string; title: LText }[];
   /** 47차: 학교 자체 주소(예: rungarunsuksa.vercel.app)로 보는 중이면 true — 링크 모양만 바뀐다 */
   on_own_host?: boolean;

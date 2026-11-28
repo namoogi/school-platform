@@ -18,6 +18,9 @@ import { PageHead, SiteBlocks, type EditHooks, type NewsItem } from '@/component
 import { SiteFrame } from '@/components/site/SiteFrame';
 import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import { uploadWithProgress } from '@/lib/file-check';
+import { blockLabel, fieldLabel, paletteText, siteLabel } from '@/lib/site-labels';
+import { useI18n } from '@/components/I18nProvider';
+import { withLink } from '@/components/ui';
 
 type Version = { id: string; version: number; content: Content; note: string | null; created_at: string };
 type Detail = {
@@ -34,7 +37,7 @@ type Msg = { tone: 'success' | 'danger' | 'info'; text: string; undo?: boolean }
 async function send(url: string, method: string, body?: unknown) {
   const res = await fetch(url, { method, headers: { 'content-type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data.error ?? '저장하지 못했습니다.'), { status: res.status });
+  if (!res.ok) throw Object.assign(new Error(data.error ?? ''), { status: res.status });
   return data;
 }
 const norm = (c: Content) => JSON.stringify(clean(c));
@@ -54,6 +57,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
   profile: SiteProfile | null; siteOpen: boolean;
 }) {
   const router = useRouter();
+  const { t } = useI18n();
   const { entry } = detail;
   const latest = detail.versions[0];
   const live = detail.versions.find((v) => v.id === detail.liveVersionId);
@@ -135,16 +139,16 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
       if (err.status === 409) {
         // 그 사이 새 판이 생김: 내 고침은 화면에 둔 채 최신 판을 다시 읽는다(위의 새 판 처리에서 '다른 판이 생김'으로 바뀜)
         setSent(null); setConflict((c) => c ?? -1); router.refresh();
-        setMsg({ tone: 'danger', text: '그 사이 다른 사람이 새 판을 저장했습니다. 내 고침은 화면에 그대로 있습니다.' });
-      } else setMsg({ tone: 'danger', text: err.message });
+        setMsg({ tone: 'danger', text: t('site.edit.conflict409') });
+      } else setMsg({ tone: 'danger', text: err.message || t('common.saveFailed') });
     }
     finally { setBusy(false); }
   }
-  const saveDraft = () => run(saveVersion, '시안(새 판)으로 저장했습니다. 방문자 화면은 공개할 때 바뀝니다.');
+  const saveDraft = () => run(saveVersion, t('site.edit.savedDraft'));
   const publish = () => run(async () => {
     if (dirty) await saveVersion();
     await send(`/api/site/entries/${entry.id}/publish`, 'POST', {});
-  }, '공개했습니다. 방문자 화면에 바로 보입니다.');
+  }, t('site.edit.published'));
 
   // 단축키: Ctrl+S 시안 저장, Ctrl+Z 되돌리기(글 칸 밖에서 — 글 칸 안에서는 브라우저의 되돌리기)
   const keys = useRef({ saveDraft, undo, dirty, busy });
@@ -182,17 +186,17 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
     change((c) => moveBlock(c, from, to));
     setSel(to); setSettingsOf(null);
     if (viaKey) setFocusGrip(to);
-    setMsg({ tone: 'info', text: `${from + 1}번 구역을 ${to + 1}번 자리로 옮겼습니다.` });
+    setMsg({ tone: 'info', text: t('site.edit.moved', { from: from + 1, to: to + 1 }) });
   };
   const hide = (i: number) => {
     const was = cref.current.blocks[i]?.hidden;
     change((c) => toggleHidden(c, i));
-    setMsg({ tone: 'info', text: was ? `${i + 1}번 구역을 다시 보이게 했습니다.` : `${i + 1}번 구역을 숨겼습니다. 방문자에게 보이지 않습니다.` });
+    setMsg({ tone: 'info', text: was ? t('site.edit.shown', { n: i + 1 }) : t('site.edit.hidden', { n: i + 1 }) });
   };
   const remove = (i: number) => {
     change((c) => removeBlock(c, i));
     setSel(null); setSettingsOf(null);
-    setMsg({ tone: 'info', text: `${i + 1}번 구역을 지웠습니다.`, undo: true });
+    setMsg({ tone: 'info', text: t('site.edit.removed', { n: i + 1 }), undo: true });
   };
   const insertAt = () => (sel != null && sel >= 0 ? sel + 1 : cref.current.blocks.length);
   const insert = (item: PaletteItem, photo?: string) => {
@@ -200,7 +204,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
     if (item.needsPhoto && !photo) { setPicker({ mode: 'insert', item, at }); return; }
     change((c) => insertBlock(c, at, item.make(photo)));
     setSel(at); setPicker(null);
-    setMsg({ tone: 'info', text: `${at + 1}번 자리에 '${item.label}'을(를) 넣었습니다. 바로 글을 적어 보세요.` });
+    setMsg({ tone: 'info', text: t('site.edit.inserted', { n: at + 1, name: paletteText(t, item).label }) });
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(`[data-block-index="${at}"]`);
       el?.scrollIntoView({ block: 'center' });
@@ -214,13 +218,13 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
   const ed: EditHooks | undefined = editing ? {
     text: (path, value, o) => (
       <EditableText key={`${path.join('.')}|${lang}`} value={value} base={getAt(base, path) as LText | undefined} lang={lang} def={defaultLang}
-        label={o.label} multiline={o.multiline} onFocus={arm} onChange={(s) => typed((c) => setLangText(c, path, lang, s))} />
+        label={fieldLabel(t, o.label)} multiline={o.multiline} onFocus={arm} onChange={(s) => typed((c) => setLangText(c, path, lang, s))} />
     ),
     image: (path, asset, o, img) => (
       <span className="le-photo" data-empty={asset ? undefined : true}>
-        {img ?? <span className="le-photo-empty"><ImagePlus size={22} aria-hidden="true" />{o.label}</span>}
-        <button type="button" className="btn btn-secondary btn-sm le-photo-btn" onClick={() => setPicker({ mode: 'set', path, altPath: o.altPath, optional: o.optional, label: o.label })}>
-          <ImagePlus size={16} aria-hidden="true" />{asset ? '사진 바꾸기' : '사진 넣기'}<span className="sr-only">: {o.label}</span>
+        {img ?? <span className="le-photo-empty"><ImagePlus size={22} aria-hidden="true" />{fieldLabel(t, o.label)}</span>}
+        <button type="button" className="btn btn-secondary btn-sm le-photo-btn" onClick={() => setPicker({ mode: 'set', path, altPath: o.altPath, optional: o.optional, label: fieldLabel(t, o.label) })}>
+          <ImagePlus size={16} aria-hidden="true" />{asset ? t('site.edit.photo.change') : t('site.edit.photo.insert')}<span className="sr-only">: {fieldLabel(t, o.label)}</span>
         </button>
       </span>
     ),
@@ -239,7 +243,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
           <BlockSettings i={i} b={b} langs={langs} lang={lang} onFocus={arm} typed={typed} change={change} assets={assets}
             onAddPhoto={() => setPicker({ mode: 'gallery', i })} />
         )}
-        {b.hidden && <p className="le-hidden-note">숨긴 구역 — 방문자에게 보이지 않습니다.</p>}
+        {b.hidden && <p className="le-hidden-note">{t('site.edit.hiddenNote')}</p>}
         {node}
       </div>
     ),
@@ -254,86 +258,85 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
 
   return (
     <div className="le" data-testid="live-editor">
-      <div className="le-toolbar" role="region" aria-label="화면 편집 막대" data-testid="le-toolbar">
+      <div className="le-toolbar" role="region" aria-label={t('site.edit.toolbar')} data-testid="le-toolbar">
         <div className="le-toolbar-row">
-          <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`} data-testid="le-to-form"><ArrowLeft size={16} aria-hidden="true" />목록 · 항목별로 고치기</Link>
+          <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`} data-testid="le-to-form"><ArrowLeft size={16} aria-hidden="true" />{t('site.edit.toForm')}</Link>
           {pages.length > 1 && (
             <label className="le-switch">
-              <span className="sr-only">고칠 쪽 고르기</span>
+              <span className="sr-only">{t('site.edit.switchPage')}</span>
               <select value={entry.id} data-testid="le-switch" onChange={(ev) => {
                 const to = ev.target.value;
-                if (dirty && !window.confirm('저장하지 않은 변경이 있습니다. 저장하지 않고 다른 쪽으로 옮길까요?')) { ev.target.value = entry.id; return; }
+                if (dirty && !window.confirm(t('site.edit.confirmLeave'))) { ev.target.value = entry.id; return; }
                 router.push(`/site/edit/${to}`);
               }}>
                 {(['page', 'news', 'story'] as EntryKind[]).map((k) => pages.some((x) => x.kind === k) && (
-                  <optgroup key={k} label={KIND_LABEL[k]}>
+                  <optgroup key={k} label={siteLabel(t, 'kind', k, KIND_LABEL[k])}>
                     {pages.filter((x) => x.kind === k).map((x) => <option key={x.id} value={x.id}>{x.title} · /{x.key}</option>)}
                   </optgroup>))}
               </select>
             </label>
           )}
-          {backHref && <a className="btn btn-ghost btn-sm" href={backHref} data-testid="live-edit-back">공개 화면으로</a>}
-          <Link className="btn btn-ghost btn-sm" href="/site?box=news&new=1" data-testid="live-edit-news">소식 쓰기</Link>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('chatdock:open'))} data-testid="live-edit-chat">개선 요청</button>
+          {backHref && <a className="btn btn-ghost btn-sm" href={backHref} data-testid="live-edit-back">{t('site.edit.backToPublic')}</a>}
+          <Link className="btn btn-ghost btn-sm" href="/site?box=news&new=1" data-testid="live-edit-news">{t('site.edit.writeNews')}</Link>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => window.dispatchEvent(new Event('chatdock:open'))} data-testid="live-edit-chat">{t('site.edit.requestChange')}</button>
           <div className="le-title">
             <h1>{title}</h1>
             <p className="fine">
-              {KIND_LABEL[kind]} · /{entry.key} · 최신 {latest.version}판 · {live ? `공개 중 ${live.version}판` : '공개 안 함'}{!siteOpen && ' · 홈페이지 닫힘'}
+              {siteLabel(t, 'kind', kind, KIND_LABEL[kind])} · /{entry.key} · {t('site.edit.latestVersion', { v: latest.version })} · {live ? t('site.edit.liveVersion', { v: live.version }) : t('site.edit.notPublished')}{!siteOpen && ` · ${t('site.edit.siteClosed')}`}
             </p>
           </div>
-          {dirty && <span className="badge" data-tone="warning" data-testid="le-dirty">저장 안 한 변경</span>}
+          {dirty && <span className="badge" data-tone="warning" data-testid="le-dirty">{t('site.edit.dirty')}</span>}
         </div>
         <div className="le-toolbar-row">
           <button type="button" className="btn btn-secondary btn-sm" aria-pressed={editing} onClick={() => { setEditing(!editing); setSettingsOf(null); }} data-testid="le-mode">
-            {editing ? <><Eye size={16} aria-hidden="true" />방문자 모습 보기</> : <><Settings2 size={16} aria-hidden="true" />편집 모드로</>}
+            {editing ? <><Eye size={16} aria-hidden="true" />{t('site.edit.visitorView')}</> : <><Settings2 size={16} aria-hidden="true" />{t('site.edit.editMode')}</>}
           </button>
           {langs.length > 1 && (
-            <div className="le-langs" role="group" aria-label="고칠 언어">
+            <div className="le-langs" role="group" aria-label={t('site.edit.langGroup')}>
               {langs.map((l) => (
                 <button key={l} type="button" className="btn btn-ghost btn-sm" aria-pressed={l === lang} lang={l} onClick={() => setLang(l)}>
-                  {LANG_LABEL[l]}{l === defaultLang && <span className="sr-only"> (기본 언어)</span>}
+                  {LANG_LABEL[l]}{l === defaultLang && <span className="sr-only"> {t('site.edit.defaultLang')}</span>}
                 </button>
               ))}
             </div>
           )}
           {editing && (
             <button type="button" className="btn btn-secondary btn-sm" aria-expanded={guide} aria-controls="le-guide" onClick={() => setGuide(!guide)} data-testid="le-guide-toggle">
-              <LayoutTemplate size={16} aria-hidden="true" />레이아웃 가이드
+              <LayoutTemplate size={16} aria-hidden="true" />{t('site.edit.layoutGuide')}
             </button>
           )}
-          <button type="button" className="btn btn-ghost btn-sm" onClick={undo} disabled={!past.length} aria-label="되돌리기" title="되돌리기 (Ctrl+Z)"><Undo2 size={16} aria-hidden="true" /></button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={undo} disabled={!past.length} aria-label={t('site.edit.undo')} title={t('site.edit.undoTitle')}><Undo2 size={16} aria-hidden="true" /></button>
           <span className="le-spacer" />
-          <label className="le-note"><span className="sr-only">이번 판 메모 (선택)</span>
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="판 메모 (선택)" maxLength={300} />
+          <label className="le-note"><span className="sr-only">{t('site.edit.noteLabel')}</span>
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('site.edit.notePlaceholder')} maxLength={300} />
           </label>
-          <button type="button" className={canPublish ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={saveDraft} disabled={busy || !dirty || conflict !== null} data-testid="le-save">시안 저장</button>
+          <button type="button" className={canPublish ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'} onClick={saveDraft} disabled={busy || !dirty || conflict !== null} data-testid="le-save">{t('site.edit.saveDraft')}</button>
           {canPublish
-            ? <button type="button" className="btn btn-primary btn-sm" onClick={publish} disabled={busy || conflict !== null || (!dirty && live?.id === latest.id)} data-testid="le-publish">{dirty ? '저장하고 공개' : '최신 판 공개'}</button>
-            : <span className="fine">공개는 학교 관리자가 합니다.</span>}
+            ? <button type="button" className="btn btn-primary btn-sm" onClick={publish} disabled={busy || conflict !== null || (!dirty && live?.id === latest.id)} data-testid="le-publish">{dirty ? t('site.edit.saveAndPublish') : t('site.edit.publishLatest')}</button>
+            : <span className="fine">{t('site.edit.adminPublishes')}</span>}
         </div>
         {msg && (
           <p className="banner le-msg" data-tone={msg.tone} role="status" data-testid="le-msg">
-            {msg.text}{msg.undo && <> <button type="button" className="btn btn-ghost btn-sm" onClick={undo}>되돌리기</button></>}
+            {msg.text}{msg.undo && <> <button type="button" className="btn btn-ghost btn-sm" onClick={undo}>{t('site.edit.undo')}</button></>}
           </p>
         )}
       </div>
       {conflict !== null && (
         <div className="banner le-msg" data-tone="warning" role="alert" data-testid="le-conflict">
-          <p>{conflict > 0 ? `이 화면을 연 뒤 ${conflict}판이 새로 저장되었습니다.` : '그 사이 새 판이 저장되었습니다.'} 내 고침은 아직 저장되지 않았습니다.
-            두 판은 모두 판 기록에 남으므로 어느 쪽을 골라도 다른 쪽을 다시 불러올 수 있습니다.</p>
+          <p>{conflict > 0 ? t('site.edit.conflict.newVersion', { v: conflict }) : t('site.edit.conflict.newVersionAny')} {t('site.edit.conflict.body')}</p>
           <div className="form-actions">
-            <button type="button" className="btn btn-secondary btn-sm" disabled={busy || conflict < 0} onClick={() => run(async () => { await saveVersion(); setConflict(null); }, '내 고침을 최신 판 위에 새 판으로 저장했습니다.')}>내 고침을 최신 판 위에 저장</button>
-            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || conflict < 0} onClick={() => { change(() => structuredClone(latest.content)); setConflict(null); setMsg({ tone: 'info', text: `최신 ${latest.version}판을 불러왔습니다. 되돌리기로 내 고침을 다시 볼 수 있습니다.`, undo: true }); }}>최신 판 불러오기</button>
-            {conflict > 0 && <Link className="btn btn-ghost btn-sm" href={`/site/preview/${entry.id}?v=${latest.version}`} target="_blank">최신 판 미리보기</Link>}
+            <button type="button" className="btn btn-secondary btn-sm" disabled={busy || conflict < 0} onClick={() => run(async () => { await saveVersion(); setConflict(null); }, t('site.edit.conflict.savedMine'))}>{t('site.edit.conflict.saveMine')}</button>
+            <button type="button" className="btn btn-ghost btn-sm" disabled={busy || conflict < 0} onClick={() => { change(() => structuredClone(latest.content)); setConflict(null); setMsg({ tone: 'info', text: t('site.edit.conflict.loaded', { v: latest.version }), undo: true }); }}>{t('site.edit.conflict.loadLatest')}</button>
+            {conflict > 0 && <Link className="btn btn-ghost btn-sm" href={`/site/preview/${entry.id}?v=${latest.version}`} target="_blank">{t('site.edit.conflict.previewLatest')}</Link>}
           </div>
         </div>
       )}
-      <p id="le-note-missing" hidden>이 언어 글이 비어 있어 기본 언어 글을 흐리게 보여 줍니다.</p>
-      <p id="le-note-stale" hidden>기본 언어 글이 공개본과 달라졌는데 이 언어 글은 그대로입니다. 번역을 확인해 주세요.</p>
+      <p id="le-note-missing" hidden>{t('site.edit.note.missing')}</p>
+      <p id="le-note-stale" hidden>{t('site.edit.note.stale')}</p>
 
       <div className="le-body">
         <div className="le-canvas" data-editing={editing || undefined}
-          onClickCapture={(e) => { const a = (e.target as HTMLElement).closest('a'); if (a) { e.preventDefault(); if (!editing) setMsg({ tone: 'info', text: '편집 화면에서는 링크를 따라가지 않습니다. 공개 화면에서 확인하세요.' }); } }}
+          onClickCapture={(e) => { const a = (e.target as HTMLElement).closest('a'); if (a) { e.preventDefault(); if (!editing) setMsg({ tone: 'info', text: t('site.edit.noLinks') }); } }}
           // 쪽 머리 고르기도 구역과 같게: 글 칸에 들어갈 때나 누름이 끝난 뒤(click)만. 누르는 순간 빈 칸이 펼쳐지면 표지 사진 단추가 밀려 누름이 사라진다
           onFocusCapture={(e) => { const el = e.target as HTMLElement; if (el.classList.contains('le-text') && el.closest('.site-head')) setSel(-1); }}
           onClick={(e) => { if ((e.target as HTMLElement).closest('.site-head')) setSel(-1); }}>
@@ -342,35 +345,35 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
             <SiteBlocks content={content} lang={lang} fallback={defaultLang} assetUrl={assetUrl} link={() => '#'} news={news}
               textInImage={String(entry.meta.text_in_image) === 'true'} ed={ed} />
             {editing && content.blocks.length === 0 && (
-              <p className="le-placeholder">아직 구역이 없습니다. 레이아웃 가이드에서 구역을 넣어 보세요.</p>
+              <p className="le-placeholder">{t('site.edit.noBlocks')}</p>
             )}
           </SiteFrame>
         </div>
 
         {editing && guide && (
-          <aside id="le-guide" className="le-guide" aria-label="레이아웃 가이드" data-testid="le-guide">
+          <aside id="le-guide" className="le-guide" aria-label={t('site.edit.layoutGuide')} data-testid="le-guide">
             <div className="le-guide-head">
-              <h2>레이아웃 가이드</h2>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setGuide(false)} aria-label="레이아웃 가이드 닫기"><X size={18} aria-hidden="true" /></button>
+              <h2>{t('site.edit.layoutGuide')}</h2>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setGuide(false)} aria-label={t('site.edit.guide.close')}><X size={18} aria-hidden="true" /></button>
             </div>
-            <p className="fine" aria-live="polite">넣을 자리: {sel != null && sel >= 0 ? `${sel + 1}번 구역 다음` : '맨 끝'}</p>
+            <p className="fine" aria-live="polite">{t('site.edit.guide.insertAt', { place: sel != null && sel >= 0 ? t('site.edit.guide.afterBlock', { n: sel + 1 }) : t('site.edit.guide.atEnd') })}</p>
             {kind !== 'story' && (
               <section aria-labelledby="le-pal-layout">
-                <h3 id="le-pal-layout">레이아웃</h3>
+                <h3 id="le-pal-layout">{t('site.edit.guide.layout')}</h3>
                 <div className="le-palette">
                   {LAYOUT_PALETTE.map((p) => <PaletteButton key={p.id} p={p} onPick={() => insert(p)} />)}
                 </div>
               </section>
             )}
             <section aria-labelledby="le-pal-feature">
-              <h3 id="le-pal-feature">기능</h3>
+              <h3 id="le-pal-feature">{t('site.edit.guide.features')}</h3>
               <div className="le-palette">
                 {featurePalette(kind).map((p) => <PaletteButton key={p.id} p={p} onPick={() => insert(p)} />)}
               </div>
             </section>
             <section aria-labelledby="le-outline-h">
-              <h3 id="le-outline-h">페이지 구조</h3>
-              {content.blocks.length === 0 ? <p className="fine">구역이 없습니다.</p> : (
+              <h3 id="le-outline-h">{t('site.edit.guide.outline')}</h3>
+              {content.blocks.length === 0 ? <p className="fine">{t('site.edit.guide.noBlocks')}</p> : (
                 <ol className="le-outline" data-testid="le-outline">
                   {content.blocks.map((b, i) => (
                     <li key={i} data-hidden={b.hidden || undefined} data-selected={sel === i || undefined}
@@ -384,13 +387,13 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
                         setSel(i);
                         document.querySelector<HTMLElement>(`[data-block-index="${i}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
                       }}>
-                        <b>{i + 1}. {blockName(b)}</b>{b.hidden && <span className="badge" data-tone="neutral">숨김</span>}
+                        <b>{i + 1}. {blockLabel(t, b, blockName(b))}</b>{b.hidden && <span className="badge" data-tone="neutral">{t('site.edit.hiddenBadge')}</span>}
                         <small>{blockSnippet(b, pickT)}</small>
                       </button>
                       <span className="le-outline-actions">
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => move(i, i - 1)} disabled={i === 0} aria-label={`${i + 1}번 위로`}><ArrowUp size={14} aria-hidden="true" /></button>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => move(i, i + 1)} disabled={i === content.blocks.length - 1} aria-label={`${i + 1}번 아래로`}><ArrowDown size={14} aria-hidden="true" /></button>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => hide(i)} aria-pressed={!!b.hidden} aria-label={`${i + 1}번 숨기기`}>{b.hidden ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}</button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => move(i, i - 1)} disabled={i === 0} aria-label={t('site.edit.outline.up', { n: i + 1 })}><ArrowUp size={14} aria-hidden="true" /></button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => move(i, i + 1)} disabled={i === content.blocks.length - 1} aria-label={t('site.edit.outline.down', { n: i + 1 })}><ArrowDown size={14} aria-hidden="true" /></button>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => hide(i)} aria-pressed={!!b.hidden} aria-label={t('site.edit.outline.hide', { n: i + 1 })}>{b.hidden ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}</button>
                       </span>
                     </li>
                   ))}
@@ -398,17 +401,17 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
               )}
             </section>
             <section aria-labelledby="le-page-h">
-              <h3 id="le-page-h">쪽 정보</h3>
+              <h3 id="le-page-h">{t('site.edit.page.info')}</h3>
               <div className="le-page-info">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPicker({ mode: 'set', path: ['cover'], optional: true, label: '표지 사진' })}>
-                  <ImagePlus size={16} aria-hidden="true" />{content.cover ? '표지 사진 바꾸기' : '표지 사진 넣기'}
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPicker({ mode: 'set', path: ['cover'], optional: true, label: t('site.edit.page.cover') })}>
+                  <ImagePlus size={16} aria-hidden="true" />{content.cover ? t('site.edit.page.coverChange') : t('site.edit.page.coverInsert')}
                 </button>
-                <label>쪽 머리 모양
+                <label>{t('site.edit.page.headLayout')}
                   <select value={content.head?.layout ?? ''} onChange={(e) => change((c) => setAt(c, ['head', 'layout'], e.target.value || undefined))}>
-                    <option value="">기본</option><option value="editorial">잡지형 머리</option><option value="opening">여는 화면 (표지 사진 크게)</option>
+                    <option value="">{t('site.edit.page.head.default')}</option><option value="editorial">{t('site.edit.page.head.editorial')}</option><option value="opening">{t('site.edit.page.head.opening')}</option>
                   </select>
                 </label>
-                {isHome && <p className="fine">로고·주소·전화 같은 머리·바닥 정보는 <Link href={`/site?box=page&id=${entry.id}`}>자세한 편집기</Link>에서 고칩니다.</p>}
+                {isHome && <p className="fine">{withLink(t('site.edit.page.homeInfo'), <Link href={`/site?box=page&id=${entry.id}`}>{t('site.edit.page.homeInfoLink')}</Link>)}</p>}
               </div>
             </section>
           </aside>
@@ -426,7 +429,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
                 const b = c.blocks[picker.i] as Extract<Block, { type: 'gallery' }>;
                 return setAt(c, ['blocks', picker.i], { ...b, assets: [...b.assets, id], items: b.items ? [...b.items, { asset: id }] : undefined });
               });
-              setMsg({ tone: 'info', text: '사진을 더했습니다.' });
+              setMsg({ tone: 'info', text: t('site.edit.photo.added') });
               return;
             }
             change((c) => setAt(c, picker.path, id || undefined));
@@ -442,6 +445,7 @@ function EditableText({ value, base, lang, def, label, multiline, onFocus, onCha
   value: LText | undefined; base: LText | undefined; lang: Lang; def: Lang; label: string; multiline?: boolean;
   onFocus: () => void; onChange: (s: string) => void;
 }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLSpanElement>(null);
   const own = value?.[lang] ?? '';
   // 글은 DOM 이 들고 있고(커서를 지키기 위해), 바깥에서 바뀌었을 때(되돌리기·새 판)만 맞춘다
@@ -456,7 +460,7 @@ function EditableText({ value, base, lang, def, label, multiline, onFocus, onCha
       contentEditable="plaintext-only" suppressContentEditableWarning role="textbox" tabIndex={0} spellCheck lang={lang}
       aria-label={`${label} (${LANG_LABEL[lang]})`} aria-multiline={multiline || undefined}
       aria-describedby={state === 'missing' ? 'le-note-missing' : state === 'stale' ? 'le-note-stale' : undefined}
-      data-placeholder={fallback || `${label} 적기`}
+      data-placeholder={fallback || t('site.edit.text.placeholder', { label })}
       onFocus={onFocus}
       onInput={(e) => {
         const el = e.currentTarget;
@@ -472,8 +476,8 @@ function EditableText({ value, base, lang, def, label, multiline, onFocus, onCha
       }}
       onPaste={(e) => {
         e.preventDefault();
-        const t = e.clipboardData.getData('text/plain');
-        document.execCommand('insertText', false, multiline ? t : t.replace(/\s*\n\s*/g, ' '));
+        const pasted = e.clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, multiline ? pasted : pasted.replace(/\s*\n\s*/g, ' '));
       }} />
   );
 }
@@ -484,10 +488,11 @@ function BlockBar({ i, b, count, settingsOpen, onMove, onHide, onRemove, onSetti
   onMove: (from: number, to: number, viaKey?: boolean) => void; onHide: (i: number) => void; onRemove: (i: number) => void; onSettings: () => void;
   onDragStart: () => void; onDragEnd: () => void;
 }) {
-  const name = blockName(b);
+  const { t } = useI18n();
+  const name = blockLabel(t, b, blockName(b));
   const hasSettings = b.type === 'section' || b.type === 'gallery' || b.type === 'news_list' || b.type === 'video' || b.type === 'image';
   return (
-    <div className="le-bar" role="group" aria-label={`${i + 1}번 구역: ${name}`}>
+    <div className="le-bar" role="group" aria-label={t('site.edit.bar.group', { n: i + 1, name })}>
       <button type="button" className="le-grip" data-grip={i} draggable
         onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(i)); onDragStart(); }}
         onDragEnd={onDragEnd}
@@ -495,20 +500,20 @@ function BlockBar({ i, b, count, settingsOpen, onMove, onHide, onRemove, onSetti
           if (e.key === 'ArrowUp') { e.preventDefault(); onMove(i, i - 1, true); }
           if (e.key === 'ArrowDown') { e.preventDefault(); onMove(i, i + 1, true); }
         }}
-        aria-label={`${i + 1}번 구역 옮기기`} aria-description="끌어서 옮기거나, 누른 채 위·아래 화살표 키로 옮깁니다">
+        aria-label={t('site.edit.bar.move', { n: i + 1 })} aria-description={t('site.edit.bar.moveHint')}>
         <GripVertical size={16} aria-hidden="true" />
       </button>
-      <span className="le-bar-name">{i + 1}. {name}{b.hidden && <span className="badge" data-tone="neutral">숨김</span>}</span>
+      <span className="le-bar-name">{i + 1}. {name}{b.hidden && <span className="badge" data-tone="neutral">{t('site.edit.hiddenBadge')}</span>}</span>
       <span className="le-bar-actions">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onMove(i, i - 1)} disabled={i === 0} aria-label={`${i + 1}번 구역 위로`}><ArrowUp size={16} aria-hidden="true" /></button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onMove(i, i + 1)} disabled={i === count - 1} aria-label={`${i + 1}번 구역 아래로`}><ArrowDown size={16} aria-hidden="true" /></button>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onHide(i)} aria-pressed={!!b.hidden} aria-label={`${i + 1}번 구역 숨기기`}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onMove(i, i - 1)} disabled={i === 0} aria-label={t('site.edit.bar.up', { n: i + 1 })}><ArrowUp size={16} aria-hidden="true" /></button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onMove(i, i + 1)} disabled={i === count - 1} aria-label={t('site.edit.bar.down', { n: i + 1 })}><ArrowDown size={16} aria-hidden="true" /></button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onHide(i)} aria-pressed={!!b.hidden} aria-label={t('site.edit.bar.hide', { n: i + 1 })}>
           {b.hidden ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
         </button>
         {hasSettings && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onSettings} aria-expanded={settingsOpen} aria-label={`${i + 1}번 구역 설정`}><Settings2 size={16} aria-hidden="true" /></button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onSettings} aria-expanded={settingsOpen} aria-label={t('site.edit.bar.settings', { n: i + 1 })}><Settings2 size={16} aria-hidden="true" /></button>
         )}
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onRemove(i)} aria-label={`${i + 1}번 구역 지우기`}><Trash2 size={16} aria-hidden="true" /></button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => onRemove(i)} aria-label={t('site.edit.bar.remove', { n: i + 1 })}><Trash2 size={16} aria-hidden="true" /></button>
       </span>
     </div>
   );
@@ -519,56 +524,57 @@ function BlockSettings({ i, b, langs, lang, onFocus, typed, change, assets, onAd
   i: number; b: Block; langs: Lang[]; lang: Lang; onFocus: () => void;
   typed: (fn: (c: Content) => Content) => void; change: (fn: (c: Content) => Content, record?: boolean) => void; assets: Asset[]; onAddPhoto: () => void;
 }) {
+  const { t } = useI18n();
   const at = (...p: EditPath): EditPath => ['blocks', i, ...p];
   const setB = (nb: Block) => change((c) => setAt(c, ['blocks', i], nb));
-  const name = (id: string) => assets.find((a) => a.id === id)?.name ?? '사진';
+  const name = (id: string) => assets.find((a) => a.id === id)?.name ?? t('site.edit.settings.photo');
   let body: ReactNode = null;
   if (b.type === 'section') {
     const items = b.items ?? [];
     body = <>
-      <label>모양
+      <label>{t('site.edit.settings.shape')}
         <select value={b.template} onChange={(e) => setB({ ...b, template: e.target.value as SectionTemplate })}>
-          {SECTION_TEMPLATES.map((t) => <option key={t} value={t}>{SECTION_LABEL[t]}</option>)}
+          {SECTION_TEMPLATES.map((tp) => <option key={tp} value={tp}>{siteLabel(t, 'section', tp, SECTION_LABEL[tp])}</option>)}
         </select>
       </label>
       {HAS_ITEMS.includes(b.template) && (
         <fieldset>
-          <legend>항목 {items.length}개 <span className="fine">글은 화면에서 바로 고칩니다</span></legend>
+          <legend>{t('site.edit.settings.items', { n: items.length })} <span className="fine">{t('site.edit.settings.itemsHint')}</span></legend>
           <ol className="le-items">
             {items.map((it, k) => (
               <li key={k}>
-                <span>{k + 1}. {pick(it.title, lang, langs[0]) || '(제목 없음)'}</span>
+                <span>{k + 1}. {pick(it.title, lang, langs[0]) || t('site.edit.settings.untitled')}</span>
                 {b.template === 'cards' && (
-                  <label className="fine">링크
-                    <input value={it.href ?? ''} placeholder="/p/about 또는 https://…" onFocus={onFocus}
+                  <label className="fine">{t('site.edit.settings.link')}
+                    <input value={it.href ?? ''} placeholder={t('site.edit.settings.linkPlaceholder')} onFocus={onFocus}
                       onChange={(e) => typed((c) => setAt(c, at('items', k, 'href'), e.target.value || undefined))} />
                   </label>
                 )}
-                <button type="button" className="btn btn-ghost btn-sm" disabled={k === 0} aria-label={`${k + 1}번 항목 위로`}
+                <button type="button" className="btn btn-ghost btn-sm" disabled={k === 0} aria-label={t('site.edit.settings.itemUp', { n: k + 1 })}
                   onClick={() => { const n = [...items]; [n[k - 1], n[k]] = [n[k], n[k - 1]]; setB({ ...b, items: n }); }}><ArrowUp size={14} aria-hidden="true" /></button>
-                <button type="button" className="btn btn-ghost btn-sm" disabled={k === items.length - 1} aria-label={`${k + 1}번 항목 아래로`}
+                <button type="button" className="btn btn-ghost btn-sm" disabled={k === items.length - 1} aria-label={t('site.edit.settings.itemDown', { n: k + 1 })}
                   onClick={() => { const n = [...items]; [n[k], n[k + 1]] = [n[k + 1], n[k]]; setB({ ...b, items: n }); }}><ArrowDown size={14} aria-hidden="true" /></button>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setB({ ...b, items: items.filter((_, j) => j !== k) })}>{k + 1}번 항목 빼기</button>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setB({ ...b, items: items.filter((_, j) => j !== k) })}>{t('site.edit.settings.itemRemove', { n: k + 1 })}</button>
               </li>
             ))}
           </ol>
-          {items.length < 12 && <button type="button" className="btn btn-secondary btn-sm" onClick={() => setB({ ...b, items: [...items, {}] })}><Plus size={14} aria-hidden="true" />항목 더하기</button>}
+          {items.length < 12 && <button type="button" className="btn btn-secondary btn-sm" onClick={() => setB({ ...b, items: [...items, {}] })}><Plus size={14} aria-hidden="true" />{t('site.edit.settings.itemAdd')}</button>}
         </fieldset>
       )}
       {b.button
         ? <div className="le-row">
-            <label>단추 링크 <span className="fine">/p/contact 또는 https://…</span>
+            <label>{t('site.edit.settings.buttonLink')} <span className="fine">{t('site.edit.settings.buttonLinkHint')}</span>
               <input value={b.button.href} onFocus={onFocus} onChange={(e) => typed((c) => setAt(c, at('button', 'href'), e.target.value))} />
             </label>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { const { button: _x, ...rest } = b; void _x; setB(rest as Block); }}>단추 빼기</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { const { button: _x, ...rest } = b; void _x; setB(rest as Block); }}>{t('site.edit.settings.buttonRemove')}</button>
           </div>
-        : <button type="button" className="btn btn-secondary btn-sm" onClick={() => setB({ ...b, button: { label: {}, href: '/p/contact' } })}><Plus size={14} aria-hidden="true" />단추 더하기</button>}
+        : <button type="button" className="btn btn-secondary btn-sm" onClick={() => setB({ ...b, button: { label: {}, href: '/p/contact' } })}><Plus size={14} aria-hidden="true" />{t('site.edit.settings.buttonAdd')}</button>}
     </>;
   } else if (b.type === 'gallery') {
     body = <>
-      <label><input type="checkbox" checked={b.download === 'png'} onChange={(e) => setB({ ...b, download: e.target.checked ? 'png' : undefined, scene: e.target.checked ? b.scene ?? 1 : undefined })} />장면 캐릭터 PNG 내려받기</label>
-      {b.download === 'png' && <label>장면 번호<input type="number" min={1} max={200} value={b.scene ?? 1} onChange={(e) => setB({ ...b, scene: Number(e.target.value) })} /></label>}
-      {b.download === 'png' && (b.items ?? b.assets.map((asset) => ({ asset, alt: {} as LText }))).map((item, k) => <label key={k}>{k + 1}번 캐릭터 이름·대체 글 ({LANG_LABEL[lang]})
+      <label><input type="checkbox" checked={b.download === 'png'} onChange={(e) => setB({ ...b, download: e.target.checked ? 'png' : undefined, scene: e.target.checked ? b.scene ?? 1 : undefined })} />{t('site.edit.settings.pngDownload')}</label>
+      {b.download === 'png' && <label>{t('site.edit.settings.sceneNo')}<input type="number" min={1} max={200} value={b.scene ?? 1} onChange={(e) => setB({ ...b, scene: Number(e.target.value) })} /></label>}
+      {b.download === 'png' && (b.items ?? b.assets.map((asset) => ({ asset, alt: {} as LText }))).map((item, k) => <label key={k}>{t('site.edit.settings.characterAlt', { n: k + 1, lang: LANG_LABEL[lang] })}
         <input value={item.alt?.[lang] ?? ''} onFocus={onFocus} onChange={(e) => typed((c) => {
           const cur = c.blocks[i] as Extract<Block, { type: 'gallery' }>;
           const items = cur.items ?? cur.assets.map((asset) => ({ asset, alt: {} as LText }));
@@ -583,26 +589,26 @@ function BlockSettings({ i, b, langs, lang, onFocus, typed, change, assets, onAd
             <img src={assetUrl(a)} alt="" />
             <button type="button" className="btn btn-ghost btn-sm" disabled={b.assets.length === 1}
               onClick={() => setB({ ...b, assets: b.assets.filter((_, j) => j !== k), items: b.items?.filter((_, j) => j !== k) })}>
-              빼기<span className="sr-only">: {k + 1}번 사진 {name(a)}</span>
+              {t('site.edit.settings.remove')}<span className="sr-only">: {t('site.edit.settings.photoN', { n: k + 1, name: name(a) })}</span>
             </button>
           </li>
         ))}
       </ul>
-      <button type="button" className="btn btn-secondary btn-sm" onClick={onAddPhoto}><ImagePlus size={16} aria-hidden="true" />사진 더하기</button>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={onAddPhoto}><ImagePlus size={16} aria-hidden="true" />{t('site.edit.settings.photoAdd')}</button>
     </>;
   } else if (b.type === 'news_list') {
     body = <div className="le-row">
-      <label>보일 소식 수<input type="number" min={1} max={10} value={b.count} onChange={(e) => setB({ ...b, count: Math.min(10, Math.max(1, Number(e.target.value) || 3)) })} /></label>
-      <label>모양<select value={b.style} onChange={(e) => setB({ ...b, style: e.target.value as 'cards' | 'list' })}><option value="cards">카드</option><option value="list">목록</option></select></label>
+      <label>{t('site.edit.settings.newsCount')}<input type="number" min={1} max={10} value={b.count} onChange={(e) => setB({ ...b, count: Math.min(10, Math.max(1, Number(e.target.value) || 3)) })} /></label>
+      <label>{t('site.edit.settings.shape')}<select value={b.style} onChange={(e) => setB({ ...b, style: e.target.value as 'cards' | 'list' })}><option value="cards">{t('site.edit.settings.style.cards')}</option><option value="list">{t('site.edit.settings.style.list')}</option></select></label>
     </div>;
   } else if (b.type === 'video') {
     body = <>{langs.map((l) => (
-      <label key={l}>영상 주소 <span className="fine">{LANG_LABEL[l]} · YouTube·Vimeo·Google Drive</span>
+      <label key={l}>{t('site.edit.settings.videoUrl')} <span className="fine">{LANG_LABEL[l]} · YouTube·Vimeo·Google Drive</span>
         <input value={b.url[l] ?? ''} onFocus={onFocus} onChange={(e) => typed((c) => setLangText(c, at('url'), l, e.target.value.trim()))} />
       </label>))}</>;
   } else if (b.type === 'image') {
     body = <>{langs.map((l) => (
-      <label key={l}>대체 글 <span className="fine">{LANG_LABEL[l]} · 사진을 볼 수 없는 사람에게 읽어 줌</span>
+      <label key={l}>{t('site.edit.alt')} <span className="fine">{LANG_LABEL[l]} · {t('site.edit.settings.altHint')}</span>
         <input value={b.alt?.[l] ?? ''} onFocus={onFocus} onChange={(e) => typed((c) => setLangText(c, at('alt'), l, e.target.value))} />
       </label>))}</>;
   }
@@ -610,9 +616,10 @@ function BlockSettings({ i, b, langs, lang, onFocus, typed, change, assets, onAd
 }
 
 function PaletteButton({ p, onPick }: { p: PaletteItem; onPick: () => void }) {
+  const { t } = useI18n();
   return (
     <button type="button" className="le-pal" onClick={onPick} data-palette={p.id}>
-      <b>{p.label}</b><span>{p.hint}{p.needsPhoto ? ' · 사진부터 고름' : ''}</span>
+      <b>{paletteText(t, p).label}</b><span>{paletteText(t, p).hint}{p.needsPhoto ? ` · ${t('site.edit.palette.photoFirst')}` : ''}</span>
     </button>
   );
 }
@@ -623,6 +630,7 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
   onUploaded: (a: Asset) => void; onPick: (id: string) => void; onClose: () => void;
   onAlt: (path: EditPath, l: Lang, s: string) => void; onAltFocus: () => void;
 }) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
   const opener = useRef<Element | null>(null);
   useEffect(() => {
@@ -632,7 +640,7 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
     return () => { (opener.current as HTMLElement | null)?.focus?.(); };
   }, []);
   const current = picker.mode === 'set' ? (getAt(content, picker.path) as string | undefined) : undefined;
-  const label = picker.mode === 'set' ? picker.label : picker.mode === 'insert' ? `${picker.item.label}에 넣을 사진` : '사진 묶음에 더할 사진';
+  const label = picker.mode === 'set' ? picker.label : picker.mode === 'insert' ? t('site.edit.picker.forInsert', { name: paletteText(t, picker.item).label }) : t('site.edit.picker.forGallery');
   const alt = picker.mode === 'set' && picker.altPath && current ? (getAt(content, picker.altPath) as LText | undefined) : undefined;
   async function upload(files: File[], { signal, progress }: FileDropContext) {
     let last = '';
@@ -640,27 +648,27 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
       const form = new FormData(); form.append('file', file);
       const res = await uploadWithProgress('/api/site/assets', form, { signal, onProgress: (r) => progress((i + r) / files.length) });
       const data = res.body as { id?: string; error?: string };
-      if (!res.ok || !data.id) throw new Error(`${file.name}: ${data.error ?? '올리지 못했습니다.'}`);
+      if (!res.ok || !data.id) throw new Error(`${file.name}: ${data.error ?? t('site.edit.picker.uploadFailed')}`);
       onUploaded({ id: data.id, name: file.name });
       last = data.id;
     }
     // 한 장이면 바로 고르고, 여러 장이면 사진함에 넣기만 한다(고르기는 아래 목록에서)
     if (files.length === 1) onPick(last);
-    return files.length === 1 ? `‘${files[0].name}’을(를) 올렸습니다.` : `${files.length}장을 사진함에 올렸습니다.`;
+    return files.length === 1 ? t('site.edit.picker.uploadedOne', { name: files[0].name }) : t('site.edit.picker.uploadedMany', { n: files.length });
   }
   return (
     <dialog ref={ref} className="le-picker" aria-labelledby="le-picker-h" onClose={onClose} data-testid="le-picker">
       <div className="le-picker-head">
         <h2 id="le-picker-h">{label}</h2>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => ref.current?.close()} aria-label="사진함 닫기"><X size={18} aria-hidden="true" /></button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => ref.current?.close()} aria-label={t('site.edit.picker.close')}><X size={18} aria-hidden="true" /></button>
       </div>
       <FileDrop
-        compact label="새 사진 올리기" multiple maxFiles={10} onFiles={upload} testId="le-upload" inputTestId="le-upload-input"
+        compact label={t('site.edit.picker.upload')} multiple maxFiles={10} onFiles={upload} testId="le-upload" inputTestId="le-upload-input"
         accept={['image/png', 'image/jpeg', 'image/webp', 'image/gif']} typeLabel="PNG·JPG·WEBP·GIF" maxSize={5 * 1024 * 1024}
-        hint={<span data-testid="photo-consent">{PHOTO_CONSENT}</span>}
+        hint={<span data-testid="photo-consent">{t('site.asset.photoConsent')}</span>}
       />
-      {assets.length === 0 ? <p className="fine">사진함이 비어 있습니다. 위에서 올려 주세요.</p> : (
-        <ul className="le-assets" aria-label="사진함">
+      {assets.length === 0 ? <p className="fine">{t('site.edit.picker.empty')}</p> : (
+        <ul className="le-assets" aria-label={t('site.edit.picker.library')}>
           {assets.map((a) => (
             <li key={a.id}>
               <button type="button" aria-pressed={a.id === current} onClick={() => onPick(a.id)}>
@@ -673,7 +681,7 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
       )}
       {picker.mode === 'set' && picker.altPath && current && (
         <fieldset className="le-alt">
-          <legend>대체 글 <span className="fine">사진을 볼 수 없는 사람에게 읽어 줍니다</span></legend>
+          <legend>{t('site.edit.alt')} <span className="fine">{t('site.edit.picker.altHint')}</span></legend>
           {langs.map((l) => (
             <label key={l}>{LANG_LABEL[l]}
               <input value={alt?.[l] ?? ''} lang={l} onFocus={onAltFocus} onChange={(e) => onAlt(picker.altPath!, l, e.target.value)} />
@@ -682,8 +690,8 @@ function PhotoPicker({ picker, assets, langs, content, onUploaded, onPick, onClo
         </fieldset>
       )}
       <div className="form-actions">
-        {picker.mode === 'set' && picker.optional && current && <button type="button" className="btn btn-ghost btn-sm" onClick={() => onPick('')}>사진 빼기</button>}
-        <button type="button" className="btn btn-secondary btn-sm" onClick={() => ref.current?.close()}>다 했어요</button>
+        {picker.mode === 'set' && picker.optional && current && <button type="button" className="btn btn-ghost btn-sm" onClick={() => onPick('')}>{t('site.edit.picker.removePhoto')}</button>}
+        <button type="button" className="btn btn-secondary btn-sm" onClick={() => ref.current?.close()}>{t('site.edit.picker.done')}</button>
       </div>
     </dialog>
   );

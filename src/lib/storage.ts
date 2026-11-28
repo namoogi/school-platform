@@ -30,12 +30,12 @@ export function objectStore(): ObjectStore | null {
     bucket,
     async put(key, bytes, mime) {
       const res = await aws.fetch(url(key), { method: 'PUT', body: new Uint8Array(bytes) as unknown as BodyInit, headers: { 'content-type': mime, 'content-length': String(bytes.length) } });
-      if (!res.ok) throw new StorageError(`파일 저장소에 올리지 못했습니다(${res.status}).`);
+      if (!res.ok) throw new StorageError('err.storage.put', { status: res.status });
     },
     async head(key) {
       const res = await aws.fetch(url(key), { method: 'HEAD' });
       if (res.status === 404) return null;
-      if (!res.ok) throw new StorageError(`파일 저장소를 확인하지 못했습니다(${res.status}).`);
+      if (!res.ok) throw new StorageError('err.storage.head', { status: res.status });
       return { size: Number(res.headers.get('content-length') ?? 0) };
     },
     async signedGet(key, { mime, download, seconds = 600 }) {
@@ -52,7 +52,8 @@ export function objectStore(): ObjectStore | null {
 /** 시험용: 환경 변수를 바꾼 뒤 다시 읽게 한다 */
 export function resetObjectStore() { cached = undefined; }
 
-export class StorageError extends Error {}
+export { StorageError } from './errors';
+import { StorageError } from './errors';
 
 /** 올리고 확인(크기 대조). 같은 키가 이미 있으면 다시 올리지 않는다 */
 export async function putVerified(store: ObjectStore, key: string, bytes: Uint8Array, mime: string) {
@@ -60,7 +61,7 @@ export async function putVerified(store: ObjectStore, key: string, bytes: Uint8A
   if (have && have.size === bytes.length) return;
   await store.put(key, bytes, mime);
   const after = await store.head(key);
-  if (!after || after.size !== bytes.length) throw new StorageError('파일 저장소에 올린 크기가 맞지 않습니다.');
+  if (!after || after.size !== bytes.length) throw new StorageError('err.storage.size');
 }
 
 /**

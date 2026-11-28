@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { publicList, publicStoryContents } from '@/lib/site';
+import { pick, publicList, publicStoryContents } from '@/lib/site';
 import { SiteFrame, siteText } from '@/components/site/SiteFrame';
 import { loadSite } from '@/components/site/load';
 
@@ -36,4 +36,10 @@ export default async function List({ params, searchParams }: P) {
       </div>
     </SiteFrame>
   );
+}
+
+/** 69차: 목록 쪽 탭 제목에 학교 이름(전에는 플랫폼 기본 제목이 나갔다) */
+export async function generateMetadata({ params }: P) {
+  const L = await loadSite((await params).slug);
+  return L ? { title: `${siteText('stories', L.site.default_lang)} · ${pick(L.site.title, L.site.default_lang, L.site.default_lang) || L.site.school}` } : { title: '없는 홈페이지' };
 }

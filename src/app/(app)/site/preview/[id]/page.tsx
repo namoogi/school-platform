@@ -6,6 +6,7 @@ import { getEntry, getSettings, LANG_LABEL, type Lang } from '@/lib/site';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { ReadingNav } from '@/components/site/ReadingNav';
 import { PageHead } from '@/components/site/load';
+import { getI18n, userLang } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,11 +15,13 @@ export default async function SitePreview({ params, searchParams }: { params: Pr
   const { id } = await params;
   const sp = await searchParams;
   const data = await loadForPage(async ({ db, school }) => {
-    try { return { detail: await getEntry(db, school.id, id), settings: await getSettings(db, school.id) }; }
+    const uiLang = await userLang(db);
+    try { return { school, uiLang, detail: await getEntry(db, school.id, id), settings: await getSettings(db, school.id) }; }
     catch (e) { if (e instanceof NotFoundError) return null; throw e; }
   }, { module: 'homepage' });
   if (!data?.detail) notFound();
   const { detail, settings } = data;
+  const { t } = await getI18n(data.uiLang, data.school.locale);
   const v = detail.versions.find((x) => String(x.version) === sp.v) ?? detail.versions[0];
   const langs = (settings?.langs ?? ['ko']) as Lang[];
   const fallback = (settings?.default_lang ?? 'ko') as Lang;
@@ -27,17 +30,18 @@ export default async function SitePreview({ params, searchParams }: { params: Pr
   return (
     <>
       <p className="banner" data-tone="warning" role="note" data-testid="preview-banner">
-        시안 미리보기 · {v.version}판{v.id === detail.liveVersionId ? ' (공개 중인 판)' : ' — 방문자에게는 보이지 않습니다'}
+        {t('site.preview.banner', { v: v.version })}{v.id === detail.liveVersionId ? t('site.preview.isLive') : t('site.preview.hidden')}
         {' · '}{langs.map((l) => <Link key={l} href={`/site/preview/${id}?v=${v.version}&lang=${l}`} aria-current={l === lang ? 'true' : undefined} style={{ marginRight: 8 }}>{LANG_LABEL[l]}</Link>)}
       </p>
       <div className="site site-preview" data-theme={settings?.theme ?? 'campus'} lang={lang}>
         <main className="site-wrap site-main">
-          <ReadingNav listHref={listHref} listLabel="목록으로" editHref={`${listHref}&id=${id}`} />
+          <ReadingNav listHref={listHref} listLabel={t('site.preview.backToList')} editHref={`${listHref}&id=${id}`} />
           <PageHead content={v.content} lang={lang} fallback={fallback} asset={(a) => `/site/assets/${a}`} />
           {/* 시안에서는 사이트 안 링크를 따라가지 않는다(공개 주소가 아직 없을 수 있음) */}
           <SiteBlocks content={v.content} lang={lang} fallback={fallback} assetUrl={(a) => `/site/assets/${a}`} link={() => '#'}
-            textInImage={String(detail.entry.meta.text_in_image) === 'true'} />
-          <ReadingNav listHref={listHref} listLabel="목록으로" editHref={`${listHref}&id=${id}`} />
+            textInImage={String(detail.entry.meta.text_in_image) === 'true'}
+            inquiry={{ slug: null, open: !!settings?.inquiry_open, page: detail.entry.key === 'home' ? '/' : `/p/${detail.entry.key}` }} />
+          <ReadingNav listHref={listHref} listLabel={t('site.preview.backToList')} editHref={`${listHref}&id=${id}`} />
         </main>
       </div>
     </>

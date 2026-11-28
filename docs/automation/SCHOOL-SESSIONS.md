@@ -48,4 +48,7 @@
 | `session_013RZyUqUFVPBGjdxpiXsrU2` 학교 자율 편집 개발 | ADR 0011 1단계 실시간 화면 편집 | adr-0011 |
 | `session_013RZyUoGcTChpSHJuksgDH3` 외부 작업 토큰 + 동화 PDF | ADR 0012 토큰·PDF, ADR 0013 학교 AI 작업 공간(콘텐츠) | adr-0012 |
 | `session_013RZyUqmXotCXgQK1a22bDW` 옛 사이트 (선생님 Mac VS Code) | 옛 rungarunsuksa 코드·설명서·넘겨주기 판 | — |
-| `session_013RZyUomAv7AE6YjhpHp6Kc` 자동 개발(매시간) | QUEUE.md 자동 허용 항목, PR까지 | — |
+| `session_013RZyUomAv7AE6YjhpHp6Kc` 자동 개발(매시간) | 방향 설계(`DIRECTION.md`: 연구소·ADR·차시 문서를 모아 다음 개선을 미리 설계하고, 되돌릴 수 있는 개선은 진행) + QUEUE.md UI 점검·자동 허용 항목, PR까지. 화면 작업은 Codex CLI 독립 검토와 연계(연결 뒤) | — |
+| `session_013RZyUnMgGiq22d4cMX1rCX` 다국어 전환 (2026-11-27) | 기존 화면 문구를 이름표로 옮기고 영어 채우기, 용어집, 서버 오류 문구(ADR 0037) | adr-0037 |
+| `session_013RZyUom6xS67hpTPYHpecQ` 학교 홈페이지 기능·템플릿 (2026-11-27) | 홈페이지 모듈 기능 개선, 새 템플릿 제작(ADR 0008·0011·0031). CI + Codex 선별 뒤 병합까지 | adr-0031 |
+| `session_013RZyUnwt4z9YdwgRdiKz8U` 학사 시스템 개발 (2026-11-27) | 시연 가상 학교(초1~고3 가명), 학교급·학년 체계(한국·미국·커스텀), 학사 템플릿 → 학교 AI 작업, SIS UI·UX 조사, Codex 연계(ADR 0025·0041~0043). 계산식 엔진·마감 판 핵심은 관제 몫 | adr-0025 |

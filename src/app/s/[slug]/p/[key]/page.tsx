@@ -21,7 +21,8 @@ export default async function SitePage({ params, searchParams }: P) {
       langs={hidden ? L.site.langs.filter((l) => entry.content.title[l]) : undefined}>
       <PageHead content={entry.content} lang={L.lang} fallback={L.site.default_lang} asset={L.asset} link={L.link}
         crumb={L.site.theme === 'dawn' && !hidden ? { href: L.link('/'), label: siteText('home', L.lang) } : undefined} />
-      <SiteBlocks content={entry.content} lang={L.lang} fallback={L.site.default_lang} assetUrl={L.asset} link={L.link} news={await newsFor(L.site, entry.content)} />
+      <SiteBlocks content={entry.content} lang={L.lang} fallback={L.site.default_lang} assetUrl={L.asset} link={L.link} news={await newsFor(L.site, entry.content)}
+        inquiry={{ slug: L.site.slug, open: !!L.site.inquiry_open, page: `/p/${entry.key}` }} />
     </SiteFrame>
   );
 }

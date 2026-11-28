@@ -17,12 +17,12 @@ export async function getUiPrefs(db: Db): Promise<UiPrefs> {
 
 export async function setUiPref(db: Db, input: { scope?: unknown; ui?: unknown; mode?: unknown }) {
   const scope = input.scope;
-  if (scope !== 'platform' && scope !== 'school') throw new ValidationError('화면 범위가 올바르지 않습니다.');
+  if (scope !== 'platform' && scope !== 'school') throw new ValidationError('err.ui.scope');
   const ui = input.ui ?? undefined;
   const mode = input.mode ?? undefined;
-  if (ui !== undefined && !UI_KINDS.includes(ui as UiKind)) throw new ValidationError('지원하지 않는 화면 형식입니다.');
-  if (mode !== undefined && !UI_MODES.includes(mode as UiMode)) throw new ValidationError('지원하지 않는 명암입니다.');
-  if (ui === undefined && mode === undefined) throw new ValidationError('바꿀 값이 없습니다.');
+  if (ui !== undefined && !UI_KINDS.includes(ui as UiKind)) throw new ValidationError('err.ui.format');
+  if (mode !== undefined && !UI_MODES.includes(mode as UiMode)) throw new ValidationError('err.ui.theme');
+  if (ui === undefined && mode === undefined) throw new ValidationError('err.nothingToChange');
   const cur = (await getUiPrefs(db))[scope];
   const next: UiChoice = { ui: (ui as UiKind) ?? cur.ui, mode: (mode as UiMode) ?? cur.mode };
   // 열 이름은 위에서 검증한 scope로만 고른다(사용자 입력을 SQL에 넣지 않음)

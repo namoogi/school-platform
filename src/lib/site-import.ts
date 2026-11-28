@@ -11,7 +11,7 @@
  * - 영상(수십 MB)은 올리지 않는다. 주소(YouTube·Drive)를 정한 뒤 영상 블록으로 넣는다.
  * - 옛 글의 <br>은 줄바꿈으로 바꾸고 HTML은 받지 않는다.
  */
-import type { Block, Content, GalleryItem, Lang, LText, SectionItem, SiteProfile } from './site-shared';
+import type { Block, Content, GalleryItem, Lang, LText, SectionItem, SiteProfile, SiteTheme } from './site-shared';
 
 export const FILE_REF = '@file:';
 export type PlannedEntry = {
@@ -465,10 +465,10 @@ export function decideReimport(kind: string, latest: { note: string | null; cont
 export function mergeSettings(
   cur: { site_title: LText; langs: Lang[]; default_lang: Lang; theme: string },
   plan: ImportPlan['settings'],
-): { site_title: LText; langs: Lang[]; default_lang: Lang; theme: 'campus' | 'dawn' } | null {
+): { site_title: LText; langs: Lang[]; default_lang: Lang; theme: SiteTheme } | null {
   const title = { ...plan.site_title, ...Object.fromEntries(Object.entries(cur.site_title ?? {}).filter(([, v]) => v)) } as LText;
   const langs = [...new Set([...(cur.langs ?? []), ...plan.langs])] as Lang[];
-  const theme = (cur.theme === 'campus' ? plan.theme : cur.theme) as 'campus' | 'dawn';
+  const theme = (cur.theme === 'campus' ? plan.theme : cur.theme) as SiteTheme;
   const default_lang = cur.langs?.includes(cur.default_lang) ? cur.default_lang : plan.default_lang;
   const same = JSON.stringify(title) === JSON.stringify(cur.site_title) && langs.length === cur.langs.length && theme === cur.theme && default_lang === cur.default_lang;
   return same ? null : { site_title: title, langs, default_lang, theme };

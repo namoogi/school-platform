@@ -27,39 +27,39 @@ function clean(input: Record<string, unknown>, partial: boolean, currentKind?: L
   const out: Record<string, unknown> = {};
   const kind = (input.kind ?? currentKind) as LinkKind;
   if (!partial || input.kind !== undefined) {
-    if (!(kind in LINK_KINDS)) throw new ValidationError('연동 종류를 골라 주세요.');
+    if (!(kind in LINK_KINDS)) throw new ValidationError('err.devlink.kind');
     out.kind = kind;
   }
   if (!partial || input.label !== undefined) {
     const l = String(input.label ?? '').trim();
-    if (!l || l.length > 120) throw new ValidationError('이름은 1~120자로 적어 주세요.');
+    if (!l || l.length > 120) throw new ValidationError('err.devlink.name');
     out.label = l;
   }
   if (!partial || input.url !== undefined) {
     const u = String(input.url ?? '').trim();
-    if (!LINK_KINDS[kind].host.test(u)) throw new ValidationError(`${LINK_KINDS[kind].label} 주소 형식이 아닙니다. 예: ${LINK_KINDS[kind].example}`);
-    if (u.length > 500) throw new ValidationError('주소가 너무 깁니다.');
+    if (!LINK_KINDS[kind].host.test(u)) throw new ValidationError('err.devlink.urlForm', { kind: `devlink.kind.${kind}`, example: LINK_KINDS[kind].example });
+    if (u.length > 500) throw new ValidationError('err.devlink.url');
     out.url = u;
   }
   if (input.notes !== undefined) {
     const n = String(input.notes ?? '');
-    if (n.length > 2000) throw new ValidationError('메모는 2000자 이내로 적어 주세요.');
+    if (n.length > 2000) throw new ValidationError('err.devlink.notes');
     out.notes = n;
   }
   if (input.status !== undefined) {
     const s = String(input.status);
-    if (!(s in LINK_STATUS)) throw new ValidationError('상태 값이 올바르지 않습니다.');
+    if (!(s in LINK_STATUS)) throw new ValidationError('db.badStatus');
     out.status = s;
   }
   // 비밀 값처럼 보이면 저장하지 않는다(값을 오류 메시지에 넣지 않음)
   if (SECRET.test(`${out.url ?? ''} ${out.notes ?? ''}`)) {
-    throw new ValidationError('토큰·키처럼 보이는 문자열이 있습니다. 주소와 설명만 적고, 비밀 값은 각 서비스의 설정에만 두세요.');
+    throw new ValidationError('err.devlink.secret');
   }
   return out;
 }
 
 export async function listLinks(db: Db, schoolId: string, includeArchived = false): Promise<DevLink[]> {
-  if (!isUuid(schoolId)) throw new NotFoundError('학교를 찾을 수 없습니다.');
+  if (!isUuid(schoolId)) throw new NotFoundError('err.schoolNotFound');
   const { rows } = await db.query<DevLink>(
     `select * from public.school_dev_links where school_id = $1 and ($2 or status <> 'archived') order by kind, created_at`,
     [schoolId, includeArchived]);
@@ -67,7 +67,7 @@ export async function listLinks(db: Db, schoolId: string, includeArchived = fals
 }
 
 export async function createLink(db: Db, schoolId: string, input: Record<string, unknown>) {
-  if (!isUuid(schoolId)) throw new NotFoundError('학교를 찾을 수 없습니다.');
+  if (!isUuid(schoolId)) throw new NotFoundError('err.schoolNotFound');
   const v = clean(input, false);
   const cols = ['school_id', ...Object.keys(v)];
   const { rows: [r] } = await db.query(
@@ -78,14 +78,14 @@ export async function createLink(db: Db, schoolId: string, input: Record<string,
 }
 
 export async function updateLink(db: Db, id: string, input: Record<string, unknown>) {
-  if (!isUuid(id)) throw new NotFoundError('연동을 찾을 수 없습니다.');
+  if (!isUuid(id)) throw new NotFoundError('err.devlink.notFound');
   const { rows: [cur] } = await db.query('select school_id, kind from public.school_dev_links where id = $1', [id]);
-  if (!cur) throw new NotFoundError('연동을 찾을 수 없습니다.');
+  if (!cur) throw new NotFoundError('err.devlink.notFound');
   const v = clean(input, true, cur.kind);
   const keys = Object.keys(v);
   if (!keys.length) return { id };
   const res = await db.query(`update public.school_dev_links set ${keys.map((k, i) => `${k} = $${i + 2}`).join(', ')} where id = $1`, [id, ...Object.values(v)]);
-  if (!res.rowCount) throw new NotFoundError('연동을 찾을 수 없습니다.');
+  if (!res.rowCount) throw new NotFoundError('err.devlink.notFound');
   await db.query(`select app.log_access($1, 'devlink.update', $2)`, [cur.school_id, JSON.stringify({ id, ...('status' in v ? { status: v.status } : {}) })]);
   return { id };
 }

@@ -23,6 +23,9 @@ const publishNow = args.includes('--publish'); // 40차: 저장한 판을 바로
 const baseArg = args.indexOf('--base');
 const BASE = (baseArg >= 0 ? args[baseArg + 1] : process.env.ONSCHOOLS_URL) || 'https://onschools.vercel.app';
 const TOKEN = process.env.SCHOOL_AGENT_TOKEN ?? '';
+// 83차: 사용 기록에 세션 이름·작업자를 남긴다(SCHOOL_AGENT_SESSION·SCHOOL_AGENT_OPERATOR, 한글은 인코딩해 보냄)
+const WHO = Object.fromEntries([['x-agent-session', process.env.SCHOOL_AGENT_SESSION], ['x-agent-operator', process.env.SCHOOL_AGENT_OPERATOR]]
+  .filter(([, v]) => v && v.trim()).map(([k, v]) => [k, encodeURIComponent(v.trim())]));
 
 function fail(msg) { console.error(`오류: ${msg}`); process.exit(1); }
 if (!dir) fail('폴더를 적어 주세요. 예: node scripts/agent-story-upload.mjs ./out/brave-elephant');
@@ -44,7 +47,7 @@ const sameText = (a, b) => !!a && !!b && LANGS.some((l) => a[l] && a[l] === b[l]
 async function api(method, p, body, type, { allow404 = false } = {}) {
   const res = await fetch(`${BASE}${p}`, {
     method,
-    headers: { 'x-agent-token': TOKEN, ...(type ? { 'content-type': type } : body ? { 'content-type': 'application/json' } : {}) },
+    headers: { 'x-agent-token': TOKEN, ...WHO, ...(type ? { 'content-type': type } : body ? { 'content-type': 'application/json' } : {}) },
     body: body === undefined ? undefined : type ? body : JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));

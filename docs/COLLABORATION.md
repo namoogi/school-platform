@@ -21,7 +21,7 @@ OpenAI 공식 문서 기준(2026-11-22 검색). 화면 메뉴 이름은 바뀔 �
 | 브랜치 | Claude: `round-<차시>/<주제>`, Codex: `codex/<주제>`. main에 직접 push하지 않는다 |
 | PR | 한 PR에 한 기능. 본문에 통과한 테스트와 확인하지 못한 항목을 나눠 적는다 |
 | 검토·병합 | 사용자 지시로 한 작업은 테스트 통과 후 작업한 세션이 바로 병합하고 운영 배포를 확인한다(지시 = 승인, AGENTS.md). 다른 쪽 검토는 병합 뒤에도 받을 수 있다. 자동 실행 PR(`[자동]`)만 사람 지시가 있어야 병합 |
-| 마이그레이션 | `supabase/migrations/`에 날짜 접두어. 작업 시작 전 최신 main을 받아 번호가 겹치지 않게 하고, 이미 적용된 파일은 고치지 않는다 |
+| 마이그레이션 | `supabase/migrations/`에 날짜 접두어. 작업 시작 전 최신 main을 받아 번호가 겹치지 않게 하고, 이미 적용된 파일은 고치지 않는다. 운영 마이그레이션 역할은 슈퍼유저가 아니다. 다른 역할(`app_writer` 등) 소유 함수를 다시 정의할 때는 `grant create on schema app to <역할>; set local role <역할>;` 뒤 `reset role`. CI가 슈퍼유저 아닌 역할로 처음부터 적용해 본다(`scripts/check-migrate-nonsuper.sh`, 108차) |
 | 할 일 | 진행 관리는 앱의 **전체 관리 → 개발·연구소** 보드가 기준. 저장소의 `docs/ROADMAP.md`는 큰 방향만 |
 | 비밀 값 | DB 주소·비밀번호·토큰을 코드·PR·채팅에 남기지 않는다. 배포 값은 Vercel 환경 변수에만 |
 
@@ -111,7 +111,30 @@ Claude 세션의 GitHub 댓글·이슈는 사용자 계정 이름으로 올라�
 
 - Claude가 올리는 요청 첫 줄에 `(Claude 관제 세션 작성)` 또는 `(Claude 자동 실행 작성)`을 적어, 사용자 계정 이름이지만 누가 썼는지 구분한다.
 - 한 주제에 Codex 요청은 하나만 열어 둔다(중복 실행 방지). 24시간 응답이 없으면 사용자에게 보고한다.
-- 사용자 1회 설정: Codex Code review를 이 저장소에 켜기, Codex 환경(Environment) 하나 만들기. 그 뒤로는 사람이 중계하지 않는다.
+- **선별(85차)**: Codex 리뷰의 지적마다 수용·기각·보류 중 하나로 판정한다. 그 PR에 답글 하나로 남긴다(표: 번호 · 판정 · 근거 한 줄 · 고친 커밋). 수용한 것은 같은 PR에서 고친다. 보류는 선생님께 선택지로 올린다. Codex 지적을 그대로 다 받지 않는다. 규약(AGENTS.md·DESIGN-SYSTEM)과 부딪치면 규약이 이긴다.
+  - **판정 근거는 지적의 종류에 따라 다르다.** 코드 리뷰 지적(데이터 경계·보존·비밀·마이그레이션·테스트 등)은 AGENTS.md 규칙과 코드·테스트로 판정한다. 화면으로 입증할 수 없어도 수용할 수 있다. 화면 근거 조건("체크리스트 항목에 근거가 있고 화면에서 확인된다")은 UI 시각 점검 지적(`docs/UI_REVIEW.md` 4-4)에만 쓴다.
+- 연결 상태(2026-11-27, 85차)
+  - 그전까지 PR 26개의 `@codex review`에 봇 반응이 **0건**이었다. 막혀 있던 곳은 세 군데다: ① 저장소 Code review 꺼짐 ② 개인 설정 자동 검토 꺼짐 ③ GitHub 앱 권한 갱신 요청 미승인. 셋 다 풀어야 했다. 다시 막히면 이 세 곳부터 본다.
+  - 개인 설정을 켜고, GitHub의 ChatGPT Codex Connector 앱에 걸려 있던 권한 갱신 요청을 승인한 뒤(01:57Z) 봇(`chatgpt-codex-connector[bot]`)이 PR #127에 처음으로 검토를 남겼다(01:58Z, P1 1건 → 수용). 이제 PR을 열면 자동 검토되고, `@codex review` 댓글로도 다시 청할 수 있다.
+  - 보조 경로: 선생님 쪽 Codex 세션이 GitHub 커넥터로 PR을 읽고 검토 댓글을 직접 남긴다. 첫 줄은 `(Codex 수동 검토 …)`이다. 85차 PR #127에서 P2 2건을 받아 반영했다.
+- 작업 요청 연결 상태(2026-11-27, 99차, 이슈 #143)
+  - 이슈의 `@codex`가 처음 세 번은 "create an environment for this repo" 답만 받았다. Codex 클라우드 환경을 만들고 **환경의 저장소 칸을 이 저장소로 맞춘 뒤** 네 번째 호출에서 👀 반응(착수)이 붙었다. 다시 막히면 환경의 저장소 연결부터 본다.
+  - Codex 클라우드 작업은 끝나도 **PR을 만들지 않고 'Create PR' 단추에서 멈춘다**(이번에는 커밋 `36e70a4`만 남김). 이 한 번의 클릭이 사람 병목이다.
+  - 실제 PR #154는 선생님 Mac의 Codex가 올렸다. PR 본문에 완료 범위·시험 결과·미확인 항목·Claude가 이어 할 일을 적어, Claude가 대화 전달 없이 저장소에서 이어받았다(검토 → 지적 보완 커밋 → 시험 → 병합 → 운영 확인).
+  - 다음 시험(미확인): Claude가 브랜치와 초안 PR을 먼저 만들고 **그 PR 댓글에서 `@codex`로 구현을 청한다**. Codex가 그 PR 브랜치에 바로 올리면 'Create PR' 클릭이 없어진다. 결과를 이 절에 적는다.
+  - Codex 클라우드 환경은 작업 실행 때 Postgres가 꺼져 있어 DB 시험·E2E를 못 돌렸다. 빠진 시험은 받는 Claude 세션이 돌린다.
+- 106차 확인(2026-11-27, PR #159)
+  - **PR 댓글의 `@codex`도 브랜치에 올리지 않는다.** 결과는 Codex 클라우드 작업에만 남고 'Create PR' 단추가 필요하다.
+  - **PR 본문에 `@codex` 글자를 쓰면 그것도 호출로 받아 같은 작업이 두 번 돈다.** 본문에서는 쓰지 않는다.
+  - GitHub 댓글의 Codex 공유 링크(`chatgpt.com/s/cd_…`)는 앱에서 "사용할 수 없습니다"로 열리지 않을 수 있다. chatgpt.com/codex 작업 목록에서 찾는다.
+  - 클라우드 Claude 세션 안의 `codex login --device-auth`는 계정 보안 설정에 따라 막힐 수 있다("장치 코드 인증을 활성화").
+  - Mac 폴더 연결 시험(2026-11-27): Claude 데스크톱 앱 Remote Control에 저장소 폴더(홈 바로 아래 새 복제본 포함)를 넣어도 클라우드 세션 목록에 'not_available'(이유 표시 없음)로만 보였다. `claude remote-control`(터미널)은 클라우드 세션에 폴더를 내주지 않는다. → 지금은 **Claude 구현 + Codex PR 자동 검토**로 운영한다. 앱 업데이트 뒤 다시 시험한다.
+  - PR을 병합하기 전에 Codex 자동 검토가 끝났는지 본다(106차에 검토 전에 병합해 후속 PR #167이 필요했다).
+- 사용자 1회 설정(85차에 확인한 순서). 그 뒤로는 사람이 중계하지 않는다.
+  1. Codex 설정 → Code review → 이 저장소 켜기(Automatic review)
+  2. Codex 설정 → Personal preferences → 자동 검토 켜기. 저장소 칸이 'Follow personal preferences'면 이 값을 따른다.
+  3. GitHub → Settings → Applications → ChatGPT Codex Connector: 권한 갱신 요청이 있으면 승인하고, 저장소 접근에 이 저장소를 넣는다.
+  4. Codex 환경(Environment): 공식 안내에는 필요하다고 되어 있다. 85차에는 환경이 있는지 확인하지 않았다(검토는 돌았다). 막히면 이것도 본다.
 - 참고(사용자 보고, 공식 확인 아님): [openai/codex#54382](https://github.com/openai/codex/issues/54382), [#20093](https://github.com/openai/codex/issues/20093), [#13701](https://github.com/openai/codex/issues/13701)
 
 ## Vercel 미리보기 빌드 (2026-11-24 사용자 결정, 관제 D-12)

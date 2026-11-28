@@ -3,6 +3,9 @@ import { currentUserId } from '@/lib/auth';
 import { supabaseAuthConfig } from '@/lib/google';
 import { GoogleButton } from '@/components/GoogleButton';
 import { safeNext } from '@/lib/next-path';
+import { getI18n } from '@/lib/i18n/server';
+import { I18nProvider } from '@/components/I18nProvider';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,27 +15,36 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const next = safeNext(rawNext);
   if (await currentUserId()) redirect(next ?? '/');
   const auth = supabaseAuthConfig();
+  // ADR 0037: 로그인 전에는 쿠키·브라우저 언어로 고른다(고르면 쿠키에 남는다)
+  const i18n = await getI18n();
+  const { t } = i18n;
   return (
-    <main className="login">
-      <div className="login-card">
-        <div className="brand"><span className="brand-mark" aria-hidden="true">學</span><span>학교 운영 플랫폼</span></div>
-        <h1>학교 관리자 로그인</h1>
-        <p className="muted">학교마다 자료와 문서가 따로 보관됩니다. 초대받은 계정으로 로그인하세요.</p>
-        {error && <p className="alert" role="alert">이메일 또는 비밀번호가 맞지 않습니다.</p>}
-        {next?.startsWith('/site/open') && <p className="muted" data-testid="login-edit-note">로그인하면 보고 있던 홈페이지 화면을 바로 고칠 수 있습니다.</p>}
-        {auth && <><GoogleButton supabaseUrl={auth.url} next={next} /><div className="divider"><span>또는 이메일·비밀번호 (예시 계정)</span></div></>}
-        <form method="post" action="/api/login" className="stack">
-          {next && <input type="hidden" name="next" value={next} />}
-          <label>이메일<input name="email" type="email" autoComplete="username" required /></label>
-          <label>비밀번호<input name="password" type="password" autoComplete="current-password" required /></label>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>로그인</button>
-        </form>
-        <details className="hint">
-          <summary>예시 계정 (합성 자료)</summary>
-          <p>예시 A · admin-a@school-a.test<br />예시 B · admin-b@school-b.test</p>
-          <p className="muted">로컬 기본 비밀번호는 README의 ‘로컬 실행’을 참고하세요.</p>
-        </details>
-      </div>
-    </main>
+    <I18nProvider value={{ lang: i18n.lang, dir: i18n.dir, dict: i18n.dict, languages: i18n.languages.filter((l) => l.active).map((l) => ({ code: l.code, native_name: l.native_name })) }}>
+      <main className="login" lang={i18n.lang} dir={i18n.dir}>
+        <div className="login-card">
+          <div className="between">
+            <div className="brand"><span className="brand-mark" aria-hidden="true">學</span><span>onschools</span></div>
+            <LanguageSwitcher />
+          </div>
+          <h1>{t('login.title')}</h1>
+          <p className="muted">{t('login.lead')}</p>
+          {error && <p className="alert" role="alert">{t('login.error')}</p>}
+          {next?.startsWith('/site/open') && <p className="muted" data-testid="login-edit-note">{t('login.editNote')}</p>}
+          {auth && <><GoogleButton supabaseUrl={auth.url} next={next} /><div className="divider"><span>{t('login.orPassword')}</span></div></>}
+          <form method="post" action="/api/login" className="stack">
+            {next && <input type="hidden" name="next" value={next} />}
+            <label>{t('login.email')}<input name="email" type="email" autoComplete="username" required /></label>
+            <label>{t('login.password')}<input name="password" type="password" autoComplete="current-password" required /></label>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>{t('login.submit')}</button>
+          </form>
+          <p className="fine">{t('login.firstVisit')} <a href="/intro" data-testid="login-intro-link">{t('login.introLink')}</a></p>
+          <details className="hint">
+            <summary>{t('login.sampleAccounts')}</summary>
+            <p>{t('login.sampleA')} · admin-a@school-a.test<br />{t('login.sampleB')} · admin-b@school-b.test</p>
+            <p className="muted">{t('login.samplePassword')}</p>
+          </details>
+        </div>
+      </main>
+    </I18nProvider>
   );
 }

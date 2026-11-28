@@ -8,7 +8,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {
-    const body = await req.json().catch(() => { throw new ValidationError('요청 형식이 올바르지 않습니다.'); });
+    const body = await req.json().catch(() => { throw new ValidationError('err.badRequest'); });
     return setLicense(db, school.id, body ?? {});
   }, { admin: true });
 }

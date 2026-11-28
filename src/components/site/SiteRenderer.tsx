@@ -6,6 +6,8 @@ import type { EditPath } from '@/lib/site-edit';
 import { isStoryOutline, storyImageAsset } from '@/lib/story-language';
 import { StoryBook } from './StoryBook';
 import { GalleryGrid } from './GalleryGrid';
+import { TagFilter } from './TagFilter';
+import { InquiryForm } from './InquiryForm';
 import { RainbowArc, Ribbon } from './Rainbow';
 
 /** 공개 화면 낱말 (블록 안) */
@@ -14,7 +16,7 @@ const W = {
   all: { ko: '전체', en: 'All', th: 'ทั้งหมด' }, close: { ko: '닫기', en: 'Close', th: 'ปิด' },
   prevPhoto: { ko: '이전 사진', en: 'Previous photo', th: 'ภาพก่อนหน้า' }, nextPhoto: { ko: '다음 사진', en: 'Next photo', th: 'ภาพถัดไป' },
   photos: { ko: '장', en: ' photos', th: ' ภาพ' }, watch: { ko: '영상 보기', en: 'Watch the video', th: 'ดูวิดีโอ' },
-  allNews: { ko: '소식 모두 보기', en: 'All news', th: 'ข่าวทั้งหมด' }, read: { ko: '읽기', en: 'Read', th: 'อ่าน' },
+  allNews: { ko: '소식 모두 보기', en: 'All news', th: 'ข่าวทั้งหมด' }, byTag: { ko: '분류로 거르기', en: 'Filter by category', th: 'กรองตามหมวด' }, read: { ko: '읽기', en: 'Read', th: 'อ่าน' },
   more: { ko: '더 보기', en: 'Read more', th: 'อ่านเพิ่มเติม' },
   characters: { ko: '장면별 캐릭터', en: 'Characters by scene', th: 'ตัวละครในแต่ละฉาก' },
   scene: { ko: '장면', en: 'Scene', th: 'ฉาก' },
@@ -95,11 +97,13 @@ export function PageHead({ content, lang, fallback, asset, meta, ed, crumb, link
  * 글은 텍스트로만 넣는다(HTML 해석 없음). 그림 주소·사이트 안 링크는 호출하는 쪽이 정한다(공개 판 / 구성원 미리보기).
  * 35차: 숨긴 블록(hidden)은 방문자에게 그리지 않는다. 편집 갈고리(ed)가 있으면 숨긴 블록도 그리고 칸마다 고치기를 단다.
  */
-export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h, news = [], textInImage = false, ed }: {
+export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h, news = [], textInImage = false, ed, inquiry }: {
   content: Content; lang: Lang; fallback: Lang; assetUrl: (id: string) => string; link?: (href: string) => string; news?: NewsItem[];
   /** 동화 쪽 그림 안에 글이 이미 들어 있으면 글을 그림 위에 다시 쓰지 않고 대체 글로 준다 */
   textInImage?: boolean;
   ed?: EditHooks;
+  /** 91차: 방문·상담 신청 칸 — 학교가 신청을 켰을 때만(open). slug가 null이면 미리보기(보내지 않음) */
+  inquiry?: { slug: string | null; open: boolean; page: string };
 }) {
   const t = (x: LText | null | undefined) => pick(x, lang, fallback);
   // 42차: 줄마다 '· '로 시작하는 문단은 점 목록으로(옛 사이트 교육 단계 핵심)
@@ -157,6 +161,11 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
           ? <div className="site-video"><iframe src={`https://www.youtube-nocookie.com/embed/${yt[1]}`} title={t(content.title)} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" /></div>
           : <p><a href={url} target="_blank" rel="noopener noreferrer">{w('watch', lang)}</a></p>;
       }
+      case 'inquiry': {
+        if (ed) return <section className="sec site-inquiry" data-template="inquiry"><h2 className="site-h2">{T(at('title'), b.title, '신청 칸 제목')}</h2><p className="fine">방문·상담 신청 칸(설정에서 '신청 받기'를 켜면 방문자에게 보입니다)</p></section>;
+        if (!inquiry?.open) return null; // 학교가 신청을 받지 않으면 방문자에게 보이지 않는다
+        return <InquiryForm slug={inquiry.slug} lang={lang} page={inquiry.page} title={t(b.title) || undefined} body={t(b.body) || undefined} />;
+      }
       case 'download': {
         // 34차: PDF 내려받기. 파일 이름·크기는 판에 저장된 값(스냅샷)을 쓴다. 서버는 PDF를 attachment 로만 준다
         const name = b.file_name ?? 'story.pdf';
@@ -211,6 +220,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
           ? <A className="site-button" to={b.button.href}>{T(at('button', 'label'), b.button.label, '단추 이름')}<Arrow /></A>
           : null;
         const items = b.items ?? [];
+        const filterable = v === 'filter' || v === 'feature-filter' || v === 'portfolio';
         const body = show(b.body) ? P(at('body'), b.body, b.template === 'quote' ? '문장' : '구역 글') : null;
         if (b.template === 'quote') return (
           <figure className="sec sec-quote" data-template="quote" data-variant={v}><blockquote>{body}</blockquote>{show(b.title) && <figcaption>{T(at('title'), b.title, '말한 사람')}</figcaption>}</figure>
@@ -223,7 +233,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             {show(b.caption) && <figcaption>{T(at('caption'), b.caption, '사진 설명')}</figcaption>}
           </figure>
         ) : null;
-        // 55차: 안내 띠(cta)의 그림은 사진이 아니라 장식이다 — 대체 글 없이 띠 오른쪽에 번지듯 깐다(선생님 지시: 변형 그림은 디자인 요소로만)
+        // 115차: 안내 띠(cta)의 그림은 사진이 아니라 장식이다 — 대체 글 없이 띠 오른쪽에 번지듯 깐다(선생님 지시: 변형 그림은 디자인 요소로만)
         // eslint-disable-next-line @next/next/no-img-element
         const decorImg = b.asset ? <img src={assetUrl(b.asset)} alt="" loading="lazy" /> : null;
         const decor = b.template === 'cta' && (b.asset || ed) ? (
@@ -240,7 +250,9 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                   <summary>{T(at('items', k, 'title'), it.title, `${k + 1}번 질문`)}<Plus size={20} strokeWidth={1.4} aria-hidden="true" /></summary>
                   {P(at('items', k, 'body'), it.body, `${k + 1}번 답`)}
                 </details>))}</div>
-            : asFacts
+            : asFacts && v === 'curriculum'
+              ? <table className="sec-curriculum"><caption className="sr-only">{t(b.title)}</caption><tbody>{items.map((it, k) => <tr key={k}><th scope="row">{T(at('items', k, 'title'), it.title, `${k + 1}번 항목`)}</th><td>{P(at('items', k, 'body'), it.body, `${k + 1}번 내용`)}</td></tr>)}</tbody></table>
+              : asFacts
               ? <dl className="sec-facts">{items.map((it, k) => <div key={k}><dt>{T(at('items', k, 'title'), it.title, `${k + 1}번 항목`)}</dt><dd>{P(at('items', k, 'body'), it.body, `${k + 1}번 내용`)}</dd></div>)}</dl>
               : b.template === 'steps'
                 ? <ol className="sec-steps">{items.map((it, k) => <li key={k}><span aria-hidden="true">{String(k + 1).padStart(2, '0')}</span><div>{show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}단계 제목`)}</h3>}{P(at('items', k, 'body'), it.body, `${k + 1}단계 글`)}</div></li>)}</ol>
@@ -250,6 +262,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                     const inner = b.template === 'photos'
                       ? <>
                           {pic}
+                          {(t(it.tag) || (ed && filterable)) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
                           {show(it.title) && <span>{T(at('items', k, 'title'), it.title, `${k + 1}번 사진 이름`)}</span>}
                           {v === 'moments' && <span className="sec-label">{num}{(t(it.body) || ed) && <> · {T(at('items', k, 'body'), it.body, `${k + 1}번 이름표`)}</>}<Arrow /></span>}
                         </>
@@ -257,15 +270,19 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
                           {pic}
                           {v === 'index' && <span className="sec-index">{num}</span>}
                           <div className="sec-item-copy">
+                            {/* 107차: 행사 카드는 분류 칸을 날짜 배지로 쓴다 */}
+                            {v === 'events' && (t(it.tag) || ed) && <span className="sec-date">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 날짜`)}</span>}
+                            {v !== 'events' && (t(it.tag) || (ed && filterable)) && <span className="sec-tag">{T(at('items', k, 'tag'), it.tag, `${k + 1}번 분류`)}</span>}
                             {show(it.title) && <h3>{T(at('items', k, 'title'), it.title, `${k + 1}번 카드 제목`)}</h3>}
                             {show(it.body) ? P(at('items', k, 'body'), it.body, `${k + 1}번 카드 글`) : null}
                             {v === 'rows' && it.href && <span className="site-link">{w('more', lang)}<Arrow /></span>}
                           </div>
                           {v === 'index' && <Arrow />}
                         </>;
-                    return <li key={k}>{it.href ? <A to={it.href}>{inner}</A> : inner}</li>;
+                    return <li key={k} data-tag={t(it.tag) || undefined}>{it.href ? <A to={it.href}>{inner}</A> : inner}</li>;
                   })}</ul>;
         /** 항목 뒤에 링크를 두는 모양: 개요, 문의 사무실(전화 아래 Facebook), 한눈에 보기(facts 기본) */
+        const tags = [...new Set(items.map((it) => t(it.tag)).filter(Boolean))] as string[];
         const btnAfter = v === 'overview' || (v === 'half' && items.length > 0) || (b.template === 'facts' && !v && items.length > 0); // 52차: 한눈에 보기도 항목 뒤에
         return (
           <section className="sec" data-template={b.template} data-variant={v} data-decor={decor && b.asset ? '' : undefined}>
@@ -273,7 +290,10 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
             {b.template === 'banner' && figure}
             <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
             {(b.template === 'media-left' || b.template === 'media-right') && figure}
-            {itemList}
+            {/* 거르기는 분류를 가진 카드·사진 목록에서만(정보·단계 목록에는 분류 칸이 없음) */}
+            {filterable && !ed && itemList && tags.length > 1 && (b.template === 'cards' || b.template === 'photos')
+              ? <TagFilter key={JSON.stringify([v, tags])} tags={tags} allLabel={w('all', lang)} label={w('byTag', lang)}>{itemList}</TagFilter>
+              : itemList}
             {btnAfter && btn}
           </section>
         );

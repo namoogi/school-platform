@@ -71,4 +71,20 @@ describe('AI 연결 글 (ADR 0022)', () => {
     expect(buildConnectText({ ...base, ai: 'other' })).toMatch(/인터넷 요청\(curl 등\)/);
     expect(buildConnectText({ ...base, expiresAt: null })).toMatch(/무기한/);
   });
+
+  it('61차: 학사 꾸러미 토큰은 정의·꾸러미 API와 "켜기는 관리자" 규칙을 담는다', () => {
+    const t = buildConnectText({ ...base, kinds: ['package'], keys: null, perms: ['read', 'create', 'edit'] });
+    expect(t).toContain('학사 꾸러미 작업을 돕는다');
+    expect(t).toContain('POST /api/agent/definitions');
+    expect(t).toContain('/api/agent/packages/<code>/preview');
+    expect(t).toMatch(/개인정보 등급/);
+    expect(t).toMatch(/켜는 것은 학교 관리자/);
+    expect(buildConnectText(base)).not.toContain('/api/agent/definitions');
+  });
+
+  it('66차: 쪽 토큰은 템플릿 빈 칸 안내를 담고, 동화만 맡긴 토큰에는 없다', () => {
+    expect(buildConnectText({ ...base, kinds: ['page'], keys: null })).toContain('GET /api/agent/templates');
+    expect(buildConnectText({ ...base, kinds: ['page'], keys: null })).toMatch(/옛 홈페이지는 공개된 쪽만/);
+    expect(buildConnectText(base)).not.toContain('/api/agent/templates');
+  });
 });
