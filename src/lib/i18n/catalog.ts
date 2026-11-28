@@ -1359,7 +1359,7 @@ export const CATALOG = {
   'cc.extraHint': '선택지에 더할 조건이나 새로 시킬 일. 그대로 세션에 전달됩니다.',
   'cc.leaveNote': '메모 남기기',
   'cc.done': '끝남',
-  'cc.fold': '접기',
+  'cc.fold': '접음',
   'cc.reopen': '다시 열기',
   // 전체 관리 · 학교별 개발 연동(/admin/integrations)
   'devlink.kind.github_repo': 'GitHub 저장소',
