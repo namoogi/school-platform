@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { localizeDbText } from '@/lib/i18n/db-messages';
 import { useI18n } from '@/components/I18nProvider';
 import type { MsgKey } from '@/lib/i18n/catalog';
 
@@ -95,7 +96,7 @@ export function RedactPanel({ people }: { people: { id: string; name: string }[]
         <option value="">{t('req.choose')}</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
       {pv && (
         <>
-          <p>{pv.ok ? t('req.canRedact', { exit: pv.exit_on ? t('req.exitOn', { date: pv.exit_on }) : '' }) : t('req.cannotRedact', { why: pv.why ?? '' })}</p>
+          <p>{pv.ok ? t('req.canRedact', { exit: pv.exit_on ? t('req.exitOn', { date: pv.exit_on }) : '' }) : t('req.cannotRedact', { why: pv.why ? localizeDbText(pv.why, t) : '' })}</p>
           <p className="fine">{t('req.targets', { list: Object.entries(pv.counts).filter(([, n]) => n > 0).map(([k, n]) => `${COUNTS.includes(k) ? t(`req.count.${k}` as MsgKey) : k} ${n}`).join(' · ') || t('docs.none') })}</p>
           <p className="fine">{t('req.kept', { list: pv.kept.join(', ') })}</p>
           {pv.ok && (

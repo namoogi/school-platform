@@ -1,13 +1,14 @@
 import { type Block, type Inline, parseRich } from '@/lib/richdoc';
+import { baseT, type Translate } from '@/lib/i18n/base';
 
 /** 81차: 연구소 본문 보기 — 표·지표 타일·흐름도·막대·계단을 같은 규칙으로 그린다. 색만으로 뜻을 전하지 않도록 글·기호를 함께 쓴다 */
 function Ins({ xs }: { xs: Inline[] }) {
   return <>{xs.map((x, i) => x.t === 'b' ? <strong key={i}>{x.v}</strong> : x.t === 'code' ? <code key={i}>{x.v}</code>
     : x.t === 'a' ? <a key={i} href={x.href} target="_blank" rel="noopener noreferrer">{x.v}</a> : <span key={i}>{x.v}</span>)}</>;
 }
-const QUOTE = { summary: '핵심 요약', why: '왜 필요한가', decide: '결정', warn: '주의', note: '메모' } as const;
+const QUOTE = { summary: 'rd.summary', why: 'rd.why', decide: 'rd.decide', warn: 'rd.warn', note: 'rd.note' } as const;
 
-function B({ b }: { b: Block }) {
+function B({ b, t }: { b: Block; t: Translate }) {
   switch (b.k) {
     case 'h': {
       const H = (`h${Math.min(b.level + 1, 5)}`) as 'h2';
@@ -18,8 +19,8 @@ function B({ b }: { b: Block }) {
     case 'ol': return <ol>{b.items.map((x, i) => <li key={i}><Ins xs={x} /></li>)}</ol>;
     case 'hr': return <hr />;
     case 'quote': return (
-      <aside className={`rd-callout rd-${b.tone}`} aria-label={QUOTE[b.tone]}>
-        <span className="rd-callout-tag">{QUOTE[b.tone]}</span>
+      <aside className={`rd-callout rd-${b.tone}`} aria-label={t(QUOTE[b.tone])}>
+        <span className="rd-callout-tag">{t(QUOTE[b.tone])}</span>
         <div>{b.lines.map((l, i) => <p key={i}><Ins xs={l} /></p>)}</div>
       </aside>);
     case 'table': return (
@@ -31,7 +32,7 @@ function B({ b }: { b: Block }) {
       <div className="rd-kpis">{b.items.map((x, i) => (
         <div key={i} className="rd-kpi"><span className="rd-kpi-label">{x.label}</span><strong className="rd-kpi-value">{x.value}</strong>{x.hint && <span className="rd-kpi-hint">{x.hint}</span>}</div>))}</div>);
     case 'steps': return (
-      <ol className="rd-steps" aria-label="흐름">{b.items.map((x, i) => (
+      <ol className="rd-steps" aria-label={t('rd.flow')}>{b.items.map((x, i) => (
         <li key={i} className="rd-step"><span className="rd-step-no" aria-hidden="true">{i + 1}</span><strong>{x.title}</strong>{x.hint && <span className="rd-step-hint">{x.hint}</span>}</li>))}</ol>);
     case 'bars': {
       const max = Math.max(...b.items.map((x) => Math.abs(x.value)), 1);
@@ -44,22 +45,23 @@ function B({ b }: { b: Block }) {
           </div>))}</div>);
     }
     case 'tiers': return (
-      <ol className="rd-tiers" aria-label="단계">{[...b.items].reverse().map((x, i, arr) => (
+      <ol className="rd-tiers" aria-label={t('rd.tiers')}>{[...b.items].reverse().map((x, i, arr) => (
         <li key={i} className="rd-tier" data-level={arr.length - i}>
           <span className="rd-tier-no">{arr.length - i}</span><div><strong>{x.name}</strong>{x.tag && <span className="tag">{x.tag}</span>}{x.hint && <p>{x.hint}</p>}</div>
         </li>))}</ol>);
     case 'terms': return (
-      <section className="rd-terms" aria-label="용어 풀이">
-        <h4 className="rd-terms-title">용어 풀이</h4>
+      <section className="rd-terms" aria-label={t('rd.terms')}>
+        <h4 className="rd-terms-title">{t('rd.terms')}</h4>
         <dl>{b.items.map((x, i) => (
-          <div key={i} className="rd-term"><dt>{x.term}</dt><dd><Ins xs={x.plain} />{x.example.length > 0 && <span className="rd-term-ex">예) <Ins xs={x.example} /></span>}</dd></div>))}</dl>
+          <div key={i} className="rd-term"><dt>{x.term}</dt><dd><Ins xs={x.plain} />{x.example.length > 0 && <span className="rd-term-ex">{t('rd.example')}<Ins xs={x.example} /></span>}</dd></div>))}</dl>
       </section>);
     case 'code': return <pre className="copy-box"><code>{b.text}</code></pre>;
   }
 }
 
-export function RichDoc({ body, testId }: { body: string; testId?: string }) {
+/** t: 화면 언어(서버는 getI18n, 브라우저는 useI18n 의 t). 서식 문법(> **요약** 등)은 한국어 그대로다 */
+export function RichDoc({ body, testId, t = baseT }: { body: string; testId?: string; t?: Translate }) {
   const blocks = parseRich(body);
-  if (!blocks.length) return <p className="muted">내용이 없습니다.</p>;
-  return <div className="rd" data-testid={testId}>{blocks.map((b, i) => <B key={i} b={b} />)}</div>;
+  if (!blocks.length) return <p className="muted">{t('rd.empty')}</p>;
+  return <div className="rd" data-testid={testId}>{blocks.map((b, i) => <B key={i} b={b} t={t} />)}</div>;
 }

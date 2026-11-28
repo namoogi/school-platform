@@ -972,7 +972,7 @@ try {
     await v.click('.site-lang-menu summary');
     await v.keyboard.press('Escape');
     assert.equal(await langOpen(), false);
-    // 116차: 안내 띠의 그림은 장식(대체 글 없음·읽기 도구에서 숨김) — 사진 자리가 아니다
+    // 118차: 안내 띠의 그림은 장식(대체 글 없음·읽기 도구에서 숨김) — 사진 자리가 아니다
     await h.evaluate(async () => {
       const list = await (await fetch('/api/site/entries')).json();
       const home = (Array.isArray(list) ? list : list.entries).find((e) => e.kind === 'page' && e.key === 'home');
