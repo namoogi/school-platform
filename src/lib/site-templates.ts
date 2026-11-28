@@ -174,7 +174,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'admissions', version: 4, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
+    key: 'admissions', version: 5, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
     summary: '예비 학부모가 차별점을 보고 문의·견학·지원으로 이어지게 합니다.',
     fits: ['신입생을 모집하는 사립·국제학교'], firstScreen: '차별점 3가지 · 입학 단추',
     mustHave: ['입학 절차', '학비·추가 비용', '자주 묻는 질문', '문의처'],
@@ -191,16 +191,21 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       ], { site: contact({ label: '입학 상담', href: '/p/admissions', en: 'Book a visit' }) }),
       page('why', 1, kb('왜 우리 학교인가', 'Why us'), [
         section({ template: 'media-left', title: kb('[졸업생·학부모 이야기]', '[A graduate or parent story]'), body: kb('[실제 이야기 — 이름은 허락받은 경우만]', '[A real story, names only with permission]') }),
-        section({ template: 'facts', variant: 'stats', title: kb('숫자로 보는 학교', 'At a glance'), items: [{ title: kb('[학생 수]', '[Number of students]'), body: kb('[설명]', '[Description]') }, { title: kb('[교사 1인당 학생]', '[Students per teacher]'), body: kb('[설명]', '[Description]') }] }),
+        section({ anchor: 'glance', template: 'facts', variant: 'stats', title: kb('숫자로 보는 학교', 'At a glance'), items: [{ title: kb('[학생 수]', '[Number of students]'), body: kb('[설명]', '[Description]') }, { title: kb('[교사 1인당 학생]', '[Students per teacher]'), body: kb('[설명]', '[Description]') }] }),
+        // 126차: 왜 우리 학교 하위 메뉴 — 졸업 후 진로
+        section({ anchor: 'graduates', template: 'facts', title: kb('졸업 후 진로', 'After graduation'), items: [1, 2, 3].map((i) => ({ title: kb(`[입학 진로 ${i}]`, `[Admissions path ${i}]`), body: kb(`[입학 진로 ${i} 설명]`, `[Admissions path ${i} note]`) })) }),
       ]),
       page('curriculum', 2, kb('교육과정', 'Curriculum'), [
-        section({ template: 'steps', title: kb('학년별 과정', 'Courses by grade'), items: [{ title: kb('[과정 1]', '[Course 1]'), body: kb('[설명]', '[Description]') }, { title: kb('[과정 2]', '[Course 2]'), body: kb('[설명]', '[Description]') }] }),
+        section({ anchor: 'courses', template: 'steps', title: kb('학년별 과정', 'Courses by grade'), items: [{ title: kb('[과정 1]', '[Course 1]'), body: kb('[설명]', '[Description]') }, { title: kb('[과정 2]', '[Course 2]'), body: kb('[설명]', '[Description]') }] }),
+        section({ anchor: 'beyond', template: 'cards', title: kb('비교과 활동', 'Beyond the classroom'), items: [1, 2, 3].map((i) => ({ title: kb(`[입학 비교과 ${i}]`, `[Admissions activity ${i}]`), body: kb(`[입학 비교과 ${i} 설명]`, `[Admissions activity ${i} note]`) })) }),
       ]),
       page('admissions', 3, kb('입학 안내', 'Admissions'), [
-        section({ template: 'steps', title: kb('입학 절차', 'How to apply'), items: [{ title: kb('문의', 'Enquire'), body: kb('[문의 방법]', '[How to enquire]') }, { title: kb('견학·상담', 'Visit'), body: kb('[일정]', '[Schedule]') }, { title: kb('지원', 'Apply'), body: kb('[서류·전형]', '[Documents · assessment]') }, { title: kb('결과', 'Result'), body: kb('[발표·등록]', '[Results · enrolment]') }] }),
-        section({ template: 'facts', title: kb('학비와 비용', 'Tuition & fees'), items: [{ title: kb('[수업료]', '[Tuition]'), body: kb('[금액·납부]', '[Amount · payment]') }, { title: kb('[기타 비용]', '[Other costs]'), body: kb('[기숙사·급식·체험 등]', '[Boarding, meals, trips]') }] }),
-        section({ template: 'facts', variant: 'faq', title: kb('자주 묻는 질문', 'FAQ'), items: [{ title: kb('[질문]', '[Question]'), body: kb('[답]', '[Answer]') }] }),
-        { type: 'inquiry', title: kb('견학·상담 신청', 'Book a visit'), body: kb('[신청 안내 한 줄]', '[One line about booking]') },
+        section({ anchor: 'process', template: 'steps', title: kb('입학 절차', 'How to apply'), items: [{ title: kb('문의', 'Enquire'), body: kb('[문의 방법]', '[How to enquire]') }, { title: kb('견학·상담', 'Visit'), body: kb('[일정]', '[Schedule]') }, { title: kb('지원', 'Apply'), body: kb('[서류·전형]', '[Documents · assessment]') }, { title: kb('결과', 'Result'), body: kb('[발표·등록]', '[Results · enrolment]') }] }),
+        section({ anchor: 'fees', template: 'facts', title: kb('학비와 비용', 'Tuition & fees'), items: [{ title: kb('[수업료]', '[Tuition]'), body: kb('[금액·납부]', '[Amount · payment]') }, { title: kb('[기타 비용]', '[Other costs]'), body: kb('[기숙사·급식·체험 등]', '[Boarding, meals, trips]') }] }),
+        section({ anchor: 'faq', template: 'facts', variant: 'faq', title: kb('자주 묻는 질문', 'FAQ'), items: [{ title: kb('[질문]', '[Question]'), body: kb('[답]', '[Answer]') }] }),
+        // 126차(ADR 0046): 입학 하위 메뉴 — 설명회
+        { ...events('입학 설명회', '입학 설명회', 'Open day', 'Open days'), anchor: 'open-days' },
+        { type: 'inquiry', title: kb('견학·상담 신청', 'Book a visit'), body: kb('[신청 안내 한 줄]', '[One line about booking]'), anchor: 'apply' },
         section({ template: 'cta', title: kb('견학 신청', 'Visit us'), body: kb('[연락처·견학 가능 요일]', '[Contact · visiting days]'), button: { label: kb('문의하기', 'Contact'), href: '/p/admissions' } }),
       ]),
     ],
