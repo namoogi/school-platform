@@ -121,7 +121,8 @@ export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[]
     return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
   });
   // floor(화면·API 쓰기 길): 점수 구간이 있으면 0점까지 덮어야 한다. 템플릿 적용은 관제가 낸 판을 그대로 옮기므로 여기서 막지 않는다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
-  if (opts.floor && out.some((b) => b.min != null) && !out.some((b) => b.min != null && b.min <= 0)) throw new ValidationError('err.grade.bandFloor');
+  // 하한이 모두 비어도 같은 문제다(모든 점수가 등급 없이 이수, Codex #228 재검토)
+  if (opts.floor && !out.some((b) => b.min != null && b.min <= 0)) throw new ValidationError('err.grade.bandFloor');
   return out;
 }
 export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }, opts: { floor?: boolean } = {}) {

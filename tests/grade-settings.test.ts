@@ -40,6 +40,7 @@ describe('맞춤 척도', () => {
     expect(gr.checkBands([{ code: 'P', min: 60 }, { code: 'F', min: 0, earns_credit: false }])[0]).toMatchObject({ code: 'P', label: { ko: 'P', en: 'P' }, min: 60, earns_credit: true });
     // 바닥 구간이 없으면 60 미만이 등급 없이 이수로 마감된다(Codex #228)
     expect(() => gr.checkBands([{ code: 'P', min: 60 }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandFloor' }));
+    expect(() => gr.checkBands([{ code: 'P' }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandFloor' }));
     for (const k of Object.keys(gr.SCALE_PRESETS)) expect(() => gr.checkBands(gr.SCALE_PRESETS[k].bands, { floor: true })).not.toThrow();
     expect(() => gr.checkBands([{ code: 'A', min: 90 }, { code: 'A', min: 80 }])).toThrow(expect.objectContaining({ key: 'err.grade.bandDup' }));
     expect(() => gr.checkBands([{ code: 'A', min: 'ninety' }])).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
@@ -139,6 +140,12 @@ describe('출력 프로필', () => {
     expect(() => rec.checkProfileSettings('en_record', [])).toThrow(expect.objectContaining({ key: 'err.rec.profileSettings' }));
     await expect(asUser(A.userId, (db) => rec.saveOutputProfile(db, A.schoolId, { format: 'th_por_por_1', code: 'th_bad', settings: { bands: [null] }, why: 'x', base_version: 0 })))
       .rejects.toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
+  });
+
+  it('ปพ.1 띠를 오름차순으로 넣어도 높은 하한부터 고른다(Codex #228)', () => {
+    const snap = { year: { label: '2569' }, courses: [{ subject_code: 'TH101', labels: { record: { th: 'ภาษาไทย' }, all: {} }, term: 's1', credits: 1, pass_fail: false, result: { attempt_status: 'completed', final_score: 85 } }], school: {}, student: {} };
+    const out = rec.renderThPorPor1([snap as never], { bands: [{ min: 0, grade: 0 }, { min: 70, grade: 3 }, { min: 80, grade: 4 }] });
+    expect(JSON.stringify(out.content)).toContain('"grade":"4"');
   });
 
   it('발행 때 다른 서식의 프로필은 고르지 못한다', async () => {

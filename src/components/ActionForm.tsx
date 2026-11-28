@@ -59,12 +59,22 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
   const { t } = useI18n();
   const init = Object.fromEntries(fields.map((f) => [f.name, f.defaultValue ?? (f.type === 'select' ? f.options?.[0]?.value ?? '' : '')]));
   const [v, setV] = useState<Record<string, string>>(init);
+  // 128차(Codex #228): 보고 시작한 판. 화면이 새로 고쳐져 extra(base_version 등)·처음 값이 바뀌면, 손대지 않은 양식만 새 값을 받는다.
+  // 고치던 양식은 처음 본 판 번호를 그대로 보내 그 사이 생긴 새 판을 409로 알린다(옛 내용으로 새 판을 조용히 되돌리지 않게)
+  const [base, setBase] = useState(extra);
+  const [dirty, setDirty] = useState(false);
+  const propsKey = JSON.stringify([extra, init]);
+  const [seen, setSeen] = useState(propsKey);
+  if (seen !== propsKey) {
+    setSeen(propsKey);
+    if (!dirty) { setBase(extra); setV(init); }
+  }
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   const [shown, setShown] = useState<{ key: string; r: PreviewResult } | null>(null);
   /** 보낼 몸. json 칸을 읽지 못하면 그 칸 이름과 함께 오류 문구를 돌려준다 */
   function bodyOf(act: string | undefined): { body?: Record<string, unknown>; error?: string } {
-    const body: Record<string, unknown> = { ...(act ? { action: act } : {}), ...extra };
+    const body: Record<string, unknown> = { ...(act ? { action: act } : {}), ...base };
     for (const f of fields) {
       if (f.type === 'json') {
         if (v[f.name].trim() === '') { body[f.name] = null; continue; }
@@ -99,13 +109,14 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
     if (!res.ok) return setMsg({ text: data.error ?? t('common.failed'), error: true });
     setMsg({ text: successText ?? t('common.saved') });
     if (!keep) { setV(init); setShown(null); }
+    setDirty(false);
     router.refresh();
   }
   // inline: 칸을 한 줄에 내용 길이대로 놓고 단추는 마지막 칸 옆 바닥선에. 아니면 위에서 아래로(칸 너비는 그대로)
   return (
     <form className="action-form form-grid" data-stack={inline ? undefined : ''} onSubmit={submit} data-testid={testId}>
       {fields.map((f) => {
-        const on = (e: { target: { value: string } }) => setV({ ...v, [f.name]: e.target.value });
+        const on = (e: { target: { value: string } }) => { setDirty(true); setV({ ...v, [f.name]: e.target.value }); };
         return (
           <label key={f.name} className="ff" data-size={fieldSize(f)}><span>{f.label}</span>
             {f.type === 'select'

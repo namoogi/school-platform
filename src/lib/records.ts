@@ -207,7 +207,8 @@ export function renderUsSchoolProfile(input: { school: Snapshot['school']; stude
 export const TH_BANDS_DEFAULT = [{ min: 80, grade: 4 }, { min: 75, grade: 3.5 }, { min: 70, grade: 3 }, { min: 65, grade: 2.5 }, { min: 60, grade: 2 }, { min: 55, grade: 1.5 }, { min: 50, grade: 1 }, { min: 0, grade: 0 }];
 export function renderThPorPor1(snaps: Snapshot[], settings: Record<string, unknown> = {}) {
   const issues: Issue[] = [];
-  const bands = (Array.isArray(settings.bands) ? settings.bands : TH_BANDS_DEFAULT) as { min: number; grade: number }[];
+  // 첫 일치로 고르므로 하한이 높은 띠부터(학교가 오름차순으로 넣어도 0 띠가 먼저 걸리지 않게, Codex #228)
+  const bands = [...((Array.isArray(settings.bands) ? settings.bands : TH_BANDS_DEFAULT) as { min: number; grade: number }[])].sort((a, b) => b.min - a.min);
   if (!Array.isArray(settings.bands)) issues.push({ level: 'info', where: 'bands', message: '학교 평가 규정(ระเบียบการวัดและประเมินผล)의 점수 띠를 출력 프로필에 넣지 않아 흔한 기본 띠(80/75/70/65/60/55/50)를 썼습니다. 학교 규정과 같은지 확인해 주세요.' });
   let pts = 0; let cr = 0;
   const years = snaps.map((s) => ({
