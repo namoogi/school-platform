@@ -96,6 +96,10 @@ describe('결정 카드', () => {
         .rejects.toThrow('결정 카드의 내용은 올린 뒤 고칠 수 없습니다');
       await expect(cl.query(`update public.control_requests set changes = '다른 말' where id = $1`, [r.id])).rejects.toThrow('결정 카드의 내용은');
       await cl.query(`update public.control_requests set status = 'done' where id = $1`, [r.id]);
+      // 직접 INSERT 로 검사를 건너뛴 카드를 만들 수 없다
+      await expect(cl.query(`insert into public.control_requests(kind, title, status, author, created_by, door, default_action, due_at, changes)
+        values ('decision', '우회 카드', 'proceeding', 'user', $1, 'default', '아무 일', now() - interval '1 minute', 'x')`, [P]))
+        .rejects.toThrow('결정 카드는 control.file_request 로만');
       const d = await file(base()) as { id: string };
       await expect(cl.query(`update public.control_requests set recommended = 'list' where id = $1`, [d.id])).rejects.toThrow('결정 카드의 내용은');
     } finally { await cl.end(); }

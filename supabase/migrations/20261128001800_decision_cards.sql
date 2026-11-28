@@ -35,6 +35,15 @@ $$;
 create or replace function private.control_card_guard() returns trigger
 language plpgsql set search_path = pg_catalog, public, pg_temp as $$
 begin
+  if tg_op = 'INSERT' then
+    -- 카드는 검사하는 함수(control.file_request, control_writer 소유)로만 들어온다. 직접 INSERT(학교 관리자 RLS 경로 등)는 카드 칸을 비워야 한다
+    if current_user <> 'control_writer'
+       and (new.door, new.ask, new.default_action, new.due_at, new.changes, new.unchanged, new.undo) is distinct from
+           (null::text, null::text, null::text, null::timestamptz, null::text, null::text, null::text) then
+      raise exception '결정 카드는 control.file_request 로만 올립니다.' using errcode = 'P0001';
+    end if;
+    return new;
+  end if;
   if (new.door, new.ask, new.default_action, new.due_at, new.changes, new.unchanged, new.undo)
      is distinct from (old.door, old.ask, old.default_action, old.due_at, old.changes, old.unchanged, old.undo)
      -- 카드의 선택지·추천안도 결정의 일부다
@@ -43,7 +52,7 @@ begin
   end if;
   return new;
 end $$;
-create trigger control_requests_card_guard before update on public.control_requests
+create trigger control_requests_card_guard before insert or update on public.control_requests
   for each row execute function private.control_card_guard();
 
 grant create on schema control to control_writer;

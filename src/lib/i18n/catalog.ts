@@ -3151,6 +3151,7 @@ export const CATALOG = {
   'db.cardDefaultSession': '기한까지 진행(default) 카드에는 맡을 세션(source_session)이 필요합니다.',
   'db.cardOneLine': '결정 카드의 changes·unchanged·undo 는 각각 한 줄로 씁니다. 자세한 설명은 detail 에 둡니다.',
   'db.cardImmutable': '결정 카드의 내용은 올린 뒤 고칠 수 없습니다. 새 카드로 올려 주세요.',
+  'db.cardInsertOnlyFn': '결정 카드는 control.file_request 로만 올립니다.',
   'db.cardNoticeAsk': '알림(notice) 카드에는 ask·default_action·recommended 를 두지 않습니다. 물을 것이 있으면 default 나 one_way 로 올려 주세요.',
   'db.cardDefaultAction': '기한까지 진행(default) 카드에는 default_action(답이 없으면 할 일, 500자 이내)이 필요합니다.',
   'db.cardDueOnlyDefault': '기한(due_at)은 기한까지 진행(default) 카드에만 씁니다.',
