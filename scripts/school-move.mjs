@@ -223,8 +223,10 @@ export async function importSchool(db, bundle, { status, auth = 'reset' } = {}) 
   }
   // 123차 학사 관리 템플릿: 같은 키·판인데 내용이 다르면 넣지 않는다(학교가 엉뚱한 템플릿 판에 묶이지 않게)
   for (const t of bundle.academic_templates ?? []) {
-    const { rows: [d] } = await db.query('select manifest from public.academic_templates where key = $1 and version = $2', [t.key, t.version]);
-    if (d && JSON.stringify(sortKeys(d.manifest)) !== JSON.stringify(sortKeys(t.manifest))) {
+    // 내용 칸 모두(내용·제목·설명·바뀐 이유·순서)를 본다. 하나라도 다르면 대상 행이 남아 학교가 다른 판을 보게 된다(Codex 199번 PR 검토)
+    const { rows: [d] } = await db.query('select manifest, title, summary, why, sort_order from public.academic_templates where key = $1 and version = $2', [t.key, t.version]);
+    const snap = (x) => JSON.stringify(sortKeys({ manifest: x.manifest, title: x.title, summary: x.summary, why: x.why ?? null, sort_order: x.sort_order }));
+    if (d && snap(d) !== snap(t)) {
       throw new Error(`대상의 학사 관리 템플릿 ${t.key} ${t.version}판이 원본과 내용이 다릅니다. 템플릿을 맞춘 뒤 넣으세요.`);
     }
   }
