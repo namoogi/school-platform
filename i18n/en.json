@@ -3078,5 +3078,7 @@
   "tplOffer.history": "{n} past decisions",
   "tplOffer.versionsShort": "v{from} → v{to}",
   "tplOffer.confirm": "Record this decision? If you accept, {name} v{to} is applied now and the items under 'Added if you accept' are added to the school copy (school values stay).",
-  "err.site.anchorTitle": "Block {n}: a menu anchor can only be set on a section, heading, news list or inquiry block that has a title."
+  "err.site.anchorTitle": "Block {n}: a menu anchor can only be set on a section, heading, news list or inquiry block that has a title.",
+  "usage.clearDb": "Empty DB copies (25 at a time, {n} left)",
+  "usage.clearConfirm": "This empties the DB copies of {n} files that already exist in R2 with the same content. It cannot be undone (files remain only in R2). Continue?"
 }

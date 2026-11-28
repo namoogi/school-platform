@@ -1,4 +1,5 @@
 import type { Db } from './db';
+import { createHash } from 'node:crypto';
 import { objectKey, objectStore, putVerified, StorageError } from './storage';
 import { PRICES, type SchoolUsage } from './usage-shared';
 export * from './usage-shared';
@@ -70,4 +71,36 @@ export async function copyToStorage(db: Db, limit = 25) {
   }
   const { rows: [l] } = await db.query<{ n: number }>('select count(*)::int as n from public.site_assets where object_key is null');
   return { copied, left: l.n, message: `${copied}개 복사 · 남은 파일 ${l.n}개` };
+}
+
+/**
+ * 125차: R2로 옮긴 파일의 DB 사본 비우기(전체 관리자, 한 번에 n개). 되돌릴 수 없으므로 하나씩 확인한다.
+ * - R2 객체를 실제로 내려받아 sha256 이 DB 기록과 같을 때만 bytes 를 비운다(크기만 보지 않는다).
+ * - 다르거나 없으면 비우지 않고 건너뛴 개수로 돌려준다(DB 사본이 유일한 원본으로 남는다).
+ * - DB 가드: object_key 가 있는 행에서 bytes 만 비우는 것만 허락한다(20261128001700).
+ */
+export async function clearDbCopies(db: Db, limit = 25) {
+  const store = objectStore();
+  if (!store) return { cleared: 0, skipped: 0, left: null as number | null, message: 'R2 설정이 없습니다. DB 사본을 비울 수 없습니다.' };
+  const { rows } = await db.query<{ id: string; sha256: string; object_key: string; mime: string }>(
+    `select id, sha256, object_key, mime from public.site_assets where object_key is not null and bytes is not null order by created_at limit $1`, [limit]);
+  let cleared = 0; let skipped = 0;
+  for (const a of rows) {
+    let same = false;
+    try {
+      const res = await fetch(await store.signedGet(a.object_key, { mime: a.mime, seconds: 120 }));
+      if (res.ok) same = createHash('sha256').update(Buffer.from(await res.arrayBuffer())).digest('hex') === a.sha256;
+    } catch { same = false; }
+    if (!same) { skipped++; continue; }
+    const r = await db.query(`update public.site_assets set bytes = null where id = $1 and object_key = $2 and bytes is not null`, [a.id, a.object_key]);
+    cleared += r.rowCount ?? 0;
+  }
+  const { rows: [l] } = await db.query<{ n: number }>('select count(*)::int as n from public.site_assets where object_key is not null and bytes is not null');
+  return { cleared, skipped, left: l.n, message: `DB 사본 ${cleared}개 비움 · 건너뜀 ${skipped}개 · 남은 사본 ${l.n}개` };
+}
+
+/** R2에도 있고 DB 사본도 남은 파일 수(비울 수 있는 것) */
+export async function dbCopyCount(db: Db) {
+  const { rows: [r] } = await db.query<{ n: number }>('select count(*)::int as n from public.site_assets where object_key is not null and bytes is not null');
+  return r.n;
 }

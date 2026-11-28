@@ -3,12 +3,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/components/I18nProvider';
 
-export function StorageActions({ configured, left }: { configured: boolean; left: number }) {
+export function StorageActions({ configured, left, copies }: { configured: boolean; left: number; copies: number }) {
   const router = useRouter();
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  async function run(action: 'check' | 'copy') {
+  async function run(action: 'check' | 'copy' | 'clear-db') {
+    // 125차: DB 사본 비우기는 되돌릴 수 없다 → 확인 창. R2 내용이 같은 것만 비운다(서버가 sha256 대조)
+    if (action === 'clear-db' && !window.confirm(t('usage.clearConfirm', { n: copies }))) return;
     setBusy(true); setMsg(null);
     try {
       const res = await fetch('/api/admin/storage', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action }) });
@@ -24,6 +26,10 @@ export function StorageActions({ configured, left }: { configured: boolean; left
       <button type="button" className="btn btn-primary btn-sm" disabled={busy || !configured || left === 0} onClick={() => run('copy')}>
         {busy ? t('usage.working') : t('usage.copy', { n: left })}
       </button>
+      {copies > 0 && left === 0 && (
+        <button type="button" className="btn btn-secondary btn-sm" disabled={busy || !configured} onClick={() => run('clear-db')}>
+          {busy ? t('usage.working') : t('usage.clearDb', { n: copies })}
+        </button>)}
       {msg && <span role="status" className={msg.ok ? 'muted' : 'field-error'}>{msg.text}</span>}
     </div>
   );

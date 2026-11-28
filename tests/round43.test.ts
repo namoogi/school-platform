@@ -35,7 +35,8 @@ function useR2(on: boolean) {
 beforeAll(async () => {
   server = http.createServer((req, res) => {
     const key = decodeURIComponent((req.url ?? '').split('?')[0]);
-    if (!String(req.headers.authorization ?? '').startsWith('AWS4-HMAC-SHA256')) { res.statusCode = 403; return res.end(); } // 서명 없는 요청 거부
+    // 서명 없는 요청 거부: 머리 서명(쓰기·HEAD) 또는 서명 주소(X-Amz-Signature, 읽기)
+    if (!String(req.headers.authorization ?? '').startsWith('AWS4-HMAC-SHA256') && !(req.url ?? '').includes('X-Amz-Signature=')) { res.statusCode = 403; return res.end(); }
     if (req.method === 'PUT') {
       const chunks: Buffer[] = [];
       req.on('data', (c) => chunks.push(c)); req.on('end', () => { objects.set(key, { body: Buffer.concat(chunks), type: String(req.headers['content-type']) }); res.end(); });
@@ -127,8 +128,36 @@ describe('R2 파일 저장소', () => {
     // 다른 학교 접두어로는 적을 수 없다(ADR 0019 A1)
     await expect(sql(`update public.site_assets set object_key = 's/' || $2 || '/' || sha256 where id = $1`, [r!.id, B.schoolId])).rejects.toThrow();
     await sql(`update public.site_assets set object_key = 's/' || school_id::text || '/' || sha256 where id = $1`, [r!.id]);
-    await expect(sql(`update public.site_assets set bytes = null, object_key = object_key where id = $1`, [r!.id])).rejects.toThrow('고칠 수 없습니다');
+    // 125차: 위치가 있는 행은 DB 사본(bytes)만 비울 수 있다. 다른 칸을 함께 바꾸거나, 위치가 없는 행을 비우는 것은 거부
+    await expect(sql(`update public.site_assets set bytes = null, name = 'y' where id = $1`, [r!.id])).rejects.toThrow('고칠 수 없습니다');
+    await sql(`update public.site_assets set bytes = null where id = $1`, [r!.id]);
+    await expect(sql(`update public.site_assets set bytes = '\\x00'::bytea where id = $1`, [r!.id])).rejects.toThrow('고칠 수 없습니다');
+    const r2 = await asUser(A.userId, (db) => site.uploadAsset(db, A.schoolId, { name: 'g.png', type: 'image/png', bytes: png(7) }));
+    await expect(sql(`update public.site_assets set bytes = null where id = $1`, [r2!.id])).rejects.toThrow();
     await expect(sql(`delete from public.site_assets where id = $1`, [r!.id])).rejects.toThrow('지울 수 없습니다');
+  });
+
+  it('125차 DB 사본 비우기: R2 내용이 같을 때만 비우고, 다르거나 없으면 건너뛴다. 학교 관리자는 못 한다', async () => {
+    useR2(true);
+    await asUser(P, (db) => usage.copyToStorage(db));
+    const before = await sql(`select count(*)::int as n from public.site_assets where object_key is not null and bytes is not null`);
+    expect(before[0].n).toBeGreaterThanOrEqual(2);
+    // 한 파일은 R2 내용을 바꿔 둔다(손상) → 그 파일은 비우지 않아야 한다
+    const [bad] = await sql(`select id, object_key from public.site_assets where object_key is not null and bytes is not null order by created_at limit 1`);
+    objects.set(`/bkt/${bad.object_key}`, { body: Buffer.from('broken'), type: 'image/png' });
+    await expect(asUser(A.userId, (db) => usage.clearDbCopies(db))).resolves.toMatchObject({ cleared: 0 }); // RLS: 학교 관리자 대상 행 없음
+    const r = await asUser(P, (db) => usage.clearDbCopies(db));
+    expect(r.skipped).toBe(1);
+    expect(r.cleared).toBe(before[0].n - 1);
+    expect(r.left).toBe(1);
+    const [keep] = await sql(`select bytes is not null as has_bytes from public.site_assets where id = $1`, [bad.id]);
+    expect(keep.has_bytes).toBe(true);
+    // 비운 파일도 공개 화면에서는 R2 서명 주소로 그대로 열린다
+    const [gone] = await sql(`select mime, sha256, object_key from public.site_assets where object_key is not null and bytes is null limit 1`);
+    const res = await storage.assetResponse({ mime: gone.mime, bytes: null, sha256: gone.sha256, object_key: gone.object_key }, {}, 'x');
+    expect(res.status).toBe(302);
+    useR2(false);
+    expect((await asUser(P, (db) => usage.clearDbCopies(db))).cleared).toBe(0); // R2 설정이 없으면 아무것도 비우지 않는다
   });
 });
 

@@ -3138,6 +3138,9 @@ export const CATALOG = {
   'tplOffer.confirm': '결정을 남길까요? \'수락\'이면 {name} {to}판을 지금 적용해 위의 \'수락하면 더해지는 것\'을 학교 사본에 더합니다(학교 값은 그대로).',
   // 126차: 두 단계 메뉴
   'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
+  // R2 DB 사본 비우기 (125차)
+  'usage.clearDb': 'DB 사본 비우기 (25개씩, 남은 {n}개)',
+  'usage.clearConfirm': 'R2에 같은 내용이 있는 파일 {n}개의 DB 사본을 비웁니다. 되돌릴 수 없습니다(R2에만 남습니다). 계속할까요?',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

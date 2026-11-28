@@ -1,11 +1,11 @@
 import { loadForPlatform } from '@/lib/page';
-import { estimate, fmtBytes, platformEstimate, PRICES, schoolUsage, storageStatus, usd } from '@/lib/usage';
+import { dbCopyCount, estimate, fmtBytes, platformEstimate, PRICES, schoolUsage, storageStatus, usd } from '@/lib/usage';
 import { Kpi, PageHeader, StatusBadge } from '@/components/ui';
 import { StorageActions } from './StorageActions';
 import { getI18n, userLang } from '@/lib/i18n/server';
 
 export default async function UsagePage() {
-  const { rows, uiLang } = await loadForPlatform(async ({ db }) => ({ rows: await schoolUsage(db, null), uiLang: await userLang(db) }));
+  const { rows, uiLang, copies } = await loadForPlatform(async ({ db }) => ({ rows: await schoolUsage(db, null), uiLang: await userLang(db), copies: await dbCopyCount(db) }));
   const { t, locale } = await getI18n(uiLang);
   const st = storageStatus();
   const total = platformEstimate(rows);
@@ -30,7 +30,7 @@ export default async function UsagePage() {
             ? t('usage.r2On')
             : t('usage.r2Off')}
         </p>
-        <StorageActions configured={st.configured} left={dbOnly} />
+        <StorageActions configured={st.configured} left={dbOnly} copies={copies} />
       </section>
 
       <section className="card">
