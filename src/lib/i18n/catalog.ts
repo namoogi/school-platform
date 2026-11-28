@@ -1713,7 +1713,7 @@ export const CATALOG = {
   'err.revisionTargetNotFound': '수정할 발행본을 찾을 수 없습니다.',
   'err.alreadyRevised': '이미 수정본이 있는 발행본입니다. 가장 최근 수정본에서 다시 발행해 주세요.',
   'err.documentNotFound': '문서를 찾을 수 없습니다.',
-  'err.grade.bands': '척도 띠가 필요합니다.',
+  'err.grade.bands': '척도 띠가 필요합니다(1~30개, 띠마다 코드).',
   'err.grade.score': '점수는 숫자입니다.',
   'err.grade.requestKey': '요청 키(requestKey)가 필요합니다.',
   'err.badRequest': '요청 형식이 올바르지 않습니다.',
@@ -3219,6 +3219,8 @@ export const CATALOG = {
   // 128차 Codex 검토 5
   'err.grade.bandField': '척도 띠 {code}에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.grade.bandDupMin': '하한 {min}인 띠가 둘 이상입니다. 띠마다 하한을 다르게 적어 주세요.',
+  // 128차 Codex 검토 6
+  'err.grade.scaleKindChange': '척도 {code}의 종류({kind})는 바꿀 수 없습니다. 다른 종류는 새 코드로 만들어 주세요.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

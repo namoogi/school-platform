@@ -105,7 +105,8 @@ export const SCALE_KINDS = ['letter', 'level', 'pass_fail', 'percent', 'points']
 /** 128차: 척도 띠 검사(화면·AI 초안 공통). 코드 겹침·숫자 아닌 하한/평점을 DB 전에 막는다. 표기가 없으면 코드를 표기로 쓴다 */
 const BAND_KEYS = ['code', 'label', 'min', 'points', 'earns_credit'];
 export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[] {
-  if (!Array.isArray(raw) || !raw.length || raw.length > 40) throw new ValidationError('err.grade.bands');
+  // 띠 30개는 DB 칸 제한과 같게
+  if (!Array.isArray(raw) || !raw.length || raw.length > 30) throw new ValidationError('err.grade.bands');
   const seen = new Set<string>();
   const num = (v: unknown, code: string) => {
     if (v == null || v === '') return null;
@@ -136,6 +137,12 @@ export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[]
 }
 export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }, opts: { floor?: boolean } = {}) {
   const bands = checkBands(input.bands, opts);
+  return saveScaleChecked(db, schoolId, input, bands);
+}
+async function saveScaleChecked(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; why?: unknown; base_version?: unknown }, bands: Band[]) {
+  // 있는 척도의 종류는 바꾸지 않는다(DB는 처음 만들 때만 종류를 쓴다, Codex #228)
+  const { rows: [had] } = await db.query<{ kind: string }>('select kind from public.scales where school_id = $1 and code = $2', [schoolId, str(input.code)]);
+  if (had && had.kind !== str(input.kind)) throw new ValidationError('err.grade.scaleKindChange', { code: str(input.code), kind: had.kind });
   return one<{ id: string; version: number }>(db, 'select app.save_scale($1, $2) as v',
     [schoolId, JSON.stringify({ code: str(input.code), kind: str(input.kind), bands, why: str(input.why), base_version: base(input.base_version ?? 0) })]);
 }

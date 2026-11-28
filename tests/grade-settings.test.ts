@@ -58,6 +58,9 @@ describe('맞춤 척도', () => {
       .toMatchObject({ version: 2 });
     await expect(asUser(A.userId, (db) => gr.saveScale(db, A.schoolId, { code: 'school_letter', kind: 'letter', bands, why: '옛 판에서 고침', base_version: 1 })))
       .rejects.toMatchObject({ code: 'P0409' });
+    await expect(asUser(A.userId, (db) => gr.saveScale(db, A.schoolId, { code: 'school_letter', kind: 'pass_fail', bands, why: '종류 바꾸기', base_version: 2 })))
+      .rejects.toThrow(expect.objectContaining({ key: 'err.grade.scaleKindChange' }));
+    expect(() => gr.checkBands(Array.from({ length: 31 }, (_, i) => ({ code: `B${i}`, min: i })))).toThrow(expect.objectContaining({ key: 'err.grade.bands' }));
     const [s] = (await asUser(A.userId, (db) => gb.listScales(db, A.schoolId))).filter((x) => x.code === 'school_letter');
     expect(s.version).toBe(2);
     expect(s.bands.find((b) => b.code === 'A')?.min).toBe(90);

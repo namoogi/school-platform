@@ -59,4 +59,7 @@ base_version | '내가 보고 고친 판 번호'. 그 사이 다른 사람이 �
 | P1(5차) 같은 하한의 띠 둘 → 마감 때 고르는 띠가 정해지지 않음 | 수용 | 숫자 하한 중복 거부(`err.grade.bandDupMin`) |
 | P1(5차) 띠 칸 이름 오타(`earn_credit`)가 버려져 이수로 | 수용 | 띠 칸은 code·label·min·points·earns_credit만(`err.grade.bandField`) |
 
+| P2(6차) 있는 척도 코드를 다른 종류로 저장하면 종류는 그대로인 채 성공 | 수용 | 저장된 종류와 다르면 거부(`err.grade.scaleKindChange`) |
+| P2(6차) 띠 31~40개가 DB 제한(30)에 걸려 500 | 수용 | 검사 한도를 30으로 |
+
 - 남은 것: 템플릿 적용(관제가 낸 판)은 바닥 구간을 막지 않는다. 템플릿 판 검사(`app.academic_template_ok`)에 같은 규칙을 넣을지는 관제 몫(시험용 판에 `min: null` 나머지 띠가 있음).

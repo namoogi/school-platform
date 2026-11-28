@@ -1687,7 +1687,7 @@
   "err.revisionTargetNotFound": "The issued document to revise was not found.",
   "err.alreadyRevised": "This issued document already has a revision. Issue again from the latest revision.",
   "err.documentNotFound": "Document not found.",
-  "err.grade.bands": "Scale bands are required.",
+  "err.grade.bands": "Scale bands are required (1–30, each with a code).",
   "err.grade.score": "Scores must be numbers.",
   "err.grade.requestKey": "A request key (requestKey) is required.",
   "err.badRequest": "The request format is invalid.",
@@ -3152,5 +3152,6 @@
   "err.rec.profileScale": "This school has no scale {code}. Use a scale code from the Grades screen.",
   "err.grade.bandCredit": "earns_credit of band {code} must be true or false (without quotes).",
   "err.grade.bandField": "Band {code} has an unknown field {key}. Accepted fields: {keys}",
-  "err.grade.bandDupMin": "More than one band has the minimum {min}. Give each band a different minimum."
+  "err.grade.bandDupMin": "More than one band has the minimum {min}. Give each band a different minimum.",
+  "err.grade.scaleKindChange": "The kind ({kind}) of scale {code} cannot change. Create a new code for another kind."
 }
