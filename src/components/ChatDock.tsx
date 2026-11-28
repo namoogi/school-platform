@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MessagesSquare, Maximize2, Minimize2, X, ArrowLeft } from 'lucide-react';
 import { StatusBadge } from './ui';
+import { DecisionFacts, DoorBadge } from './DecisionCard';
 import { useI18n } from './I18nProvider';
 import type { MsgKey } from '@/lib/i18n/catalog';
 import type { Translate } from '@/lib/i18n/base';
@@ -281,12 +282,14 @@ function Thread({ id, q, scope, onBack, onChange }: { id: string; q: string; sco
         <button type="button" className="btn-ghost chatdock-back" onClick={onBack}><ArrowLeft size={14} /> {t('common.backToList')}</button>
         <h3><span className="num muted">D-{r.no}</span> {r.title}</h3>
         <div className="item-meta">
-          <StatusBadge tone={st.tone} dot>{statusLabel(t, r.status)}</StatusBadge>
+          {r.door && <DoorBadge door={r.door} />}
+          {!(r.door && r.status === (r.door === 'one_way' ? 'parked' : 'proceeding')) && <StatusBadge tone={st.tone} dot>{statusLabel(t, r.status)}</StatusBadge>}
           <span className="tag">{topicLabel(t, r.topic)}</span>
           {r.school_name && <span className="tag">{r.school_name}</span>}
-          {r.reversible === false && <span className="tag">{t('chat.hardToUndo')}</span>}
+          {!r.door && r.reversible === false && <span className="tag">{t('chat.hardToUndo')}</span>}
           {r.related && <span className="tag">{r.related}</span>}
         </div>
+        <DecisionFacts r={r} />
       </header>
       <ol className="chatdock-feed" ref={feed} aria-live="polite">
         {r.detail && <li className="chatdock-msg" data-author={r.author}><div className="chatdock-msg-head"><b>{t(r.kind === 'decision' ? 'chat.decisionRequest' : 'chat.detail')}</b></div><p>{r.detail}</p></li>}

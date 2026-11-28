@@ -8,14 +8,17 @@ B=https://onschools.vercel.app/api/control
 ```
 
 ## 서브 세션: 결정이 필요할 때
-1. 요청을 올린다. 같은 세션·같은 제목의 열린 요청이 있으면 그 요청을 돌려준다.
+1. 요청을 **결정 카드**로 올린다(형식: `docs/automation/DECISION-CARDS.md`, ADR 0048). 같은 세션·같은 제목의 열린 요청이 있으면 그 요청을 돌려준다.
    ```bash
    curl -s -X POST "$B/requests" -H 'content-type: application/json' -d '{
-     "title": "한 줄 제목", "detail": "배경·영향·되돌릴 수 있는지",
-     "options": [{"key":"A","label":"추천안","detail":"…"},{"key":"B","label":"다른 안"}],
-     "recommended": "A", "reversible": true, "related": "PR·ADR·파일", "source_session": "<내 세션 id>"}'
+     "door": "default", "title": "한 줄 제목", "ask": "예/아니오로 답할 질문?",
+     "changes": "승인하면 바뀌는 것", "unchanged": "안 바뀌는 것", "undo": "되돌리는 길",
+     "options": [{"key":"A","label":"추천안","detail":"…"},{"key":"B","label":"다른 안"}], "recommended": "A",
+     "due_at": "2026-12-01T18:00:00+09:00", "default_action": "답이 없으면 할 일",
+     "detail": "배경·근거", "related": "PR·ADR·파일", "source_session": "<내 세션 id>"}'
    ```
-   `reversible: true`면 상태가 '추천안으로 진행 중', `false`면 '보류'가 된다.
+   - `door`: `one_way`(되돌리기 어려움 → '보류', 사람을 기다림) · `default`(기한까지 반대 없으면 진행 → '추천안으로 진행 중', `due_at`·`default_action` 필수) · `notice`(알림, `changes`만, 선택지 없음).
+   - 칸이 빠지면 400과 함께 무엇이 빠졌는지 알려 준다. `reversible`은 문 종류에서 정해진다.
 2. 되돌릴 수 있으면 추천안으로 진행하고, 아니면 보류하고 다른 일을 한다(`SCHOOL-SESSIONS.md` '승인·결정이 필요할 때').
 3. 지시는 관제가 `send_message`로 보낸다. 받으면 일하고 보고한다.
    ```bash

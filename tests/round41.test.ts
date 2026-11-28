@@ -106,6 +106,8 @@ describe('대화창', () => {
 
   it('세션이 학교 결정 요청을 올리면 그 학교 관리자 대화창에서 고른다(카드 = 바로 결정)', async () => {
     const r = await asAgent((db) => c.control.file(db, T, {
+      door: 'default', ask: '메뉴 이름을 소식으로 할까요?', changes: '바뀌는 것', unchanged: '안 바뀌는 것', undo: '되돌리는 길',
+      due_at: new Date(Date.now() + 86400000).toISOString(), default_action: '추천안으로 진행',
       title: '메뉴 이름', detail: '‘소식’과 ‘알림’ 중', school: 'school-a', topic: 'site_ui', source_session: SA, reversible: true,
       options: [{ key: 'news', label: '소식' }, { key: 'notice', label: '알림' }], recommended: 'news',
     })) as { id: string; status: string };

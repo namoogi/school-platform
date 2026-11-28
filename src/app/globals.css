@@ -1609,6 +1609,20 @@ label.radio { display: flex; align-items: center; gap: var(--ds-space-2); font-w
 .control-send { align-items: flex-end; }
 .control-send .field { min-width: 240px; }
 .control-compose h2 { font-size: var(--fs-heading-sm, 1rem); }
+/* 129차 결정 카드(ADR 0048): 질문 한 줄 → 기한 → 바뀌는 것·안 바뀌는 것·되돌리는 길 */
+.decision-card { display: grid; gap: var(--ds-space-2); padding: var(--ds-space-3); border: 1px solid var(--border-default); border-left-width: 3px; border-radius: var(--radius-sm); }
+.decision-card[data-door="one_way"] { border-left-color: var(--danger-border); }
+.decision-card[data-door="default"] { border-left-color: var(--warning-border); }
+.decision-ask { margin: 0; font-weight: 600; }
+.decision-due { margin: 0; font-size: var(--fs-body-sm); }
+.decision-facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: var(--ds-space-1) var(--ds-space-3); font-size: var(--fs-body-sm); }
+.decision-facts > div { display: contents; }
+.decision-facts dt { color: var(--text-muted); font-weight: 600; }
+.decision-facts dd { margin: 0; }
+@media (max-width: 640px) { .decision-facts { grid-template-columns: 1fr; row-gap: 0; } .decision-facts dd { margin-bottom: var(--ds-space-1); } }
+.control-digest > summary { cursor: pointer; font-weight: 600; padding: var(--ds-space-2) 0; }
+.control-digest > .control-list { margin-top: var(--ds-space-2); }
+.chatdock-head .decision-card { margin-top: var(--ds-space-2); }
 .item-direct { justify-self: start; font-size: var(--fs-caption); }
 
 /* 41차: 어디서나 여는 대화창 (ADR 0017) — 옛 개선 요청 판의 떠 있는 창. 바탕만 살짝 비치고 글이 놓이는 면은 불투명 */

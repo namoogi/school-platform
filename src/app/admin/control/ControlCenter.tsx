@@ -7,6 +7,7 @@ import { NEEDS_USER, STATUS, type Request, type Session, type Status } from '@/l
 import { useI18n } from '@/components/I18nProvider';
 import { CATALOG, type MsgKey } from '@/lib/i18n/catalog';
 import { baseT } from '@/lib/i18n/base';
+import { DecisionFacts, DoorBadge } from '@/components/DecisionCard';
 
 type Lab = { id: string; title: string; body: string } | null;
 // 묶음·글 종류·상태 이름은 사전의 cc.tab.* · cc.kind.* · control.status.*
@@ -37,6 +38,15 @@ function TargetSelect({ value, onChange, sessions, allowNote, id }: { value: str
     </select>
   );
 }
+const RANK = (r: Request) => (r.door === 'one_way' ? 0 : r.door === 'default' ? 1 : 2);
+/** 올린 그대로의 상태(한쪽 문 = 보류, 나머지 = 추천안 진행 중)면 문 종류 배지가 같은 말이라 상태 배지를 숨긴다 */
+const sameAsDoor = (r: Request) => !!r.door && r.status === (r.door === 'one_way' ? 'parked' : 'proceeding');
+function byUrgency(a: Request, b: Request) {
+  const d = RANK(a) - RANK(b);
+  if (d) return d;
+  if (a.door === 'default' && b.door === 'default') return (a.due_at ?? '').localeCompare(b.due_at ?? '') || a.no - b.no;
+  return a.no - b.no;
+}
 const target = (v: string) => (v === 'new' ? { new_session: true } : { target_session: v || null });
 
 export function ControlCenter({ requests, sessions, lab }: { requests: Request[]; sessions: Session[]; lab: Lab }) {
@@ -47,8 +57,13 @@ export function ControlCenter({ requests, sessions, lab }: { requests: Request[]
   const [composing, setComposing] = useState(!!lab);
   const names = Object.fromEntries(sessions.map((s) => [s.id, s.name]));
   const current = TABS.find((x) => x.key === tab)!;
-  // 답 필요는 오래된 요청부터, 나머지는 최근 것부터
-  const visible = requests.filter((r) => current.statuses.includes(r.status)).sort((a, b) => (tab === 'need' ? a.no - b.no : b.no - a.no));
+  // 답 필요: 되돌리기 어려운 결정 → 기한이 가까운 '기한까지 진행' → 카드 형식 이전 요청 순, 같은 무리는 오래된 것부터.
+  // 알림 카드는 답할 일이 없으므로 맨 아래 접힌 묶음으로 (129차, ADR 0048). 나머지 묶음은 최근 것부터.
+  const inTab = requests.filter((r) => current.statuses.includes(r.status));
+  const notices = tab === 'need' ? inTab.filter((r) => r.door === 'notice').sort((a, b) => b.no - a.no) : [];
+  const visible = tab === 'need'
+    ? inTab.filter((r) => r.door !== 'notice').sort(byUrgency)
+    : inTab.sort((a, b) => b.no - a.no);
 
   async function run(fn: () => Promise<unknown>) {
     setError(null);
@@ -75,6 +90,14 @@ export function ControlCenter({ requests, sessions, lab }: { requests: Request[]
         {visible.length === 0 && <li className="muted empty">{t('cc.empty')}</li>}
         {visible.map((r) => <RequestCard key={r.id} r={r} names={names} sessions={sessions} run={run} />)}
       </ul>
+      {notices.length > 0 && (
+        <details className="control-digest" data-testid="control-digest">
+          <summary>{t('dc.digest', { n: notices.length })} <span className="muted small-text">{t('dc.digestHint')}</span></summary>
+          <ul className="control-list">
+            {notices.map((r) => <RequestCard key={r.id} r={r} names={names} sessions={sessions} run={run} />)}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }
@@ -106,7 +129,7 @@ function RequestCard({ r, names, sessions, run }: { r: Request; names: Record<st
   const [choice, setChoice] = useState<string>('');
   const [body, setBody] = useState('');
   const [to, setTo] = useState(r.source_session ?? sessions.find((s) => s.active)?.id ?? 'new');
-  const [open, setOpen] = useState(NEEDS_USER.includes(r.status) || r.status === 'answered');
+  const [open, setOpen] = useState(r.door !== 'notice' && (NEEDS_USER.includes(r.status) || r.status === 'answered'));
   const pending = r.messages.filter((m) => m.author === 'user' && !m.delivered_at && (m.target_session || m.new_session));
   const label = (key: string | null) => r.options.find((o) => o.key === key)?.label ?? key;
   const send = () => run(() => call(`/api/admin/control/requests/${r.id}/messages`, 'POST', { choice: choice || null, body, ...target(to) }))
@@ -118,15 +141,17 @@ function RequestCard({ r, names, sessions, run }: { r: Request; names: Record<st
           <span className="control-no num">D-{r.no}</span> {r.title}
         </button>
         <div className="item-meta">
-          <StatusBadge tone={st.tone} dot>{statusLabel(r.status)}</StatusBadge>
+          {r.door && <DoorBadge door={r.door} />}
+          {!sameAsDoor(r) && <StatusBadge tone={st.tone} dot>{statusLabel(r.status)}</StatusBadge>}
           <span className="tag">{t(r.kind === 'decision' ? 'cc.decision' : 'cc.directive')}</span>
           {r.source_session && <span className="tag">{t(r.kind === 'decision' ? 'cc.requestedBy' : 'cc.sentTo', { name: names[r.source_session] ?? r.source_session })}</span>}
-          {r.reversible === true && <span className="tag">{t('cc.reversible')}</span>}
-          {r.reversible === false && <span className="tag">{t('chat.hardToUndo')}</span>}
+          {!r.door && r.reversible === true && <span className="tag">{t('cc.reversible')}</span>}
+          {!r.door && r.reversible === false && <span className="tag">{t('chat.hardToUndo')}</span>}
           {r.related && <span className="tag">{r.related}</span>}
           {pending.length > 0 && <span className="tag">{t('cc.pending', { n: pending.length })}</span>}
         </div>
       </div>
+      <DecisionFacts r={r} />
       {open && <>
         {r.detail && <p className="control-detail">{r.detail}</p>}
         {r.messages.length > 0 && (
