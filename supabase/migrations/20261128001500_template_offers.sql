@@ -56,8 +56,9 @@ begin
   else
     src := cur.template_version;
   end if;
-  insert into public.academic_template_decisions(school_id, template_key, from_version, to_version, decision, note)
-  values (target, p_key, src, p_to, decision, nullif(trim(decision_note), '')) returning id into new_id;
+  -- 시각은 잠금을 잡은 뒤의 실제 시각(clock_timestamp). now()는 트랜잭션 시작 시각이라 기다린 쪽이 더 이른 시각을 받을 수 있다(Codex 199번 PR 검토)
+  insert into public.academic_template_decisions(school_id, template_key, from_version, to_version, decision, note, decided_at)
+  values (target, p_key, src, p_to, decision, nullif(trim(decision_note), ''), clock_timestamp()) returning id into new_id;
   return new_id;
 end $$;
 revoke all on function app.record_template_decision(uuid, text, integer, text, text) from public, anon;

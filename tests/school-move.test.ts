@@ -197,6 +197,29 @@ describe('연습 이전: 공용 DB의 학교 A → 빈 DB', () => {
     await expect(importSchool(dst, clash)).rejects.toThrow(/같은 메일/);
   });
 
+  it('학교가 쓰는 학사 관리 템플릿 판(운영 중에 낸 판 포함)을 함께 옮기고, 같은 판의 다른 내용이면 넣지 않는다(123차)', async () => {
+    const ver = async () => (await su.query(`select coalesce(max(version), 0)::int as v from public.school_profiles where school_id = $1`, [A.schoolId])).rows[0].v;
+    const at = await import('@/lib/academic-templates');
+    const off = await import('@/lib/template-offers');
+    await asUser(A.userId, async (db) => at.applyTemplate(db, A.schoolId, { key: 'us_k12', version: 1, base_version: await ver() }));
+    const m = (await su.query(`select manifest from public.academic_templates where key = 'us_k12' order by version desc limit 1`)).rows[0].manifest;
+    const latest = (await su.query(`select max(version)::int as v from public.academic_templates where key = 'us_k12'`)).rows[0].v;
+    await asUser(platformAdmin, (db) => off.publishAcademicTemplate(db, { key: 'us_k12', base_version: latest, title: { ko: '미국 K-12' }, manifest: m, why: '이전 시험' }));
+    await asUser(A.userId, async (db) => off.decideTemplateOffer(db, A.schoolId, { to_version: latest + 1, decision: 'accepted', base_version: await ver() }));
+    const bundle = await exportSchool(su, A.schoolId);
+    expect(bundle.academic_templates.map((t: { key: string; version: number }) => `${t.key}:${t.version}`)).toEqual(expect.arrayContaining(['us_k12:1', `us_k12:${latest + 1}`]));
+    const otherId = '00000000-0000-4000-8000-0000000000de';
+    const base = JSON.parse(JSON.stringify(bundle).split(A.schoolId).join(otherId));
+    base.tables = {};
+    const wrong = { ...base, academic_templates: base.academic_templates.map((t: object) => ({ ...t, manifest: { changed: true } })) };
+    await expect(importSchool(dst, wrong)).rejects.toThrow(/학사 관리 템플릿/);
+    // 맞는 묶음은 운영 중에 낸 판까지 대상 DB에 넣는다(대상에서도 학교 판 = 최신 판이라 제안이 없다)
+    const before = (await dst.query(`select count(*)::int as n from public.academic_templates where key = 'us_k12' and version = $1`, [latest + 1])).rows[0].n;
+    await importSchool(dst, { ...base, school: { ...base.school, slug: 'school-a-tpl-move', public_slug: null } }, { status: 'active' });
+    expect(before).toBe(0);
+    expect((await dst.query(`select count(*)::int as n from public.academic_templates where key = 'us_k12' and version = $1`, [latest + 1])).rows[0].n).toBe(1);
+  });
+
   it('같은 학교를 두 번 넣지 않는다', async () => {
     const bundle = await exportSchool(su, A.schoolId);
     await expect(importSchool(dst, bundle)).rejects.toThrow(/이미 그 학교/);
