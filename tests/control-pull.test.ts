@@ -39,6 +39,24 @@ describe('관제 지시 당겨 오기', () => {
     expect((await mine(RAS)).body).toEqual([]);
   });
 
+  it('기한이 지난 기한 진행 카드는 사람 답이 없어도 나오고(due), 기한 뒤 내가 보고하면 빠진다 (ADR 0048)', async () => {
+    const r = await asAgent((db) => c.control.file(db, T, {
+      title: '기한 지난 카드', source_session: RAS, door: 'default', ask: '목록을 카드로 바꿀까요?',
+      changes: '카드 3열', unchanged: '글 그대로', undo: '목록형 다시 고르기',
+      options: [{ key: 'a', label: '카드' }, { key: 'b', label: '목록' }], recommended: 'a',
+      due_at: new Date(Date.now() + 3600000).toISOString(), default_action: '카드로 바꿈',
+    })) as { id: string };
+    expect((await mine(RAS)).body.some((x: { id: string }) => x.id === r.id)).toBe(false); // 기한 전
+    const cl = new pg.Client({ connectionString: TEST_URL }); await cl.connect();
+    await cl.query(`update public.control_requests set due_at = now() - interval '1 minute' where id = $1`, [r.id]);
+    await cl.end();
+    const got = (await mine(RAS)).body as { id: string; due?: boolean }[];
+    expect(got.find((x) => x.id === r.id)).toMatchObject({ due: true });
+    expect((await mine(OTHER)).body.some((x: { id: string }) => x.id === r.id)).toBe(false);
+    await asAgent((db) => c.control.post(db, T, r.id, { kind: 'report', body: '추천안으로 진행함', status: 'done', author_session: RAS }));
+    expect((await mine(RAS)).body.some((x: { id: string }) => x.id === r.id)).toBe(false);
+  });
+
   it('토큰·세션 id 가 없으면 거부', async () => {
     expect((await mine(RAS, 'insp_' + '0'.repeat(64))).status).toBe(401);
     const res = await route.GET(new Request('http://x/api/control/mine', { headers: { 'x-inspector-token': T } }));

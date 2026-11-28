@@ -45,6 +45,7 @@ describe('결정 카드', () => {
     const r = await file({ ...rest, door: 'one_way', ask: '옛 사진 165개를 지울까요?' });
     expect(r).toMatchObject({ status: 'parked', reversible: false, door: 'one_way' });
     await expect(file({ ...rest, door: 'one_way', due_at: day(1) })).rejects.toThrow('기한(due_at)은 기한까지 진행(default) 카드에만');
+    await expect(file({ ...rest, door: 'one_way', default_action: '지웁니다' })).rejects.toThrow('default_action 은 기한까지 진행(default) 카드에만');
   });
 
   it('알림 카드: changes만 있으면 되고 선택지는 두지 않는다', async () => {

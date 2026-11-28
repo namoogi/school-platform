@@ -98,6 +98,10 @@ begin
   elsif p ? 'due_at' and nullif(p ->> 'due_at', '') is not null then
     raise exception '기한(due_at)은 기한까지 진행(default) 카드에만 씁니다.' using errcode = '22023';
   end if;
+  if dr = 'one_way' and dflt is not null then
+    -- 한쪽 문은 사람을 기다린다. 답이 없을 때 할 일을 받아 두면 실행되지 않을 약속이 된다
+    raise exception 'default_action 은 기한까지 진행(default) 카드에만 씁니다. 한쪽 문(one_way)은 사람의 답을 기다립니다.' using errcode = '22023';
+  end if;
   -- 문 종류와 되돌릴 수 있는지는 같은 말이다. 엇갈리면 분류를 다시 보게 한다
   rev := dr <> 'one_way';
   if p ? 'reversible' and jsonb_typeof(p -> 'reversible') <> 'null'

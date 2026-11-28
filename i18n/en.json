@@ -3118,5 +3118,6 @@
   "db.cardOptions": "A decision card has 2 to 4 options and one recommended option.",
   "db.cardNoticeOptions": "A notice card has no options. If there is something to choose, file it as default.",
   "dc.changesNotice": "What changed",
-  "db.cardNoticeAsk": "A notice card has no ask, default_action or recommended. If you need to ask something, file it as default or one_way."
+  "db.cardNoticeAsk": "A notice card has no ask, default_action or recommended. If you need to ask something, file it as default or one_way.",
+  "db.cardOneWayDefault": "default_action is only for default cards. A one_way card waits for a person to answer."
 }

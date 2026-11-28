@@ -30,7 +30,7 @@ B=https://onschools.vercel.app/api/control
 
 ## 세션: 내 일 당겨 오기 (지시의 원본은 관제 센터)
 - 차례를 시작할 때, 긴 작업 사이사이, 끝내기 전에 확인한다:
-  `curl -s "$B/mine?session=<내 세션 id>"` → 내가 맡았거나 올린 요청 가운데 **사람이 답했는데 내 답이 아직 없는 것**.
+  `curl -s "$B/mine?session=<내 세션 id>"` → 내가 맡았거나 올린 요청 가운데 **사람이 답했는데 내 답이 아직 없는 것**. 기한이 지난 '기한 진행' 결정 카드(사람 답도, 기한 뒤 내 보고도 없음)도 `due: true`로 나온다. 받으면 `default_action`대로 진행하고 그 요청에 보고한다(ADR 0048).
 - 관제의 `send_message`는 깨우는 신호일 뿐이다. 그 메시지가 막혀도(Claude의 '신뢰 기기 확인' 보안 등) 지시는 여기서 그대로 가져갈 수 있다.
 - 가져간 일에 답을 남기면(`POST $B/requests/<id>/messages`, `author_session` 필수) 목록에서 빠진다.
 

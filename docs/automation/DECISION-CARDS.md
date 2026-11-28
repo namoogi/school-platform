@@ -61,6 +61,8 @@ curl -s -X POST "$B/requests" -H 'content-type: application/json' -d '{
 ```
 - 서버(`control.file_request`)가 형식을 검사한다. 빠진 칸이 있으면 무엇이 빠졌는지 알려 주며 거부한다.
 - 문 종류가 상태를 정한다: 한쪽 문 → '보류', 기한 진행·알림 → '추천안으로 진행 중'. `reversible`은 문 종류에서 정해진다(보내면 엇갈리지 않아야 함).
+- 기한이 지나면 `GET $B/mine?session=<내 id>`에 그 카드가 `due: true`로 나온다. 추천안대로 진행하고 그 요청에 보고한다.
+- 한쪽 문에는 `due_at`·`default_action`을 두지 않는다.
 - 알림은 `door`, `title`, `changes`만 있으면 된다. 질문(`ask`)·답이 없을 때 할 일·선택지·추천안은 두지 않는다(결정이 알림 묶음에 숨지 않게).
 - `due_at`은 시간대가 붙은 ISO 8601만 받는다(`Z` 또는 `+09:00`). `tomorrow`·날짜만 같은 값은 거부한다.
 
