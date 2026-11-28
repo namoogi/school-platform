@@ -2337,6 +2337,7 @@ export const CATALOG = {
   'site.block.news_list': '최근 소식',
   'site.block.download': 'PDF 내려받기',
   'site.block.inquiry': '방문·상담 신청',
+  'site.block.subpages': '하위 쪽 바로 가기',
   'site.block.moveUp': '{n}번 위로',
   'site.block.moveDown': '{n}번 아래로',
   'site.block.remove': '{n}번 빼기',

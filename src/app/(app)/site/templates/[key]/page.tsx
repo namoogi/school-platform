@@ -2,7 +2,7 @@ import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { loadForPage } from '@/lib/page';
-import { getSettings, listEntries, LANG_LABEL, type Lang } from '@/lib/site';
+import { getSettings, listEntries, LANG_LABEL, navEntriesOf, subpagesOf, type Lang } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages, sampleAssetUrl, sampleNews, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { SITE_THEMES } from '@/lib/site';
@@ -61,7 +61,8 @@ export default async function TemplatePreview({ params, searchParams }: { params
           <div className="site site-preview template-preview" data-theme={t.theme} lang={lang} data-testid="template-preview" data-view={view}>
             <main className="site-wrap site-main">
               <PageHead content={shown} lang={lang} fallback={t.langs[0] as Lang} asset={view === 'sample' ? sampleAssetUrl : () => ''} />
-              <SiteBlocks content={shown} lang={lang} fallback={t.langs[0] as Lang} assetUrl={view === 'sample' ? sampleAssetUrl : () => ''} link={() => '#'} news={view === 'sample' ? sampleNews() : []} inquiry={{ slug: null, open: true, page: pg.key }} />
+              <SiteBlocks content={shown} lang={lang} fallback={t.langs[0] as Lang} assetUrl={view === 'sample' ? sampleAssetUrl : () => ''} link={() => '#'} news={view === 'sample' ? sampleNews() : []} inquiry={{ slug: null, open: true, page: pg.key }}
+                subpages={subpagesOf(navEntriesOf(t.pages.map((p) => ({ key: p.key, content: view === 'sample' ? samplePages(t)[p.key] : p.content })), { inquiry: true, news: false }), pg.key)} />
             </main>
           </div>
         </section>

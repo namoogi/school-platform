@@ -97,13 +97,15 @@ export function PageHead({ content, lang, fallback, asset, meta, ed, crumb, link
  * 글은 텍스트로만 넣는다(HTML 해석 없음). 그림 주소·사이트 안 링크는 호출하는 쪽이 정한다(공개 판 / 구성원 미리보기).
  * 35차: 숨긴 블록(hidden)은 방문자에게 그리지 않는다. 편집 갈고리(ed)가 있으면 숨긴 블록도 그리고 칸마다 고치기를 단다.
  */
-export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h, news = [], textInImage = false, ed, inquiry }: {
+export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h, news = [], textInImage = false, ed, inquiry, subpages = [] }: {
   content: Content; lang: Lang; fallback: Lang; assetUrl: (id: string) => string; link?: (href: string) => string; news?: NewsItem[];
   /** 동화 쪽 그림 안에 글이 이미 들어 있으면 글을 그림 위에 다시 쓰지 않고 대체 글로 준다 */
   textInImage?: boolean;
   ed?: EditHooks;
   /** 91차: 방문·상담 신청 칸 — 학교가 신청을 켰을 때만(open). slug가 null이면 미리보기(보내지 않음) */
   inquiry?: { slug: string | null; open: boolean; page: string };
+  /** 135차: 이 쪽 아래 공개된 하위 쪽(사이트 안 경로 /p/…와 제목). '하위 쪽 바로 가기' 블록이 그린다 */
+  subpages?: { href: string; title: LText }[];
 }) {
   const t = (x: LText | null | undefined) => pick(x, lang, fallback);
   // 42차: 줄마다 '· '로 시작하는 문단은 점 목록으로(옛 사이트 교육 단계 핵심)
@@ -124,8 +126,11 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   const plainText = (x: { b: Block; i: number } | undefined) => x?.b.type === 'section' && x.b.template === 'text' && !x.b.variant
     && !(!ed && textInImage && isStoryOutline(content.blocks, x.i)); // 줄거리 칸으로 바뀌는 구역은 글 구역이 아니다
   // 방문자에게 아무것도 그리지 않는 구역(닫힌 신청 칸, 소식 없는 소식 목록, 그림책으로 넘긴 장면)은 이웃 판정에서 뺀다 — 아래 renderBlock의 null 조건과 같게
-  const drawsNothing = (b: Block) => !ed && ((b.type === 'inquiry' && !inquiry?.open) || (b.type === 'news_list' && !news.length) || b.type === 'story_page');
+  const drawsNothing = (b: Block) => !ed && ((b.type === 'inquiry' && !inquiry?.open) || (b.type === 'news_list' && !news.length) || (b.type === 'subpages' && !subpages.length) || b.type === 'story_page');
   const shown = orderedBlocks.filter(({ b }) => !b.hidden && !drawsNothing(b));
+  // 135차: 하위 쪽(상위 메뉴가 있는 쪽)은 구역 제목이 곧 쪽 제목이다. 첫 구역 제목이 쪽 제목과 같으면 보이는 제목만 감춘다(제목 구조·표 설명은 남김). 편집 화면은 그대로
+  const pageTitle = t(content.title);
+  const dupHeadAt = !ed && content.menu?.parent && shown[0] && pageTitle && shown[0].b.type === 'section' && t(shown[0].b.title) === pageTitle ? shown[0].i : -1;
   const runOf = new Map<number, 'first' | 'next'>();
   shown.forEach((x, k) => {
     if (!plainText(x)) return;
@@ -178,6 +183,12 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         return yt
           ? <div className="site-video"><iframe src={`https://www.youtube-nocookie.com/embed/${yt[1]}`} title={t(content.title)} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" /></div>
           : <p><a href={url} target="_blank" rel="noopener noreferrer">{w('watch', lang)}</a></p>;
+      }
+      case 'subpages': {
+        // 135차: 하위 쪽 바로 가기 — 공개된 하위 쪽만, 그릴 때 찾는다(편집 화면은 안내만)
+        if (ed) return <p className="le-placeholder" data-testid="subpages-placeholder">하위 쪽 바로 가기: 이 쪽 아래 공개한 하위 쪽이 카드로 보입니다.</p>;
+        if (!subpages.length) return null;
+        return renderBlock({ type: 'section', template: 'cards', variant: 'quicklinks', items: subpages.map((s) => ({ title: s.title, href: s.href })) }, i);
       }
       case 'inquiry': {
         if (ed) return <section className="sec site-inquiry" data-template="inquiry"><h2 className="site-h2">{T(at('title'), b.title, '신청 칸 제목')}</h2><p className="fine">방문·상담 신청 칸(설정에서 '신청 받기'를 켜면 방문자에게 보입니다)</p></section>;
@@ -232,7 +243,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         const v = b.variant;
         const head = <>
           {show(b.eyebrow) && <span className="sec-eyebrow">{T(at('eyebrow'), b.eyebrow, '머리말')}</span>}
-          {show(b.title) && b.template !== 'quote' && <h2 className="site-h2">{T(at('title'), b.title, '구역 제목')}</h2>}
+          {show(b.title) && b.template !== 'quote' && <h2 className={i === dupHeadAt ? 'site-h2 sr-only' : 'site-h2'}>{T(at('title'), b.title, '구역 제목')}</h2>}
         </>;
         const btn = b.button && (t(b.button.label) || ed)
           ? <A className="site-button" to={b.button.href}>{T(at('button', 'label'), b.button.label, '단추 이름')}<Arrow /></A>
