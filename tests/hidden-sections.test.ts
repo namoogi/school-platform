@@ -1,4 +1,4 @@
-/** 116차 ADR 0043 — 학교가 숨길 구획: 처음 템플릿에서 복사, 학교가 고치면 다시 적용해도 유지, 발행본에서 GPA 빼기 */
+/** 118차 ADR 0043 — 학교가 숨길 구획: 처음 템플릿에서 복사, 학교가 고치면 다시 적용해도 유지, 발행본에서 GPA 빼기 */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import pg from 'pg';
 import { lookupIds, resetTestDb, TEST_URL } from './helpers';

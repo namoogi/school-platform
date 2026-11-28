@@ -197,14 +197,25 @@ export function putProposal(content: Content, slot: Slot, value: Proposal['value
     return true;
   }
   if (Array.isArray(value)) {
-    p[field] = value.map((i) => {
+    // 115차(Codex 검토): 목록도 항목마다 찾은 언어 칸만 바꾸고, 같은 자리 항목의 다른 언어·링크·사진·분류는 남긴다
+    const prevItems = Array.isArray(cur) ? (cur as SectionItem[]) : [];
+    p[field] = value.map((i, k) => {
       const l = langOf(`${i.title} ${i.body}`);
-      const it: SectionItem = { title: { [l]: i.title } as LText };
-      if (i.body) it.body = { [l]: i.body } as LText;
+      const prev = prevItems[k] ?? ({} as SectionItem);
+      const it: SectionItem = { ...prev, title: { ...(prev.title ?? {}), [l]: i.title } as LText };
+      if (i.body) it.body = { ...(prev.body ?? {}), [l]: i.body } as LText;
+      else if (prev.body) {
+        // 제목만 있는 항목: 이 언어의 안내 자리('[근거]' 등)는 지우고 다른 언어는 남긴다(Codex 검토)
+        const rest = { ...prev.body } as Record<string, string>;
+        delete rest[l];
+        if (Object.keys(rest).length) it.body = rest as LText; else delete it.body;
+      }
       return it;
     });
     return true;
   }
-  p[field] = { [langOf(value)]: value } as LText;
+  // 115차(Codex 검토): 찾은 언어 칸만 바꾸고, 다른 언어(두 언어 템플릿의 영어 안내 자리 등)는 그대로 둔다
+  const prev = cur && typeof cur === 'object' && !Array.isArray(cur) ? (cur as LText) : {};
+  p[field] = { ...prev, [langOf(value)]: value } as LText;
   return true;
 }

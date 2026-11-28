@@ -78,7 +78,7 @@ export async function schemeView(db: Db, schoolId: string, lang: string): Promis
 }
 
 export type ApplyInput = { scheme?: unknown; levels?: unknown; labels?: unknown; why?: unknown; base_version?: unknown;
-  /** 113차: 템플릿 적용이 같은 관할 판에 템플릿 키·판을 함께 남길 때. 116차: 처음 고를 때는 숨길 구획도 복사 */
+  /** 113차: 템플릿 적용이 같은 관할 판에 템플릿 키·판을 함께 남길 때. 118차: 처음 고를 때는 숨길 구획도 복사 */
   template?: { key: string; version: number; hidden?: string[] } };
 
 /**

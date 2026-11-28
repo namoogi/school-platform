@@ -57,7 +57,7 @@ export async function applyTemplate(db: Db, schoolId: string, input: { key?: unk
   //    학교가 이미 학년 체계를 정했으면 그 체계를 지킨다(학교 값 유지, Codex #180). 처음일 때만 템플릿 체계를 쓴다
   const cur = await schoolProfile(db, schoolId);
   const keepScheme = (cur?.grade_scheme ?? null) as GradeScheme | null;
-  // 116차: 숨길 구획은 학교가 아직 정하지 않았을 때(null)만 템플릿에서 복사한다.
+  // 118차: 숨길 구획은 학교가 아직 정하지 않았을 때(null)만 템플릿에서 복사한다.
   // 한 번 정해지면(템플릿 복사든 학교가 직접 저장이든) 다시 채우기·새 판·다른 템플릿에도 학교 값을 지킨다(Codex #191)
   const firstTemplate = cur?.hidden_sections == null;
   const scheme = await applyGradeScheme(db, schoolId, {

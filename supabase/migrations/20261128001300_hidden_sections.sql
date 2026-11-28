@@ -1,4 +1,4 @@
--- 116차: 학교가 숨길 구획(석차·평점·석차등급·교시 출결)을 학교 사본으로 (ADR 0043 2단계 후속)
+-- 118차: 학교가 숨길 구획(석차·평점·석차등급·교시 출결)을 학교 사본으로 (ADR 0043 2단계 후속)
 -- 템플릿의 hide 는 관제 판이라 학교가 고칠 수 없다. 처음 템플릿을 고를 때 학교 관할 판에 복사하고(학교 사본), 그 뒤에는 학교가 고친다.
 -- 화면·발행본은 템플릿이 아니라 이 학교 값만 읽는다(ADR 0027: 학교는 기본판·템플릿을 실시간으로 읽지 않는다).
 select set_config('request.jwt.claims', '{}', true);
@@ -63,7 +63,7 @@ revoke create on schema app from app_writer;
 
 -- 이미 템플릿을 고른 학교: 고른 판의 hide 를 학교 사본으로 새 관할 판에 복사한다(이전 판은 고치지 않음, Codex #191)
 insert into public.school_profiles(school_id, version, country, sector, accreditation, external_codes, why, grade_scheme, grade_labels, template_key, template_version, hidden_sections, created_by)
-select p.school_id, p.version + 1, p.country, p.sector, p.accreditation, p.external_codes, '116차: 고른 템플릿의 숨길 구획 복사',
+select p.school_id, p.version + 1, p.country, p.sector, p.accreditation, p.external_codes, '118차: 고른 템플릿의 숨길 구획 복사',
        p.grade_scheme, p.grade_labels, p.template_key, p.template_version,
        (select coalesce(array_agg(distinct x order by x), '{}') from jsonb_array_elements_text(coalesce(t.manifest -> 'hide', '[]')) x),
        p.created_by

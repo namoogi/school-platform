@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { unzip, strFromU8, type Unzipped } from 'fflate';
 import { FileArchive, Upload } from 'lucide-react';
 import { FileDrop } from '@/components/FileDrop';
+import { byBaseText } from '@/lib/site-labels';
 import { useI18n } from '@/components/I18nProvider';
 import { decideReimport, fillAssets, IMPORT_NOTE, MERGED_MARK, mergeSettings, planImport, refsIn, type ImportPlan, type ReimportDecision } from '@/lib/site-import';
 import { type SiteSettings } from '@/lib/site-shared';
@@ -70,7 +71,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
       setFiles(z);
       return t('site.import.read');
     } catch (e) {
-      throw new Error(e instanceof SyntaxError ? t('site.import.badJson') : ((e as Error).message || t('site.import.readFailed')));
+      throw new Error(e instanceof SyntaxError ? t('site.import.badJson') : (byBaseText(t, 'site.import.note.', (e as Error).message) || t('site.import.readFailed')));
     }
   }
 
@@ -152,7 +153,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
         <div className="banner" data-tone="info" role="status" data-testid="import-plan">
           <p><b>{t('site.import.plan.title')}</b> {t('site.import.plan.counts', { pages: count('page', 'public'), hidden: count('page', 'unlisted'), news: count('news'), stories: count('story'), images: plan.files.length })}</p>
           <p>{t('site.import.plan.look', { langs: plan.settings.langs.join('·'), main: plan.settings.default_lang })}</p>
-          {plan.notes.length > 0 && <ul>{plan.notes.map((n) => <li key={n}>{n}</li>)}</ul>}
+          {plan.notes.length > 0 && <ul>{plan.notes.map((n) => <li key={n}>{byBaseText(t, 'site.import.note.', n)}</li>)}</ul>}
           {decided && decided.length > 0 && (
             <div data-testid="import-decisions">
               <p><b>{t('site.import.existing', { n: decided.length })}</b> {t('site.import.existingNote')}</p>
@@ -160,7 +161,7 @@ export function ImportPanel({ settings, existing }: { settings: SiteSettings; ex
                 {decided.map((x) => (
                   <li key={`${x.kind}:${x.key}`} data-action={x.d.action}>
                     <b>{x.key}</b> — {x.d.action === 'replace' ? t('site.import.action.replace') : x.d.action === 'merge' ? t('site.import.action.merge', { n: x.d.filled.length }) : x.d.action === 'keep' ? t('site.import.action.keep') : t('site.import.action.none')}
-                    <span className="fine"> · {x.d.reason}{(x.d.action === 'merge' || x.d.action === 'replace') && !x.latestIsLive ? ` · ${t('site.import.unpublishedToo')}` : ''}</span>
+                    <span className="fine"> · {t(`site.import.reason.${x.d.action}`)}{(x.d.action === 'merge' || x.d.action === 'replace') && !x.latestIsLive ? ` · ${t('site.import.unpublishedToo')}` : ''}</span>
                     {x.d.action === 'merge' && <details><summary>{t('site.import.showFilled')}</summary><ul>{x.d.filled.map((f) => <li key={f}>{f}</li>)}</ul></details>}
                     {(x.d.action === 'merge' || x.d.action === 'none') && x.d.skipped.length > 0 && <p className="fine">{t('site.import.skipped', { n: x.d.skipped.length, list: x.d.skipped.join(', ') })}</p>}
                   </li>

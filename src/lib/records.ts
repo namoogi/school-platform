@@ -287,7 +287,7 @@ export async function publishRecordDocument(db: Db, schoolId: string, input: { f
     const st = snaps[0].student;
     secrets = [st?.name ?? '', st?.name_latin ?? '', snaps[0].school.name, ...Object.values(snaps[0].school.codes ?? {})];
   }
-  // 116차: 학교가 평점(GPA)을 숨기면 발행본에 GPA 칸을 싣지 않는다(스냅샷은 그대로, 그리는 쪽에서만 뺌)
+  // 118차: 학교가 평점(GPA)을 숨기면 발행본에 GPA 칸을 싣지 않는다(스냅샷은 그대로, 그리는 쪽에서만 뺌)
   out = hideInDocument(input.format, out, await hiddenSections(db, schoolId));
   if (input.blind) out.content = blind(out.content, secrets, out.issues);
   const { rows: [r] } = await db.query('select app.publish_record_document($1, $2) as v', [schoolId, JSON.stringify({
