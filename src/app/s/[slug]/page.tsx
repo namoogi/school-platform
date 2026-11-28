@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { storyTerm } from '@/lib/story-language';
 import { pick, publicList } from '@/lib/site';
 import { SiteBlocks } from '@/components/site/SiteRenderer';
 import { SiteFrame, siteText } from '@/components/site/SiteFrame';
@@ -40,7 +41,7 @@ export default async function SiteHome({ params, searchParams }: P) {
       {stories.length > 0 && (
         <section className="site-section story-strip"><h2 className="site-h2">{siteText('stories', lang)}</h2>
           <ul className="site-cards">{stories.slice(0, 4).map((s) => (
-            <li key={s.key}><Link href={link(`/stories/${s.key}`)}>{s.cover && /* eslint-disable-next-line @next/next/no-img-element */ <img src={asset(s.cover)} alt="" />}<b>{t(s.title)}</b>{s.meta.virtue && <small>{s.meta.virtue}</small>}</Link></li>))}</ul>
+            <li key={s.key}><Link href={link(`/stories/${s.key}`)}>{s.cover && /* eslint-disable-next-line @next/next/no-img-element */ <img src={asset(s.cover)} alt="" />}<b>{t(s.title)}</b>{s.meta.virtue && <small>{storyTerm(s.meta.virtue, lang)}</small>}</Link></li>))}</ul>
         </section>
       )}
       {home && closing.length > 0 && <SiteBlocks content={{ ...home.content, blocks: closing }} lang={lang} fallback={site.default_lang} assetUrl={asset} link={link} news={listed} inquiry={{ slug: site.slug, open: !!site.inquiry_open, page: '/' }} />}
