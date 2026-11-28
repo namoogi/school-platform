@@ -53,7 +53,7 @@ describe('31차 사이트 정보·숨은 쪽', () => {
       content: { ...base, head: { layout: 'opening' }, site: { logo, phone: ['000-0000000'], address: { th: 'ที่อยู่' } }, blocks: [] },
     })))!;
     expect(await site.publicAsset('dawn-a', logo)).toBeNull();
-    await asUser(A.userId, (db) => site.publish(db, A.schoolId, home, undefined));
+    await asUser(A.userId, (db) => site.publish(db, A.schoolId, home, undefined, { photoConsent: true }));
     expect((await site.publicAsset('dawn-a', logo))!.mime).toBe('image/png');
     const e = (await site.publicEntry('dawn-a', 'page', 'home'))!;
     expect(e.content.site).toMatchObject({ logo, phone: ['000-0000000'] });

@@ -20,6 +20,7 @@ import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import { uploadWithProgress } from '@/lib/file-check';
 import { blockLabel, fieldLabel, paletteText, siteLabel } from '@/lib/site-labels';
 import { useI18n } from '@/components/I18nProvider';
+import { usePhotoConsent, PublishCancelled } from '@/components/site/PhotoConsent';
 import { withLink } from '@/components/ui';
 
 type Version = { id: string; version: number; content: Content; note: string | null; created_at: string };
@@ -58,6 +59,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
 }) {
   const router = useRouter();
   const { t } = useI18n();
+  const [askConsent, consentDialog] = usePhotoConsent();
   const { entry } = detail;
   const latest = detail.versions[0];
   const live = detail.versions.find((v) => v.id === detail.liveVersionId);
@@ -136,6 +138,8 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
     try { await fn(); setMsg({ tone: 'success', text: ok }); router.refresh(); }
     catch (e) {
       const err = e as Error & { status?: number };
+      // 122차: 공개 창에서 취소 — 시안은 저장됐을 수 있으니 새로 읽는다
+      if (e instanceof PublishCancelled) { setMsg({ tone: 'info', text: t('site.consent.cancelled') }); router.refresh(); return; }
       if (err.status === 409) {
         // 그 사이 새 판이 생김: 내 고침은 화면에 둔 채 최신 판을 다시 읽는다(위의 새 판 처리에서 '다른 판이 생김'으로 바뀜)
         setSent(null); setConflict((c) => c ?? -1); router.refresh();
@@ -147,7 +151,10 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
   const saveDraft = () => run(saveVersion, t('site.edit.savedDraft'));
   const publish = () => run(async () => {
     if (dirty) await saveVersion();
-    await send(`/api/site/entries/${entry.id}/publish`, 'POST', {});
+    // 122차: 사진이 있으면 공개 창에서 사진 공개 허가 확인
+    const consent = await askConsent([{ entryId: entry.id }]);
+    if (!consent) throw new PublishCancelled();
+    await send(`/api/site/entries/${entry.id}/publish`, 'POST', consent);
   }, t('site.edit.published'));
 
   // 단축키: Ctrl+S 시안 저장, Ctrl+Z 되돌리기(글 칸 밖에서 — 글 칸 안에서는 브라우저의 되돌리기)
@@ -258,6 +265,7 @@ export function LiveEditor({ detail, frame, langs, defaultLang, canPublish, asse
 
   return (
     <div className="le" data-testid="live-editor">
+      {consentDialog}
       <div className="le-toolbar" role="region" aria-label={t('site.edit.toolbar')} data-testid="le-toolbar">
         <div className="le-toolbar-row">
           <Link className="btn btn-ghost btn-sm" href={`/site?box=${kind}&id=${entry.id}`} data-testid="le-to-form"><ArrowLeft size={16} aria-hidden="true" />{t('site.edit.toForm')}</Link>
