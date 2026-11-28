@@ -3028,5 +3028,10 @@
   "atpl.ourHiddenLead": "The template's choice is copied when you first pick a template. After that, what you set here is used on school screens and published records. Today, GPA is what gets hidden in published records.",
   "atpl.saveHidden": "Save hidden sections",
   "atpl.hiddenSaved": "Hidden sections saved.",
-  "err.sections.unknown": "Hidden sections must be class rank, GPA, rank grade or period attendance."
+  "err.sections.unknown": "Hidden sections must be class rank, GPA, rank grade or period attendance.",
+  "academics.tabs": "School structure sections",
+  "academics.tab.levels": "Levels & grades",
+  "academics.tab.terms": "Term structure",
+  "academics.tab.years": "School years & terms",
+  "academics.tab.templates": "Templates"
 }

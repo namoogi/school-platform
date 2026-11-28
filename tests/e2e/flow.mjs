@@ -1905,11 +1905,16 @@ try {
     await lv.locator('label:has-text("코드") input').fill('e2e_mid');
     await lv.locator('button[type=submit]').click();
     await h.locator('[data-testid=levels] li', { hasText: 'E2E 중등' }).waitFor();
+    // 119차: 학기 구조·학년도는 각자 탭(주소 ?tab=)에 있다
+    await h.locator('[data-testid=academics-tab-terms]').click();
+    await h.waitForURL(/tab=terms/);
     const rf = h.locator('[data-testid=rule-form]');
     await rf.locator('textarea').fill('t1 1텀\nt2 2텀\nt3 3텀');
     await rf.locator('input').fill('E2E 학사 규정(3텀제)');
     await rf.locator('button[type=submit]').click();
     await h.locator('[data-testid=period-rule] p.fine', { hasText: '1텀 · 2텀 · 3텀' }).waitFor();
+    await h.locator('[data-testid=academics-tab-years]').click();
+    await h.waitForURL(/tab=years/);
     const yf = h.locator('[data-testid=year-form]');
     await yf.locator('label:has-text("이름") input').fill('E2E2030');
     await yf.locator('input[type=date]').nth(0).fill('2030-01-10');
