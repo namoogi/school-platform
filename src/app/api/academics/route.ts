@@ -8,7 +8,7 @@ import { setHiddenSections } from '@/lib/sections';
 
 /**
  * 71차: 학교 구조(학교급·학년도·학기 구조·학기). 쓰기는 기존 명령 함수(학교 관리자 확인은 DB가 한다).
- * body.action: level | year | rule | terms | term-dates | grade-scheme(109차) | template(113차) | hidden-sections(115차)
+ * body.action: level | year | rule | terms | term-dates | grade-scheme(109차) | template(113차) | hidden-sections(116차)(115차)
  */
 export async function POST(req: Request) {
   return handle(req, async ({ db, school }) => {

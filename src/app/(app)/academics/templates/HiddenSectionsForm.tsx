@@ -6,7 +6,7 @@ import type { MsgKey } from '@/lib/i18n/catalog';
 
 const ITEMS = ['rank', 'gpa', 'rank_grade', 'period_attendance'] as const;
 
-/** 115차: 우리 학교가 숨길 구획(학교 사본). 템플릿을 처음 고를 때 복사되고, 여기서 학교가 고친다 */
+/** 116차: 우리 학교가 숨길 구획(학교 사본). 템플릿을 처음 고를 때 복사되고, 여기서 학교가 고친다 */
 export function HiddenSectionsForm({ current, baseVersion }: { current: string[]; baseVersion: number }) {
   const router = useRouter();
   const { t } = useI18n();

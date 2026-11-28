@@ -3,7 +3,7 @@ import { schoolProfile, setSchoolProfile } from './foundation';
 import { ValidationError } from './services';
 
 /**
- * 115차 ADR 0043 — 학교가 숨길 구획(석차·평점·석차등급·교시 출결).
+ * 116차 ADR 0043 — 학교가 숨길 구획(석차·평점·석차등급·교시 출결).
  * 값은 학교 관할 판(school_profiles.hidden_sections)에 있는 학교 사본이다. 템플릿을 처음 고를 때 템플릿 hide 를 복사하고,
  * 그 뒤에는 학교가 고친다. 화면·발행본은 이 함수로만 읽는다(구획을 숨기는 곳이 늘어도 읽는 길은 하나).
  */
