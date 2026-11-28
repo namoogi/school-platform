@@ -13,16 +13,16 @@ export const academicsTabHref = (tab: AcademicsTab) => (tab === 'templates' ? '/
 
 export type TabCounts = { levels: number; rule: number | null; years: number; template: number | null; offers: number };
 
-/** offers(121차) = 지금 쓰는 템플릿의 아직 수락하지 않은 새 판 제안 수. 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
+/** offers(121차) = 지금 쓰는 템플릿의 아직 수락하지 않은, 지금 판보다 높은 새 판 제안 수(목록과 같은 조건, Codex 199번 PR 검토). 탭 옆 개수·판 번호를 두 화면(/academics·/academics/templates)이 같은 길로 읽는다(Codex 198번 PR 검토) */
 export async function academicsTabCounts(db: Db, schoolId: string): Promise<TabCounts> {
   const { rows: [c] } = await db.query<TabCounts>(
     `select (select count(*)::int from public.school_levels where school_id = $1) as levels,
             (select max(version)::int from public.school_rules where school_id = $1 and topic = 'period_structure') as rule,
             (select count(*)::int from public.academic_years where school_id = $1) as years,
             (select p.template_version from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) as template,
-            (select count(*)::int from public.academic_template_offers o
-              where o.school_id = $1 and o.status <> 'accepted'
-                and o.template_key = (select p.template_key from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1)) as offers`, [schoolId]);
+            (select count(*)::int from public.academic_template_offers o,
+                    (select p.template_key, coalesce(p.template_version, 0) as tv from public.school_profiles p where p.school_id = $1 order by p.version desc limit 1) cur
+              where o.school_id = $1 and o.status <> 'accepted' and o.template_key = cur.template_key and o.to_version > cur.tv) as offers`, [schoolId]);
   return c;
 }
 

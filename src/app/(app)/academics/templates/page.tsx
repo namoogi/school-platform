@@ -56,6 +56,8 @@ export default async function TemplatesPage() {
           <ul className="offer-list">{offers.map((o) => {
             const name = pick(o.title);
             const open = o.status === 'offered' || o.status === 'held' || o.status === 'declined';
+            // 열린 제안은 '지금 학교가 쓰는 판 → 새 판'으로 보인다(낮은 판을 먼저 수락했으면 from_version 보다 높다, Codex 199번 PR 검토)
+            const fromV = open ? (current?.version ?? o.from_version) : o.from_version;
             const add = o.plan ? [
               ...o.plan.add.levels.map((k) => t(`scheme.level.${k}` as MsgKey)),
               ...(o.plan.add.grades ? [t('tplOffer.grades', { n: o.plan.add.grades })] : []),
@@ -70,7 +72,7 @@ export default async function TemplatesPage() {
             ] : [];
             return (
               <li key={o.id} data-testid={`tpl-offer-${o.to_version}`}>
-                <span><strong>{t('tplOffer.versions', { name, from: o.from_version, to: o.to_version })}</strong>{' '}
+                <span><strong>{t('tplOffer.versions', { name, from: fromV, to: o.to_version })}</strong>{' '}
                   <StatusBadge tone={o.status === 'accepted' ? 'success' : o.status === 'offered' ? 'info' : 'neutral'}>{t(`offer.status.${o.status}` as MsgKey)}</StatusBadge>
                   {o.included_in != null && <small className="muted"> · {t('tplOffer.includedIn', { v: o.included_in })}</small>}
                   {o.note && <small className="muted"> · {o.note}</small>}</span>
@@ -79,7 +81,7 @@ export default async function TemplatesPage() {
                   <dt>{t('tplOffer.add')}</dt><dd data-testid={`tpl-offer-add-${o.to_version}`}>{add.length ? add.join(' · ') : t('tplOffer.nothingToAdd')}</dd>
                   <dt>{t('tplOffer.keep')}</dt><dd data-testid={`tpl-offer-keep-${o.to_version}`}>{keep.length ? keep.join(' · ') : t('atpl.none')}</dd>
                 </dl>}
-                {admin && open && <OfferActions offerId={o.id} title={name} from={o.from_version} to={o.to_version} baseVersion={profileVersion} canAccept status={o.status} />}
+                {admin && open && <OfferActions offerId={o.id} title={name} from={fromV} to={o.to_version} baseVersion={profileVersion} canAccept status={o.status} />}
               </li>);
           })}</ul>
         </section>
