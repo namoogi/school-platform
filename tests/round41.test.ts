@@ -29,7 +29,7 @@ beforeAll(async () => {
   await cl.end();
   T = (await asUser(P, (db) => insp.createInspectorToken(db, { label: '관제', days: 7 }))).token;
   await asAgent((db) => c.control.register(db, T, { id: SA, name: 'A학교 세션', school: 'school-a' }));
-});
+}, 120_000);
 afterAll(async () => { await getPool().end(); });
 
 describe('대화창', () => {

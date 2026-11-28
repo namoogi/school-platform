@@ -3,6 +3,8 @@ import { loadForPlatform } from '@/lib/page';
 import { ARCHETYPES, archetypeBySlug } from '@/components/archetypes/meta';
 import { ARCHETYPE_VIEWS } from '@/components/archetypes/registry';
 import { PreviewBar } from './PreviewBar';
+import { I18nProvider } from '@/components/I18nProvider';
+import { getI18n, providerValue, userLang } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +15,8 @@ export const dynamic = 'force-dynamic';
 export default async function PreviewPage({ params, searchParams }: {
   params: Promise<{ slug: string }>; searchParams: Promise<{ thumb?: string }>;
 }) {
-  await loadForPlatform(async () => ({}));
+  const { uiLang } = await loadForPlatform(async ({ db }) => ({ uiLang: await userLang(db) }));
+  const i18n = await getI18n(uiLang);
   const { slug } = await params;
   const { thumb } = await searchParams;
   const meta = archetypeBySlug(slug);
@@ -25,7 +28,7 @@ export default async function PreviewPage({ params, searchParams }: {
   return (
     <div className="pv-root" data-archetype={slug}>
       <View />
-      {thumb ? null : <PreviewBar no={meta.no} total={ARCHETYPES.length} name={meta.name} prev={prev} next={next} />}
+      {thumb ? null : <I18nProvider value={providerValue(i18n)}><PreviewBar no={meta.no} total={ARCHETYPES.length} name={meta.name} prev={prev} next={next} /></I18nProvider>}
     </div>
   );
 }
@@ -33,5 +36,6 @@ export default async function PreviewPage({ params, searchParams }: {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const meta = archetypeBySlug(slug);
-  return { title: meta ? `시안 ${meta.no}. ${meta.name}` : '시안' };
+  const { t } = await getI18n();
+  return { title: meta ? t('pv.metaTitle', { no: meta.no, name: meta.name }) : t('pv.metaTitleBare') };
 }

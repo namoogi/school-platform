@@ -6,6 +6,7 @@ import { AppError, localVars, ForbiddenError, NoSchoolError, NotFoundError, Vali
 import { currentSchool, hasModule, me, type Me, type ModuleKey, type School } from './services';
 import { BASE_LANG, CATALOG, type MsgKey } from './i18n/catalog';
 import { formatMessage, type Vars } from './i18n/format';
+import { dbMessage, localizeDbVars } from './i18n/db-messages';
 import { getDictionary, resolveLang, userLang, type Dictionary } from './i18n/server';
 
 export type Ctx = { db: Db; school: School; userId: string };
@@ -71,15 +72,7 @@ export { ForbiddenError };
 
 const hangul = /[가-힣]/;
 
-/**
- * DB 함수가 낸 고정 문구 → 이름표. 'db.'·'err.' 이름표의 기준 문구가 DB 문구와 글자까지 같을 때만 바꾼다.
- * 값이 든 문구(format)는 맞는 이름표가 없어 한국어 그대로 간다. 'db.' 문구가 마이그레이션과 같은지는 tests/server-errors.test.ts 가 본다.
- */
-let dbKeys: Map<string, MsgKey> | null = null;
-export function dbMessageKey(text: string): MsgKey | undefined {
-  dbKeys ??= new Map((Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('err.') || k.startsWith('db.')).map((k) => [CATALOG[k] as string, k]));
-  return dbKeys.get(text);
-}
+export { dbMessage, dbMessageKey } from './i18n/db-messages';
 
 type Classified = { status: number; text: string; key?: MsgKey; vars?: Vars };
 
@@ -91,11 +84,11 @@ function classify(e: unknown): Classified {
   if (e instanceof NoSchoolError) return of(409, e);
   const code = (e as { code?: string })?.code;
   const msg = (e as Error)?.message ?? '';
-  const db = (status: number): Classified => ({ status, text: msg, key: dbMessageKey(msg) });
+  const db = (status: number): Classified => { const hit = dbMessage(msg); return { status, text: msg, key: hit?.key, vars: hit?.vars }; };
   // DB 함수가 낸 한국어 안내는 그대로(또는 이름표가 있으면 번역해) 보여 준다. (값·비밀은 담지 않음)
   if (code === '22023') return db(400);
   if (code === 'P0002') return db(404);
-  if (code === '23505') return { status: 409, text: CATALOG['err.duplicate'], key: 'err.duplicate' };
+  if (code === '23505') return dbMessage(msg) ? db(409) : { status: 409, text: CATALOG['err.duplicate'], key: 'err.duplicate' };
   if (code === '42501') return hangul.test(msg) ? db(403) : { status: 403, text: CATALOG['err.noAccess'], key: 'err.noAccess' };
   if (code === 'P0001') return db(409);
   // ADR 0013 판(base_version) 충돌: 그 사이 새 판이 생겼다 → 다시 읽어 고친다
@@ -133,8 +126,12 @@ export function errorBody(e: unknown, lang: string = BASE_LANG, dict?: Dictionar
   return bodyOf(classify(e), lang, dict);
 }
 
+/** 값이 든 DB 문구('db.v.*')의 값 자체가 DB 고정 문구면(권한 이름·파기 불가 이유) 그것도 그 언어로 */
+const localDbVars = (key: MsgKey, vars: Vars | undefined, dict: Dictionary, lang: string) =>
+  key.startsWith('db.v.') ? localizeDbVars(vars, (k, v) => formatMessage(dict[k] ?? (CATALOG[k] as string), v, lang)) : vars;
+
 function bodyOf(c: Classified, lang: string, dict?: Dictionary) {
-  const error = c.key && lang !== BASE_LANG && dict ? formatMessage(dict[c.key] ?? c.text, localVars(c.vars, dict), lang) : c.text;
+  const error = c.key && lang !== BASE_LANG && dict ? formatMessage(dict[c.key] ?? c.text, localDbVars(c.key, localVars(c.vars, dict), dict, lang), lang) : c.text;
   return { status: c.status, body: c.key ? { error, code: c.key } : { error } };
 }
 

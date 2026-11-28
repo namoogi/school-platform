@@ -42,18 +42,38 @@ export function paletteText(t: (k: MsgKey) => string, p: { id: string; label: st
  * 편집기 칸 이름: 공개 렌더러(SiteRenderer)는 편집 모드에서 칸 이름을 한국어로 넘긴다(공개 화면은 학교 언어를 따르는 별도 영역).
  * 편집기는 그 이름을 'site.field.*' 기준 문구와 맞춰 관리 화면 언어로 바꿔 보인다. '{n}번 …'처럼 번호가 든 이름도 맞춘다. 맞는 이름표가 없으면 그대로.
  */
-let fields: { exact: Map<string, MsgKey>; numbered: { re: RegExp; key: MsgKey }[] } | null = null;
-export function fieldLabel(t: (k: MsgKey, v?: Record<string, string | number>) => string, label: string): string {
-  if (!fields) {
-    const keys = (Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith('site.field.'));
-    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    fields = {
-      exact: new Map(keys.filter((k) => !k.startsWith('site.field.n.')).map((k) => [CATALOG[k] as string, k])),
-      numbered: keys.filter((k) => k.startsWith('site.field.n.')).map((k) => ({ re: new RegExp(`^${esc(CATALOG[k] as string).replace('\\{n\\}', '(\\d+)')}$`), key: k })),
+/**
+ * 기준 문구로 거꾸로 찾기: lib·렌더러가 만든 한국어 글을 그 이름표 묶음(prefix)의 기준 문구와 맞춰 관리 화면 언어로 바꾼다.
+ * 기준 문구의 {이름} 자리는 아무 글자와 맞고, 맞은 값은 그대로 옮겨 싣는다. 맞는 이름표가 없으면 그대로.
+ */
+type Matcher = { exact: Map<string, MsgKey>; patterns: { re: RegExp; key: MsgKey; names: string[] }[] };
+const matchers = new Map<string, Matcher>();
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export function byBaseText(t: (k: MsgKey, v?: Record<string, string | number>) => string, prefix: string, text: string): string {
+  let m = matchers.get(prefix);
+  if (!m) {
+    const keys = (Object.keys(CATALOG) as MsgKey[]).filter((k) => k.startsWith(prefix));
+    const hasVar = (k: MsgKey) => /\{\w+\}/.test(CATALOG[k] as string);
+    m = {
+      exact: new Map(keys.filter((k) => !hasVar(k)).map((k) => [CATALOG[k] as string, k])),
+      patterns: keys.filter(hasVar).map((k) => {
+        const ko = CATALOG[k] as string;
+        return { key: k, names: [...ko.matchAll(/\{(\w+)\}/g)].map((x) => x[1]), re: new RegExp(`^${ko.split(/\{\w+\}/).map(esc).join('(.+?)')}$`, 's') };
+      }),
     };
+    matchers.set(prefix, m);
   }
-  const hit = fields.exact.get(label);
+  const hit = m.exact.get(text);
   if (hit) return t(hit);
-  for (const { re, key } of fields.numbered) { const m = label.match(re); if (m) return t(key, { n: Number(m[1]) }); }
-  return label;
+  for (const { re, key, names } of m.patterns) {
+    const r = text.match(re);
+    if (r) return t(key, Object.fromEntries(names.map((n, i) => [n, n === 'n' ? Number(r[i + 1]) : r[i + 1]])));
+  }
+  return text;
 }
+
+/**
+ * 편집기 칸 이름: 공개 렌더러(SiteRenderer)는 편집 모드에서 칸 이름을 한국어로 넘긴다(공개 화면은 학교 언어를 따르는 별도 영역).
+ * 편집기는 그 이름을 'site.field.*' 기준 문구와 맞춰 관리 화면 언어로 바꿔 보인다. '{n}번 …'처럼 번호가 든 이름도 맞춘다.
+ */
+export const fieldLabel = (t: (k: MsgKey, v?: Record<string, string | number>) => string, label: string) => byBaseText(t, 'site.field.', label);

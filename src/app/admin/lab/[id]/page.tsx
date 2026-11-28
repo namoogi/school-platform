@@ -39,7 +39,7 @@ export default async function LabItemPage({ params }: { params: Promise<{ id: st
       <div className="lab-detail">
         <article className="card lab-doc" data-testid="lab-doc">
           {item.tags.length > 0 && <p className="lab-tags">{item.tags.map((tag) => <span key={tag} className="tag">#{tag}</span>)}</p>}
-          <RichDoc body={item.body} testId="lab-body" />
+          <RichDoc body={item.body} testId="lab-body" t={t} />
           {item.link && <p className="fine">{t('lab.ref')}<a href={item.link} target="_blank" rel="noopener noreferrer">{item.link}</a></p>}
         </article>
         <aside className="lab-side stack">
@@ -76,7 +76,7 @@ export default async function LabItemPage({ params }: { params: Promise<{ id: st
               <ul className="lab-msgs">{d.messages.filter((m) => m.body).map((m) => (
                 <li key={m.id} className={`lab-msg lab-msg-${m.author}`}>
                   <span className="lab-msg-who">{m.author in WHO ? t(WHO[m.author]) : m.author}{m.author_session ? ` · ${names[m.author_session] ?? t('chat.session')}` : ''}</span>
-                  {m.author === 'user' ? <p className="prewrap">{m.body}</p> : <RichDoc body={m.body} />}
+                  {m.author === 'user' ? <p className="prewrap">{m.body}</p> : <RichDoc body={m.body} t={t} />}
                   <span className="muted small-text">{new Date(m.created_at).toLocaleString(locale)}{m.author === 'user' ? t(m.delivered_at ? 'lab.delivered' : 'lab.awaiting') : ''}</span>
                 </li>))}</ul>
             </li>))}</ol>)}
