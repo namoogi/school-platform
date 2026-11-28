@@ -262,7 +262,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'mission', version: 4, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
+    key: 'mission', version: 5, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
     summary: '학교의 사명과 함께하는 방법(후원·봉사·기도)을 분명히 알립니다.',
     fits: ['기독교·선교 학교', '후원으로 운영되는 비영리 학교'], firstScreen: '사명 · 후원 단추 · 소식',
     mustHave: ['사명·신앙 고백', '후원 방법과 쓰임', '재정 보고(있으면)'],
@@ -278,13 +278,16 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
       ], { site: contact({ label: '후원하기', href: '/p/partner', en: 'Give' }) }),
       page('mission', 1, kb('사명과 신앙', 'Mission & faith'), [
         section({ template: 'quote', body: kb('[사명 선언문]', '[Mission statement]') }),
-        section({ anchor: 'beliefs', template: 'facts', title: kb('우리가 믿는 것', 'What we believe'), items: [{ title: kb('[고백 1]', '[Belief 1]'), body: kb('[설명]', '[Description]') }] }),
+        section({ anchor: 'beliefs', template: 'facts', title: kb('우리가 믿는 것', 'What we believe'), items: [{ title: kb('[고백 1]', '[Belief 1]'), body: kb('[설명]', '[Description]') },
+          // 127차: 고백·쓰임은 세 가지(실제 길이) — 한 칸짜리 목록이 늘어나지 않게
+          ...[2, 3].map((i) => ({ title: kb(`[고백 ${i}]`, `[Belief ${i}]`), body: kb(`[사명 고백 ${i} 설명]`, `[Mission belief ${i} note]`) }))] }),
         // 126차(ADR 0046): 사명과 신앙 아래 하위 메뉴 — 걸어온 길
         section({ anchor: 'story', template: 'steps', variant: 'timeline', title: kb('걸어온 길', 'Our story'), items: [1, 2, 3].map((i) => ({ title: kb(`[사명 연혁 ${i}]`, `[Mission year ${i}]`), body: kb(`[사명 연혁 ${i} 내용]`, `[Mission year ${i} note]`) })) }),
       ]),
       page('partner', 2, kb('함께하기', 'Partner with us'), [
         section({ anchor: 'ways', template: 'cards', title: kb('함께하는 방법', 'Ways to partner'), items: [{ title: kb('정기 후원', 'Monthly giving'), body: kb('[계좌·방법]', '[Account · how]') }, { title: kb('봉사', 'Volunteer'), body: kb('[필요한 봉사]', '[Volunteering needed]') }, { title: kb('기도', 'Prayer'), body: kb('[기도 제목 받는 방법]', '[How to receive prayer letters]') }] }),
-        section({ anchor: 'funds', template: 'facts', title: kb('후원금은 이렇게 쓰입니다', 'How gifts are used'), items: [{ title: kb('[쓰임 1]', '[Use 1]'), body: kb('[비율·설명]', '[Share · note]') }] }),
+        section({ anchor: 'funds', template: 'facts', title: kb('후원금은 이렇게 쓰입니다', 'How gifts are used'), items: [{ title: kb('[쓰임 1]', '[Use 1]'), body: kb('[비율·설명]', '[Share · note]') },
+          ...[2, 3].map((i) => ({ title: kb(`[쓰임 ${i}]`, `[Use ${i}]`), body: kb(`[사명 쓰임 ${i} 설명]`, `[Mission use ${i} note]`) }))] }),
         section({ anchor: 'report', template: 'text', title: kb('재정 보고', 'Financial reports'), body: kb('[사명 재정 보고 안내]', '[Mission financial report note]') }),
         section({ anchor: 'contact', template: 'cta', title: kb('후원 문의', 'Partnership enquiries'), body: kb('[담당자 연락처]', '[Contact person]'), button: { label: kb('문의하기', 'Contact us'), href: '/p/partner' } }),
       ]),
