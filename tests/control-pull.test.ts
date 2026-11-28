@@ -91,6 +91,53 @@ describe('관제 지시 당겨 오기', () => {
     expect(got?.due).toBeUndefined();
   });
 
+  it('관제가 남긴 지시(control.direct)도 그 세션의 /mine 에 나오고, 세션이 답하면 빠진다 (133차, ADR 0050)', async () => {
+    const d = await asAgent((db) => c.control.direct(db, T, { session: RAS, title: '결정 카드 형식 알림', body: '이제 결정 요청은 카드 형식으로만 올린다.' })) as { id: string; kind: string; status: string; to: string };
+    expect(d).toMatchObject({ kind: 'directive', status: 'delivered', to: RAS });
+    expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(true);
+    expect(((await mine(OTHER)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(false);
+    await asAgent((db) => c.control.post(db, T, d.id, { kind: 'report', body: '받음, 반영함', status: 'done', author_session: RAS }));
+    expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(false);
+    // 덧붙이면 다시 나온다. 다른 세션이 맡은 요청에는 덧붙일 수 없다
+    const again = await asAgent((db) => c.control.direct(db, T, { session: RAS, request: d.id, body: '하나 더' })) as { status: string };
+    expect(again.status).toBe('delivered'); // 닫혔던 요청이 다시 열린 상태를 그대로 돌려준다
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: 'not-a-uuid', body: 'x' }))).rejects.toThrow('요청을 찾을 수 없습니다');
+    // 기한 지난 기한 진행 카드에 관제가 지시를 덧붙이면 추천안(due)이 아니라 그 지시로 나온다
+    const dd = await asAgent((db) => c.control.file(db, T, {
+      title: '기한 지난 카드에 지시', source_session: RAS, door: 'default', ask: '목록을 카드로 바꿀까요?',
+      changes: '카드 3열', unchanged: '글 그대로', undo: '목록형 다시 고르기',
+      options: [{ key: 'a', label: '카드' }, { key: 'b', label: '목록' }], recommended: 'a',
+      due_at: new Date(Date.now() + 3600000).toISOString(), default_action: '카드로 바꿈',
+    })) as { id: string };
+    const cl0 = new pg.Client({ connectionString: TEST_URL }); await cl0.connect();
+    await backdate(cl0, `now() - interval '1 minute'`, dd.id); await cl0.end();
+    expect(((await mine(RAS)).body as { id: string; due?: boolean }[]).find((x) => x.id === dd.id)?.due).toBe(true);
+    await asAgent((db) => c.control.direct(db, T, { session: RAS, request: dd.id, body: '목록 유지로 가자' }));
+    const hit = ((await mine(RAS)).body as { id: string; due?: boolean }[]).find((x) => x.id === dd.id);
+    expect(hit).toBeTruthy();
+    expect(hit?.due).toBeUndefined();
+    // 닫힌 결정 카드에는 덧붙이지 않는다(받을 길이 없어 조용히 사라지지 않게)
+    const dec = await asAgent((db) => c.control.file(db, T, { title: '닫힐 카드', source_session: RAS, door: 'notice', changes: '알림' })) as { id: string };
+    await asAgent((db) => c.control.post(db, T, dec.id, { kind: 'status', status: 'done', author_session: RAS }));
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: dec.id, body: 'x' }))).rejects.toThrow('닫힌 결정에는 덧붙이지 않습니다');
+    // 승인 대기 대화에는 덧붙이지 않는다(/mine 이 승인 대기를 빼므로 받을 길이 없음)
+    const cl = new pg.Client({ connectionString: TEST_URL }); await cl.connect();
+    const pend = (await cl.query(`insert into public.control_requests(kind, title, topic, status, author, created_by, assignee_session)
+      values ('chat', '승인 대기 대화', 'system', 'pending', 'user', $1, $2) returning id`, [P, RAS])).rows[0].id as string;
+    await cl.end();
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: pend, body: 'x' }))).rejects.toThrow('승인 대기 중인 대화에는');
+    expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(true);
+    await expect(asAgent((db) => c.control.direct(db, T, { session: OTHER, request: d.id, body: 'x' }))).rejects.toThrow('그 요청을 맡은 세션에게만');
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, title: 't', body: '' }))).rejects.toThrow('지시 본문');
+    await expect(asAgent((db) => c.control.direct(db, T, { title: 't', body: 'x' }))).rejects.toThrow('지시를 받을 세션');
+    // 새 DB 문구는 모두 같은 글자의 db.* 이름표가 있다(영·태 응답이 한국어로 새지 않게)
+    const { CATALOG } = await import('@/lib/i18n/catalog');
+    const fs = await import('node:fs');
+    const sql = fs.readFileSync('supabase/migrations/20261128002000_control_direct.sql', 'utf8');
+    const values = new Set<string>(Object.values(CATALOG));
+    for (const [, m] of sql.matchAll(/raise exception '([^']+)'/g)) expect(values.has(m), m).toBe(true);
+  });
+
   it('토큰·세션 id 가 없으면 거부', async () => {
     expect((await mine(RAS, 'insp_' + '0'.repeat(64))).status).toBe(401);
     const res = await route.GET(new Request('http://x/api/control/mine', { headers: { 'x-inspector-token': T } }));
