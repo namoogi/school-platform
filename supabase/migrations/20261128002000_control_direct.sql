@@ -37,6 +37,10 @@ begin
     if coalesce(r.assignee_session, r.source_session) is distinct from sess then
       raise exception '그 요청을 맡은 세션에게만 덧붙일 수 있습니다. 먼저 맡을 세션을 정하세요(assign).' using errcode = '22023';
     end if;
+    -- 닫힌 결정 카드는 다시 열지 않는다(결정의 기록을 바꾸지 않음). 이어서 시킬 일은 새 지시로 남긴다
+    if r.kind = 'decision' and r.status in ('done', 'dropped') then
+      raise exception '닫힌 결정에는 덧붙이지 않습니다. 새 지시로 남겨 주세요.' using errcode = '22023';
+    end if;
   else
     ttl := trim(coalesce(p ->> 'title', ''));
     if length(ttl) not between 1 and 200 then raise exception '지시 제목(title)이 필요합니다(200자 이내).' using errcode = '22023'; end if;

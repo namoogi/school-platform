@@ -102,6 +102,10 @@ describe('관제 지시 당겨 오기', () => {
     const again = await asAgent((db) => c.control.direct(db, T, { session: RAS, request: d.id, body: '하나 더' })) as { status: string };
     expect(again.status).toBe('delivered'); // 닫혔던 요청이 다시 열린 상태를 그대로 돌려준다
     await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: 'not-a-uuid', body: 'x' }))).rejects.toThrow('요청을 찾을 수 없습니다');
+    // 닫힌 결정 카드에는 덧붙이지 않는다(받을 길이 없어 조용히 사라지지 않게)
+    const dec = await asAgent((db) => c.control.file(db, T, { title: '닫힐 카드', source_session: RAS, door: 'notice', changes: '알림' })) as { id: string };
+    await asAgent((db) => c.control.post(db, T, dec.id, { kind: 'status', status: 'done', author_session: RAS }));
+    await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, request: dec.id, body: 'x' }))).rejects.toThrow('닫힌 결정에는 덧붙이지 않습니다');
     expect(((await mine(RAS)).body as { id: string }[]).some((x) => x.id === d.id)).toBe(true);
     await expect(asAgent((db) => c.control.direct(db, T, { session: OTHER, request: d.id, body: 'x' }))).rejects.toThrow('그 요청을 맡은 세션에게만');
     await expect(asAgent((db) => c.control.direct(db, T, { session: RAS, title: 't', body: '' }))).rejects.toThrow('지시 본문');

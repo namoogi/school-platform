@@ -1597,6 +1597,7 @@ export const CATALOG = {
   'db.noPermission': '권한이 없습니다.',
   'db.moduleOff': '이 학교 라이선스에 없는 기능입니다.',
   'db.tokenCannotView': '이 토큰으로 볼 수 있는 종류가 아닙니다.',
+  'db.directClosedDecision': '닫힌 결정에는 덧붙이지 않습니다. 새 지시로 남겨 주세요.',
   'db.requestNotFound': '요청을 찾을 수 없습니다.',
   'db.tokenTerm': '기한은 7·30·90·365일 또는 무기한입니다.',
   'db.offeringNotFound': '개설을 찾을 수 없습니다.',
