@@ -1927,17 +1927,15 @@ try {
     await shot(p, '68-intro-en.png');
     await p.click('[data-testid=intro-start]');
     await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates|\/login\?next=\/site\/templates/);
-    // 템플릿 미리보기는 로그인 없이 열린다(홍보용 공개 쪽). 관리 화면으로 돌아가는 링크는 없다
+    // 템플릿 공개 주소(홍보용): 로그인 없이 /demo/<key>가 템플릿 화면만 보인다(안내 줄·예시 안내 없음).
+    // 로그인하지 않은 사람이 /templates/<key>를 열면 같은 쪽의 공개 주소로 간다. 쪽 넘기기 링크도 /demo 안에 머문다
     await p.goto(`${BASE}/templates/kinder?page=home&lang=ko`);
+    await p.waitForURL(/\/demo\/kinder\?page=home&lang=ko$/);
     await p.waitForSelector('[data-testid=template-live]');
-    assert.equal(await p.locator('.template-live-bar a[href="/site/templates"]').count(), 0);
-    // 로그인하지 않은 사람의 시작 단추는 고른 템플릿을 next로 들고 로그인으로 가고, 로그인 뒤 그 템플릿으로 돌아온다
-    await p.click('[data-testid=template-live-start]');
-    await p.waitForURL(/\/login\?next=%2Fsite%2Ftemplates%2Fkinder/);
-    await p.fill('input[name=email]', 'admin-a@school-a.test');
-    await p.fill('input[name=password]', 'demo-pass-a');
-    await p.click('button[type=submit]');
-    await p.waitForURL(/\/site\/templates\/kinder$/);
+    assert.equal(await p.locator('.template-live-bar, .template-live-note').count(), 0);
+    const demoNav = await p.locator('.site a[href^="/demo/kinder?page="]').count();
+    assert.ok(demoNav > 0);
+    assert.equal(await p.locator('.site a[href^="/templates/"]').count(), 0);
     await ctx.close();
   });
   await step('71차: 학교 구조(학교급·학기 구조·학년도·학기 날짜) → 사람 추가·학적 등록·이름 새 판', async () => {
