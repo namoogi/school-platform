@@ -51,7 +51,7 @@ describe('템플릿 적용', () => {
     expect(story.skipped).toEqual(['home', 'admission']);
     expect((await asUser(B.userId, (db) => site.listEntries(db, B.schoolId))).length).toBe(0);
     const b = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'international'));
-    expect(b.created.map((c) => c.key)).toEqual(['home', 'curriculum', 'admissions', 'student-life']);
+    expect(b.created.map((c) => c.key)).toEqual(['home', 'about', 'curriculum', 'admissions', 'student-life']);
     expect((await asUser(A.userId, (db) => site.listEntries(db, A.schoolId))).some((e) => e.key === 'student-life')).toBe(false);
     const { rows } = await su.query(`select detail from public.access_log where school_id = $1 and action = 'site.template_apply' order by id`, [A.schoolId]);
     expect(rows.map((x) => x.detail.template)).toEqual(['notice', 'notice', 'story']);
