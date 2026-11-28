@@ -1,6 +1,7 @@
 import type { Db } from './db';
 import { latestPolicy, listScales } from './gradebook';
 import { listCalcRules } from './calc-rules';
+import { listOutputProfiles } from './records';
 import { definePeriodRule, latestPeriodRule } from './academics';
 import { schoolProfile } from './foundation';
 import { applyGradeScheme, gradeLabel, presetLevels, type GradeScheme, type LevelKey } from './grade-schemes';
@@ -166,10 +167,7 @@ export async function schoolCopySummary(db: Db, schoolId: string, lang = 'ko') {
   const rule = await latestPeriodRule(db, schoolId);
   // 학교가 저장한 계산식 판·출력 프로필의 최신 판(템플릿 견본이 아니라 학교 것, Codex 220번 PR 검토)
   const calcRules = (await listCalcRules(db, schoolId)).map((r) => ({ code: r.code, version: r.version, spec: r.spec }));
-  const { rows: outputProfiles } = await db.query<{ code: string; format: string; version: number; settings: Record<string, unknown> }>(
-    `select distinct on (p.code) p.code, p.format, v.version, v.settings from public.output_profiles p
-       join public.output_profile_versions v on v.profile_id = p.id
-      where p.school_id = $1 order by p.code, v.version desc`, [schoolId]);
+  const outputProfiles = (await listOutputProfiles(db, schoolId)).map((o) => ({ code: o.code, format: o.format, version: o.version, settings: o.settings }));
   return {
     template: { key: t.key, version: t.version, title: t.title[lang] ?? t.title.ko ?? Object.values(t.title)[0] },
     scheme: (p.grade_scheme as string | null) ?? null,

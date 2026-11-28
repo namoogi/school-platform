@@ -11,7 +11,7 @@ export default async function LabPage() {
   const { items, open, counts, uiLang } = await loadForPlatform(async ({ db }) => ({
     uiLang: await userLang(db),
     items: await listItems(db, true),
-    open: (await db.query<{ n: number }>("select count(*)::int as n from public.control_requests where status in ('open', 'parked', 'proceeding')")).rows[0].n,
+    open: (await db.query<{ n: number }>("select count(*)::int as n from public.control_requests where status in ('open', 'parked', 'proceeding') and door is distinct from 'notice'")).rows[0].n,
     counts: await directiveCounts(db),
   }));
   const { t } = await getI18n(uiLang);

@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { isUuid, NotFoundError, ValidationError } from './services';
+import { isUuid, NotFoundError, safeId, ValidationError } from './services';
 import { evaluate, type CalcSpec } from './calc/expr';
 
 /**
@@ -101,12 +101,50 @@ export async function subjectLabel(db: Db, schoolId: string, subjectId: unknown,
 }
 
 // ── 척도·정책 ────────────────────────────────────────────
-export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }) {
-  if (!Array.isArray(input.bands) || !input.bands.length) throw new ValidationError('err.grade.bands');
-  const bands = (input.bands as Band[]).map((b) => ({
-    code: str(b?.code), label: ltext(b?.label, '척도 띠'), min: b?.min == null ? null : Number(b.min),
-    points: b?.points == null ? null : Number(b.points), earns_credit: b?.earns_credit !== false,
-  }));
+export const SCALE_KINDS = ['letter', 'level', 'pass_fail', 'percent', 'points'] as const;
+/** 131차: 척도 띠 검사(화면·AI 초안 공통). 코드 겹침·숫자 아닌 하한/평점을 DB 전에 막는다. 표기가 없으면 코드를 표기로 쓴다 */
+const BAND_KEYS = ['code', 'label', 'min', 'points', 'earns_credit'];
+export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[] {
+  // 띠 30개는 DB 칸 제한과 같게
+  if (!Array.isArray(raw) || !raw.length || raw.length > 30) throw new ValidationError('err.grade.bands');
+  const seen = new Set<string>();
+  const num = (v: unknown, code: string) => {
+    if (v == null || v === '') return null;
+    // 숫자나 숫자 글자만. 참·거짓(false → 0)이 바닥 구간·평점으로 바뀌지 않게(Codex #228)
+    if (typeof v !== 'number' && !(typeof v === 'string' && v.trim() !== '')) throw new ValidationError('err.grade.bandNumber', { code: safeId(code) });
+    const n = Number(v);
+    if (!Number.isFinite(n)) throw new ValidationError('err.grade.bandNumber', { code: safeId(code) });
+    return n;
+  };
+  const out = raw.map((b) => {
+    const code = str(b?.code).trim();
+    if (!code) throw new ValidationError('err.grade.bands');
+    if (seen.has(code)) throw new ValidationError('err.grade.bandDup', { code: safeId(code) });
+    seen.add(code);
+    // 띠 칸은 정해진 이름만. 오타(earn_credit)가 버려져 이수로 굳지 않게(Codex #228)
+    for (const k of Object.keys(b ?? {})) if (!BAND_KEYS.includes(k)) throw new ValidationError('err.grade.bandField', { code: safeId(code), key: safeId(k), keys: BAND_KEYS.join(', ') });
+    const label = b?.label == null ? { ko: code, en: code } : ltext(b.label, '척도 띠');
+    // 이수 여부는 참·거짓만. 글자 "false" 를 참으로 바꿔 이수로 굳히지 않는다(Codex #228)
+    if (b?.earns_credit != null && typeof b.earns_credit !== 'boolean') throw new ValidationError('err.grade.bandCredit', { code: safeId(code) });
+    return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
+  });
+  // floor(화면·API 쓰기 길): 점수 구간이 있으면 0점까지 덮어야 한다. 템플릿 적용은 관제가 낸 판을 그대로 옮기므로 여기서 막지 않는다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
+  // 같은 하한이 둘이면 마감 때 어느 띠를 고를지 정해지지 않는다(app.band_for 는 하한 순으로 하나만, Codex #228)
+  const mins = out.filter((b) => b.min != null).map((b) => b.min as number);
+  const dup = mins.find((m, i) => mins.indexOf(m) !== i);
+  if (dup != null) throw new ValidationError('err.grade.bandDupMin', { min: dup });
+  // 하한이 모두 비어도 같은 문제다(모든 점수가 등급 없이 이수, Codex #228 재검토)
+  if (opts.floor && !out.some((b) => b.min != null && b.min <= 0)) throw new ValidationError('err.grade.bandFloor');
+  return out;
+}
+export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }, opts: { floor?: boolean } = {}) {
+  const bands = checkBands(input.bands, opts);
+  return saveScaleChecked(db, schoolId, input, bands);
+}
+async function saveScaleChecked(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; why?: unknown; base_version?: unknown }, bands: Band[]) {
+  // 있는 척도의 종류는 바꾸지 않는다(DB는 처음 만들 때만 종류를 쓴다, Codex #228)
+  const { rows: [had] } = await db.query<{ kind: string }>('select kind from public.scales where school_id = $1 and code = $2', [schoolId, str(input.code)]);
+  if (had && had.kind !== str(input.kind)) throw new ValidationError('err.grade.scaleKindChange', { code: safeId(input.code), kind: had.kind });
   return one<{ id: string; version: number }>(db, 'select app.save_scale($1, $2) as v',
     [schoolId, JSON.stringify({ code: str(input.code), kind: str(input.kind), bands, why: str(input.why), base_version: base(input.base_version ?? 0) })]);
 }
@@ -120,7 +158,52 @@ export type GradingPolicy = {
   narrative_limits?: Record<string, number>;
   gpa?: { enabled?: boolean; level_bonus?: Record<string, number> };
   rank?: { enabled?: boolean };
+  attendance?: { day_absent_ratio?: number; chronic_ratio?: number; min_attendance_ratio?: number };
+  requests?: { due_days?: number };
 };
+/**
+ * 131차: 성적 정책 전체 검사(화면 'JSON으로 고치기'·AI 초안). 플랫폼이 읽는 칸만 받는다 — 모르는 칸은 아무 데서도 쓰이지 않아 조용히 무시되므로 막는다.
+ * 읽는 곳: 마감(score_digits·final_digits·stats·narrative_limits), 출결 요약(attendance), 열람 요청 기한(requests)
+ */
+// gpa·rank 는 아무 데서도 읽지 않아 받지 않는다(평점·석차 숨김은 학교 관할 판 hidden_sections, Codex #228)
+export const POLICY_KEYS = ['score_digits', 'final_digits', 'stats', 'narrative_limits', 'attendance', 'requests'] as const;
+/** 묶음 안쪽에서 읽는 칸(narrative_limits 는 서술 종류가 학교마다 달라 열어 둔다) */
+const POLICY_INNER: Record<string, string[]> = {
+  stats: ['sd', 'digits'],
+  attendance: ['day_absent_ratio', 'chronic_ratio', 'min_attendance_ratio'], requests: ['due_days'],
+};
+export function checkGradingPolicy(raw: unknown): GradingPolicy {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('err.grade.policyObject');
+  const p = raw as Record<string, unknown>;
+  const bad = (key: string) => { throw new ValidationError('err.grade.policyField', { key }); };
+  const isObj = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v);
+  const int = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
+  const ratio = (v: unknown) => typeof v === 'number' && v >= 0 && v <= 1;
+  for (const k of Object.keys(p)) if (!(POLICY_KEYS as readonly string[]).includes(k)) throw new ValidationError('err.grade.policyUnknown', { key: safeId(k), keys: POLICY_KEYS.join(', ') });
+  // 모양이 정해진 묶음은 안쪽 칸도 본다. 오타(min_attendence_ratio)가 값만 맞으면 저장되고 계산에서 조용히 무시된다(Codex #228)
+  for (const [k, inner] of Object.entries(POLICY_INNER)) {
+    if (!isObj(p[k])) continue;
+    for (const x of Object.keys(p[k] as object)) if (!inner.includes(x)) throw new ValidationError('err.grade.policyUnknown', { key: `${k}.${safeId(x)}`, keys: inner.map((i) => `${k}.${i}`).join(', ') });
+  }
+  for (const k of ['score_digits', 'final_digits']) if (k in p && !int(p[k], 0, 4)) bad(k);
+  if ('stats' in p) {
+    const st = p.stats as Record<string, unknown>;
+    if (!isObj(st) || ('sd' in st && st.sd !== 'population' && st.sd !== 'sample') || ('digits' in st && !int(st.digits, 0, 4))) bad('stats');
+  }
+  if ('narrative_limits' in p) {
+    const n = p.narrative_limits as Record<string, unknown>;
+    if (!isObj(n) || Object.values(n).some((x) => !int(x, 1, 100000))) bad('narrative_limits');
+  }
+  if ('attendance' in p) {
+    const a = p.attendance as Record<string, unknown>;
+    if (!isObj(a) || Object.values(a).some((x) => !ratio(x))) bad('attendance');
+  }
+  if ('requests' in p) {
+    const r = p.requests as Record<string, unknown>;
+    if (!isObj(r) || ('due_days' in r && !int(r.due_days, 1, 365))) bad('requests');
+  }
+  return p as GradingPolicy;
+}
 export function saveGradingPolicy(db: Db, schoolId: string, policy: GradingPolicy, input: { why?: unknown; base_version?: unknown }) {
   return one<number>(db, 'select app.save_grading_policy($1, $2) as v',
     [schoolId, JSON.stringify({ policy, why: str(input.why), base_version: base(input.base_version) })]);
