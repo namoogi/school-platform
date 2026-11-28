@@ -57,13 +57,13 @@
     - 한 구간 = `{"code":"A","min":90,"points":4,"earns_credit":true,"label":{"ko":"A","en":"A"}}`. `points`·`label`은 생략할 수 있고(표기 없으면 코드), 이수 아님은 `earns_credit:false`.
     - 코드가 겹치거나 하한·평점이 숫자가 아니면 저장 전에 막는다.
   - 성적 정책 판: 같은 화면 '성적 정책'. 자릿수 세 칸 양식, 또는 '정책 전체 고치기(JSON)'.
-    - 받는 칸: `score_digits`·`final_digits`(0~4), `stats{sd,digits}`, `narrative_limits{서술 종류: 글자 수}`, `gpa{enabled,level_bonus}`, `rank{enabled}`, `attendance{day_absent_ratio,chronic_ratio,min_attendance_ratio}`(0~1), `requests{due_days}`.
+    - 받는 칸: `score_digits`·`final_digits`(0~4), `stats{sd,digits}`, `narrative_limits{서술 종류: 글자 수}`, `attendance{day_absent_ratio,chronic_ratio,min_attendance_ratio}`(0~1), `requests{due_days}`.
     - 플랫폼이 읽지 않는 칸은 받지 않는다(조용히 무시되면 학교가 바뀐 줄 안다). 지금 판 전체에서 바꿀 칸만 고쳐 준다.
   - 계산식 판: 같은 화면 '계산식 판'. 고칠 식이나 견본에서 시작해 식(`spec`)을 붙여 넣는다.
     - 저장 전에 화면이 경계 점수 89.5·59.5·39.5(평가 항목 하나 `total`, 출석 100%)로 미리 계산한다. 식에 문제가 없을 때만 저장 단추가 열린다.
     - 학교 작업 토큰(`package`)으로 쓰는 길은 다음 단계다(ADR 0040).
   - 출력 프로필: 기록 화면(`/records`) '출력 프로필'. 서식을 고르고 설정 객체를 붙여 넣는다. 발행할 때 그 프로필을 고르면 발행본에 판 번호가 남는다.
-    - 서식별 칸: 자체 학생부 `char_limits{칸: 글자 수}`·`note`, 미국 성적증명서 `gpa_scale`, 학교 소개서 `description`·`gpa_policy`·`scale_code`, ปพ.1 학교 사본 `bands[{min,grade}]`·`note`, 영어권 학업 기록 `note`.
+    - 서식별 칸: 자체 학생부 `char_limits{subject_detail: 세특 글자 수}`·`note`, 미국 성적증명서 `gpa_scale`, 학교 소개서 `description`·`gpa_policy`·`scale_code`, ปพ.1 학교 사본 `bands[{min,grade}]`·`note`, 영어권 학업 기록 `note`.
     - 다른 서식의 프로필로는 발행하지 않는다.
 - 학교 맞춤은 설정값으로만 한다. 표·코드를 올리지 않는다(ADR 0035).
 

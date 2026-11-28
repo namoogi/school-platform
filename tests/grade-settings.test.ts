@@ -82,7 +82,7 @@ describe('맞춤 척도', () => {
 
 describe('성적 정책 전체', () => {
   it('플랫폼이 읽는 칸만 받고 값 모양을 본다', () => {
-    const ok = { score_digits: 1, final_digits: 0, stats: { sd: 'sample', digits: 1 }, narrative_limits: { subject_detail: 500 }, gpa: { enabled: true, level_bonus: { AP: 1 } }, rank: { enabled: false }, attendance: { min_attendance_ratio: 0.6667 }, requests: { due_days: 30 } };
+    const ok = { score_digits: 1, final_digits: 0, stats: { sd: 'sample', digits: 1 }, narrative_limits: { subject_detail: 500 }, attendance: { min_attendance_ratio: 0.6667 }, requests: { due_days: 30 } };
     expect(gr.checkGradingPolicy(ok)).toEqual(ok);
     expect(() => gr.checkGradingPolicy({ rounding: 'up' })).toThrow(expect.objectContaining({ key: 'err.grade.policyUnknown' }));
     expect(() => gr.checkGradingPolicy({ score_digits: 7 })).toThrow(expect.objectContaining({ key: 'err.grade.policyField', vars: { key: 'score_digits' } }));
@@ -91,7 +91,8 @@ describe('성적 정책 전체', () => {
     expect(() => gr.checkGradingPolicy([])).toThrow(expect.objectContaining({ key: 'err.grade.policyObject' }));
     // 묶음 안쪽 오타도 거부(Codex #228)
     expect(() => gr.checkGradingPolicy({ attendance: { min_attendence_ratio: 0.7 } })).toThrow(expect.objectContaining({ key: 'err.grade.policyUnknown', vars: expect.objectContaining({ key: 'attendance.min_attendence_ratio' }) }));
-    expect(() => gr.checkGradingPolicy({ gpa: { enable: true } })).toThrow(expect.objectContaining({ vars: expect.objectContaining({ key: 'gpa.enable' }) }));
+    expect(() => gr.checkGradingPolicy({ gpa: { enabled: false } })).toThrow(expect.objectContaining({ key: 'err.grade.policyUnknown', vars: expect.objectContaining({ key: 'gpa' }) }));
+    expect(() => gr.checkGradingPolicy({ stats: { sdd: 'sample' } })).toThrow(expect.objectContaining({ vars: expect.objectContaining({ key: 'stats.sdd' }) }));
     expect(gr.checkGradingPolicy({ narrative_limits: { club: 100, career: 700 } })).toEqual({ narrative_limits: { club: 100, career: 700 } });
   });
 
@@ -142,6 +143,7 @@ describe('출력 프로필', () => {
     expect(rec.checkProfileSettings('th_por_por_1', { bands: [{ min: 80, grade: 4 }, { min: 0, grade: 0 }], note: '학교 사본' })).toBeTruthy();
     expect(() => rec.checkProfileSettings('th_por_por_1', { bands: [null] })).toThrow(expect.objectContaining({ key: 'err.rec.profileField', vars: { key: 'bands' } }));
     expect(() => rec.checkProfileSettings('kr_alt_record', { char_limits: { subject_detail: '500' } })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
+    expect(() => rec.checkProfileSettings('kr_alt_record', { char_limits: { subject_detial: 500 } })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
     expect(() => rec.checkProfileSettings('us_transcript', { columns: ['grade'] })).toThrow(expect.objectContaining({ key: 'err.rec.profileUnknown' }));
     expect(() => rec.checkProfileSettings('en_record', [])).toThrow(expect.objectContaining({ key: 'err.rec.profileSettings' }));
     await expect(asUser(A.userId, (db) => rec.saveOutputProfile(db, A.schoolId, { format: 'th_por_por_1', code: 'th_bad', settings: { bands: [null] }, why: 'x', base_version: 0 })))

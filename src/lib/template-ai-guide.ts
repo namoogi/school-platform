@@ -73,9 +73,9 @@ export function buildTemplateGuideText(i: GuideInput): string {
   L.push('4. 바꿀 값을 초안으로 정리해 나에게 보여 준다. 각 항목에 "지금 값 → 바꿀 값 · 왜(규정 조항)"를 한 줄씩 적는다. 저장은 학교 관리자가 아래 화면에서 새 판으로 한다(지금 작업 토큰으로는 이 값들을 쓸 수 없다). 화면마다 \'왜\' 칸이 필수이니 규정 조항을 함께 준다.');
   L.push(`   - 학기 구조: ${base}/academics?tab=terms`);
   L.push(`   - 척도: ${base}/grades '척도' — 정해진 견본 추가, 또는 '구간 고치기'·'맞춤 척도 새로 만들기'에 구간 JSON 배열을 붙여 넣는다. 한 구간 = {"code":"A","min":90,"points":4,"earns_credit":true,"label":{"ko":"A","en":"A"}} (points·label은 생략 가능, 이수 아님은 earns_credit:false).`);
-  L.push(`   - 성적 정책: ${base}/grades '성적 정책' — 자릿수 세 칸, 또는 '정책 전체 고치기(JSON)'에 정책 객체 전체를 붙여 넣는다. 받는 칸: score_digits·final_digits(0~4), stats{sd:"population"|"sample",digits}, narrative_limits{서술 종류:글자 수}, gpa{enabled,level_bonus}, rank{enabled}, attendance{day_absent_ratio,chronic_ratio,min_attendance_ratio(0~1)}, requests{due_days}. 지금 판에서 바꿀 칸만 고친 전체를 준다.`);
+  L.push(`   - 성적 정책: ${base}/grades '성적 정책' — 자릿수 세 칸, 또는 '정책 전체 고치기(JSON)'에 정책 객체 전체를 붙여 넣는다. 받는 칸: score_digits·final_digits(0~4), stats{sd:"population"|"sample",digits}, narrative_limits{서술 종류:글자 수}, attendance{day_absent_ratio,chronic_ratio,min_attendance_ratio(0~1)}, requests{due_days}. 지금 판에서 바꿀 칸만 고친 전체를 준다.`);
   L.push(`   - 계산식 판: ${base}/grades '계산식 판' — 고칠 식이나 견본에서 시작해 식(spec) JSON을 붙여 넣는다. 화면이 저장 전에 경계 점수 89.5·59.5·39.5(평가 항목 하나 total, 출석 100%)로 미리 계산해 보여 주고, 식에 문제가 없을 때만 저장된다.`);
-  L.push(`   - 출력 프로필: ${base}/records '출력 프로필' — 서식을 고르고 설정 JSON 객체를 붙여 넣는다. 서식별 칸: 자체 학생부 char_limits{칸:글자 수}·note, 미국 성적증명서 gpa_scale, 학교 소개서 description·gpa_policy·scale_code, ปพ.1 학교 사본 bands[{min,grade}]·note, 영어권 학업 기록 note. 발행할 때 그 프로필을 고른다.`);
+  L.push(`   - 출력 프로필: ${base}/records '출력 프로필' — 서식을 고르고 설정 JSON 객체를 붙여 넣는다. 서식별 칸: 자체 학생부 char_limits{subject_detail:세특 글자 수}·note, 미국 성적증명서 gpa_scale, 학교 소개서 description·gpa_policy·scale_code, ปพ.1 학교 사본 bands[{min,grade}]·note, 영어권 학업 기록 note. 발행할 때 그 프로필을 고른다.`);
   L.push(`   - 숨기는 구획: ${base}/academics/templates`);
   L.push('   JSON은 화면 칸에 그대로 붙여 넣을 수 있게 항목마다 한 덩어리로 따로 준다.');
   L.push('5. 경계값(89.5, 59.5, 39 같은 점수)으로 미리 계산해 학교가 준 결과와 맞는지 보여 준다. 다르면 고치지 말고 질문으로 남긴다.');

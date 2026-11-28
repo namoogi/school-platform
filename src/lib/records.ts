@@ -63,7 +63,8 @@ export async function recordClosures(db: Db, schoolId: string, personId: unknown
 const text = (v: unknown) => typeof v === 'string' && v.length <= 2000;
 const PROFILE_FIELDS: Partial<Record<Format, Record<string, (v: unknown) => boolean>>> = {
   kr_alt_record: {
-    char_limits: (v) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every((n) => Number.isInteger(n) && (n as number) > 0 && (n as number) <= 100000),
+    // 렌더러가 읽는 칸(subject_detail 세특)만. 오타 칸이면 한도가 조용히 안 걸린다(Codex #228)
+    char_limits: (v) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.entries(v).every(([k, n]) => k === 'subject_detail' && Number.isInteger(n) && (n as number) > 0 && (n as number) <= 100000),
     note: text,
   },
   us_transcript: { gpa_scale: text },

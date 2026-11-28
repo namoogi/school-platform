@@ -161,12 +161,13 @@ export type GradingPolicy = {
 };
 /**
  * 128차: 성적 정책 전체 검사(화면 'JSON으로 고치기'·AI 초안). 플랫폼이 읽는 칸만 받는다 — 모르는 칸은 아무 데서도 쓰이지 않아 조용히 무시되므로 막는다.
- * 읽는 곳: 마감(score_digits·final_digits·stats·narrative_limits), 발행(gpa·rank), 출결 요약(attendance), 열람 요청 기한(requests)
+ * 읽는 곳: 마감(score_digits·final_digits·stats·narrative_limits), 출결 요약(attendance), 열람 요청 기한(requests)
  */
-export const POLICY_KEYS = ['score_digits', 'final_digits', 'stats', 'narrative_limits', 'gpa', 'rank', 'attendance', 'requests'] as const;
+// gpa·rank 는 아무 데서도 읽지 않아 받지 않는다(평점·석차 숨김은 학교 관할 판 hidden_sections, Codex #228)
+export const POLICY_KEYS = ['score_digits', 'final_digits', 'stats', 'narrative_limits', 'attendance', 'requests'] as const;
 /** 묶음 안쪽에서 읽는 칸(narrative_limits 는 서술 종류가 학교마다 달라 열어 둔다) */
 const POLICY_INNER: Record<string, string[]> = {
-  stats: ['sd', 'digits'], gpa: ['enabled', 'level_bonus'], rank: ['enabled'],
+  stats: ['sd', 'digits'],
   attendance: ['day_absent_ratio', 'chronic_ratio', 'min_attendance_ratio'], requests: ['due_days'],
 };
 export function checkGradingPolicy(raw: unknown): GradingPolicy {
@@ -191,12 +192,6 @@ export function checkGradingPolicy(raw: unknown): GradingPolicy {
     const n = p.narrative_limits as Record<string, unknown>;
     if (!isObj(n) || Object.values(n).some((x) => !int(x, 1, 100000))) bad('narrative_limits');
   }
-  if ('gpa' in p) {
-    const g = p.gpa as Record<string, unknown>;
-    if (!isObj(g) || ('enabled' in g && typeof g.enabled !== 'boolean')
-      || ('level_bonus' in g && (!isObj(g.level_bonus) || Object.values(g.level_bonus as object).some((x) => typeof x !== 'number')))) bad('gpa');
-  }
-  if ('rank' in p && (!isObj(p.rank) || ('enabled' in (p.rank as object) && typeof (p.rank as Record<string, unknown>).enabled !== 'boolean'))) bad('rank');
   if ('attendance' in p) {
     const a = p.attendance as Record<string, unknown>;
     if (!isObj(a) || Object.values(a).some((x) => !ratio(x))) bad('attendance');
