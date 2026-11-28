@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, TextArea, TextField } from '@radix-ui/themes';
 import { useI18n } from './I18nProvider';
+import type { MsgKey } from '@/lib/i18n/catalog';
 
 /**
  * 71차: 학사 화면 공용 작은 양식. 칸을 모아 { action, ...extra, ...값 }을 JSON으로 보내고, 성공하면 화면을 새로 고친다.
@@ -42,7 +43,7 @@ export function fieldSize(f: FieldSpec): FieldSize {
  * required 면 지금 넣은 값으로 미리 계산해 문제가 없을 때만 저장 단추가 열린다(값을 고치면 다시 닫힌다).
  */
 export type PreviewSpec = { action: string; label: string; columns: { key: string; label: string }[]; required?: boolean; issuesLabel: string };
-type PreviewResult = { issues: { path: string; message: string }[]; results: Record<string, unknown>[] };
+type PreviewResult = { issues: { path: string; message: string; key?: string; vars?: Record<string, string | number> }[]; results: Record<string, unknown>[] };
 const cell = (v: unknown, t: (k: 'common.yes' | 'common.no') => string) => (v == null ? '-' : v === true ? t('common.yes') : v === false ? t('common.no') : String(v));
 
 /** 판 번호처럼 '보고 시작한 때' 값을 지켜야 하는 칸(base_version·bases·수업 revision), 매번 새로 만드는 요청 키. 나머지 extra 는 대상(학생·수업 id 등) */
@@ -150,7 +151,7 @@ export function ActionForm({ url, action, fields, extra = {}, submitLabel, succe
         <div className="preview-result" data-stale={shown.key !== valuesKey ? '' : undefined}>
           {shown.r.issues.length > 0 && (
             <div className="alert" role="status"><strong>{preview.issuesLabel}</strong>
-              <ul>{shown.r.issues.slice(0, 20).map((i, n) => <li key={n}><code>{i.path || '-'}</code> {i.message}</li>)}</ul></div>)}
+              <ul>{shown.r.issues.slice(0, 20).map((i, n) => <li key={n}><code>{i.path || '-'}</code> {i.key ? t(i.key as MsgKey, i.vars) : i.message}</li>)}</ul></div>)}
           {shown.r.results.length > 0 && (
             <div className="table-wrap"><table className="grid-table">
               <thead><tr>{preview.columns.map((c) => <th key={c.key} scope="col">{c.label}</th>)}</tr></thead>

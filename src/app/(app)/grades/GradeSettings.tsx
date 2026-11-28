@@ -86,7 +86,7 @@ export function GradeSettings({ t, lang, scales, policy, calcRules, calcFrom, of
         <div className="detail-section" data-testid="calc-new">
           <h3>{t('gset.newCalc')}</h3>
           <p className="fine">{t('gset.startFrom')} {Object.keys(PRESETS).map((p, i) => <span key={p}>{i ? ' · ' : ''}{p === from ? <strong>{p}</strong> : <Link href={href(p)}>{p}</Link>}</span>)}</p>
-          <p className="fine">{PRESETS[from].note}</p>
+          <p className="fine">{t(`calc.preset.${from}` as MsgKey)}</p>
           <ActionForm url="/api/calc-rules" action="save" extra={{ base_version: 0, lang, samples: samples(t) }} preview={calcPreview}
             submitLabel={t('gset.createCalc')} successText={t('gset.saved')}
             fields={[{ name: 'code', label: t('common.code'), required: true, placeholder: 'school_score', width: 'sm' }, { name: 'title', label: t('common.name'), required: true },
