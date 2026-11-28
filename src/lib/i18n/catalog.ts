@@ -3100,6 +3100,15 @@ export const CATALOG = {
   'academics.tab.terms': '학기 구조',
   'academics.tab.years': '학년도·학기',
   'academics.tab.templates': '템플릿',
+  // 126차: 두 단계 메뉴
+  'site.menu.parent': '상위 메뉴',
+  'site.menu.parentNone': '없음 — 이 쪽이 상위 메뉴',
+  'site.menu.parentNews': '소식',
+  'site.menu.anchor': '메뉴 주소 (비우면 메뉴에 안 보임)',
+  'site.menu.anchorHint': '영문 소문자·숫자·하이픈. 이 쪽 상위 메뉴 아래 하위 메뉴로 보이고, 누르면 이 구역으로 바로 옵니다.',
+  'err.site.anchorFormat': '{n}번째 블록: 메뉴 주소는 영문 소문자로 시작하고 영문 소문자·숫자·하이픈 40자 이하로 씁니다.',
+  'err.site.anchorDuplicate': '메뉴 주소 \'{anchor}\'가 이 쪽에 두 번 있습니다.',
+  'err.site.menuParent': '상위 메뉴는 다른 쪽의 주소 이름이나 news(소식)여야 합니다.',
   // 125차 템플릿 새 판 제안
   'tplOffer.title': '템플릿 새 판 제안',
   'tplOffer.lead': '관제가 우리 학교 템플릿의 새 판을 냈습니다. 수락하면 빠진 것만 더하고, 학교가 정한 값은 그대로 둡니다. 보류·거절해도 학교 사본은 바뀌지 않습니다.',
@@ -3127,6 +3136,8 @@ export const CATALOG = {
   'tplOffer.versionsShort': '{from}판 → {to}판',
   // 125차 템플릿 새 판 제안 결정 확인
   'tplOffer.confirm': '결정을 남길까요? \'수락\'이면 {name} {to}판을 지금 적용해 위의 \'수락하면 더해지는 것\'을 학교 사본에 더합니다(학교 값은 그대로).',
+  // 126차: 두 단계 메뉴
+  'err.site.anchorTitle': '{n}번째 블록: 메뉴 주소는 제목이 있는 구역·제목·소식 목록·신청 칸에만 달 수 있습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

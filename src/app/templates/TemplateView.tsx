@@ -2,7 +2,7 @@ import type { I18n } from '@/lib/i18n/server';
 import { siteLabel, templateText } from '@/lib/site-labels';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { LANG_LABEL, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
+import { LANG_LABEL, menuSectionsOf, navEntriesOf, SITE_THEMES, type Content, type Lang, type PublicSite } from '@/lib/site';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages, sampleAssetUrl, sampleNews, sampleNewsPage, TEMPLATE_SAMPLES } from '@/lib/site-template-samples';
 import { SiteFrame } from '@/components/site/SiteFrame';
@@ -34,15 +34,18 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
   const site: PublicSite = {
     slug: `template-${t.key}`, school: view === 'sample' ? sample.school : '[학교 이름]', default_lang: fallback, langs: t.langs as Lang[], theme: t.theme,
     title: home.title, stories: false, has_news: false,
-    nav: t.pages.filter((p) => p.key !== 'home').map((p) => ({ key: p.key, title: pages[p.key].title })),
+    nav: navEntriesOf(t.pages.map((p) => ({ key: p.key, content: pages[p.key] })), { inquiry: true, news: view === 'sample' }),
+    home_sections: menuSectionsOf(pages.home, { inquiry: true, news: view === 'sample' }),
   };
   const link = (path: string) => {
     if (path === '/' || path === '') return href({ page: 'home' });
+    if (/^\/#[a-z][a-z0-9-]*$/.test(path)) return `${href({ page: 'home' })}${path.slice(1)}`;
     if (path === '/news') return `${href({})}&news=all`;
     const article = /^\/news\/([a-z0-9-]+)$/.exec(path);
     if (article && sampleNews().some((n) => n.key === article[1])) return `${href({})}&news=${article[1]}`;
-    const m = /^\/p\/([a-z0-9-]+)/.exec(path);
-    return m && t.pages.some((p) => p.key === m[1]) ? href({ page: m[1] }) : href({ page: 'home' });
+    // 126차(ADR 0046): '/p/쪽#메뉴 주소'는 미리보기 주소에서도 #주소를 지킨다
+    const m = /^\/p\/([a-z0-9-]+)(#[a-z][a-z0-9-]*)?/.exec(path);
+    return m && t.pages.some((p) => p.key === m[1]) ? `${href({ page: m[1] })}${m[2] ?? ''}` : href({ page: 'home' });
   };
   const news: NewsItem[] = view === 'sample' ? sampleNews() : [];
   const content: Content = sampleNewsPage(sp.news) ?? pages[pg.key];

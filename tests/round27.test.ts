@@ -50,7 +50,7 @@ describe('학교 홈페이지', () => {
     expect((await asUser(A.userId, (db) => site.listEntries(db, A.schoolId))).find((e) => e.id === id)!.status).toBe('changed');
     await asUser(A.userId, (db) => site.publish(db, A.schoolId, id, undefined));
     expect((await site.publicEntry('school-a-site', 'page', 'about'))!.content.title.ko).toBe('학교 소개 2판');
-    expect((await site.publicSite('school-a-site'))!.nav).toEqual([{ key: 'about', title: { ko: '학교 소개 2판', en: 'About' } }]);
+    expect((await site.publicSite('school-a-site'))!.nav).toEqual([{ key: 'about', title: { ko: '학교 소개 2판', en: 'About' }, parent: null, sections: [] }]);
     // 공개 내림
     await asUser(A.userId, (db) => site.publish(db, A.schoolId, id, null));
     expect(await site.publicEntry('school-a-site', 'page', 'about')).toBeNull();

@@ -59,7 +59,7 @@
 
 - 34차 동화 경로 `/api/agent/stories…`도 그대로 쓸 수 있다(`entries/story…`와 같음).
 - 파일: PNG·JPG·WEBP 그림 5MB, PDF 4MB(웹용으로 줄인 것). 자바스크립트·첨부 파일·양식·암호가 든 PDF는 거부된다.
-- 내용(`content`)은 `{ title, summary?, cover?, blocks[] }`. 블록 종류: heading·text·notice·image·gallery·section·news_list·video·story_page·download. 내용이 가리키는 그림·파일은 모두 그 학교에 올린 것이어야 한다. 모양은 최신 판에서 그대로 본뜬다.
+- 내용(`content`)은 `{ title, summary?, cover?, blocks[], menu? }`. 두 단계 메뉴(ADR 0046): 쪽의 `menu.parent`(다른 쪽 주소 이름 또는 `news`)로 상위 메뉴 아래에 넣고, 블록의 `anchor`(영문 소문자·숫자·하이픈)로 그 구역을 하위 메뉴로 보인다. 공개해야 메뉴에 반영된다. 블록 종류: heading·text·notice·image·gallery·section·news_list·video·story_page·download. 내용이 가리키는 그림·파일은 모두 그 학교에 올린 것이어야 한다. 모양은 최신 판에서 그대로 본뜬다.
 
 ```bash
 H="x-agent-token: $SCHOOL_AGENT_TOKEN"; S=https://onschools.vercel.app
