@@ -103,6 +103,7 @@ export async function subjectLabel(db: Db, schoolId: string, subjectId: unknown,
 // ── 척도·정책 ────────────────────────────────────────────
 export const SCALE_KINDS = ['letter', 'level', 'pass_fail', 'percent', 'points'] as const;
 /** 128차: 척도 띠 검사(화면·AI 초안 공통). 코드 겹침·숫자 아닌 하한/평점을 DB 전에 막는다. 표기가 없으면 코드를 표기로 쓴다 */
+const BAND_KEYS = ['code', 'label', 'min', 'points', 'earns_credit'];
 export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[] {
   if (!Array.isArray(raw) || !raw.length || raw.length > 40) throw new ValidationError('err.grade.bands');
   const seen = new Set<string>();
@@ -117,12 +118,18 @@ export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[]
     if (!code) throw new ValidationError('err.grade.bands');
     if (seen.has(code)) throw new ValidationError('err.grade.bandDup', { code });
     seen.add(code);
+    // 띠 칸은 정해진 이름만. 오타(earn_credit)가 버려져 이수로 굳지 않게(Codex #228)
+    for (const k of Object.keys(b ?? {})) if (!BAND_KEYS.includes(k)) throw new ValidationError('err.grade.bandField', { code, key: k, keys: BAND_KEYS.join(', ') });
     const label = b?.label == null ? { ko: code, en: code } : ltext(b.label, '척도 띠');
     // 이수 여부는 참·거짓만. 글자 "false" 를 참으로 바꿔 이수로 굳히지 않는다(Codex #228)
     if (b?.earns_credit != null && typeof b.earns_credit !== 'boolean') throw new ValidationError('err.grade.bandCredit', { code });
     return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
   });
   // floor(화면·API 쓰기 길): 점수 구간이 있으면 0점까지 덮어야 한다. 템플릿 적용은 관제가 낸 판을 그대로 옮기므로 여기서 막지 않는다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
+  // 같은 하한이 둘이면 마감 때 어느 띠를 고를지 정해지지 않는다(app.band_for 는 하한 순으로 하나만, Codex #228)
+  const mins = out.filter((b) => b.min != null).map((b) => b.min as number);
+  const dup = mins.find((m, i) => mins.indexOf(m) !== i);
+  if (dup != null) throw new ValidationError('err.grade.bandDupMin', { min: dup });
   // 하한이 모두 비어도 같은 문제다(모든 점수가 등급 없이 이수, Codex #228 재검토)
   if (opts.floor && !out.some((b) => b.min != null && b.min <= 0)) throw new ValidationError('err.grade.bandFloor');
   return out;

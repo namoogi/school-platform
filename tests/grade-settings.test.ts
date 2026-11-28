@@ -41,6 +41,8 @@ describe('맞춤 척도', () => {
     // 바닥 구간이 없으면 60 미만이 등급 없이 이수로 마감된다(Codex #228)
     expect(() => gr.checkBands([{ code: 'P', min: 60 }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandFloor' }));
     expect(() => gr.checkBands([{ code: 'F', min: 0, earns_credit: 'false' }])).toThrow(expect.objectContaining({ key: 'err.grade.bandCredit' }));
+    expect(() => gr.checkBands([{ code: 'F', min: 0, earn_credit: false }])).toThrow(expect.objectContaining({ key: 'err.grade.bandField' }));
+    expect(() => gr.checkBands([{ code: 'P', min: 0 }, { code: 'F', min: 0, earns_credit: false }])).toThrow(expect.objectContaining({ key: 'err.grade.bandDupMin' }));
     expect(() => gr.checkBands([{ code: 'P' }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandFloor' }));
     for (const k of Object.keys(gr.SCALE_PRESETS)) expect(() => gr.checkBands(gr.SCALE_PRESETS[k].bands, { floor: true })).not.toThrow();
     expect(() => gr.checkBands([{ code: 'A', min: 90 }, { code: 'A', min: 80 }])).toThrow(expect.objectContaining({ key: 'err.grade.bandDup' }));

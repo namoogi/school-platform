@@ -3216,6 +3216,9 @@ export const CATALOG = {
   'err.rec.profileScale': '학교에 {code} 척도가 없습니다. 성적 화면의 척도 코드를 적어 주세요.',
   // 128차 Codex 검토 4
   'err.grade.bandCredit': '척도 띠 {code}의 earns_credit은 true 또는 false(따옴표 없이)여야 합니다.',
+  // 128차 Codex 검토 5
+  'err.grade.bandField': '척도 띠 {code}에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
+  'err.grade.bandDupMin': '하한 {min}인 띠가 둘 이상입니다. 띠마다 하한을 다르게 적어 주세요.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

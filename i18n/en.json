@@ -3150,5 +3150,7 @@
   "err.rec.profileUnknown": "This format's output profile has an unknown field {key}. Accepted fields: {keys}",
   "err.rec.profileField": "The {key} field of the output profile is not valid.",
   "err.rec.profileScale": "This school has no scale {code}. Use a scale code from the Grades screen.",
-  "err.grade.bandCredit": "earns_credit of band {code} must be true or false (without quotes)."
+  "err.grade.bandCredit": "earns_credit of band {code} must be true or false (without quotes).",
+  "err.grade.bandField": "Band {code} has an unknown field {key}. Accepted fields: {keys}",
+  "err.grade.bandDupMin": "More than one band has the minimum {min}. Give each band a different minimum."
 }
