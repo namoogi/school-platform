@@ -10,18 +10,18 @@ import { getI18n, userLang } from '@/lib/i18n/server';
 import { presetLevels, schemeView, gradeLabel, type GradeScheme } from '@/lib/grade-schemes';
 import { GradeSchemeForm, type PresetRow } from './GradeSchemeForm';
 import type { MsgKey } from '@/lib/i18n/catalog';
-import { ACADEMICS_TABS, AcademicsTabs, type AcademicsTab } from './AcademicsTabs';
+import { ACADEMICS_TABS, AcademicsTabs, academicsTabCounts, type AcademicsTab } from './AcademicsTabs';
 
 /** 71차: 학교 구조 — 학교급·학년도·학기 구조(확정 규칙 판)·학년도별 학기와 날짜. 119차: 성격별 탭으로 나눔 */
 export default async function AcademicsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const want = (await searchParams).tab;
   const tab: AcademicsTab = (ACADEMICS_TABS as readonly string[]).includes(want ?? '') ? want as AcademicsTab : 'levels';
-  const { levels, years, rule, terms, school, uiLang, view } = await loadForPage(async ({ db, school }) => {
+  const { levels, years, rule, terms, school, uiLang, view, counts } = await loadForPage(async ({ db, school }) => {
     const years = await listAcademicYears(db, school.id);
     const terms: Record<string, Awaited<ReturnType<typeof listTerms>>> = {};
     for (const y of years) terms[y.id] = await listTerms(db, school.id, y.id);
     const uiLang = await userLang(db);
-    return { levels: await listSchoolLevels(db, school.id), years, rule: await latestPeriodRule(db, school.id), terms, uiLang, view: await schemeView(db, school.id, uiLang ?? school.locale) };
+    return { counts: await academicsTabCounts(db, school.id), levels: await listSchoolLevels(db, school.id), years, rule: await latestPeriodRule(db, school.id), terms, uiLang, view: await schemeView(db, school.id, uiLang ?? school.locale) };
   }, { module: 'records' });
   const admin = school.isAdmin;
   const { t, lang } = await getI18n(uiLang, school.locale);
@@ -32,7 +32,7 @@ export default async function AcademicsPage({ searchParams }: { searchParams: Pr
       <PageHeader title={t('nav.academics.title')} crumbs={[{ label: t('intake.crumb') }, { label: t('nav.academics.title') }]}
         description={t('academics.lead')}
         meta={<><span>{t('academics.metaLevels', { n: levels.length })}</span><span>{t('academics.metaYears', { n: years.length })}</span>{rule && <span>{t('academics.metaRule', { v: rule.version })}</span>}</>} />
-      <AcademicsTabs current={tab} t={t} counts={{ levels: levels.length, terms: rule ? t('common.version', { v: rule.version }) : undefined, years: years.length }} />
+      <AcademicsTabs current={tab} t={t} counts={counts} />
       {tab === 'levels' && (
         <section className="card" data-testid="levels">
           <h2>{t('academics.levels')} {view.scheme && <StatusBadge tone="neutral">{t(`scheme.${view.scheme}` as MsgKey)}</StatusBadge>}</h2>

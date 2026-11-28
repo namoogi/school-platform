@@ -9,17 +9,18 @@ import type { MsgKey } from '@/lib/i18n/catalog';
 import { ApplyTemplate } from './ApplyTemplate';
 import { HiddenSectionsForm } from './HiddenSectionsForm';
 import { hiddenSections } from '@/lib/sections';
-import { AcademicsTabs } from '../AcademicsTabs';
+import { AcademicsTabs, academicsTabCounts } from '../AcademicsTabs';
 
 /** 113차 ADR 0043 2단계: 학사 관리 템플릿 — 고르기(카드) · 나란히 비교 · 학교 사본 만들기 · 남은 설정 점검표 */
 export default async function TemplatesPage() {
-  const { templates, current, steps, profileVersion, hidden, school, uiLang } = await loadForPage(async ({ db, school }) => ({
+  const { templates, current, steps, profileVersion, hidden, school, uiLang, counts } = await loadForPage(async ({ db, school }) => ({
     templates: await listTemplates(db),
     current: await schoolTemplate(db, school.id),
     steps: await setupChecklist(db, school.id),
     profileVersion: (await schoolProfile(db, school.id))?.version ?? 0,
     hidden: [...(await hiddenSections(db, school.id))],
     uiLang: await userLang(db),
+    counts: await academicsTabCounts(db, school.id),
   }), { module: 'records' });
   const { t, lang } = await getI18n(uiLang, school.locale);
   const admin = school.isAdmin;
@@ -43,7 +44,7 @@ export default async function TemplatesPage() {
         description={t('atpl.lead')}
         meta={<>{current ? <span>{t('atpl.metaCurrent', { name: pick(current.latest?.title ?? { ko: current.key }), v: current.version })}</span> : <span>{t('atpl.metaNone')}</span>}
           <span>{t('atpl.metaCount', { n: templates.length })}</span></>} />
-      <AcademicsTabs current="templates" t={t} />
+      <AcademicsTabs current="templates" t={t} counts={counts} />
 
       <section className="card stack" data-testid="setup-checklist">
         <h2>{t('atpl.checklist')}</h2>
