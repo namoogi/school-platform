@@ -6,7 +6,7 @@ import { FileDrop, type FileDropContext } from '@/components/FileDrop';
 import Link from 'next/link';
 import { uploadWithProgress } from '@/lib/file-check';
 import { ArrowDown, ArrowUp, Eye, FileDown, ImagePlus, Plus, Trash2 } from 'lucide-react';
-import { LANG_LABEL, LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
+import { ANCHOR_BLOCKS, LANG_LABEL, LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type Block, type Content, type EntryKind, type Lang, type LText, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, SITE_THEMES } from '@/lib/site-shared';
 import { usePhotoConsent, PublishCancelled } from '@/components/site/PhotoConsent';
 import { useI18n } from '@/components/I18nProvider';
 import type { MsgKey } from '@/lib/i18n/catalog';
@@ -352,7 +352,7 @@ export function EntryEditor({ detail, langs, canPublish, assets: initialAssets, 
             </>}
             {b.type === 'gallery' && b.items && <p className="fine">{t('site.gallery.itemsNote', { n: b.items.length, filters: b.filters ? t('site.gallery.filters', { n: b.filters.length }) : '' })}</p>}
             {b.type === 'section' && <SectionFields b={b} langs={langs} assets={assets} onUploaded={uploaded} onChange={(nb) => setBlock(i, nb)} />}
-            {detail.entry.kind === 'page' && ['section', 'news_list', 'heading', 'gallery', 'download', 'inquiry'].includes(b.type) && (
+            {detail.entry.kind === 'page' && (ANCHOR_BLOCKS as readonly string[]).includes(b.type) && (
               <label>{t('site.menu.anchor')}
                 <input value={b.anchor ?? ''} maxLength={40} pattern="[a-z][a-z0-9\-]*" data-testid="block-anchor" aria-describedby={`anchor-hint-${i}`}
                   onChange={(e) => setBlock(i, { ...b, anchor: e.target.value.trim().toLowerCase() || undefined })} />

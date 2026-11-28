@@ -12,7 +12,7 @@ import { photoAssetIds } from './site-photos';
  */
 import {
   LANGS, SECTION_TEMPLATES, SECTION_VARIANTS, type SectionVariant, type Block, type Button, type Content, type EntryKind, type EntryStatus, type EntrySummary, type GalleryFilter,
-  type GalleryItem, type Lang, type LanguageImages, type LText, type NavEntry, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, isSiteTheme, RESERVED_ANCHORS,
+  type GalleryItem, type Lang, type LanguageImages, type LText, type NavEntry, type SectionItem, type SectionTemplate, type SiteProfile, type SiteSettings, type SiteTheme, isSiteTheme, RESERVED_ANCHORS, ANCHOR_BLOCKS, anchorTitle,
 } from './site-shared';
 export * from './site-shared';
 
@@ -177,6 +177,7 @@ export function validateContent(raw: unknown): Content {
     const anchor = typeof x.anchor === 'string' ? x.anchor.trim().toLowerCase() : '';
     if (anchor) {
       if (!/^[a-z][a-z0-9-]{0,39}$/.test(anchor) || RESERVED_ANCHORS.includes(anchor)) throw new ValidationError('err.site.anchorFormat', { n: i + 1 });
+      if (!(ANCHOR_BLOCKS as readonly string[]).includes(out.type) || !Object.values(anchorTitle(out) ?? {}).some(Boolean)) throw new ValidationError('err.site.anchorTitle', { n: i + 1 });
       if (anchors.has(anchor)) throw new ValidationError('err.site.anchorDuplicate', { anchor });
       anchors.add(anchor); out.anchor = anchor;
     }

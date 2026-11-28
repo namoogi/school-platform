@@ -14,6 +14,18 @@ describe('126차 메뉴 내용 검사', () => {
     expect(c.blocks[0].anchor).toBe('way');
     expect(c.blocks[1].anchor).toBeUndefined();
   });
+  it('메뉴 주소는 제목 있는 구역·제목·소식 목록·신청 칸에만', () => {
+    expect(() => validateContent({ title: { ko: 'x' }, blocks: [{ type: 'image', asset: '00000000-0000-4000-8000-000000000001', anchor: 'photos' }] })).toThrow('제목이 있는');
+    expect(() => validateContent({ title: { ko: 'x' }, blocks: [{ type: 'section', template: 'cards', anchor: 'no-title' }] })).toThrow('제목이 있는');
+    expect(validateContent({ title: { ko: 'x' }, blocks: [{ type: 'inquiry', title: { ko: '상담 신청' }, anchor: 'apply' }] }).blocks[0].anchor).toBe('apply');
+  });
+  it('방문자에게 안 그려지는 구역(닫힌 신청 칸·소식 없는 소식 목록)은 메뉴에서 뺀다', () => {
+    const pages = [{ key: 'admission', content: { title: { ko: '입학' }, blocks: [
+      { type: 'inquiry' as const, title: { ko: '상담 신청' }, anchor: 'apply' },
+      { type: 'news_list' as const, title: { ko: '입학 소식' }, count: 3, style: 'list' as const, anchor: 'news' }] } }];
+    expect(navEntriesOf(pages, { inquiry: false, news: false })[0].sections).toEqual([]);
+    expect(navEntriesOf(pages, { inquiry: true, news: true })[0].sections!.map((x) => x.anchor)).toEqual(['apply', 'news']);
+  });
   it('빈 상위 메뉴는 남기지 않는다', () => {
     expect(validateContent({ title: { ko: 'x' }, menu: { parent: '' }, blocks: [] }).menu).toBeUndefined();
   });
@@ -59,7 +71,7 @@ describe('126차 메뉴 나무', () => {
         { type: 'section', template: 'cards', title: { ko: '숨김' }, anchor: 'hidden', hidden: true },
         { type: 'heading', text: { ko: '오시는 길' }, anchor: 'way' }] } },
       { key: 'history', content: { title: { ko: '연혁' }, blocks: [], menu: { parent: 'about' } } },
-    ]);
+    ], { inquiry: true, news: true });
     expect(nav).toEqual([
       { key: 'about', title: { ko: '소개' }, parent: null, sections: [{ anchor: 'greeting', title: { ko: '인사말' } }, { anchor: 'way', title: { ko: '오시는 길' } }] },
       { key: 'history', title: { ko: '연혁' }, parent: 'about', sections: [] },

@@ -164,7 +164,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
       case 'inquiry': {
         if (ed) return <section className="sec site-inquiry" data-template="inquiry"><h2 className="site-h2">{T(at('title'), b.title, '신청 칸 제목')}</h2><p className="fine">방문·상담 신청 칸(설정에서 '신청 받기'를 켜면 방문자에게 보입니다)</p></section>;
         if (!inquiry?.open) return null; // 학교가 신청을 받지 않으면 방문자에게 보이지 않는다
-        return <InquiryForm slug={inquiry.slug} lang={lang} page={inquiry.page} title={t(b.title) || undefined} body={t(b.body) || undefined} />;
+        return <InquiryForm slug={inquiry.slug} lang={lang} page={inquiry.page} title={t(b.title) || undefined} body={t(b.body) || undefined} anchor={b.anchor} />;
       }
       case 'download': {
         // 34차: PDF 내려받기. 파일 이름·크기는 판에 저장된 값(스냅샷)을 쓴다. 서버는 PDF를 attachment 로만 준다
@@ -327,9 +327,10 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
       {orderedBlocks.map(({ b, i }) => {
         if (ed) return <Fragment key={i}>{ed.wrap(i, b, renderBlock(b, i))}</Fragment>;
         if (b.hidden) return null;
-        // 126차(ADR 0046): 메뉴 주소가 있는 구역은 그 이름을 id로 달아 하위 메뉴(`#주소`)가 바로 이 구역으로 온다
+        // 126차(ADR 0046): 메뉴 주소가 있는 구역은 그 이름을 id로 달아 하위 메뉴(`#주소`)가 바로 이 구역으로 온다.
+        // 화면 요소(section·h2)일 때만 붙인다. 부품(신청 칸)은 anchor를 받아 스스로 단다
         const el = renderBlock(b, i);
-        return <Fragment key={i}>{b.anchor && isValidElement(el) ? cloneElement(el as ReactElement<{ id?: string }>, { id: b.anchor }) : el}</Fragment>;
+        return <Fragment key={i}>{b.anchor && isValidElement(el) && typeof el.type === 'string' ? cloneElement(el as ReactElement<{ id?: string }>, { id: b.anchor }) : el}</Fragment>;
       })}
     </div>
   );

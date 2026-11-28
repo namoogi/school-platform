@@ -75,11 +75,21 @@ export type Content = { title: LText; summary?: LText; cover?: string; blocks: B
 export type NavEntry = { key: string; title: LText; parent?: string | null; sections?: { anchor: string; title: LText }[] };
 export type NavNode = { key: string; href: string; title: LText; children: { key: string; href: string; title: LText }[] };
 /** 쪽 내용들에서 메뉴 재료를 만든다(템플릿 미리보기처럼 DB 없이 그릴 때). 공개 사이트는 app.public_site가 같은 규칙으로 만든다 */
-export function navEntriesOf(pages: { key: string; content: Content }[]): NavEntry[] {
+export function navEntriesOf(pages: { key: string; content: Content }[], shown: { inquiry: boolean; news: boolean }): NavEntry[] {
+  // app.public_site와 같은 규칙: 숨김·방문자에게 그려지지 않는 구역(닫힌 신청 칸, 소식 없는 소식 목록)은 빼고, 제목이 있는 것만
+  const visible = (b: Block) => b.anchor && !b.hidden && (b.type !== 'inquiry' || shown.inquiry) && (b.type !== 'news_list' || shown.news)
+    && Object.values(anchorTitle(b) ?? {}).some(Boolean);
   return pages.filter((p) => p.key !== 'home').map((p) => ({
     key: p.key, title: p.content.title, parent: p.content.menu?.parent ?? null,
-    sections: p.content.blocks.filter((b) => b.anchor && !b.hidden).map((b) => ({ anchor: b.anchor!, title: ('title' in b && b.title) || ('text' in b && typeof b.text === 'object' ? b.text : {}) || {} })),
+    sections: p.content.blocks.filter(visible).map((b) => ({ anchor: b.anchor!, title: anchorTitle(b)! })),
   }));
+}
+/** 메뉴 주소를 달 수 있는 블록(제목이 있고 화면 요소로 그려지는 것)과 그 메뉴 이름 */
+export const ANCHOR_BLOCKS = ['section', 'heading', 'news_list', 'inquiry'] as const;
+export function anchorTitle(b: Block): LText | undefined {
+  if (b.type === 'heading') return b.text;
+  if (b.type === 'section' || b.type === 'news_list' || b.type === 'inquiry') return b.title;
+  return undefined;
 }
 /** 메뉴 주소로 쓸 수 없는 이름(화면에 이미 있는 id) */
 export const RESERVED_ANCHORS = ['site-main'];

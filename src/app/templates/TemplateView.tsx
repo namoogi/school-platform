@@ -34,7 +34,7 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
   const site: PublicSite = {
     slug: `template-${t.key}`, school: view === 'sample' ? sample.school : '[학교 이름]', default_lang: fallback, langs: t.langs as Lang[], theme: t.theme,
     title: home.title, stories: false, has_news: view === 'sample', // 126차: 예시 소식이 있으면 '소식' 상위 메뉴(그 아래 하위 쪽)를 보인다
-    nav: navEntriesOf(t.pages.map((p) => ({ key: p.key, content: pages[p.key] }))),
+    nav: navEntriesOf(t.pages.map((p) => ({ key: p.key, content: pages[p.key] })), { inquiry: true, news: view === 'sample' }),
   };
   const link = (path: string) => {
     if (path === '/' || path === '') return href({ page: 'home' });
