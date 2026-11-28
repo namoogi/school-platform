@@ -5,7 +5,7 @@ import { useI18n } from '@/components/I18nProvider';
 import { useConfirm } from '@/components/ConfirmDialog';
 
 /**
- * 123차: 템플릿 새 판 제안 결정(학교 관리자). 수락은 확인 창에서 '바뀌는 것 / 안 바뀌는 것 / 되돌리기'를 본 뒤
+ * 125차: 템플릿 새 판 제안 결정(학교 관리자). 수락은 확인 창에서 '바뀌는 것 / 안 바뀌는 것 / 되돌리기'를 본 뒤
  * 새 판을 적용하고 기록한다. 보류·거절은 기록만 한다(학교 사본은 그대로). base_version = 지금 학교 관할 판(지침 10).
  */
 export function OfferActions({ title, from, to, baseVersion, canAccept, status }: {

@@ -106,7 +106,7 @@ export default async function TemplatesPage() {
         </ol>
       </section>
 
-      {/* 124차: 템플릿으로 만든 학교 사본을 학교 구독 AI가 학교 자료(성적표·규정)에 맞추도록 지시문을 건넨다(ADR 0043 5단계) */}
+      {/* 126차: 템플릿으로 만든 학교 사본을 학교 구독 AI가 학교 자료(성적표·규정)에 맞추도록 지시문을 건넨다(ADR 0043 5단계) */}
       {admin && copy && (
         <section className="card stack" data-testid="tpl-ai-guide">
           <h2>{t('tplAi.title')}</h2>
@@ -141,7 +141,7 @@ export default async function TemplatesPage() {
               <dl className="facts">
                 {rows.map((r) => <Fragment key={r.label}><dt>{r.label}</dt><dd>{r.value(tp)}</dd></Fragment>)}
               </dl>
-              {/* 123차: 새 판으로 바꾸는 길은 제안 수락 하나다(위 '새 판 제안' 카드) */}
+              {/* 125차: 새 판으로 바꾸는 길은 제안 수락 하나다(위 '새 판 제안' 카드) */}
               {admin && (mode === 'update'
                 ? <a className="btn btn-primary" href="#template-offers" data-testid={`tpl-to-offer-${tp.key}`}>{t('tplOffer.see')}</a>
                 : <ApplyTemplate templateKey={tp.key} templateVersion={tp.version} title={pick(tp.title)} baseVersion={profileVersion} mode={mode} />)}

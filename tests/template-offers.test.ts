@@ -1,5 +1,5 @@
 /**
- * 123차 ADR 0043 3단계 — 템플릿 새 판 제안. 열린 제안은 계산(학교가 쓰는 템플릿의 최신 판 > 학교 판), 결정만 기록.
+ * 125차 ADR 0043 3단계 — 템플릿 새 판 제안. 열린 제안은 계산(학교가 쓰는 템플릿의 최신 판 > 학교 판), 결정만 기록.
  * 쓰는 학교에만 보임 · 미리 보기 · 보류·거절·수락(적용 + 기록) · 판 옮기기는 수락 길 하나 · 되돌아오기·동시 공개에도 어긋남 없음
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -136,7 +136,7 @@ describe('템플릿 새 판 제안', () => {
     expect(await count(A)).toBe(1);
   });
 
-  it('학교 AI 맞춤 지시문은 템플릿이 아니라 지금 학교 사본 값을 요약한다(124차)', async () => {
+  it('학교 AI 맞춤 지시문은 템플릿이 아니라 지금 학교 사본 값을 요약한다(126차)', async () => {
     const c = await asUser(B.userId, (db) => at.schoolCopySummary(db, B.schoolId, 'ko'));
     expect(c).toMatchObject({ template: { key: 'kr_general', version: 1 }, scheme: 'kr', periods: ['1학기', '2학기'] });
     expect(c!.scales).toEqual(expect.arrayContaining(['kr_achievement', 'kr_elective', 'kr_pf_v5']));

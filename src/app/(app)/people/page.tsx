@@ -33,7 +33,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
         meta={<><span>{t('people.metaPeople', { n: people.length })}</span><span>{t('people.metaEnrolled', { n: Object.keys(enrolled).length })}</span></>} />
       <div className="people-layout">
         <section className="card stack" aria-label={t('people.list')}>
-          <form className="row-wrap" action="/people"><input name="q" defaultValue={q} placeholder={t('people.searchName')} aria-label={t('people.searchName')} /><button className="btn btn-secondary" type="submit">{t('common.search')}</button></form>
+          <form className="search-row" action="/people"><input name="q" defaultValue={q} placeholder={t('people.searchName')} aria-label={t('people.searchName')} /><button className="btn btn-secondary" type="submit">{t('common.search')}</button></form>
           <ul className="people-list" data-testid="people-list">{shown.map((p) => (
             <li key={p.id}><Link href={`/people?id=${p.id}${q ? `&q=${encodeURIComponent(q)}` : ''}`} aria-current={detail?.person.id === p.id ? 'page' : undefined}>
               <span>{p.name}{p.name_latin ? <small className="muted"> {p.name_latin}</small> : null}</span>
@@ -46,10 +46,11 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
           {!detail ? <p className="muted">{t('people.pick')}</p> : (
             <>
               <h2>{detail.person.name} {detail.person.name_latin && <small className="muted">{detail.person.name_latin}</small>}</h2>
+              <section className="detail-section">
               <h3>{t('people.enrollment')}</h3>
               {detail.enrollments.length === 0 ? <p className="muted">{t('people.noEnrollment')}</p> : (
-                <ul className="issue-list">{detail.enrollments.map((e) => (
-                  <li key={e.id} className="stack">
+                <ul className="record-list">{detail.enrollments.map((e) => (
+                  <li key={e.id}>
                     <span><StatusBadge tone={e.status === 'enrolled' ? 'success' : 'neutral'}>{statusLabel(e.status)}</StatusBadge> {e.level_name} · {e.starts_on} ~ {e.ends_on ?? ''}</span>
                     {admin && e.status === 'enrolled' && <ActionForm url="/api/people" action="end-enrollment" extra={{ enrollmentId: e.id }} inline submitLabel={t('people.endEnrollment')} successText={t('people.ended')}
                       confirmText={t('people.endConfirm')}
@@ -58,10 +59,13 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
               {admin && levels.length > 0 && <ActionForm url="/api/people" action="enroll" extra={{ personId: detail.person.id }} inline submitLabel={t('people.enroll')} successText={t('people.enrolled')} testId="enroll-form"
                 fields={[{ name: 'levelId', label: t('people.level'), type: 'select', options: levels.map((l) => ({ value: l.id, label: l.name })) }, { name: 'startsOn', label: t('common.start'), type: 'date', required: true, defaultValue: today }]} />}
               {admin && levels.length === 0 && <p className="fine">{withLink(t('people.needLevel'), <Link href="/academics">{t('nav.academics.title')}</Link>)}</p>}
+              </section>
+              <section className="detail-section">
               <h3>{t('people.names')}</h3>
-              <ul className="issue-list">{detail.names.map((n) => <li key={n.version}>{t('common.version', { v: n.version })} · {n.name}{n.name_latin ? ` (${n.name_latin})` : ''}{n.reason ? <small className="muted"> — {n.reason}</small> : null}</li>)}</ul>
+              <ul className="record-list">{detail.names.map((n) => <li key={n.version}>{t('common.version', { v: n.version })} · {n.name}{n.name_latin ? ` (${n.name_latin})` : ''}{n.reason ? <small className="muted"> — {n.reason}</small> : null}</li>)}</ul>
               {admin && <ActionForm url="/api/people" action="rename" extra={{ personId: detail.person.id }} inline submitLabel={t('people.rename')} successText={t('people.renamed')}
                 fields={[{ name: 'name', label: t('common.name'), required: true, defaultValue: detail.person.name }, { name: 'nameLatin', label: t('people.latin'), defaultValue: detail.person.name_latin ?? '' }, { name: 'reason', label: t('people.renameReason'), required: true, width: 'wide' }]} />}
+              </section>
             </>
           )}
         </section>
