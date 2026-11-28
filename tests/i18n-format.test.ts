@@ -61,7 +61,7 @@ describe('다른 언어 묶음(i18n/*.json, 영어 말고)', () => {
   const packs = fs.readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'en.json');
   it.each(packs)('%s: 목록의 모든 이름표가 있고, 목록에 있는 이름표만, 채우기 자리는 기준 문구와 같다', (file) => {
     const pack = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')) as Record<string, string>;
-    expect(Object.keys(CATALOG).filter((k) => !(k in pack)), `${file}에 빠진 이름표 — node scripts/i18n-missing.mjs 로 목록을 받아 채운다`).toEqual([]);
+    expect(Object.keys(CATALOG).filter((k) => typeof pack[k] !== 'string' || !pack[k].trim()), `${file}에 빠진 이름표 — node scripts/i18n-missing.mjs 로 목록을 받아 채운다`).toEqual([]);
     expect(Object.keys(pack).filter((k) => !(k in CATALOG))).toEqual([]);
     expect(Object.entries(pack).filter(([k, v]) => !sameShape(CATALOG[k as keyof typeof CATALOG], v)).map(([k]) => k)).toEqual([]);
   });
