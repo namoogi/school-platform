@@ -302,7 +302,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'international', version: 3, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
+    key: 'international', version: 4, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
     summary: '여러 언어로 교육과정 경로와 입학 여정을 안내합니다.',
     fits: ['국제학교', '외국 가정·현지 가정을 함께 받는 학교'], firstScreen: '다국어 소개 · 문의 단추',
     mustHave: ['교육과정 경로(학년·인가)', '입학 여정', '학생 생활(기숙·통학)', '언어별 연락처'],
@@ -324,15 +324,25 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
         news({ en: 'News', ko: '소식', th: 'ข่าว' }, 3),
       ], { site: { tagline: { en: '[One line about the school]' }, address: { en: '[Address]' }, footer: { en: '[School name] · [Phone] · [Email]' },
         visit: { label: { en: 'Enquire', ko: '문의하기', th: 'ติดต่อสอบถาม' }, href: '/p/admissions' } } }),
-      page('curriculum', 1, { en: 'Curriculum', ko: '교육과정', th: 'หลักสูตร' }, [
-        section({ template: 'steps', title: { en: 'Pathway', ko: '경로' }, items: [{ title: { en: '[Stage]' }, body: { en: '[Programme · accreditation]' } }] }),
+      // 126차(ADR 0046): About 상위 메뉴(환영·사명·아동 보호)
+      page('about', 1, { en: 'About', ko: '학교 소개', th: 'เกี่ยวกับเรา' }, [
+        section({ anchor: 'welcome', template: 'media-left', title: { en: 'Head’s welcome', ko: '교장 인사', th: 'สารจากครูใหญ่' }, body: { en: '[Intl welcome]' } }),
+        section({ anchor: 'mission', template: 'facts', title: { en: 'Mission & values', ko: '사명과 가치', th: 'พันธกิจและคุณค่า' }, items: [1, 2, 3].map((i) => ({ title: { en: `[Intl value ${i}]` }, body: { en: `[Intl value ${i} note]` } })) }),
+        section({ anchor: 'safeguarding', template: 'text', title: { en: 'Safeguarding', ko: '아동 보호', th: 'การคุ้มครองเด็ก' }, body: { en: '[Intl safeguarding]' } }),
       ]),
-      page('admissions', 2, { en: 'Admissions', ko: '입학', th: 'การรับสมัคร' }, [
-        section({ template: 'steps', title: { en: 'Admissions journey', ko: '입학 여정' }, items: [{ title: { en: 'Enquire' }, body: { en: '[How]' } }, { title: { en: 'Visit' }, body: { en: '[Tour days]' } }, { title: { en: 'Apply' }, body: { en: '[Documents · assessment]' } }, { title: { en: 'Join' }, body: { en: '[Enrolment]' } }] }),
-        section({ template: 'facts', title: { en: 'Fees', ko: '학비' }, items: [{ title: { en: '[Fee]' }, body: { en: '[Amount · terms]' } }] }),
+      page('curriculum', 2, { en: 'Curriculum', ko: '교육과정', th: 'หลักสูตร' }, [
+        section({ anchor: 'pathway', template: 'steps', title: { en: 'Pathway', ko: '경로' }, items: [{ title: { en: '[Stage]' }, body: { en: '[Programme · accreditation]' } }] }),
+        section({ anchor: 'languages', template: 'cards', title: { en: 'Language support', ko: '언어 지원', th: 'การสนับสนุนด้านภาษา' }, items: [1, 2].map((i) => ({ title: { en: `[Intl language ${i}]` }, body: { en: `[Intl language ${i} note]` } })) }),
       ]),
-      page('student-life', 3, { en: 'Student life', ko: '학생 생활', th: 'ชีวิตนักเรียน' }, [
-        section({ template: 'media-left', title: { en: '[Boarding / day students]' }, body: { en: '[Daily life, activities, care]' } }),
+      page('admissions', 3, { en: 'Admissions', ko: '입학', th: 'การรับสมัคร' }, [
+        section({ anchor: 'journey', template: 'steps', title: { en: 'Admissions journey', ko: '입학 여정' }, items: [{ title: { en: 'Enquire' }, body: { en: '[How]' } }, { title: { en: 'Visit' }, body: { en: '[Tour days]' } }, { title: { en: 'Apply' }, body: { en: '[Documents · assessment]' } }, { title: { en: 'Join' }, body: { en: '[Enrolment]' } }] }),
+        section({ anchor: 'fees', template: 'facts', title: { en: 'Fees', ko: '학비' }, items: [{ title: { en: '[Fee]' }, body: { en: '[Amount · terms]' } }] }),
+        { type: 'inquiry', anchor: 'enquire', title: { en: 'Enquire', ko: '문의하기', th: 'ติดต่อสอบถาม' }, body: { en: '[Intl enquiry note]' } },
+      ]),
+      page('student-life', 4, { en: 'Student life', ko: '학생 생활', th: 'ชีวิตนักเรียน' }, [
+        section({ anchor: 'daily', template: 'media-left', title: { en: '[Boarding / day students]' }, body: { en: '[Daily life, activities, care]' } }),
+        section({ anchor: 'activities', template: 'cards', title: { en: 'Clubs & activities', ko: '동아리·활동', th: 'ชมรมและกิจกรรม' }, items: [1, 2, 3].map((i) => ({ title: { en: `[Intl club ${i}]` }, body: { en: `[Intl club ${i} note]` } })) }),
+        section({ anchor: 'care', template: 'text', title: { en: 'Pastoral care', ko: '생활·상담 돌봄', th: 'การดูแลนักเรียน' }, body: { en: '[Intl pastoral care]' } }),
       ]),
     ],
     slots: [
