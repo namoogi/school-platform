@@ -30,7 +30,10 @@ describe('템플릿 적용', () => {
   it('없는 쪽만 시안으로 만들고, 있는 쪽은 건너뛰며, 공개하지 않는다', async () => {
     await asUser(A.userId, (db) => site.createEntry(db, A.schoolId, { kind: 'page', key: 'about', content: { title: { ko: '우리 학교가 이미 쓴 소개' }, blocks: [] } }));
     const r = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'notice'));
-    expect(r.created.map((c) => c.key)).toEqual(['home', 'school-life', 'admission', 'letters']);
+    // 133차: 하위 메뉴도 별도 쪽이다. 학교가 이미 쓴 'about'만 건너뛰고, 그 아래 하위 쪽(인사말 등)은 만든다
+    const keys = (k: string) => tpl.SITE_TEMPLATES.find((t) => t.key === k)!.pages.map((p) => p.key);
+    expect(r.created.map((c) => c.key)).toEqual(keys('notice').filter((k) => k !== 'about'));
+    expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['greeting', 'way', 'calendar', 'lunch', 'letters']));
     expect(r.skipped).toEqual(['about']);
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const about = entries.find((e) => e.key === 'about')!;
@@ -39,7 +42,7 @@ describe('템플릿 적용', () => {
       expect(e).toMatchObject({ live_version: null, latest_version: 1, status: 'draft' });
     }
     const home = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, r.created[0].id));
-    expect(home.versions[0].note).toBe('템플릿 알림 중심형 v5');
+    expect(home.versions[0].note).toBe('템플릿 알림 중심형 v6');
     expect(home.versions[0].content.site?.footer?.ko).toContain('[학교 이름]');
   });
 
@@ -47,11 +50,14 @@ describe('템플릿 적용', () => {
     const again = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'notice'));
     expect(again.created).toEqual([]);
     const story = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'story'));
-    expect(story.created.map((c) => c.key)).toEqual(['philosophy', 'learning', 'community']);
-    expect(story.skipped).toEqual(['home', 'admission']);
+    const storyKeys = tpl.SITE_TEMPLATES.find((t) => t.key === 'story')!.pages.map((p) => p.key);
+    const noticeKeys = tpl.SITE_TEMPLATES.find((t) => t.key === 'notice')!.pages.map((p) => p.key);
+    expect(story.skipped).toEqual(storyKeys.filter((k) => noticeKeys.includes(k))); // home·history·admission·process 등 이미 있는 주소
+    expect(story.created.map((c) => c.key)).toEqual(storyKeys.filter((k) => !noticeKeys.includes(k)));
+    expect(story.skipped).toEqual(expect.arrayContaining(['home', 'admission']));
     expect((await asUser(B.userId, (db) => site.listEntries(db, B.schoolId))).length).toBe(0);
     const b = await asUser(B.userId, (db) => tpl.applyTemplate(db, B.schoolId, 'international'));
-    expect(b.created.map((c) => c.key)).toEqual(['home', 'about', 'curriculum', 'admissions', 'student-life']);
+    expect(b.created.map((c) => c.key)).toEqual(tpl.SITE_TEMPLATES.find((t) => t.key === 'international')!.pages.map((p) => p.key));
     expect((await asUser(A.userId, (db) => site.listEntries(db, A.schoolId))).some((e) => e.key === 'student-life')).toBe(false);
     const { rows } = await su.query(`select detail from public.access_log where school_id = $1 and action = 'site.template_apply' order by id`, [A.schoolId]);
     expect(rows.map((x) => x.detail.template)).toEqual(['notice', 'notice', 'story']);
@@ -69,11 +75,14 @@ describe('66차 학교 자료로 빈 칸 채우기', () => {
     const r = await asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'notice', pv.proposals.map((p) => ({ slotId: p.slotId, value: p.value }))));
     const by = Object.fromEntries(r.result.map((x) => [x.page, x]));
     expect(by.home).toMatchObject({ version: 2, filled: expect.arrayContaining(['address', 'footer']) });
-    expect(by['school-life']).toMatchObject({ version: 2, filled: expect.arrayContaining(['calendar', 'meals']) });
-    expect(by.about).toMatchObject({ version: null, kept: ['goals'] }); // 학교가 먼저 쓴 소개 쪽(템플릿 블록 없음)은 그대로
+    // 133차: 학사일정·급식·교육 목표는 각자의 하위 쪽이다
+    expect(by.calendar).toMatchObject({ version: 2, filled: ['calendar'] });
+    expect(by.lunch).toMatchObject({ version: 2, filled: ['meals'] });
+    expect(by.goals).toMatchObject({ version: 2, filled: ['goals'] });
+    expect(by.about).toBeUndefined(); // 학교가 먼저 쓴 소개 쪽은 손대지 않는다
     const entries = await asUser(A.userId, (db) => site.listEntries(db, A.schoolId));
     const home = entries.find((e) => e.key === 'home')!;
-    expect(home).toMatchObject({ live_version: null, meta: { template: 'notice@5' } });
+    expect(home).toMatchObject({ live_version: null, meta: { template: 'notice@6' } });
     const v = await asUser(A.userId, (db) => site.getEntry(db, A.schoolId, home.id));
     expect(v.versions[0].content.site?.address).toEqual({ ko: '경기도 예시시 꿈마을로 12' });
     expect(v.versions[0].note).toContain('자료로 빈 칸 채움');
@@ -133,8 +142,8 @@ describe('87차 주소만 넣고 새 디자인으로 옮기기', () => {
     expect(applied.created.map((c) => c.key)).toEqual(expect.arrayContaining(['partner']));
     const fills = pv.proposals.filter((p) => p.kind !== 'image').map((p) => ({ slotId: p.slotId, value: p.value }));
     const r = await asUser(B.userId, (db) => tpl.autofillApply(db, B.schoolId, 'mission', fills));
-    const partner = r.result.find((x) => x.page === 'partner')!;
-    expect(partner.version).toBe(2);
+    // 133차: '후원금 쓰임'은 '함께하기' 아래 하위 쪽(funds)이다
+    expect(r.result.find((x) => x.page === 'funds')).toMatchObject({ version: 2, filled: ['use-of-funds'] });
     const entries = await asUser(B.userId, (db) => site.listEntries(db, B.schoolId));
     expect(entries.filter((e) => e.kind === 'page').every((e) => !e.live_version)).toBe(true);
   });

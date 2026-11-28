@@ -1,5 +1,6 @@
 import type { Content } from './site';
 import type { SiteTemplate } from './site-templates';
+import { splitSubmenuPages } from './site-template-split';
 
 /**
  * 86차: 템플릿 미리보기용 '예시 내용' — 지어낸 가상 학교로 안내 자리 `[ … ]`를 채워 완성 모습을 보여 준다.
@@ -523,8 +524,10 @@ export function samplePages(t: SiteTemplate): Record<string, Content> {
     if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x, k)]));
     return v;
   };
+  // 133차: 예시 글·사진은 나누기 전 원본(source)에 원래 순서대로 채운 뒤, 템플릿과 같은 방식으로 하위 쪽을 나눈다
+  const src = t.source ?? t.pages;
   const out: Record<string, Content> = {};
-  for (const p of t.pages) out[p.key] = fill(p.content) as Content;
+  for (const p of src) out[p.key] = fill(p.content) as Content;
   for (const img of sample?.images ?? []) {
     const [pageKey, ...path] = img.at;
     let node: unknown = out[String(pageKey)];
@@ -535,7 +538,8 @@ export function samplePages(t: SiteTemplate): Record<string, Content> {
       if (path[path.length - 1] === 'asset' && SAMPLE_PHOTO_ALT[img.name]) target.alt = { ko: `${SAMPLE_PHOTO_ALT[img.name]} (AI 예시 사진)` };
     }
   }
-  return out;
+  if (!t.source) return out;
+  return Object.fromEntries(splitSubmenuPages(src.map((p) => ({ ...p, content: out[p.key] }))).pages.map((p) => [p.key, p.content]));
 }
 
 /** 안내 자리 `[ … ]` 목록(시험·진행표용) */

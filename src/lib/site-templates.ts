@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from './services';
 import { proposeFills, putProposal, type Proposal } from './site-autofill';
 import { readPlainText } from './readers';
 import { crawlSite, fetchImage } from './site-crawl';
+import { movePath, splitSubmenuPages } from './site-template-split';
 
 /**
  * 65차 ADR 0031 — 학교 홈페이지 템플릿 7종.
@@ -20,6 +21,8 @@ export type TemplatePage = { kind: 'page'; key: string; sort: number; content: C
 export type SiteTemplate = {
   key: string; version: number; name: string; summary: string; fits: string[]; firstScreen: string;
   theme: SiteTheme; langs: ('ko' | 'en' | 'th')[]; pages: TemplatePage[]; slots: Slot[]; mustHave: string[];
+  /** 133차: 하위 메뉴를 쪽으로 나누기 전 원본(예시 글은 원본 순서대로 채운 뒤 같은 방식으로 나눈다). 한 쪽 구조는 없음 */
+  source?: TemplatePage[];
 };
 
 // ── 블록 짓기 도우미 (안내 문구는 '[ … ]'로 감싼다: 자동 배치·사람이 바꿀 자리) ──
@@ -66,9 +69,9 @@ const commonSlots = (): Slot[] => [
   slot('footer', 'home', ['site', 'footer'], 'contact', '바닥 연락처', '학교 이름 · 대표 전화 · 이메일', ['전화', '연락처', '이메일', 'phone', 'email', 'contact']),
 ];
 
-export const SITE_TEMPLATES: SiteTemplate[] = [
+const RAW_TEMPLATES: SiteTemplate[] = [
   {
-    key: 'notice', version: 5, name: '알림 중심형', theme: 'clear', langs: ['ko'],
+    key: 'notice', version: 6, name: '알림 중심형', theme: 'clear', langs: ['ko'],
     summary: '재학생 가정이 매일 찾는 알림·소식·학사일정·급식을 첫 화면에 둡니다.',
     fits: ['공립·지역 학교', '재학생 가정이 주 방문자', '공지가 많은 학교'], firstScreen: '알림 · 최근 소식 · 학사일정 · 급식',
     mustHave: ['학교 소개(인사말·연혁·교육목표)', '학사일정', '오시는 길', '입학·전학 안내'],
@@ -124,7 +127,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'story', version: 6, name: '이야기형', theme: 'ivory', langs: ['ko'],
+    key: 'story', version: 7, name: '이야기형', theme: 'ivory', langs: ['ko'],
     summary: '교육철학과 학교의 하루를 사진과 이야기로 보여 줍니다.',
     fits: ['사립·대안학교', '교육철학으로 알려지는 학교'], firstScreen: '큰 사진 · 교육철학 · 하루 이야기',
     mustHave: ['교육철학', '배움(교육과정)', '입학 문의 방법'],
@@ -175,7 +178,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'admissions', version: 5, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
+    key: 'admissions', version: 6, name: '입학 모집형', theme: 'bold', langs: ['ko', 'en'],
     summary: '예비 학부모가 차별점을 보고 문의·견학·지원으로 이어지게 합니다.',
     fits: ['신입생을 모집하는 사립·국제학교'], firstScreen: '차별점 3가지 · 입학 단추',
     mustHave: ['입학 절차', '학비·추가 비용', '자주 묻는 질문', '문의처'],
@@ -219,7 +222,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'project', version: 7, name: '프로젝트형', theme: 'studio', langs: ['ko'],
+    key: 'project', version: 8, name: '프로젝트형', theme: 'studio', langs: ['ko'],
     summary: '학생 프로젝트와 작품을 사진 묶음으로 보여 주는 PBL 학교용입니다.',
     fits: ['PBL·프로젝트 중심 대안학교', '발표회·전시가 많은 학교'], firstScreen: '프로젝트 소개 · 발표회 소식',
     mustHave: ['배움의 방식(PBL 흐름)', '프로젝트 목록', '학생 작품 공개 허가'],
@@ -244,7 +247,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
           { title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') }, { title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') }, { title: ko('[이름 · 맡은 분야]'), body: ko('[한 줄 소개]') }] }),
       ]),
       page('projects', 2, ko('프로젝트'), [
-        section({ anchor: 'current', template: 'cards', variant: 'feature-filter', eyebrow: ko('질문을 끝까지 따라간 기록'), title: ko('이번 학기 프로젝트'), items: [{ title: ko('[프로젝트 이름]'), body: ko('[질문 · 결과물 · 참여 학년]'), tag: ko('[학년 1]') }, { title: ko('[프로젝트 이름]'), body: ko('[설명]'), tag: ko('[학년 2]') }, { title: ko('[프로젝트 이름]'), body: ko('[프로젝트 확장 설명]'), tag: ko('[학년 1]') }] }),
+        section({ template: 'cards', variant: 'feature-filter', eyebrow: ko('질문을 끝까지 따라간 기록'), title: ko('이번 학기 프로젝트'), items: [{ title: ko('[프로젝트 이름]'), body: ko('[질문 · 결과물 · 참여 학년]'), tag: ko('[학년 1]') }, { title: ko('[프로젝트 이름]'), body: ko('[설명]'), tag: ko('[학년 2]') }, { title: ko('[프로젝트 이름]'), body: ko('[프로젝트 확장 설명]'), tag: ko('[학년 1]') }] }),
       ]),
       page('works', 3, ko('학생 작품'), [
         section({ template: 'cards', variant: 'portfolio', eyebrow: ko('작은 시도, 새로운 발견'), title: ko('학생 작품 아카이브'), body: ko('[학생·보호자 공개 허가를 받은 작품만 올립니다]'), items: [1, 2, 3, 4, 5, 6].map((n) => ({ title: ko(`[작품 이름 ${n}]`), tag: ko(`[분야 ${(n - 1) % 3 + 1}]`), body: ko(`[작품 설명 ${n}]`) })) }),
@@ -263,7 +266,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'mission', version: 5, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
+    key: 'mission', version: 6, name: '사명·후원형', theme: 'lamp', langs: ['ko', 'en'],
     summary: '학교의 사명과 함께하는 방법(후원·봉사·기도)을 분명히 알립니다.',
     fits: ['기독교·선교 학교', '후원으로 운영되는 비영리 학교'], firstScreen: '사명 · 후원 단추 · 소식',
     mustHave: ['사명·신앙 고백', '후원 방법과 쓰임', '재정 보고(있으면)'],
@@ -306,7 +309,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
   {
-    key: 'international', version: 5, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
+    key: 'international', version: 6, name: '국제·다국어형', theme: 'horizon', langs: ['en', 'ko', 'th'],
     summary: '여러 언어로 교육과정 경로와 입학 여정을 안내합니다.',
     fits: ['국제학교', '외국 가정·현지 가정을 함께 받는 학교'], firstScreen: '다국어 소개 · 문의 단추',
     mustHave: ['교육과정 경로(학년·인가)', '입학 여정', '학생 생활(기숙·통학)', '언어별 연락처'],
@@ -361,7 +364,7 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
   },
   {
     // 90차: 대표 3종의 유치원(골격 D 그래픽 마스크형) — 둥글게 오린 놀이 사진, 연령별 반, 하루 일과 시간 띠, 학부모 질문
-    key: 'kinder', version: 6, name: '유치원형', theme: 'play', langs: ['ko'],
+    key: 'kinder', version: 7, name: '유치원형', theme: 'play', langs: ['ko'],
     summary: '아이들의 하루와 반, 학부모가 궁금한 것을 사진과 함께 따뜻하게 보여 줍니다.',
     fits: ['유치원·어린이집', '초등 저학년 중심 학교'], firstScreen: '둥근 놀이 사진 · 우리 반 · 하루 일과',
     mustHave: ['연령별 반 안내', '하루 일과', '급식·건강 안내', '입학(입소) 상담 방법'],
@@ -437,6 +440,15 @@ export const SITE_TEMPLATES: SiteTemplate[] = [
     ],
   },
 ];
+
+// 133차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(single)는 구역 차례를 그대로 쓴다
+const ONE_PAGE = new Set(['single']);
+export const SITE_TEMPLATES: SiteTemplate[] = RAW_TEMPLATES.map((t) => {
+  if (ONE_PAGE.has(t.key)) return t;
+  const { pages, moves } = splitSubmenuPages(t.pages);
+  const slots = t.slots.map((sl) => { const [page, path] = movePath(moves, sl.page, sl.path); return { ...sl, page, path }; });
+  return { ...t, pages, slots, source: t.pages };
+});
 
 export function templateByKey(key: string) {
   const t = SITE_TEMPLATES.find((x) => x.key === key);
