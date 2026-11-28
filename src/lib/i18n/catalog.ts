@@ -3059,6 +3059,20 @@ export const CATALOG = {
   'rd.terms': '용어 풀이',
   'rd.example': '예) ',
   'rd.empty': '내용이 없습니다.',
+  // DB 안내 속 값 (113차·Codex 지적: DB가 끼워 넣는 고정 문구도 번역)
+  'db.val.permRead': '읽기',
+  'db.val.permUpload': '파일 올리기',
+  'db.val.permDraft': '시안 저장',
+  'db.val.permCreate': '만들기',
+  'db.val.permEdit': '고치기',
+  'db.val.permArchive': '보관',
+  'db.val.permPublish': '공개',
+  'db.val.noRetentionRule': '보존 규칙 판이 없습니다.',
+  'db.val.retainForever': '보존 규칙이 영구 보존입니다.',
+  'db.val.stillEnrolled': '재적이 끝나지 않았습니다.',
+  'db.val.noEnrollment': '재적 기록이 없습니다.',
+  'db.val.openRequests': '끝나지 않은 열람·수정 요청이 있어 파기할 수 없습니다.',
+  'db.v.retentionNotPassed': '보존 기간({v1}년)이 아직 지나지 않았습니다({v2}부터 파기 가능).',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;
