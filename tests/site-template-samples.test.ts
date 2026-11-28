@@ -49,7 +49,7 @@ describe('템플릿 예시 내용', () => {
   it('89차: 예시 그림이 실제 칸에 놓이고 그림 파일이 있다', () => {
     for (const t of SITE_TEMPLATES) {
       const pages = samplePages(t);
-      // 133차: 예시 사진 자리는 나누기 전 원본 기준이다. 나눈 뒤 위치로 옮겨 확인한다
+      // 135차: 예시 사진 자리는 나누기 전 원본 기준이다. 나눈 뒤 위치로 옮겨 확인한다
       const moves = t.source ? splitSubmenuPages(t.source).moves : new Map();
       for (const img of TEMPLATE_SAMPLES[t.key].images ?? []) {
         const [pg, path] = movePath(moves, String(img.at[0]), img.at.slice(1));

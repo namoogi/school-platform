@@ -1777,7 +1777,7 @@ try {
     await h.getByRole('link', { name: '소식 목록', exact: true }).click();
     await h.waitForURL(/news=all/);
     assert.equal(await h.locator('.lb-board li').count(), 3);
-    await h.goto(`${BASE}/templates/kinder?page=admission-apply`); // 133차: 방문·상담 신청은 '입학 안내' 아래 하위 쪽
+    await h.goto(`${BASE}/templates/kinder?page=admission-apply`); // 135차: 방문·상담 신청은 '입학 안내' 아래 하위 쪽
     await h.locator('[data-testid=site-inquiry] input[name=name]').fill('가상 방문자');
     await h.locator('[data-testid=site-inquiry] input[name=contact]').fill('visitor@example.org');
     await h.locator('[data-testid=site-inquiry] input[name=consent]').check();
@@ -1813,7 +1813,7 @@ try {
     await h.locator('[role=status]', { hasText: '시안 쪽' }).waitFor();
     for (const title of ['프로젝트', '학생 작품']) {
       await h.goto(`${BASE}/site?box=page`);
-      // 133차: '왜 프로젝트로 배우나요' 같은 하위 쪽 제목도 '프로젝트'를 포함하므로 제목 칸이 정확히 같은 항목을 고른다
+      // 135차: '왜 프로젝트로 배우나요' 같은 하위 쪽 제목도 '프로젝트'를 포함하므로 제목 칸이 정확히 같은 항목을 고른다
       await h.locator('.triage-list a').filter({ has: h.locator('.triage-item-title', { hasText: new RegExp(`^${title}$`) }) }).first().click();
       const category = h.getByLabel('1. 분류(거르기 단추) 한국어', { exact: true });
       await category.fill('학교 생태 탐구');
@@ -1856,7 +1856,7 @@ try {
     await panel.locator('[data-testid=autofill-apply]').click();
     await panel.locator('[role=status]', { hasText: '칸을 채워 새 시안 판' }).waitFor();
     await h.goto(`${BASE}/site?box=page`);
-    // 133차: '소중히 여기는 것'은 '교육철학' 아래 하위 쪽이다
+    // 135차: '소중히 여기는 것'은 '교육철학' 아래 하위 쪽이다
     await h.click('.triage-list a:has-text("우리가 소중히 여기는 것")');
     await h.locator('text=자료로 빈 칸 채움').first().waitFor();
     await ctx.close();
@@ -1872,7 +1872,7 @@ try {
     // 유치원형 시작(없는 쪽만 시안) → 입학 쪽 공개(같은 출처 API, 사람 관리자 권한)
     const applied = await h.evaluate(async () => (await fetch('/api/site/templates', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: 'kinder' }) })).json());
     // 107차: 앞 단계(65차)의 이야기형에도 신청 칸 쪽이 있어 유치원형은 건너뛸 수 있다 → 이미 있는 쪽을 쓴다
-    // 133차: 신청 칸은 '입학 안내' 아래 하위 쪽(admission-apply)이다
+    // 135차: 신청 칸은 '입학 안내' 아래 하위 쪽(admission-apply)이다
     const adm = applied.created.find((c) => c.key === 'admission-apply')
       ?? (await h.evaluate(async () => (await (await fetch('/api/site/entries')).json()))).find((e) => e.kind === 'page' && e.key === 'admission-apply');
     assert.ok(adm, '입학 쪽 시안');

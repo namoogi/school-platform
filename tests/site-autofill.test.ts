@@ -57,7 +57,7 @@ describe('알림 중심형 빈 칸 제안', () => {
   });
 
   it('안내 자리에만 넣고, 학교가 이미 쓴 칸은 건드리지 않는다', () => {
-    // 133차: 인사말·교육 목표는 '학교 소개' 아래 각각의 쪽이다(빈 칸도 그 쪽을 가리킨다)
+    // 135차: 인사말·교육 목표는 '학교 소개' 아래 각각의 쪽이다(빈 칸도 그 쪽을 가리킨다)
     const greet = t.slots.find((s) => s.id === 'greeting')!;
     const goals = t.slots.find((s) => s.id === 'goals')!;
     expect([greet.page, goals.page]).toEqual(['about-greeting', 'about-goals']);

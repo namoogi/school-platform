@@ -3227,5 +3227,12 @@
   "db.cardOneLine": "A decision card writes changes, unchanged and undo on one line each. Put details in detail.",
   "db.cardImmutable": "A decision card cannot be changed after it is filed. File a new card instead.",
   "db.cardInsertOnlyFn": "Decision cards can only be filed through control.file_request.",
+  "db.directClosedDecision": "Closed decisions cannot take more directives. Leave a new directive instead.",
+  "db.directAssignee": "You can only add to a request assigned to that session. Assign the session first (assign).",
+  "db.directBody": "A directive body (body) is required (up to 20000 characters).",
+  "db.directTitle": "A directive title (title) is required (up to 200 characters).",
+  "db.directSession": "A target session (session) is required for the directive.",
+  "db.directSessionInactive": "The target session is not active.",
+  "db.directPending": "Conversations awaiting approval cannot take directives. Approve it first or leave a new directive.",
   "site.block.subpages": "Subpage shortcuts"
 }

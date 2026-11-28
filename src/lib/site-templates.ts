@@ -21,7 +21,7 @@ export type TemplatePage = { kind: 'page'; key: string; sort: number; content: C
 export type SiteTemplate = {
   key: string; version: number; name: string; summary: string; fits: string[]; firstScreen: string;
   theme: SiteTheme; langs: ('ko' | 'en' | 'th')[]; pages: TemplatePage[]; slots: Slot[]; mustHave: string[];
-  /** 133차: 하위 메뉴를 쪽으로 나누기 전 원본(예시 글은 원본 순서대로 채운 뒤 같은 방식으로 나눈다). 한 쪽 구조는 없음 */
+  /** 135차: 하위 메뉴를 쪽으로 나누기 전 원본(예시 글은 원본 순서대로 채운 뒤 같은 방식으로 나눈다). 한 쪽 구조는 없음 */
   source?: TemplatePage[];
 };
 
@@ -441,7 +441,7 @@ const RAW_TEMPLATES: SiteTemplate[] = [
   },
 ];
 
-// 133차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(single)는 구역 차례를 그대로 쓴다
+// 135차: 여러 쪽 템플릿은 메뉴 주소가 있는 구역을 하위 쪽으로 나눈다(site-template-split.ts). 한 쪽 구조(single)는 구역 차례를 그대로 쓴다
 const ONE_PAGE = new Set(['single']);
 export const SITE_TEMPLATES: SiteTemplate[] = RAW_TEMPLATES.map((t) => {
   if (ONE_PAGE.has(t.key)) return t;
@@ -495,7 +495,7 @@ export async function applyTemplate(db: Db, schoolId: string, key: string, opts:
   const existing = new Set((await listEntries(db, schoolId)).filter((e) => e.kind === 'page').map((e) => e.key));
   const created: { key: string; id: string }[] = [];
   const skipped: string[] = [];
-  // 133차(Codex 검토): 학교에 이미 있는 상위 쪽이 새 하위 쪽을 받을 수 없으면 그 아래 하위 쪽은 만들지 않는다.
+  // 135차(Codex 검토): 학교에 이미 있는 상위 쪽이 새 하위 쪽을 받을 수 없으면 그 아래 하위 쪽은 만들지 않는다.
   //  - 최신 판이나 공개 판이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면: 공개 뒤 같은 하위 메뉴가 두 번(구역·쪽) 보인다
   //  - 그 쪽이 이미 다른 쪽의 하위면: 메뉴는 한 단계뿐이라 새 하위 쪽이 엉뚱한 상위 메뉴로 올라온다
   //  - 그 쪽이 보관돼 있으면: 공개 화면에 상위 쪽이 없어 새 하위 쪽이 상위 메뉴로 올라온다(되살린 뒤 다시 적용)

@@ -104,7 +104,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   ed?: EditHooks;
   /** 91차: 방문·상담 신청 칸 — 학교가 신청을 켰을 때만(open). slug가 null이면 미리보기(보내지 않음) */
   inquiry?: { slug: string | null; open: boolean; page: string };
-  /** 133차: 이 쪽 아래 공개된 하위 쪽(사이트 안 경로 /p/…와 제목). '하위 쪽 바로 가기' 블록이 그린다 */
+  /** 135차: 이 쪽 아래 공개된 하위 쪽(사이트 안 경로 /p/…와 제목). '하위 쪽 바로 가기' 블록이 그린다 */
   subpages?: { href: string; title: LText }[];
 }) {
   const t = (x: LText | null | undefined) => pick(x, lang, fallback);
@@ -128,7 +128,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   // 방문자에게 아무것도 그리지 않는 구역(닫힌 신청 칸, 소식 없는 소식 목록, 그림책으로 넘긴 장면)은 이웃 판정에서 뺀다 — 아래 renderBlock의 null 조건과 같게
   const drawsNothing = (b: Block) => !ed && ((b.type === 'inquiry' && !inquiry?.open) || (b.type === 'news_list' && !news.length) || (b.type === 'subpages' && !subpages.length) || b.type === 'story_page');
   const shown = orderedBlocks.filter(({ b }) => !b.hidden && !drawsNothing(b));
-  // 133차: 하위 쪽(상위 메뉴가 있는 쪽)은 구역 제목이 곧 쪽 제목이다. 첫 구역 제목이 쪽 제목과 같으면 보이는 제목만 감춘다(제목 구조·표 설명은 남김). 편집 화면은 그대로
+  // 135차: 하위 쪽(상위 메뉴가 있는 쪽)은 구역 제목이 곧 쪽 제목이다. 첫 구역 제목이 쪽 제목과 같으면 보이는 제목만 감춘다(제목 구조·표 설명은 남김). 편집 화면은 그대로
   const pageTitle = t(content.title);
   const dupHeadAt = !ed && content.menu?.parent && shown[0] && pageTitle && shown[0].b.type === 'section' && t(shown[0].b.title) === pageTitle ? shown[0].i : -1;
   const runOf = new Map<number, 'first' | 'next'>();
@@ -185,7 +185,7 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
           : <p><a href={url} target="_blank" rel="noopener noreferrer">{w('watch', lang)}</a></p>;
       }
       case 'subpages': {
-        // 133차: 하위 쪽 바로 가기 — 공개된 하위 쪽만, 그릴 때 찾는다(편집 화면은 안내만)
+        // 135차: 하위 쪽 바로 가기 — 공개된 하위 쪽만, 그릴 때 찾는다(편집 화면은 안내만)
         if (ed) return <p className="le-placeholder" data-testid="subpages-placeholder">하위 쪽 바로 가기: 이 쪽 아래 공개한 하위 쪽이 카드로 보입니다.</p>;
         if (!subpages.length) return null;
         return renderBlock({ type: 'section', template: 'cards', variant: 'quicklinks', items: subpages.map((s) => ({ title: s.title, href: s.href })) }, i);

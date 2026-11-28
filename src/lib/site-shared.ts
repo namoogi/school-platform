@@ -57,7 +57,7 @@ export type Block = (
   | { type: 'download'; asset: string; label?: LText; note?: LText; file_name?: string; size_bytes?: number }
   /** 91차(ADR 0036): 방문·상담 신청 칸. 학교가 설정에서 '신청 받기'를 켰을 때만 방문자에게 보인다 */
   | { type: 'inquiry'; title?: LText; body?: LText }
-  /** 133차: 이 쪽 아래 공개된 하위 쪽 바로 가기(그릴 때 메뉴에서 찾음 — 공개 안 된 쪽·다른 묶음 쪽은 나오지 않는다) */
+  /** 135차: 이 쪽 아래 공개된 하위 쪽 바로 가기(그릴 때 메뉴에서 찾음 — 공개 안 된 쪽·다른 묶음 쪽은 나오지 않는다) */
   | { type: 'subpages' }
 ) & { hidden?: boolean;
   /** 126차(ADR 0046): 메뉴 주소. 있으면 이 구역이 그 쪽 상위 메뉴 아래 하위 메뉴로 보이고 `/p/쪽#주소`로 바로 간다 */
@@ -104,7 +104,7 @@ export const RESERVED_ANCHORS = ['site-main'];
  * 하위 = 그 쪽의 메뉴 주소 구역(쪽 안 순서) 다음에 그 쪽을 상위로 둔 쪽들(메뉴 순서). 한 단계만: 하위 쪽의 구역·하위는 펴지 않는다.
  * pageHref(key, anchor?)로 링크를 만든다. news는 소식 목록 링크와 제목을 받는다.
  */
-/** 133차: 한 쪽 아래 공개된 하위 쪽('하위 쪽 바로 가기' 블록 재료). 메뉴는 한 단계라, 이미 하위인 쪽은 하위 쪽을 갖지 않는다 */
+/** 135차: 한 쪽 아래 공개된 하위 쪽('하위 쪽 바로 가기' 블록 재료). 메뉴는 한 단계라, 이미 하위인 쪽은 하위 쪽을 갖지 않는다 */
 export function subpagesOf(nav: NavEntry[], key: string): { href: string; title: LText }[] {
   if (nav.find((n) => n.key === key)?.parent) return [];
   return nav.filter((n) => n.parent === key && n.key !== key).map((n) => ({ href: `/p/${n.key}`, title: n.title }));

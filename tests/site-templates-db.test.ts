@@ -30,7 +30,7 @@ describe('템플릿 적용', () => {
   it('없는 쪽만 시안으로 만들고, 있는 쪽은 건너뛰며, 공개하지 않는다', async () => {
     await asUser(A.userId, (db) => site.createEntry(db, A.schoolId, { kind: 'page', key: 'about', content: { title: { ko: '우리 학교가 이미 쓴 소개' }, blocks: [] } }));
     const r = await asUser(A.userId, (db) => tpl.applyTemplate(db, A.schoolId, 'notice'));
-    // 133차: 하위 메뉴도 별도 쪽이다. 학교가 이미 쓴 'about'만 건너뛰고, 그 아래 하위 쪽(인사말 등)은 만든다
+    // 135차: 하위 메뉴도 별도 쪽이다. 학교가 이미 쓴 'about'만 건너뛰고, 그 아래 하위 쪽(인사말 등)은 만든다
     const keys = (k: string) => tpl.SITE_TEMPLATES.find((t) => t.key === k)!.pages.map((p) => p.key);
     expect(r.created.map((c) => c.key)).toEqual(keys('notice').filter((k) => k !== 'about'));
     expect(r.created.map((c) => c.key)).toEqual(expect.arrayContaining(['about-greeting', 'about-way', 'school-life-calendar', 'school-life-lunch', 'letters']));
@@ -75,7 +75,7 @@ describe('66차 학교 자료로 빈 칸 채우기', () => {
     const r = await asUser(A.userId, (db) => tpl.autofillApply(db, A.schoolId, 'notice', pv.proposals.map((p) => ({ slotId: p.slotId, value: p.value }))));
     const by = Object.fromEntries(r.result.map((x) => [x.page, x]));
     expect(by.home).toMatchObject({ version: 2, filled: expect.arrayContaining(['address', 'footer']) });
-    // 133차: 학사일정·급식·교육 목표는 각자의 하위 쪽이다
+    // 135차: 학사일정·급식·교육 목표는 각자의 하위 쪽이다
     expect(by['school-life-calendar']).toMatchObject({ version: 2, filled: ['calendar'] });
     expect(by['school-life-lunch']).toMatchObject({ version: 2, filled: ['meals'] });
     expect(by['about-goals']).toMatchObject({ version: 2, filled: ['goals'] });
@@ -142,7 +142,7 @@ describe('87차 주소만 넣고 새 디자인으로 옮기기', () => {
     expect(applied.created.map((c) => c.key)).toEqual(expect.arrayContaining(['partner']));
     const fills = pv.proposals.filter((p) => p.kind !== 'image').map((p) => ({ slotId: p.slotId, value: p.value }));
     const r = await asUser(B.userId, (db) => tpl.autofillApply(db, B.schoolId, 'mission', fills));
-    // 133차: '후원금 쓰임'은 '함께하기' 아래 하위 쪽(funds)이다
+    // 135차: '후원금 쓰임'은 '함께하기' 아래 하위 쪽(funds)이다
     expect(r.result.find((x) => x.page === 'partner-funds')).toMatchObject({ version: 2, filled: ['use-of-funds'] });
     const entries = await asUser(B.userId, (db) => site.listEntries(db, B.schoolId));
     expect(entries.filter((e) => e.kind === 'page').every((e) => !e.live_version)).toBe(true);
@@ -177,7 +177,7 @@ describe('89차 템플릿 = 완성 디자인(ADR 0034)', () => {
   });
 });
 
-describe('133차 예전 판 상위 쪽과 겹치지 않게', () => {
+describe('135차 예전 판 상위 쪽과 겹치지 않게', () => {
   it('상위 쪽이 아직 구역 하위 메뉴(메뉴 주소)를 쓰면 그 아래 새 하위 쪽은 만들지 않는다(다른 묶음은 만든다)', async () => {
     // B학교: 예전 판처럼 '학교 생활' 쪽이 구역 하위 메뉴를 쓴다
     await asUser(B.userId, (db) => site.createEntry(db, B.schoolId, { kind: 'page', key: 'school-life', content: { title: { ko: '학교 생활' },

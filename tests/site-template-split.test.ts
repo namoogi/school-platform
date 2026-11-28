@@ -1,4 +1,4 @@
-// 133차: 여러 쪽 템플릿의 하위 메뉴는 별도 쪽이다(구역으로 내려가지 않는다). 한 쪽 구조만 구역 차례를 쓴다
+// 135차: 여러 쪽 템플릿의 하위 메뉴는 별도 쪽이다(구역으로 내려가지 않는다). 한 쪽 구조만 구역 차례를 쓴다
 import { describe, expect, it } from 'vitest';
 import { SITE_TEMPLATES } from '@/lib/site-templates';
 import { samplePages } from '@/lib/site-template-samples';
