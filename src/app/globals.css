@@ -2471,7 +2471,8 @@ label.check input { margin-top: 0.25em; }
 .app {
   --default-font-family: var(--font-sans);
   --accent-9: var(--action-primary-bg); --accent-10: var(--action-primary-hover); --accent-contrast: var(--text-on-brand);
-  --accent-11: var(--text-link); --accent-a3: var(--surface-selected); --accent-a4: var(--surface-selected);
+  --accent-11: var(--text-link); --accent-a11: var(--text-link); --accent-12: var(--text-default); --accent-8: var(--border-focus);
+  --accent-a3: var(--surface-selected); --accent-a4: var(--surface-selected); --accent-a5: var(--surface-selected);
   --focus-8: var(--border-focus); --focus-a8: var(--border-focus);
   --gray-a7: var(--border-input); --gray-a8: var(--border-strong); --gray-12: var(--text-default); --gray-11: var(--text-subtle); --gray-a11: var(--text-muted);
   --color-surface: var(--surface-default); --color-panel-solid: var(--surface-default);
