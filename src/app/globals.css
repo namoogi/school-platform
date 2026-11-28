@@ -2602,3 +2602,20 @@ label.check input { margin-top: 0.25em; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-header > .site-menu nav { max-height: 75vh; overflow-y: auto; }
 .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-blocks > [id] { scroll-margin-top: var(--ds-space-6); }
 @media (prefers-reduced-motion: reduce) { .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .site-nav-tree .site-subnav { transition: none; } }
+
+/* ───────── 129차: 템플릿 배치 정돈(123차 배치 규약 — 폭은 내용 길이, 같은 종류는 같은 격자, 빈 칸 없는 흐름) (키트 테마만) ───────── */
+/* 항목이 1~2개인 목록은 줄 끝까지 늘이지 않고 내용 폭(한 칸 최소 20rem)으로 둔다 */
+.site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec:not([data-variant]) :is(.sec-facts, .sec-cards):is(:has(> :only-child), :has(> :nth-child(2):last-child)) { grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); }
+/* 짧은 글 구역이 이어지면 [제목 | 글] 두 칸으로 촘촘하게 — 학교 생활 안내(급식·방과후·상담)처럼 같은 종류를 같은 격자로.
+   묶음 판정은 SiteBlocks가 data-run(first·next)으로 붙인다(편집 화면의 구역 감싸개와 무관). 제목·머리말이 없는 구역은 두 칸을 쓰지 않는다(data-run-head 없음) */
+@media (min-width: 901px) {
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run-head] > .sec-copy { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); column-gap: var(--L-gutter); row-gap: 0; align-items: start; max-width: none; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run-head] > .sec-copy > :is(.sec-eyebrow, h2) { grid-column: 1; }
+  /* 제목은 왼쪽 칸에서 여러 줄을 차지하고(행 간격 0이라 빈 행은 높이 0), 글·목록·단추는 오른쪽 칸에 차례로 쌓인다(겹치지 않게) */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run-head] > .sec-copy > h2 { grid-row: span 20; }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run-head] > .sec-copy > :not(.sec-eyebrow, h2) { grid-column: 2; max-width: var(--L-read); }
+  /* 줄 사이 간격은 행 간격 대신 본문 요소 사이 여백으로(빈 행이 높이를 만들지 않게) */
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run-head] > .sec-copy > :not(.sec-eyebrow, h2) ~ :not(.sec-eyebrow, h2) { margin-top: var(--ds-space-3); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run="next"] { padding-top: var(--ds-space-6); border-top: 1px solid var(--t-line); }
+  .site[data-theme]:not([data-theme="campus"]):not([data-theme="dawn"]) .sec[data-run] { padding-bottom: var(--ds-space-6); }
+}
