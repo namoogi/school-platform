@@ -58,7 +58,7 @@ export default async function TemplatesPage() {
       <section className="card stack" data-testid="hidden-sections">
         <h2>{t('atpl.ourHidden')}</h2>
         <p className="fine">{hidden.length ? hidden.map((k) => t(`atpl.hide.${k}` as MsgKey)).join(' · ') : t('atpl.none')}</p>
-        {/* 판이 바뀌면(템플릿 적용·다른 사람 저장) 양식을 새로 그려 체크 상태를 서버 값에 맞춘다(Codex #191) */}
+        {/* 판이 바뀌면(템플릿 적용·다른 사람 저장) 양식을 새로 그려 체크 상태를 서버 값에 맞춘다(Codex 191번 PR 검토) */}
         {admin && <HiddenSectionsForm key={profileVersion} current={hidden} baseVersion={profileVersion} />}
       </section>
 
