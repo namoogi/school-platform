@@ -115,6 +115,18 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
   });
   const storyPages = content.blocks.filter((b): b is Extract<Block, { type: 'story_page' }> => b.type === 'story_page' && !b.hidden);
 
+  // 129차: 짧은 글 구역(모양 없는 text)이 이어지면 [제목 | 글] 두 칸 격자로 맞춘다. 이웃 판정은 방문자에게 보이는 구역 기준이고,
+  // 편집 화면(구역마다 감싸개가 있음)에서도 같은 표시가 붙도록 CSS 형제 선택자 대신 여기서 정한다.
+  // data-run: first(묶음 첫 구역) · next(앞 구역에 이어짐). data-run-head: 제목·머리말이 있을 때만 두 칸(없으면 본문이 온 폭)
+  const plainText = (b: Block | undefined) => b?.type === 'section' && b.template === 'text' && !b.variant;
+  const shown = content.blocks.map((b, i) => ({ b, i })).filter(({ b }) => !b.hidden);
+  const runOf = new Map<number, 'first' | 'next'>();
+  shown.forEach(({ b, i }, k) => {
+    if (!plainText(b)) return;
+    if (plainText(shown[k - 1]?.b)) runOf.set(i, 'next');
+    else if (plainText(shown[k + 1]?.b)) runOf.set(i, 'first');
+  });
+
   const href = (h: string) => (h.startsWith('/') || h.startsWith('#') ? link(h) : h);
   const ext = (h: string) => !(h.startsWith('/') || h.startsWith('#'));
   /** 편집 중에는 링크 대신 같은 모양의 span: 고치는 칸·사진 단추가 링크 안에 들어가지 않게(중첩 대화형 요소 금지) */
@@ -285,7 +297,8 @@ export function SiteBlocks({ content, lang, fallback, assetUrl, link = (h) => h,
         const tags = [...new Set(items.map((it) => t(it.tag)).filter(Boolean))] as string[];
         const btnAfter = v === 'overview' || (v === 'half' && items.length > 0) || (b.template === 'facts' && !v && items.length > 0); // 52차: 한눈에 보기도 항목 뒤에
         return (
-          <section className="sec" data-template={b.template} data-variant={v} data-decor={decor && b.asset ? '' : undefined}>
+          <section className="sec" data-template={b.template} data-variant={v} data-decor={decor && b.asset ? '' : undefined}
+            data-run={runOf.get(i)} data-run-head={runOf.has(i) && (t(b.title) || t(b.eyebrow)) ? '' : undefined}>
             {decor}
             {b.template === 'banner' && figure}
             <div className="sec-copy">{head}{body}{!btnAfter && btn}</div>
