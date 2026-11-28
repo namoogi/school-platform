@@ -14,19 +14,21 @@ export async function loadSite(slug: string, requestedLang?: string) {
   const found = await publicSite(slug);
   if (!found) return null;
   // 47차: 학교 자체 주소로 들어왔으면(proxy 가 표시) 링크를 깨끗한 경로로 만든다
-  const site: PublicSite = { ...found, on_own_host: (await headers()).get(SCHOOL_HOST_HEADER) === slug, viewer_admin: await viewerIsAdmin(slug) };
+  const site: PublicSite = { ...found, on_own_host: (await headers()).get(SCHOOL_HOST_HEADER) === slug, ...(await viewerRole(slug)) };
   const home = await publicEntry(slug, 'page', 'home');
   const lang = resolveLang(site, requestedLang);
   return { site, home, profile: home?.content.site, lang, link: siteLinker(site, lang), asset: (id: string) => `/s/${slug}/a/${id}` };
 }
-/** 49차: 로그인 쿠키가 있을 때만 그 학교 관리자인지 본다(RLS 안에서). 없으면 질의하지 않는다 */
-async function viewerIsAdmin(slug: string): Promise<boolean> {
+/** 49차: 로그인 쿠키가 있을 때만 그 학교 관리자·구성원인지 본다(RLS 안에서). 없으면 질의하지 않는다. 115차: 교사(구성원)도 관리 막대를 본다 */
+async function viewerRole(slug: string): Promise<{ viewer_admin: boolean; viewer_staff: boolean }> {
+  const none = { viewer_admin: false, viewer_staff: false };
   const userId = await currentUserId().catch(() => null);
-  if (!userId) return false;
+  if (!userId) return none;
   return asUser(userId, async (db) => {
-    const { rows: [r] } = await db.query<{ ok: boolean }>('select app.is_school_admin(school_id) as ok from public.site_settings where public_slug = $1', [slug]);
-    return !!r?.ok;
-  }).catch(() => false);
+    const { rows: [r] } = await db.query<{ admin: boolean; member: boolean }>(
+      'select app.is_school_admin(school_id) as admin, app.is_member(school_id) as member from public.site_settings where public_slug = $1', [slug]);
+    return { viewer_admin: !!r?.admin, viewer_staff: !!r?.member };
+  }).catch(() => none);
 }
 export type Loaded = NonNullable<Awaited<ReturnType<typeof loadSite>>>;
 
