@@ -3208,6 +3208,10 @@ export const CATALOG = {
   'err.grade.policyUnknown': '성적 정책에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
   'err.rec.profileFormat': '출력 프로필 {code}는 이 서식용이 아닙니다.',
   'err.rec.profileSettings': '출력 프로필 설정은 JSON 객체({ … })여야 합니다.',
+  // 128차 Codex 검토
+  'err.grade.bandFloor': '척도에 0점까지 덮는 바닥 구간(min 0)이 있어야 합니다. 없으면 그 아래 점수는 등급 없이 이수로 마감됩니다.',
+  'err.rec.profileUnknown': '이 서식의 출력 프로필에 모르는 칸 {key}가 있습니다. 받는 칸: {keys}',
+  'err.rec.profileField': '출력 프로필의 {key} 칸 값이 올바르지 않습니다.',
 } as const;
 
 export type MsgKey = keyof typeof CATALOG;

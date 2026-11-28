@@ -27,7 +27,6 @@ export async function POST(req: Request) {
       // 128차: 출력 프로필 새 판(서식 칸 순서·표기·글자 수 등). 판은 추가만, base_version 이 최신이 아니면 409
       case 'output-profile': {
         if (!FORMATS.includes(b.format)) throw new ValidationError('err.rec.format');
-        if (!b.settings || typeof b.settings !== 'object' || Array.isArray(b.settings)) throw new ValidationError('err.rec.profileSettings');
         return await saveOutputProfile(db, school.id, { format: b.format, code: txt(b.code), settings: b.settings, why: requireWhy(b.why), base_version: Number(b.base_version ?? 0) });
       }
       case 'disclose': return { id: await recordDisclosure(db, school.id, { documentId: b.documentId, recipient: txt(b.recipient), purpose: txt(b.purpose), basis: txt(b.basis) || undefined }) };

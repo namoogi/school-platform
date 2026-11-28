@@ -56,7 +56,37 @@ export async function recordClosures(db: Db, schoolId: string, personId: unknown
 }
 
 // ── 출력 프로필 ──────────────────────────────────────────
+/**
+ * 128차: 서식별 설정 칸 검사. 렌더러가 읽는 칸만, 그 모양대로 받는다(Codex #228: {bands:[null]} 이 저장되면 발행 때 서버 오류).
+ * 모르는 서식은 여기서 보지 않고 DB가 거부한다.
+ */
+const text = (v: unknown) => typeof v === 'string' && v.length <= 2000;
+const PROFILE_FIELDS: Partial<Record<Format, Record<string, (v: unknown) => boolean>>> = {
+  kr_alt_record: {
+    char_limits: (v) => !!v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).every((n) => Number.isInteger(n) && (n as number) > 0 && (n as number) <= 100000),
+    note: text,
+  },
+  us_transcript: { gpa_scale: text },
+  us_school_profile: { description: text, gpa_policy: text, scale_code: (v) => typeof v === 'string' && /^[a-z][a-z0-9_]{1,40}$/.test(v) },
+  th_por_por_1: {
+    bands: (v) => Array.isArray(v) && v.length > 0 && v.length <= 20
+      && v.every((b) => !!b && typeof b === 'object' && Number.isFinite((b as { min?: unknown }).min) && Number.isFinite((b as { grade?: unknown }).grade)),
+    note: text,
+  },
+  en_record: { note: text },
+};
+export function checkProfileSettings(format: Format, settings: unknown): Record<string, unknown> {
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new ValidationError('err.rec.profileSettings');
+  const fields = PROFILE_FIELDS[format];
+  if (!fields) return settings as Record<string, unknown>;
+  for (const [k, v] of Object.entries(settings)) {
+    if (!fields[k]) throw new ValidationError('err.rec.profileUnknown', { key: k, keys: Object.keys(fields).join(', ') });
+    if (!fields[k](v)) throw new ValidationError('err.rec.profileField', { key: k });
+  }
+  return settings as Record<string, unknown>;
+}
 export async function saveOutputProfile(db: Db, schoolId: string, input: { format: Format; code: string; settings: Record<string, unknown>; why?: string; base_version: number }) {
+  checkProfileSettings(input.format, input.settings);
   const { rows: [r] } = await db.query('select app.save_output_profile($1, $2) as v', [schoolId, JSON.stringify(input)]);
   return r.v as { id: string; version: number };
 }

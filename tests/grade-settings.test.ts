@@ -37,7 +37,10 @@ const bands = [
 
 describe('맞춤 척도', () => {
   it('띠 검사: 표기 없으면 코드, 코드 겹침·숫자 아닌 하한은 거부', () => {
-    expect(gr.checkBands([{ code: 'P', min: 60 }])[0]).toMatchObject({ code: 'P', label: { ko: 'P', en: 'P' }, min: 60, earns_credit: true });
+    expect(gr.checkBands([{ code: 'P', min: 60 }, { code: 'F', min: 0, earns_credit: false }])[0]).toMatchObject({ code: 'P', label: { ko: 'P', en: 'P' }, min: 60, earns_credit: true });
+    // 바닥 구간이 없으면 60 미만이 등급 없이 이수로 마감된다(Codex #228)
+    expect(() => gr.checkBands([{ code: 'P', min: 60 }], { floor: true })).toThrow(expect.objectContaining({ key: 'err.grade.bandFloor' }));
+    for (const k of Object.keys(gr.SCALE_PRESETS)) expect(() => gr.checkBands(gr.SCALE_PRESETS[k].bands, { floor: true })).not.toThrow();
     expect(() => gr.checkBands([{ code: 'A', min: 90 }, { code: 'A', min: 80 }])).toThrow(expect.objectContaining({ key: 'err.grade.bandDup' }));
     expect(() => gr.checkBands([{ code: 'A', min: 'ninety' }])).toThrow(expect.objectContaining({ key: 'err.grade.bandNumber' }));
     expect(() => gr.checkBands([])).toThrow(expect.objectContaining({ key: 'err.grade.bands' }));
@@ -79,6 +82,10 @@ describe('성적 정책 전체', () => {
     expect(() => gr.checkGradingPolicy({ stats: { sd: 'median' } })).toThrow(expect.objectContaining({ vars: { key: 'stats' } }));
     expect(() => gr.checkGradingPolicy({ attendance: { chronic_ratio: 10 } })).toThrow(expect.objectContaining({ vars: { key: 'attendance' } }));
     expect(() => gr.checkGradingPolicy([])).toThrow(expect.objectContaining({ key: 'err.grade.policyObject' }));
+    // 묶음 안쪽 오타도 거부(Codex #228)
+    expect(() => gr.checkGradingPolicy({ attendance: { min_attendence_ratio: 0.7 } })).toThrow(expect.objectContaining({ key: 'err.grade.policyUnknown', vars: expect.objectContaining({ key: 'attendance.min_attendence_ratio' }) }));
+    expect(() => gr.checkGradingPolicy({ gpa: { enable: true } })).toThrow(expect.objectContaining({ vars: expect.objectContaining({ key: 'gpa.enable' }) }));
+    expect(gr.checkGradingPolicy({ narrative_limits: { club: 100, career: 700 } })).toEqual({ narrative_limits: { club: 100, career: 700 } });
   });
 
   it('새 판 저장·409, 교사·다른 학교 양방향 거부', async () => {
@@ -122,6 +129,16 @@ describe('출력 프로필', () => {
     await expect(asUser(A.userId, (db) => rec.saveOutputProfile(db, A.schoolId, { format: 'kr_alt_record', code: 'kr_school', settings: {}, why: '옛 판', base_version: 1 }))).rejects.toMatchObject({ code: 'P0409' });
     const list = await asUser(A.userId, (db) => rec.listOutputProfiles(db, A.schoolId));
     expect(list.find((p) => p.code === 'kr_school')).toMatchObject({ format: 'kr_alt_record', version: 2, why: '400자로', settings: { char_limits: { subject_detail: 400 } } });
+  });
+
+  it('서식별 설정 칸·모양만 받는다(Codex #228: 띠에 null 이면 발행 때 서버 오류)', async () => {
+    expect(rec.checkProfileSettings('th_por_por_1', { bands: [{ min: 80, grade: 4 }, { min: 0, grade: 0 }], note: '학교 사본' })).toBeTruthy();
+    expect(() => rec.checkProfileSettings('th_por_por_1', { bands: [null] })).toThrow(expect.objectContaining({ key: 'err.rec.profileField', vars: { key: 'bands' } }));
+    expect(() => rec.checkProfileSettings('kr_alt_record', { char_limits: { subject_detail: '500' } })).toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
+    expect(() => rec.checkProfileSettings('us_transcript', { columns: ['grade'] })).toThrow(expect.objectContaining({ key: 'err.rec.profileUnknown' }));
+    expect(() => rec.checkProfileSettings('en_record', [])).toThrow(expect.objectContaining({ key: 'err.rec.profileSettings' }));
+    await expect(asUser(A.userId, (db) => rec.saveOutputProfile(db, A.schoolId, { format: 'th_por_por_1', code: 'th_bad', settings: { bands: [null] }, why: 'x', base_version: 0 })))
+      .rejects.toThrow(expect.objectContaining({ key: 'err.rec.profileField' }));
   });
 
   it('발행 때 다른 서식의 프로필은 고르지 못한다', async () => {

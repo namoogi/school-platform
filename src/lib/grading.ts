@@ -103,7 +103,7 @@ export async function subjectLabel(db: Db, schoolId: string, subjectId: unknown,
 // ── 척도·정책 ────────────────────────────────────────────
 export const SCALE_KINDS = ['letter', 'level', 'pass_fail', 'percent', 'points'] as const;
 /** 128차: 척도 띠 검사(화면·AI 초안 공통). 코드 겹침·숫자 아닌 하한/평점을 DB 전에 막는다. 표기가 없으면 코드를 표기로 쓴다 */
-export function checkBands(raw: unknown): Band[] {
+export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[] {
   if (!Array.isArray(raw) || !raw.length || raw.length > 40) throw new ValidationError('err.grade.bands');
   const seen = new Set<string>();
   const num = (v: unknown, code: string) => {
@@ -112,7 +112,7 @@ export function checkBands(raw: unknown): Band[] {
     if (!Number.isFinite(n)) throw new ValidationError('err.grade.bandNumber', { code });
     return n;
   };
-  return raw.map((b) => {
+  const out = raw.map((b) => {
     const code = str(b?.code).trim();
     if (!code) throw new ValidationError('err.grade.bands');
     if (seen.has(code)) throw new ValidationError('err.grade.bandDup', { code });
@@ -120,9 +120,12 @@ export function checkBands(raw: unknown): Band[] {
     const label = b?.label == null ? { ko: code, en: code } : ltext(b.label, '척도 띠');
     return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
   });
+  // floor(화면·API 쓰기 길): 점수 구간이 있으면 0점까지 덮어야 한다. 템플릿 적용은 관제가 낸 판을 그대로 옮기므로 여기서 막지 않는다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
+  if (opts.floor && out.some((b) => b.min != null) && !out.some((b) => b.min != null && b.min <= 0)) throw new ValidationError('err.grade.bandFloor');
+  return out;
 }
-export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }) {
-  const bands = checkBands(input.bands);
+export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; bands?: unknown; why?: unknown; base_version?: unknown }, opts: { floor?: boolean } = {}) {
+  const bands = checkBands(input.bands, opts);
   return one<{ id: string; version: number }>(db, 'select app.save_scale($1, $2) as v',
     [schoolId, JSON.stringify({ code: str(input.code), kind: str(input.kind), bands, why: str(input.why), base_version: base(input.base_version ?? 0) })]);
 }
@@ -144,6 +147,11 @@ export type GradingPolicy = {
  * 읽는 곳: 마감(score_digits·final_digits·stats·narrative_limits), 발행(gpa·rank), 출결 요약(attendance), 열람 요청 기한(requests)
  */
 export const POLICY_KEYS = ['score_digits', 'final_digits', 'stats', 'narrative_limits', 'gpa', 'rank', 'attendance', 'requests'] as const;
+/** 묶음 안쪽에서 읽는 칸(narrative_limits 는 서술 종류가 학교마다 달라 열어 둔다) */
+const POLICY_INNER: Record<string, string[]> = {
+  stats: ['sd', 'digits'], gpa: ['enabled', 'level_bonus'], rank: ['enabled'],
+  attendance: ['day_absent_ratio', 'chronic_ratio', 'min_attendance_ratio'], requests: ['due_days'],
+};
 export function checkGradingPolicy(raw: unknown): GradingPolicy {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('err.grade.policyObject');
   const p = raw as Record<string, unknown>;
@@ -152,6 +160,11 @@ export function checkGradingPolicy(raw: unknown): GradingPolicy {
   const int = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
   const ratio = (v: unknown) => typeof v === 'number' && v >= 0 && v <= 1;
   for (const k of Object.keys(p)) if (!(POLICY_KEYS as readonly string[]).includes(k)) throw new ValidationError('err.grade.policyUnknown', { key: k, keys: POLICY_KEYS.join(', ') });
+  // 모양이 정해진 묶음은 안쪽 칸도 본다. 오타(min_attendence_ratio)가 값만 맞으면 저장되고 계산에서 조용히 무시된다(Codex #228)
+  for (const [k, inner] of Object.entries(POLICY_INNER)) {
+    if (!isObj(p[k])) continue;
+    for (const x of Object.keys(p[k] as object)) if (!inner.includes(x)) throw new ValidationError('err.grade.policyUnknown', { key: `${k}.${x}`, keys: inner.map((i) => `${k}.${i}`).join(', ') });
+  }
   for (const k of ['score_digits', 'final_digits']) if (k in p && !int(p[k], 0, 4)) bad(k);
   if ('stats' in p) {
     const st = p.stats as Record<string, unknown>;
