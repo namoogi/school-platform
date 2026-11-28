@@ -27,6 +27,7 @@ const NO_SCHOOL_ID: Record<string, string> = {
   platform_item_history: '관제 연구소 이력 — 전체 관리자',
   platform_items: '관제 연구소·결정 요청 — 전체 관리자',
   schools: '학교 자체 — 소속·전체 관리자만',
+  control_numbers: '관제가 나눠 준 차시·ADR·마이그레이션 번호(ADR 0051) — 플랫폼 운영 기록, 학생 자료 없음, 전체 관리자만 읽고 점검 토큰 함수로만 씀',
   ui_messages: '화면 문구 번역 사전(ADR 0037) — 비밀 아님, 누구나 읽음(로그인 화면 포함), 전체 관리자만 명령 함수로 씀',
   user_preferences: '사용자 본인 화면 설정 — 본인 행만',
 };

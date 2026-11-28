@@ -21,7 +21,8 @@ OpenAI 공식 문서 기준(2026-11-22 검색). 화면 메뉴 이름은 바뀔 �
 | 브랜치 | Claude: `round-<차시>/<주제>`, Codex: `codex/<주제>`. main에 직접 push하지 않는다 |
 | PR | 한 PR에 한 기능. 본문에 통과한 테스트와 확인하지 못한 항목을 나눠 적는다. Codex는 PR 게시까지 해야 완료(8절 'PR 게시 완료 기준') |
 | 검토·병합 | 사용자 지시로 한 작업은 테스트 통과 후 작업한 세션이 바로 병합하고 운영 배포를 확인한다(지시 = 승인, AGENTS.md). 다른 쪽 검토는 병합 뒤에도 받을 수 있다. 자동 실행 PR(`[자동]`)만 사람 지시가 있어야 병합 |
-| 마이그레이션 | `supabase/migrations/`에 날짜 접두어. 작업 시작 전 최신 main을 받아 번호가 겹치지 않게 하고, 이미 적용된 파일은 고치지 않는다. 운영 마이그레이션 역할은 슈퍼유저가 아니다. 다른 역할(`app_writer` 등) 소유 함수를 다시 정의할 때는 `grant create on schema app to <역할>; set local role <역할>;` 뒤 `reset role`. CI가 슈퍼유저 아닌 역할로 처음부터 적용해 본다(`scripts/check-migrate-nonsuper.sh`, 108차) |
+| 번호 받기 | 차시(`N차`·`docs/rounds/round-N.md`)·결정 기록(`docs/decisions/NNNN-*.md`)·마이그레이션 번호는 **직접 'main 최대 + 1'로 정하지 않고 관제 센터에서 받는다**: `npm run number -- round "<제목>"`(`adr`·`migration`도 같음, ADR 0051). 스크립트가 main과 모든 원격 브랜치에서 본 가장 큰 번호를 함께 보내고, 관제 DB는 그보다 크고 지금까지 나간 번호와 겹치지 않는 값을 준다. 일을 시작할 때 받고, 쓰지 않은 번호는 비워 둔다(빈 번호 허용). 관제 API가 막히면 번호 없이 진행하고 PR을 올리기 전에 받는다. 다시 검토할 조건: 번호 충돌이 다시 생기거나, 세션이 관제 API에 닿지 못하는 환경이 늘 때 |
+| 마이그레이션 | `supabase/migrations/`에 날짜 접두어(번호는 위 '번호 받기'). 작업 시작 전 최신 main을 받고, 이미 적용된 파일은 고치지 않는다. 운영 마이그레이션 역할은 슈퍼유저가 아니다. 다른 역할(`app_writer` 등) 소유 함수를 다시 정의할 때는 `grant create on schema app to <역할>; set local role <역할>;` 뒤 `reset role`. CI가 슈퍼유저 아닌 역할로 처음부터 적용해 본다(`scripts/check-migrate-nonsuper.sh`, 108차) |
 | 할 일 | 진행 관리는 앱의 **전체 관리 → 개발·연구소** 보드가 기준. 저장소의 `docs/ROADMAP.md`는 큰 방향만 |
 | 비밀 값 | DB 주소·비밀번호·토큰을 코드·PR·채팅에 남기지 않는다. 배포 값은 Vercel 환경 변수에만 |
 
