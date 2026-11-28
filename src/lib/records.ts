@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Db } from './db';
 import { hiddenSections } from './sections';
-import { isUuid, NotFoundError, ValidationError } from './services';
+import { isUuid, NotFoundError, safeId, ValidationError } from './services';
 
 /**
  * 60차 ADR 0025 F4 — 학년도 기록 마감 판 · 출력 프로필 · 기록 발행본 · 공개 기록.
@@ -85,8 +85,8 @@ export function checkProfileSettings(format: Format, settings: unknown): Record<
   const fields = PROFILE_FIELDS[format];
   if (!fields) return settings as Record<string, unknown>;
   for (const [k, v] of Object.entries(settings)) {
-    if (!fields[k]) throw new ValidationError('err.rec.profileUnknown', { key: k, keys: Object.keys(fields).join(', ') });
-    if (!fields[k](v)) throw new ValidationError('err.rec.profileField', { key: k });
+    if (!fields[k]) throw new ValidationError('err.rec.profileUnknown', { key: safeId(k), keys: Object.keys(fields).join(', ') });
+    if (!fields[k](v)) throw new ValidationError('err.rec.profileField', { key: safeId(k) });
   }
   return settings as Record<string, unknown>;
 }
@@ -94,11 +94,11 @@ export async function saveOutputProfile(db: Db, schoolId: string, input: { forma
   checkProfileSettings(input.format, input.settings);
   // 있는 프로필의 서식은 바꾸지 않는다(DB는 처음 만들 때만 서식을 쓰므로 다른 서식 설정이 조용히 붙는다, Codex #228)
   const { rows: [had] } = await db.query<{ format: string }>('select format from public.output_profiles where school_id = $1 and code = $2', [schoolId, input.code]);
-  if (had && had.format !== input.format) throw new ValidationError('err.rec.profileFormat', { code: input.code });
+  if (had && had.format !== input.format) throw new ValidationError('err.rec.profileFormat', { code: safeId(input.code) });
   // 학교 소개서가 가리키는 척도는 이 학교에 있어야 한다(오타면 발행본 등급표가 빈다)
   if (typeof input.settings.scale_code === 'string') {
     const { rowCount } = await db.query('select 1 from public.scales where school_id = $1 and code = $2', [schoolId, input.settings.scale_code]);
-    if (!rowCount) throw new ValidationError('err.rec.profileScale', { code: input.settings.scale_code });
+    if (!rowCount) throw new ValidationError('err.rec.profileScale', { code: safeId(input.settings.scale_code) });
   }
   const { rows: [r] } = await db.query('select app.save_output_profile($1, $2) as v', [schoolId, JSON.stringify(input)]);
   return r.v as { id: string; version: number };
@@ -118,7 +118,7 @@ async function profileSettings(db: Db, schoolId: string, code: string | undefine
       where p.school_id = $1 and p.code = $2 order by v.version desc limit 1`, [schoolId, code]);
   if (!p) throw new NotFoundError('err.rec.profileNotFound');
   // 서식마다 설정 칸이 달라 다른 서식의 프로필로 그리지 않는다(130차: 발행 양식에서 프로필을 고르게 되면서)
-  if (format && p.format !== format) throw new ValidationError('err.rec.profileFormat', { code });
+  if (format && p.format !== format) throw new ValidationError('err.rec.profileFormat', { code: safeId(code) });
   return p as { id: string; version: number; settings: Record<string, unknown> };
 }
 

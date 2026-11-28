@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { isUuid, NotFoundError, ValidationError } from './services';
+import { isUuid, NotFoundError, safeId, ValidationError } from './services';
 import { evaluate, type CalcSpec } from './calc/expr';
 
 /**
@@ -111,21 +111,21 @@ export function checkBands(raw: unknown, opts: { floor?: boolean } = {}): Band[]
   const num = (v: unknown, code: string) => {
     if (v == null || v === '') return null;
     // 숫자나 숫자 글자만. 참·거짓(false → 0)이 바닥 구간·평점으로 바뀌지 않게(Codex #228)
-    if (typeof v !== 'number' && !(typeof v === 'string' && v.trim() !== '')) throw new ValidationError('err.grade.bandNumber', { code });
+    if (typeof v !== 'number' && !(typeof v === 'string' && v.trim() !== '')) throw new ValidationError('err.grade.bandNumber', { code: safeId(code) });
     const n = Number(v);
-    if (!Number.isFinite(n)) throw new ValidationError('err.grade.bandNumber', { code });
+    if (!Number.isFinite(n)) throw new ValidationError('err.grade.bandNumber', { code: safeId(code) });
     return n;
   };
   const out = raw.map((b) => {
     const code = str(b?.code).trim();
     if (!code) throw new ValidationError('err.grade.bands');
-    if (seen.has(code)) throw new ValidationError('err.grade.bandDup', { code });
+    if (seen.has(code)) throw new ValidationError('err.grade.bandDup', { code: safeId(code) });
     seen.add(code);
     // 띠 칸은 정해진 이름만. 오타(earn_credit)가 버려져 이수로 굳지 않게(Codex #228)
-    for (const k of Object.keys(b ?? {})) if (!BAND_KEYS.includes(k)) throw new ValidationError('err.grade.bandField', { code, key: k, keys: BAND_KEYS.join(', ') });
+    for (const k of Object.keys(b ?? {})) if (!BAND_KEYS.includes(k)) throw new ValidationError('err.grade.bandField', { code: safeId(code), key: safeId(k), keys: BAND_KEYS.join(', ') });
     const label = b?.label == null ? { ko: code, en: code } : ltext(b.label, '척도 띠');
     // 이수 여부는 참·거짓만. 글자 "false" 를 참으로 바꿔 이수로 굳히지 않는다(Codex #228)
-    if (b?.earns_credit != null && typeof b.earns_credit !== 'boolean') throw new ValidationError('err.grade.bandCredit', { code });
+    if (b?.earns_credit != null && typeof b.earns_credit !== 'boolean') throw new ValidationError('err.grade.bandCredit', { code: safeId(code) });
     return { code, label, min: num(b?.min, code), points: num(b?.points, code), earns_credit: b?.earns_credit !== false };
   });
   // floor(화면·API 쓰기 길): 점수 구간이 있으면 0점까지 덮어야 한다. 템플릿 적용은 관제가 낸 판을 그대로 옮기므로 여기서 막지 않는다. 바닥 구간이 없으면 그 아래 점수는 등급 없이 마감되어(app.band_for → null) 잘못 이수로 굳는다(Codex #228)
@@ -144,7 +144,7 @@ export function saveScale(db: Db, schoolId: string, input: { code?: unknown; kin
 async function saveScaleChecked(db: Db, schoolId: string, input: { code?: unknown; kind?: unknown; why?: unknown; base_version?: unknown }, bands: Band[]) {
   // 있는 척도의 종류는 바꾸지 않는다(DB는 처음 만들 때만 종류를 쓴다, Codex #228)
   const { rows: [had] } = await db.query<{ kind: string }>('select kind from public.scales where school_id = $1 and code = $2', [schoolId, str(input.code)]);
-  if (had && had.kind !== str(input.kind)) throw new ValidationError('err.grade.scaleKindChange', { code: str(input.code), kind: had.kind });
+  if (had && had.kind !== str(input.kind)) throw new ValidationError('err.grade.scaleKindChange', { code: safeId(input.code), kind: had.kind });
   return one<{ id: string; version: number }>(db, 'select app.save_scale($1, $2) as v',
     [schoolId, JSON.stringify({ code: str(input.code), kind: str(input.kind), bands, why: str(input.why), base_version: base(input.base_version ?? 0) })]);
 }
@@ -179,11 +179,11 @@ export function checkGradingPolicy(raw: unknown): GradingPolicy {
   const isObj = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v);
   const int = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
   const ratio = (v: unknown) => typeof v === 'number' && v >= 0 && v <= 1;
-  for (const k of Object.keys(p)) if (!(POLICY_KEYS as readonly string[]).includes(k)) throw new ValidationError('err.grade.policyUnknown', { key: k, keys: POLICY_KEYS.join(', ') });
+  for (const k of Object.keys(p)) if (!(POLICY_KEYS as readonly string[]).includes(k)) throw new ValidationError('err.grade.policyUnknown', { key: safeId(k), keys: POLICY_KEYS.join(', ') });
   // 모양이 정해진 묶음은 안쪽 칸도 본다. 오타(min_attendence_ratio)가 값만 맞으면 저장되고 계산에서 조용히 무시된다(Codex #228)
   for (const [k, inner] of Object.entries(POLICY_INNER)) {
     if (!isObj(p[k])) continue;
-    for (const x of Object.keys(p[k] as object)) if (!inner.includes(x)) throw new ValidationError('err.grade.policyUnknown', { key: `${k}.${x}`, keys: inner.map((i) => `${k}.${i}`).join(', ') });
+    for (const x of Object.keys(p[k] as object)) if (!inner.includes(x)) throw new ValidationError('err.grade.policyUnknown', { key: `${k}.${safeId(x)}`, keys: inner.map((i) => `${k}.${i}`).join(', ') });
   }
   for (const k of ['score_digits', 'final_digits']) if (k in p && !int(p[k], 0, 4)) bad(k);
   if ('stats' in p) {

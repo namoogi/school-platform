@@ -1,5 +1,5 @@
 import type { Db } from './db';
-import { ValidationError } from './services';
+import { safeId, ValidationError } from './services';
 import { checkSpec, evaluate, sanitizeInput, type CalcOutput, type CalcSpec } from './calc/expr';
 
 /** ADR 0040: 학교 계산식 판 읽기·저장·미리 계산 */
@@ -22,7 +22,7 @@ export async function calcRuleHistory(db: Db, schoolId: string, code: string): P
 export async function saveCalcRule(db: Db, schoolId: string, input: Record<string, unknown>) {
   const issues = checkSpec(input.spec);
   // 문제 목록은 미리 계산(preview)이 돌려준다. 오류에는 개수와 첫 자리만(ADR 0039: 이름표 + 값)
-  if (issues.length) throw new ValidationError('err.calcSpecInvalid', { count: issues.length, path: issues[0].path || '-' });
+  if (issues.length) throw new ValidationError('err.calcSpecInvalid', { count: issues.length, path: safeId(issues[0].path || '-') });
   // 이름은 언어 칸(두 글자) → 글자만 남긴다. 글자가 아닌 값이 저장되면 목록 화면이 깨진다(Codex #228)
   const raw = input.title && typeof input.title === 'object' && !Array.isArray(input.title) ? input.title as Record<string, unknown> : {};
   const clean = Object.fromEntries(Object.entries(raw).filter(([k, v]) => /^[a-z]{2}$/.test(k) && typeof v === 'string' && v.trim()).map(([k, v]) => [k, (v as string).trim().slice(0, 200)]));

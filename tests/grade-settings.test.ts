@@ -12,7 +12,7 @@ const gr = await import('@/lib/grading');
 const gb = await import('@/lib/gradebook');
 const cr = await import('@/lib/calc-rules');
 const rec = await import('@/lib/records');
-const { requireWhy } = await import('@/lib/services');
+const { requireWhy, safeId } = await import('@/lib/services');
 const { PRESETS } = await import('@/lib/calc/expr');
 
 type S = { schoolId: string; userId: string };
@@ -190,6 +190,12 @@ describe('출력 프로필', () => {
 });
 
 describe("'왜' 칸", () => {
+  it('오류 문구에 넣는 입력은 허용 글자만, 30자까지(Codex #228)', () => {
+    expect(safeId('earn_credit')).toBe('earn_credit');
+    expect(safeId('sk-live 비밀 010-1234-5678 ' + 'x'.repeat(50)).length).toBeLessThanOrEqual(30);
+    expect(safeId('홍길동')).toBe('?');
+    expect(() => gr.checkBands([{ code: 'A', min: 0, ['token=abc def 학생이름']: 1 }])).toThrow(expect.objectContaining({ key: 'err.grade.bandField', vars: expect.objectContaining({ key: 'tokenabcdef' }) }));
+  });
   it('비우면 거부, 500자 넘으면 거부', () => {
     expect(requireWhy('  규정 5조 ')).toBe('규정 5조');
     expect(() => requireWhy('')).toThrow(expect.objectContaining({ key: 'err.whyRequired' }));

@@ -489,3 +489,10 @@ export function requireWhy(v: unknown): string {
   if (s.length > 500) throw new ValidationError('err.whyTooLong');
   return s;
 }
+
+/** 130차(Codex #228): 오류 문구에 넣는 사용자 입력(칸 이름·코드)은 허용 글자만 남기고 30자로 자른다. 붙여 넣은 비밀·개인정보가 응답·기록에 그대로 실리지 않게 */
+export function safeId(v: unknown): string {
+  const s = typeof v === 'string' ? v : String(v ?? '');
+  const clean = s.replace(/[^A-Za-z0-9_.+\-[\]]/g, '').slice(0, 30);
+  return clean || '?';
+}
