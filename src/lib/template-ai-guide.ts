@@ -26,6 +26,10 @@ export type GuideInput = {
   policy: { version: number; policy: Record<string, unknown> } | null;
   calcSamples: string[];
   outputs: string[];
+  /** 학교가 저장한 계산식 판(코드별 최신) */
+  calcRules: { code: string; version: number; spec: unknown }[];
+  /** 학교가 저장한 출력 프로필(코드별 최신) */
+  outputProfiles: { code: string; format: string; version: number; settings: Record<string, unknown> }[];
   hidden: string[];
 };
 
@@ -48,8 +52,17 @@ export function buildTemplateGuideText(i: GuideInput): string {
     for (const sc of i.scales) L.push(`  - ${sc.code} ${sc.version}판 (${sc.kind}): ${sc.bands.map((b) => `${b.code}:${b.min ?? '-'}${b.points != null ? `/${b.points}` : ''}${b.earns_credit === false ? '/이수 아님' : ''}`).join(' ') || '구간 없음'}`);
   }
   L.push(`- 성적 정책: ${i.policy ? `${i.policy.version}판 ${JSON.stringify(i.policy.policy)}` : '없음(기본값)'}`);
-  L.push(`- 계산식 견본(마감 때 고름): ${list(i.calcSamples)}`);
-  L.push(`- 발행 서식: ${list(i.outputs)}`);
+  L.push(`- 템플릿의 계산식 견본: ${list(i.calcSamples)} · 템플릿의 발행 서식: ${list(i.outputs)}`);
+  if (!i.calcRules.length) L.push('- 학교 계산식 판: 없음(아직 저장 안 함, 마감 때 견본을 고름)');
+  else {
+    L.push('- 학교 계산식 판(지금 판, 고칠 때 이 식에서 시작):');
+    for (const r of i.calcRules) L.push(`  - ${r.code} ${r.version}판: ${JSON.stringify(r.spec)}`);
+  }
+  if (!i.outputProfiles.length) L.push('- 학교 출력 프로필: 없음(기본 표기)');
+  else {
+    L.push('- 학교 출력 프로필(지금 판):');
+    for (const o of i.outputProfiles) L.push(`  - ${o.code} (${o.format}) ${o.version}판: ${JSON.stringify(o.settings)}`);
+  }
   L.push(`- 숨기는 구획: ${list(i.hidden.map((h) => HIDE_KO[h] ?? h))}`);
   L.push('');
   L.push('## 할 일 (순서대로)');

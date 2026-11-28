@@ -151,6 +151,8 @@ describe('템플릿 새 판 제안', () => {
     expect(ach.bands.length).toBeGreaterThan(0);
     expect(ach.bands[0]).toHaveProperty('min');
     expect(c).toHaveProperty('policy');
+    expect(Array.isArray(c!.calcRules)).toBe(true);
+    expect(Array.isArray(c!.outputProfiles)).toBe(true);
     expect(c!.levels.length).toBeGreaterThan(0);
     // 다른 학교 값은 섞이지 않는다
     const a = await asUser(A.userId, (db) => at.schoolCopySummary(db, A.schoolId, 'ko'));
