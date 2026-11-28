@@ -52,7 +52,7 @@ export async function TemplateView({ templateKey, sp, base, bare, tr }: {
   const design = SITE_THEMES.find((x) => x.key === t.theme);
   return (
     <>
-      {!bare && !sp.thumb && <nav className="template-live-bar" aria-label={tr('site.tpl.live.label')}>
+      {!bare && !sp.thumb && <nav className="template-live-bar" data-sticky-top="" aria-label={tr('site.tpl.live.label')}>
         <Link href="/site/templates">{tr('site.tpl.live.back')}</Link>
         <strong>{templateText(tr, t.key, 'name', t.name)}</strong><span className="muted">{tr('site.tpl.live.design', { name: siteLabel(tr, 'theme', t.theme, design?.name ?? t.theme) })}</span>
         {sample && <span className="segmented" role="group" aria-label={tr('site.tpl.view.label')}>
